@@ -1,0 +1,12 @@
+# The TableGen tools, built by mcpp for the one purpose of regenerating llvm-generated/include
+# (tools/gen_tablegen.py). They are host programs and never part of the package's library.
+#
+#   support   LLVMSupport + LLVMDemangle + LLVMTableGen, shared by the three tools
+#   min       llvm-min-tblgen: the emitters that need no generated input (it writes GenVT.inc)
+#   llvm      llvm-tblgen: every LLVM emitter (needs GenVT.inc through CodeGenTypes)
+#   clang     clang-tblgen
+[workspace]
+members = ["support", "min", "llvm", "clang"]
+
+[workspace.dependencies]
+openkal-llvm-runtime = "0.15.2"

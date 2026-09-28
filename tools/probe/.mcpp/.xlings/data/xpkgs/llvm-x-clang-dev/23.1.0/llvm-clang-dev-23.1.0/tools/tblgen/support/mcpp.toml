@@ -1,0 +1,32 @@
+[package]
+name        = "tblgen-support"
+version     = "23.1.0"
+description = "LLVMSupport, LLVMDemangle and LLVMTableGen for the host TableGen tools"
+license     = "Apache-2.0 WITH LLVM-exception"
+
+[targets.tblgen-support]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+
+[build]
+sources = [
+  "../../../llvm/llvm/lib/Support/*.cpp",
+  "../../../llvm/llvm/lib/Support/*.c",
+  "../../../llvm/llvm/lib/Support/BLAKE3/blake3.c",
+  "../../../llvm/llvm/lib/Support/BLAKE3/blake3_dispatch.c",
+  "../../../llvm/llvm/lib/Support/BLAKE3/blake3_portable.c",
+  "../../../llvm/llvm/lib/Demangle/*.cpp",
+  "../../../llvm/llvm/lib/TableGen/*.cpp",
+]
+include_dirs = [
+  "../../../llvm-generated/include",
+  "../../../llvm/llvm/include",
+  "../../../llvm/third-party/siphash/include",
+  "../../../llvm/libc",
+]
+defines  = ["_GNU_SOURCE", "__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS", "NDEBUG",
+            "BLAKE3_NO_SSE2", "BLAKE3_NO_SSE41", "BLAKE3_NO_AVX2", "BLAKE3_NO_AVX512", "BLAKE3_USE_NEON=0"]
+cxxflags = ["-O2", "-g0", "-w"]
+cflags   = ["-O2", "-g0", "-w"]

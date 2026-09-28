@@ -1,7 +1,7 @@
 # MSA over Clang 23.1: the only libmc++ package that depends on Clang (plan P1).
 #
 # llvm.clang-dev is Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev,
-# E-IDX-1). During development it is the sibling checkout; the in-repo index takes over later.
+# E-IDX-1), served by this repository's own index (index/llvm, rule R2).
 [package]
 name        = "mcxx-clang"
 version     = "0.1.0"
@@ -18,7 +18,7 @@ mcxx-msa   = { path = "../msa" }
 mcxx-graph = { path = "../graph" }
 
 [dependencies.llvm]
-clang-dev = { path = "../../forks/llvm-clang-dev" }
+clang-dev = "23.1.0"
 
 [lib]
 path = "src/clang.cppm"

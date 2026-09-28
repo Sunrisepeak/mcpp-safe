@@ -1,0 +1,114 @@
+# llvm.clang-dev: Clang's and LLVM's frontend libraries, built by mcpp on openkal.
+#
+# Which libraries: the dependency closure of clangTooling, clangIndex, clangFrontend and
+# clangDependencyScanning as upstream's CMakeLists declare it, minus what needs LLVM's optimizer
+# (OMPIRBuilder) or a host facility openkal does not have. Sources are upstream's, unmodified
+# (llvm/, see UPSTREAM-REV); everything CMake would generate is in llvm-generated/.
+[package]
+namespace   = "llvm"
+name        = "clang-dev"
+version     = "23.1.0"
+description = "Clang and LLVM 23.1 frontend libraries (AST, Sema, Lex, Parse, Frontend, Driver, Serialization, Index, Tooling), built by mcpp on openkal"
+license     = "Apache-2.0 WITH LLVM-exception"
+authors     = ["speak-agent"]
+
+[targets.clang-dev]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+
+# openkal-musl's features.h makes `restrict` a macro in C++ (`__restrict`) unless one exists. Clang's
+# TokenKinds.def passes `restrict` through a macro layer, where that expansion would drop
+# tok::kw_restrict; a self-referential definition keeps the spelling. It is a feature define so it
+# reaches every consumer: a unit that includes Clang's headers without it sees a different enum.
+[features]
+default = ["openkal"]
+openkal = { defines = ["restrict=restrict"] }
+
+[build]
+sources = [
+  # --- LLVM ---
+  "llvm/llvm/lib/Support/*.cpp",
+  "llvm/llvm/lib/Support/*.c",
+  "llvm/llvm/lib/Support/BLAKE3/blake3.c",
+  "llvm/llvm/lib/Support/BLAKE3/blake3_dispatch.c",
+  "llvm/llvm/lib/Support/BLAKE3/blake3_portable.c",
+  "llvm/llvm/lib/Demangle/*.cpp",
+  "llvm/llvm/lib/TargetParser/*.cpp",
+  "llvm/llvm/lib/BinaryFormat/*.cpp",
+  "llvm/llvm/lib/Bitstream/Reader/*.cpp",
+  "llvm/llvm/lib/Bitcode/Reader/*.cpp",
+  "llvm/llvm/lib/Remarks/*.cpp",
+  "llvm/llvm/lib/IR/*.cpp",
+  "llvm/llvm/lib/IRReader/*.cpp",
+  "llvm/llvm/lib/AsmParser/*.cpp",
+  "llvm/llvm/lib/Option/*.cpp",
+  "llvm/llvm/lib/MC/*.cpp",
+  "llvm/llvm/lib/MC/MCParser/*.cpp",
+  "llvm/llvm/lib/Object/*.cpp",
+  "llvm/llvm/lib/ProfileData/*.cpp",
+  "llvm/llvm/lib/TextAPI/*.cpp",
+  "llvm/llvm/lib/WindowsDriver/*.cpp",
+  "llvm/llvm/lib/Plugins/*.cpp",
+  "llvm/llvm/lib/Frontend/Atomic/*.cpp",
+  "llvm/llvm/lib/Frontend/Directive/*.cpp",
+  "llvm/llvm/lib/Frontend/HLSL/*.cpp",
+  "llvm/llvm/lib/Frontend/Offloading/*.cpp",
+  "llvm/llvm/lib/Frontend/OpenMP/*.cpp",
+  "!llvm/llvm/lib/Frontend/OpenMP/OMPIRBuilder.cpp",
+  "!llvm/llvm/lib/ProfileData/InstrProfCorrelator.cpp",   # reads DWARF (LLVMDebugInfoDWARF)
+  "!llvm/llvm/lib/ProfileData/MemProfReader.cpp",         # symbolizes (LLVMSymbolize)
+  "!llvm/llvm/lib/MC/MCSFrame.cpp",                       # decodes CFI (LLVMDebugInfoDWARF)
+  # --- Clang ---
+  "llvm/clang/lib/Basic/*.cpp",
+  "llvm/clang/lib/Basic/Targets/*.cpp",
+  "llvm/clang/lib/Lex/*.cpp",
+  "llvm/clang/lib/Parse/*.cpp",
+  "llvm/clang/lib/Sema/*.cpp",
+  "llvm/clang/lib/AST/*.cpp",
+  "llvm/clang/lib/AST/ByteCode/*.cpp",
+  "llvm/clang/lib/ASTMatchers/*.cpp",
+  "llvm/clang/lib/Analysis/*.cpp",
+  "llvm/clang/lib/Analysis/LifetimeSafety/*.cpp",
+  "llvm/clang/lib/Edit/*.cpp",
+  "llvm/clang/lib/Serialization/*.cpp",
+  "llvm/clang/lib/Frontend/*.cpp",
+  "llvm/clang/lib/Driver/*.cpp",
+  "llvm/clang/lib/Driver/ToolChains/*.cpp",
+  "llvm/clang/lib/Driver/ToolChains/Arch/*.cpp",
+  "llvm/clang/lib/Options/*.cpp",
+  "llvm/clang/lib/Index/*.cpp",
+  "llvm/clang/lib/Tooling/*.cpp",
+  "llvm/clang/lib/Tooling/Core/*.cpp",
+  "llvm/clang/lib/Tooling/Inclusions/*.cpp",
+  "llvm/clang/lib/DependencyScanning/*.cpp",
+  "llvm/clang/lib/APINotes/*.cpp",
+  "llvm/clang/lib/Support/*.cpp",
+  "llvm/clang/lib/Rewrite/*.cpp",
+  "llvm/clang/lib/Format/*.cpp",
+  "llvm/clang/lib/UnifiedSymbolResolution/*.cpp",
+  "llvm/clang/lib/ScalableStaticAnalysis/Core/**/*.cpp",
+  "llvm/clang/lib/ScalableStaticAnalysis/Frontend/*.cpp",
+  "llvm/clang/lib/ScalableStaticAnalysis/Analyses/**/*.cpp",
+  "llvm/clang/lib/ScalableStaticAnalysis/SourceTransformation/*.cpp",
+  # --- port ---
+  "port/src/*.cpp",
+]
+include_dirs = [
+  "llvm-generated/include",
+  "llvm/llvm/include",
+  "llvm/clang/include",
+  "llvm/third-party/siphash/include",
+  "llvm/libc",
+  "llvm-generated/clang-lib/AST",
+  "llvm-generated/clang-lib/Sema",
+  "llvm/clang/lib/ScalableStaticAnalysis/Analyses",
+  "llvm/clang/lib/Driver",
+  "llvm/clang/lib/Basic",
+  "llvm-generated/clang-lib/Basic",
+]
+defines  = ["_GNU_SOURCE", "__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS", "NDEBUG",
+            "BLAKE3_NO_SSE2", "BLAKE3_NO_SSE41", "BLAKE3_NO_AVX2", "BLAKE3_NO_AVX512", "BLAKE3_USE_NEON=0"]
+cxxflags = ["-O2", "-g0", "-w"]
+cflags   = ["-O2", "-g0", "-w"]

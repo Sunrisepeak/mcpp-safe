@@ -28,6 +28,10 @@ members = [
     "tools/probe",
 ]
 
+# This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.
+[indices]
+llvm = { path = "index/llvm" }
+
 [workspace.dependencies]
 openkal-llvm-runtime = "0.15.2"
 

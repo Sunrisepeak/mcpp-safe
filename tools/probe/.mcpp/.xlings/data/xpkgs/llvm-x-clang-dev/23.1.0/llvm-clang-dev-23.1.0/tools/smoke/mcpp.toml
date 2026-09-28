@@ -1,0 +1,17 @@
+# The smallest program over llvm.clang-dev: parse a module interface and walk its AST.
+[package]
+name    = "clang-dev-smoke"
+version = "0.1.0"
+
+[targets.clang-dev-smoke]
+kind = "bin"
+main = "src/main.cpp"
+
+[build]
+ldflags = ["-Wl,--error-limit=0"]
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+
+[dependencies.llvm]
+clang-dev = { path = "../.." }

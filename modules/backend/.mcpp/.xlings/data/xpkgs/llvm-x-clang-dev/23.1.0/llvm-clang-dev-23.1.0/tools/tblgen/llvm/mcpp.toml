@@ -1,0 +1,26 @@
+[package]
+name        = "llvm-tblgen"
+version     = "23.1.0"
+description = "llvm-tblgen with the option emitters only (for clang's Options.inc)"
+license     = "Apache-2.0 WITH LLVM-exception"
+
+[targets.llvm-tblgen]
+kind = "bin"
+main = "../../../llvm/llvm/utils/TableGen/llvm-tblgen.cpp"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+tblgen-support = { path = "../support" }
+
+[build]
+# Only the option emitters: this build of llvm-tblgen exists to write clang's Options.inc
+# (-gen-opt-parser-defs), the one LLVM-project TableGen step outside llvm/include/llvm.
+sources = [
+  "../../../llvm/llvm/utils/TableGen/OptionParserEmitter.cpp",
+  "../../../llvm/llvm/utils/TableGen/OptionRSTEmitter.cpp",
+  "../../../llvm/llvm/utils/TableGen/Common/OptEmitter.cpp",
+  "../../../llvm/llvm/utils/TableGen/Basic/*.cpp",
+]
+include_dirs = ["../../../llvm/llvm/utils/TableGen", "../../../llvm-generated/include", "../../../llvm/llvm/include"]
+defines      = ["_GNU_SOURCE", "__STDC_CONSTANT_MACROS", "__STDC_FORMAT_MACROS", "__STDC_LIMIT_MACROS", "NDEBUG"]
+cxxflags     = ["-O2", "-g0", "-w"]

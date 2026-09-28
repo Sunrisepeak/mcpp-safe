@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XLINGS_NON_INTERACTIVE: '1'
+
+jobs:
+  # The libraries build with mcpp on openkal, and a program over them parses a module interface.
+  build:
+    name: build and smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # Platform order of the MC++ plan: linux-x64 first; the others join as they are brought up.
+        os: [ubuntu-24.04]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-mcpp
+      - name: Build the libraries
+        run: mcpp build -j auto
+      - name: Smoke
+        working-directory: tools/smoke
+        run: |
+          set -euo pipefail
+          mcpp build -j auto
+          smoke=$(find target -type f -name clang-dev-smoke -path '*/bin/*' | head -1)
+          "$smoke" | tee smoke.txt
+          grep -q 'module=m .* errors=0' smoke.txt
+
+  # llvm-generated/ is what upstream's CMake would produce from llvm/: regenerating it from the
+  # sources here must change nothing.
+  generated:
+    name: generated files are current
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-mcpp
+      - name: Regenerate
+        run: |
+          set -euo pipefail
+          python3 tools/gen_config.py
+          python3 tools/gen_tablegen.py
+      - name: Nothing changed
+        run: |
+          git status --short llvm-generated
+          git diff --exit-code --stat llvm-generated

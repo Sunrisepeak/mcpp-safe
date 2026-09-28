@@ -1,0 +1,3730 @@
+#ifdef GET_SME_BUILTIN_ENUMERATORS
+  BI__builtin_sme___arm_in_streaming_mode,
+  BI__builtin_sme_svadd_write_single_za32_s32_vg1x2,
+  BI__builtin_sme_svadd_write_single_za32_s32_vg1x4,
+  BI__builtin_sme_svadd_write_single_za32_u32_vg1x2,
+  BI__builtin_sme_svadd_write_single_za32_u32_vg1x4,
+  BI__builtin_sme_svadd_write_single_za64_s64_vg1x2,
+  BI__builtin_sme_svadd_write_single_za64_s64_vg1x4,
+  BI__builtin_sme_svadd_write_single_za64_u64_vg1x2,
+  BI__builtin_sme_svadd_write_single_za64_u64_vg1x4,
+  BI__builtin_sme_svadd_write_za32_s32_vg1x2,
+  BI__builtin_sme_svadd_write_za32_s32_vg1x4,
+  BI__builtin_sme_svadd_write_za32_u32_vg1x2,
+  BI__builtin_sme_svadd_write_za32_u32_vg1x4,
+  BI__builtin_sme_svadd_write_za64_s64_vg1x2,
+  BI__builtin_sme_svadd_write_za64_s64_vg1x4,
+  BI__builtin_sme_svadd_write_za64_u64_vg1x2,
+  BI__builtin_sme_svadd_write_za64_u64_vg1x4,
+  BI__builtin_sme_svadd_za16_bf16_vg1x2,
+  BI__builtin_sme_svadd_za16_bf16_vg1x4,
+  BI__builtin_sme_svadd_za16_f16_vg1x2,
+  BI__builtin_sme_svadd_za16_f16_vg1x4,
+  BI__builtin_sme_svadd_za32_f32_vg1x2,
+  BI__builtin_sme_svadd_za32_f32_vg1x4,
+  BI__builtin_sme_svadd_za32_s32_vg1x2,
+  BI__builtin_sme_svadd_za32_s32_vg1x4,
+  BI__builtin_sme_svadd_za32_u32_vg1x2,
+  BI__builtin_sme_svadd_za32_u32_vg1x4,
+  BI__builtin_sme_svadd_za64_f64_vg1x2,
+  BI__builtin_sme_svadd_za64_f64_vg1x4,
+  BI__builtin_sme_svadd_za64_s64_vg1x2,
+  BI__builtin_sme_svadd_za64_s64_vg1x4,
+  BI__builtin_sme_svadd_za64_u64_vg1x2,
+  BI__builtin_sme_svadd_za64_u64_vg1x4,
+  BI__builtin_sme_svaddha_za32_s32_m,
+  BI__builtin_sme_svaddha_za32_u32_m,
+  BI__builtin_sme_svaddha_za64_s64_m,
+  BI__builtin_sme_svaddha_za64_u64_m,
+  BI__builtin_sme_svaddva_za32_s32_m,
+  BI__builtin_sme_svaddva_za32_u32_m,
+  BI__builtin_sme_svaddva_za64_s64_m,
+  BI__builtin_sme_svaddva_za64_u64_m,
+  BI__builtin_sme_svbmopa_za32_s32_m,
+  BI__builtin_sme_svbmopa_za32_u32_m,
+  BI__builtin_sme_svbmops_za32_s32_m,
+  BI__builtin_sme_svbmops_za32_u32_m,
+  BI__builtin_sme_svcntsb,
+  BI__builtin_sme_svcntsd,
+  BI__builtin_sme_svcntsh,
+  BI__builtin_sme_svcntsw,
+  BI__builtin_sme_svdot_lane_za16_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_lane_za16_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_lane_za32_bf16_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_bf16_vg1x4,
+  BI__builtin_sme_svdot_lane_za32_f16_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_f16_vg1x4,
+  BI__builtin_sme_svdot_lane_za32_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_lane_za32_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_lane_za32_s16_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_s16_vg1x4,
+  BI__builtin_sme_svdot_lane_za32_s8_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_s8_vg1x4,
+  BI__builtin_sme_svdot_lane_za32_u16_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_u16_vg1x4,
+  BI__builtin_sme_svdot_lane_za32_u8_vg1x2,
+  BI__builtin_sme_svdot_lane_za32_u8_vg1x4,
+  BI__builtin_sme_svdot_lane_za64_s16_vg1x2,
+  BI__builtin_sme_svdot_lane_za64_s16_vg1x4,
+  BI__builtin_sme_svdot_lane_za64_u16_vg1x2,
+  BI__builtin_sme_svdot_lane_za64_u16_vg1x4,
+  BI__builtin_sme_svdot_single_za16_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_single_za16_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_single_za32_bf16_vg1x2,
+  BI__builtin_sme_svdot_single_za32_bf16_vg1x4,
+  BI__builtin_sme_svdot_single_za32_f16_vg1x2,
+  BI__builtin_sme_svdot_single_za32_f16_vg1x4,
+  BI__builtin_sme_svdot_single_za32_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_single_za32_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_single_za32_s16_vg1x2,
+  BI__builtin_sme_svdot_single_za32_s16_vg1x4,
+  BI__builtin_sme_svdot_single_za32_s8_vg1x2,
+  BI__builtin_sme_svdot_single_za32_s8_vg1x4,
+  BI__builtin_sme_svdot_single_za32_u16_vg1x2,
+  BI__builtin_sme_svdot_single_za32_u16_vg1x4,
+  BI__builtin_sme_svdot_single_za32_u8_vg1x2,
+  BI__builtin_sme_svdot_single_za32_u8_vg1x4,
+  BI__builtin_sme_svdot_single_za64_s16_vg1x2,
+  BI__builtin_sme_svdot_single_za64_s16_vg1x4,
+  BI__builtin_sme_svdot_single_za64_u16_vg1x2,
+  BI__builtin_sme_svdot_single_za64_u16_vg1x4,
+  BI__builtin_sme_svdot_za16_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_za16_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_za32_bf16_vg1x2,
+  BI__builtin_sme_svdot_za32_bf16_vg1x4,
+  BI__builtin_sme_svdot_za32_f16_vg1x2,
+  BI__builtin_sme_svdot_za32_f16_vg1x4,
+  BI__builtin_sme_svdot_za32_mf8_vg1x2_fpm,
+  BI__builtin_sme_svdot_za32_mf8_vg1x4_fpm,
+  BI__builtin_sme_svdot_za32_s16_vg1x2,
+  BI__builtin_sme_svdot_za32_s16_vg1x4,
+  BI__builtin_sme_svdot_za32_s8_vg1x2,
+  BI__builtin_sme_svdot_za32_s8_vg1x4,
+  BI__builtin_sme_svdot_za32_u16_vg1x2,
+  BI__builtin_sme_svdot_za32_u16_vg1x4,
+  BI__builtin_sme_svdot_za32_u8_vg1x2,
+  BI__builtin_sme_svdot_za32_u8_vg1x4,
+  BI__builtin_sme_svdot_za64_s16_vg1x2,
+  BI__builtin_sme_svdot_za64_s16_vg1x4,
+  BI__builtin_sme_svdot_za64_u16_vg1x2,
+  BI__builtin_sme_svdot_za64_u16_vg1x4,
+  BI__builtin_sme_svld1_hor_vnum_za128,
+  BI__builtin_sme_svld1_hor_vnum_za16,
+  BI__builtin_sme_svld1_hor_vnum_za32,
+  BI__builtin_sme_svld1_hor_vnum_za64,
+  BI__builtin_sme_svld1_hor_vnum_za8,
+  BI__builtin_sme_svld1_hor_za128,
+  BI__builtin_sme_svld1_hor_za16,
+  BI__builtin_sme_svld1_hor_za32,
+  BI__builtin_sme_svld1_hor_za64,
+  BI__builtin_sme_svld1_hor_za8,
+  BI__builtin_sme_svld1_ver_vnum_za128,
+  BI__builtin_sme_svld1_ver_vnum_za16,
+  BI__builtin_sme_svld1_ver_vnum_za32,
+  BI__builtin_sme_svld1_ver_vnum_za64,
+  BI__builtin_sme_svld1_ver_vnum_za8,
+  BI__builtin_sme_svld1_ver_za128,
+  BI__builtin_sme_svld1_ver_za16,
+  BI__builtin_sme_svld1_ver_za32,
+  BI__builtin_sme_svld1_ver_za64,
+  BI__builtin_sme_svld1_ver_za8,
+  BI__builtin_sme_svldr_vnum_za,
+  BI__builtin_sme_svldr_za,
+  BI__builtin_sme_svldr_zt,
+  BI__builtin_sme_svluti2_lane_zt_bf16,
+  BI__builtin_sme_svluti2_lane_zt_bf16_x2,
+  BI__builtin_sme_svluti2_lane_zt_bf16_x4,
+  BI__builtin_sme_svluti2_lane_zt_f16,
+  BI__builtin_sme_svluti2_lane_zt_f16_x2,
+  BI__builtin_sme_svluti2_lane_zt_f16_x4,
+  BI__builtin_sme_svluti2_lane_zt_f32,
+  BI__builtin_sme_svluti2_lane_zt_f32_x2,
+  BI__builtin_sme_svluti2_lane_zt_f32_x4,
+  BI__builtin_sme_svluti2_lane_zt_mf8,
+  BI__builtin_sme_svluti2_lane_zt_mf8_x2,
+  BI__builtin_sme_svluti2_lane_zt_mf8_x4,
+  BI__builtin_sme_svluti2_lane_zt_s16,
+  BI__builtin_sme_svluti2_lane_zt_s16_x2,
+  BI__builtin_sme_svluti2_lane_zt_s16_x4,
+  BI__builtin_sme_svluti2_lane_zt_s32,
+  BI__builtin_sme_svluti2_lane_zt_s32_x2,
+  BI__builtin_sme_svluti2_lane_zt_s32_x4,
+  BI__builtin_sme_svluti2_lane_zt_s8,
+  BI__builtin_sme_svluti2_lane_zt_s8_x2,
+  BI__builtin_sme_svluti2_lane_zt_s8_x4,
+  BI__builtin_sme_svluti2_lane_zt_u16,
+  BI__builtin_sme_svluti2_lane_zt_u16_x2,
+  BI__builtin_sme_svluti2_lane_zt_u16_x4,
+  BI__builtin_sme_svluti2_lane_zt_u32,
+  BI__builtin_sme_svluti2_lane_zt_u32_x2,
+  BI__builtin_sme_svluti2_lane_zt_u32_x4,
+  BI__builtin_sme_svluti2_lane_zt_u8,
+  BI__builtin_sme_svluti2_lane_zt_u8_x2,
+  BI__builtin_sme_svluti2_lane_zt_u8_x4,
+  BI__builtin_sme_svluti4_lane_zt_bf16,
+  BI__builtin_sme_svluti4_lane_zt_bf16_x2,
+  BI__builtin_sme_svluti4_lane_zt_bf16_x4,
+  BI__builtin_sme_svluti4_lane_zt_f16,
+  BI__builtin_sme_svluti4_lane_zt_f16_x2,
+  BI__builtin_sme_svluti4_lane_zt_f16_x4,
+  BI__builtin_sme_svluti4_lane_zt_f32,
+  BI__builtin_sme_svluti4_lane_zt_f32_x2,
+  BI__builtin_sme_svluti4_lane_zt_f32_x4,
+  BI__builtin_sme_svluti4_lane_zt_mf8,
+  BI__builtin_sme_svluti4_lane_zt_mf8_x2,
+  BI__builtin_sme_svluti4_lane_zt_s16,
+  BI__builtin_sme_svluti4_lane_zt_s16_x2,
+  BI__builtin_sme_svluti4_lane_zt_s16_x4,
+  BI__builtin_sme_svluti4_lane_zt_s32,
+  BI__builtin_sme_svluti4_lane_zt_s32_x2,
+  BI__builtin_sme_svluti4_lane_zt_s32_x4,
+  BI__builtin_sme_svluti4_lane_zt_s8,
+  BI__builtin_sme_svluti4_lane_zt_s8_x2,
+  BI__builtin_sme_svluti4_lane_zt_u16,
+  BI__builtin_sme_svluti4_lane_zt_u16_x2,
+  BI__builtin_sme_svluti4_lane_zt_u16_x4,
+  BI__builtin_sme_svluti4_lane_zt_u32,
+  BI__builtin_sme_svluti4_lane_zt_u32_x2,
+  BI__builtin_sme_svluti4_lane_zt_u32_x4,
+  BI__builtin_sme_svluti4_lane_zt_u8,
+  BI__builtin_sme_svluti4_lane_zt_u8_x2,
+  BI__builtin_sme_svluti4_zt_s8_x4,
+  BI__builtin_sme_svluti4_zt_u8_x4,
+  BI__builtin_sme_svluti6_zt_mf8,
+  BI__builtin_sme_svluti6_zt_mf8_x4,
+  BI__builtin_sme_svluti6_zt_s8,
+  BI__builtin_sme_svluti6_zt_s8_x4,
+  BI__builtin_sme_svluti6_zt_u8,
+  BI__builtin_sme_svluti6_zt_u8_x4,
+  BI__builtin_sme_svmla_lane_za16_bf16_vg1x2,
+  BI__builtin_sme_svmla_lane_za16_bf16_vg1x4,
+  BI__builtin_sme_svmla_lane_za16_f16_vg1x2,
+  BI__builtin_sme_svmla_lane_za16_f16_vg1x4,
+  BI__builtin_sme_svmla_lane_za16_mf8_vg2x1_fpm,
+  BI__builtin_sme_svmla_lane_za16_mf8_vg2x2_fpm,
+  BI__builtin_sme_svmla_lane_za16_mf8_vg2x4_fpm,
+  BI__builtin_sme_svmla_lane_za32_bf16_vg2x1,
+  BI__builtin_sme_svmla_lane_za32_bf16_vg2x2,
+  BI__builtin_sme_svmla_lane_za32_bf16_vg2x4,
+  BI__builtin_sme_svmla_lane_za32_f16_vg2x1,
+  BI__builtin_sme_svmla_lane_za32_f16_vg2x2,
+  BI__builtin_sme_svmla_lane_za32_f16_vg2x4,
+  BI__builtin_sme_svmla_lane_za32_f32_vg1x2,
+  BI__builtin_sme_svmla_lane_za32_f32_vg1x4,
+  BI__builtin_sme_svmla_lane_za32_mf8_vg4x1_fpm,
+  BI__builtin_sme_svmla_lane_za32_mf8_vg4x2_fpm,
+  BI__builtin_sme_svmla_lane_za32_mf8_vg4x4_fpm,
+  BI__builtin_sme_svmla_lane_za32_s16_vg2x1,
+  BI__builtin_sme_svmla_lane_za32_s16_vg2x2,
+  BI__builtin_sme_svmla_lane_za32_s16_vg2x4,
+  BI__builtin_sme_svmla_lane_za32_s8_vg4x1,
+  BI__builtin_sme_svmla_lane_za32_s8_vg4x2,
+  BI__builtin_sme_svmla_lane_za32_s8_vg4x4,
+  BI__builtin_sme_svmla_lane_za32_u16_vg2x1,
+  BI__builtin_sme_svmla_lane_za32_u16_vg2x2,
+  BI__builtin_sme_svmla_lane_za32_u16_vg2x4,
+  BI__builtin_sme_svmla_lane_za32_u8_vg4x1,
+  BI__builtin_sme_svmla_lane_za32_u8_vg4x2,
+  BI__builtin_sme_svmla_lane_za32_u8_vg4x4,
+  BI__builtin_sme_svmla_lane_za64_f64_vg1x2,
+  BI__builtin_sme_svmla_lane_za64_f64_vg1x4,
+  BI__builtin_sme_svmla_lane_za64_s16_vg4x1,
+  BI__builtin_sme_svmla_lane_za64_s16_vg4x2,
+  BI__builtin_sme_svmla_lane_za64_s16_vg4x4,
+  BI__builtin_sme_svmla_lane_za64_u16_vg4x1,
+  BI__builtin_sme_svmla_lane_za64_u16_vg4x2,
+  BI__builtin_sme_svmla_lane_za64_u16_vg4x4,
+  BI__builtin_sme_svmla_single_za16_bf16_vg1x2,
+  BI__builtin_sme_svmla_single_za16_bf16_vg1x4,
+  BI__builtin_sme_svmla_single_za16_f16_vg1x2,
+  BI__builtin_sme_svmla_single_za16_f16_vg1x4,
+  BI__builtin_sme_svmla_single_za16_mf8_vg2x2_fpm,
+  BI__builtin_sme_svmla_single_za16_mf8_vg2x4_fpm,
+  BI__builtin_sme_svmla_single_za32_bf16_vg2x2,
+  BI__builtin_sme_svmla_single_za32_bf16_vg2x4,
+  BI__builtin_sme_svmla_single_za32_f16_vg2x2,
+  BI__builtin_sme_svmla_single_za32_f16_vg2x4,
+  BI__builtin_sme_svmla_single_za32_f32_vg1x2,
+  BI__builtin_sme_svmla_single_za32_f32_vg1x4,
+  BI__builtin_sme_svmla_single_za32_mf8_vg4x2_fpm,
+  BI__builtin_sme_svmla_single_za32_mf8_vg4x4_fpm,
+  BI__builtin_sme_svmla_single_za32_s16_vg2x2,
+  BI__builtin_sme_svmla_single_za32_s16_vg2x4,
+  BI__builtin_sme_svmla_single_za32_s8_vg4x2,
+  BI__builtin_sme_svmla_single_za32_s8_vg4x4,
+  BI__builtin_sme_svmla_single_za32_u16_vg2x2,
+  BI__builtin_sme_svmla_single_za32_u16_vg2x4,
+  BI__builtin_sme_svmla_single_za32_u8_vg4x2,
+  BI__builtin_sme_svmla_single_za32_u8_vg4x4,
+  BI__builtin_sme_svmla_single_za64_f64_vg1x2,
+  BI__builtin_sme_svmla_single_za64_f64_vg1x4,
+  BI__builtin_sme_svmla_single_za64_s16_vg4x2,
+  BI__builtin_sme_svmla_single_za64_s16_vg4x4,
+  BI__builtin_sme_svmla_single_za64_u16_vg4x2,
+  BI__builtin_sme_svmla_single_za64_u16_vg4x4,
+  BI__builtin_sme_svmla_za16_bf16_vg1x2,
+  BI__builtin_sme_svmla_za16_bf16_vg1x4,
+  BI__builtin_sme_svmla_za16_f16_vg1x2,
+  BI__builtin_sme_svmla_za16_f16_vg1x4,
+  BI__builtin_sme_svmla_za16_mf8_vg2x1_fpm,
+  BI__builtin_sme_svmla_za16_mf8_vg2x2_fpm,
+  BI__builtin_sme_svmla_za16_mf8_vg2x4_fpm,
+  BI__builtin_sme_svmla_za32_bf16_vg2x1,
+  BI__builtin_sme_svmla_za32_bf16_vg2x2,
+  BI__builtin_sme_svmla_za32_bf16_vg2x4,
+  BI__builtin_sme_svmla_za32_f16_vg2x1,
+  BI__builtin_sme_svmla_za32_f16_vg2x2,
+  BI__builtin_sme_svmla_za32_f16_vg2x4,
+  BI__builtin_sme_svmla_za32_f32_vg1x2,
+  BI__builtin_sme_svmla_za32_f32_vg1x4,
+  BI__builtin_sme_svmla_za32_mf8_vg4x1_fpm,
+  BI__builtin_sme_svmla_za32_mf8_vg4x2_fpm,
+  BI__builtin_sme_svmla_za32_mf8_vg4x4_fpm,
+  BI__builtin_sme_svmla_za32_s16_vg2x1,
+  BI__builtin_sme_svmla_za32_s16_vg2x2,
+  BI__builtin_sme_svmla_za32_s16_vg2x4,
+  BI__builtin_sme_svmla_za32_s8_vg4x1,
+  BI__builtin_sme_svmla_za32_s8_vg4x2,
+  BI__builtin_sme_svmla_za32_s8_vg4x4,
+  BI__builtin_sme_svmla_za32_u16_vg2x1,
+  BI__builtin_sme_svmla_za32_u16_vg2x2,
+  BI__builtin_sme_svmla_za32_u16_vg2x4,
+  BI__builtin_sme_svmla_za32_u8_vg4x1,
+  BI__builtin_sme_svmla_za32_u8_vg4x2,
+  BI__builtin_sme_svmla_za32_u8_vg4x4,
+  BI__builtin_sme_svmla_za64_f64_vg1x2,
+  BI__builtin_sme_svmla_za64_f64_vg1x4,
+  BI__builtin_sme_svmla_za64_s16_vg4x1,
+  BI__builtin_sme_svmla_za64_s16_vg4x2,
+  BI__builtin_sme_svmla_za64_s16_vg4x4,
+  BI__builtin_sme_svmla_za64_u16_vg4x1,
+  BI__builtin_sme_svmla_za64_u16_vg4x2,
+  BI__builtin_sme_svmla_za64_u16_vg4x4,
+  BI__builtin_sme_svmls_lane_za16_bf16_vg1x2,
+  BI__builtin_sme_svmls_lane_za16_bf16_vg1x4,
+  BI__builtin_sme_svmls_lane_za16_f16_vg1x2,
+  BI__builtin_sme_svmls_lane_za16_f16_vg1x4,
+  BI__builtin_sme_svmls_lane_za32_bf16_vg2x1,
+  BI__builtin_sme_svmls_lane_za32_bf16_vg2x2,
+  BI__builtin_sme_svmls_lane_za32_bf16_vg2x4,
+  BI__builtin_sme_svmls_lane_za32_f16_vg2x1,
+  BI__builtin_sme_svmls_lane_za32_f16_vg2x2,
+  BI__builtin_sme_svmls_lane_za32_f16_vg2x4,
+  BI__builtin_sme_svmls_lane_za32_f32_vg1x2,
+  BI__builtin_sme_svmls_lane_za32_f32_vg1x4,
+  BI__builtin_sme_svmls_lane_za32_s16_vg2x1,
+  BI__builtin_sme_svmls_lane_za32_s16_vg2x2,
+  BI__builtin_sme_svmls_lane_za32_s16_vg2x4,
+  BI__builtin_sme_svmls_lane_za32_s8_vg4x1,
+  BI__builtin_sme_svmls_lane_za32_s8_vg4x2,
+  BI__builtin_sme_svmls_lane_za32_s8_vg4x4,
+  BI__builtin_sme_svmls_lane_za32_u16_vg2x1,
+  BI__builtin_sme_svmls_lane_za32_u16_vg2x2,
+  BI__builtin_sme_svmls_lane_za32_u16_vg2x4,
+  BI__builtin_sme_svmls_lane_za32_u8_vg4x1,
+  BI__builtin_sme_svmls_lane_za32_u8_vg4x2,
+  BI__builtin_sme_svmls_lane_za32_u8_vg4x4,
+  BI__builtin_sme_svmls_lane_za64_f64_vg1x2,
+  BI__builtin_sme_svmls_lane_za64_f64_vg1x4,
+  BI__builtin_sme_svmls_lane_za64_s16_vg4x1,
+  BI__builtin_sme_svmls_lane_za64_s16_vg4x2,
+  BI__builtin_sme_svmls_lane_za64_s16_vg4x4,
+  BI__builtin_sme_svmls_lane_za64_u16_vg4x1,
+  BI__builtin_sme_svmls_lane_za64_u16_vg4x2,
+  BI__builtin_sme_svmls_lane_za64_u16_vg4x4,
+  BI__builtin_sme_svmls_single_za16_bf16_vg1x2,
+  BI__builtin_sme_svmls_single_za16_bf16_vg1x4,
+  BI__builtin_sme_svmls_single_za16_f16_vg1x2,
+  BI__builtin_sme_svmls_single_za16_f16_vg1x4,
+  BI__builtin_sme_svmls_single_za32_bf16_vg2x2,
+  BI__builtin_sme_svmls_single_za32_bf16_vg2x4,
+  BI__builtin_sme_svmls_single_za32_f16_vg2x2,
+  BI__builtin_sme_svmls_single_za32_f16_vg2x4,
+  BI__builtin_sme_svmls_single_za32_f32_vg1x2,
+  BI__builtin_sme_svmls_single_za32_f32_vg1x4,
+  BI__builtin_sme_svmls_single_za32_s16_vg2x2,
+  BI__builtin_sme_svmls_single_za32_s16_vg2x4,
+  BI__builtin_sme_svmls_single_za32_s8_vg4x2,
+  BI__builtin_sme_svmls_single_za32_s8_vg4x4,
+  BI__builtin_sme_svmls_single_za32_u16_vg2x2,
+  BI__builtin_sme_svmls_single_za32_u16_vg2x4,
+  BI__builtin_sme_svmls_single_za32_u8_vg4x2,
+  BI__builtin_sme_svmls_single_za32_u8_vg4x4,
+  BI__builtin_sme_svmls_single_za64_f64_vg1x2,
+  BI__builtin_sme_svmls_single_za64_f64_vg1x4,
+  BI__builtin_sme_svmls_single_za64_s16_vg4x2,
+  BI__builtin_sme_svmls_single_za64_s16_vg4x4,
+  BI__builtin_sme_svmls_single_za64_u16_vg4x2,
+  BI__builtin_sme_svmls_single_za64_u16_vg4x4,
+  BI__builtin_sme_svmls_za16_bf16_vg1x2,
+  BI__builtin_sme_svmls_za16_bf16_vg1x4,
+  BI__builtin_sme_svmls_za16_f16_vg1x2,
+  BI__builtin_sme_svmls_za16_f16_vg1x4,
+  BI__builtin_sme_svmls_za32_bf16_vg2x1,
+  BI__builtin_sme_svmls_za32_bf16_vg2x2,
+  BI__builtin_sme_svmls_za32_bf16_vg2x4,
+  BI__builtin_sme_svmls_za32_f16_vg2x1,
+  BI__builtin_sme_svmls_za32_f16_vg2x2,
+  BI__builtin_sme_svmls_za32_f16_vg2x4,
+  BI__builtin_sme_svmls_za32_f32_vg1x2,
+  BI__builtin_sme_svmls_za32_f32_vg1x4,
+  BI__builtin_sme_svmls_za32_s16_vg2x1,
+  BI__builtin_sme_svmls_za32_s16_vg2x2,
+  BI__builtin_sme_svmls_za32_s16_vg2x4,
+  BI__builtin_sme_svmls_za32_s8_vg4x1,
+  BI__builtin_sme_svmls_za32_s8_vg4x2,
+  BI__builtin_sme_svmls_za32_s8_vg4x4,
+  BI__builtin_sme_svmls_za32_u16_vg2x1,
+  BI__builtin_sme_svmls_za32_u16_vg2x2,
+  BI__builtin_sme_svmls_za32_u16_vg2x4,
+  BI__builtin_sme_svmls_za32_u8_vg4x1,
+  BI__builtin_sme_svmls_za32_u8_vg4x2,
+  BI__builtin_sme_svmls_za32_u8_vg4x4,
+  BI__builtin_sme_svmls_za64_f64_vg1x2,
+  BI__builtin_sme_svmls_za64_f64_vg1x4,
+  BI__builtin_sme_svmls_za64_s16_vg4x1,
+  BI__builtin_sme_svmls_za64_s16_vg4x2,
+  BI__builtin_sme_svmls_za64_s16_vg4x4,
+  BI__builtin_sme_svmls_za64_u16_vg4x1,
+  BI__builtin_sme_svmls_za64_u16_vg4x2,
+  BI__builtin_sme_svmls_za64_u16_vg4x4,
+  BI__builtin_sme_svmop4a_1x1_za16_bf16_bf16,
+  BI__builtin_sme_svmop4a_1x1_za16_f16_f16,
+  BI__builtin_sme_svmop4a_1x1_za16_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_1x1_za32_bf16_bf16,
+  BI__builtin_sme_svmop4a_1x1_za32_f16_f16,
+  BI__builtin_sme_svmop4a_1x1_za32_f32_f32,
+  BI__builtin_sme_svmop4a_1x1_za32_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_1x1_za32_s16_s16,
+  BI__builtin_sme_svmop4a_1x1_za32_s8_s8,
+  BI__builtin_sme_svmop4a_1x1_za32_s8_u8,
+  BI__builtin_sme_svmop4a_1x1_za32_u16_u16,
+  BI__builtin_sme_svmop4a_1x1_za32_u8_s8,
+  BI__builtin_sme_svmop4a_1x1_za32_u8_u8,
+  BI__builtin_sme_svmop4a_1x1_za64_f64_f64,
+  BI__builtin_sme_svmop4a_1x1_za64_s16_s16,
+  BI__builtin_sme_svmop4a_1x1_za64_s16_u16,
+  BI__builtin_sme_svmop4a_1x1_za64_u16_s16,
+  BI__builtin_sme_svmop4a_1x1_za64_u16_u16,
+  BI__builtin_sme_svmop4a_1x2_za16_bf16_bf16,
+  BI__builtin_sme_svmop4a_1x2_za16_f16_f16,
+  BI__builtin_sme_svmop4a_1x2_za16_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_1x2_za32_bf16_bf16,
+  BI__builtin_sme_svmop4a_1x2_za32_f16_f16,
+  BI__builtin_sme_svmop4a_1x2_za32_f32_f32,
+  BI__builtin_sme_svmop4a_1x2_za32_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_1x2_za32_s16_s16,
+  BI__builtin_sme_svmop4a_1x2_za32_s8_s8,
+  BI__builtin_sme_svmop4a_1x2_za32_s8_u8,
+  BI__builtin_sme_svmop4a_1x2_za32_u16_u16,
+  BI__builtin_sme_svmop4a_1x2_za32_u8_s8,
+  BI__builtin_sme_svmop4a_1x2_za32_u8_u8,
+  BI__builtin_sme_svmop4a_1x2_za64_f64_f64,
+  BI__builtin_sme_svmop4a_1x2_za64_s16_s16,
+  BI__builtin_sme_svmop4a_1x2_za64_s16_u16,
+  BI__builtin_sme_svmop4a_1x2_za64_u16_s16,
+  BI__builtin_sme_svmop4a_1x2_za64_u16_u16,
+  BI__builtin_sme_svmop4a_2x1_za16_bf16_bf16,
+  BI__builtin_sme_svmop4a_2x1_za16_f16_f16,
+  BI__builtin_sme_svmop4a_2x1_za16_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_2x1_za32_bf16_bf16,
+  BI__builtin_sme_svmop4a_2x1_za32_f16_f16,
+  BI__builtin_sme_svmop4a_2x1_za32_f32_f32,
+  BI__builtin_sme_svmop4a_2x1_za32_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_2x1_za32_s16_s16,
+  BI__builtin_sme_svmop4a_2x1_za32_s8_s8,
+  BI__builtin_sme_svmop4a_2x1_za32_s8_u8,
+  BI__builtin_sme_svmop4a_2x1_za32_u16_u16,
+  BI__builtin_sme_svmop4a_2x1_za32_u8_s8,
+  BI__builtin_sme_svmop4a_2x1_za32_u8_u8,
+  BI__builtin_sme_svmop4a_2x1_za64_f64_f64,
+  BI__builtin_sme_svmop4a_2x1_za64_s16_s16,
+  BI__builtin_sme_svmop4a_2x1_za64_s16_u16,
+  BI__builtin_sme_svmop4a_2x1_za64_u16_s16,
+  BI__builtin_sme_svmop4a_2x1_za64_u16_u16,
+  BI__builtin_sme_svmop4a_2x2_za16_bf16_bf16,
+  BI__builtin_sme_svmop4a_2x2_za16_f16_f16,
+  BI__builtin_sme_svmop4a_2x2_za16_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_2x2_za32_bf16_bf16,
+  BI__builtin_sme_svmop4a_2x2_za32_f16_f16,
+  BI__builtin_sme_svmop4a_2x2_za32_f32_f32,
+  BI__builtin_sme_svmop4a_2x2_za32_mf8_mf8_fpm,
+  BI__builtin_sme_svmop4a_2x2_za32_s16_s16,
+  BI__builtin_sme_svmop4a_2x2_za32_s8_s8,
+  BI__builtin_sme_svmop4a_2x2_za32_s8_u8,
+  BI__builtin_sme_svmop4a_2x2_za32_u16_u16,
+  BI__builtin_sme_svmop4a_2x2_za32_u8_s8,
+  BI__builtin_sme_svmop4a_2x2_za32_u8_u8,
+  BI__builtin_sme_svmop4a_2x2_za64_f64_f64,
+  BI__builtin_sme_svmop4a_2x2_za64_s16_s16,
+  BI__builtin_sme_svmop4a_2x2_za64_s16_u16,
+  BI__builtin_sme_svmop4a_2x2_za64_u16_s16,
+  BI__builtin_sme_svmop4a_2x2_za64_u16_u16,
+  BI__builtin_sme_svmop4s_1x1_za16_bf16_bf16,
+  BI__builtin_sme_svmop4s_1x1_za16_f16_f16,
+  BI__builtin_sme_svmop4s_1x1_za32_bf16_bf16,
+  BI__builtin_sme_svmop4s_1x1_za32_f16_f16,
+  BI__builtin_sme_svmop4s_1x1_za32_f32_f32,
+  BI__builtin_sme_svmop4s_1x1_za32_s16_s16,
+  BI__builtin_sme_svmop4s_1x1_za32_s8_s8,
+  BI__builtin_sme_svmop4s_1x1_za32_s8_u8,
+  BI__builtin_sme_svmop4s_1x1_za32_u16_u16,
+  BI__builtin_sme_svmop4s_1x1_za32_u8_s8,
+  BI__builtin_sme_svmop4s_1x1_za32_u8_u8,
+  BI__builtin_sme_svmop4s_1x1_za64_f64_f64,
+  BI__builtin_sme_svmop4s_1x1_za64_s16_s16,
+  BI__builtin_sme_svmop4s_1x1_za64_s16_u16,
+  BI__builtin_sme_svmop4s_1x1_za64_u16_s16,
+  BI__builtin_sme_svmop4s_1x1_za64_u16_u16,
+  BI__builtin_sme_svmop4s_1x2_za16_bf16_bf16,
+  BI__builtin_sme_svmop4s_1x2_za16_f16_f16,
+  BI__builtin_sme_svmop4s_1x2_za32_bf16_bf16,
+  BI__builtin_sme_svmop4s_1x2_za32_f16_f16,
+  BI__builtin_sme_svmop4s_1x2_za32_f32_f32,
+  BI__builtin_sme_svmop4s_1x2_za32_s16_s16,
+  BI__builtin_sme_svmop4s_1x2_za32_s8_s8,
+  BI__builtin_sme_svmop4s_1x2_za32_s8_u8,
+  BI__builtin_sme_svmop4s_1x2_za32_u16_u16,
+  BI__builtin_sme_svmop4s_1x2_za32_u8_s8,
+  BI__builtin_sme_svmop4s_1x2_za32_u8_u8,
+  BI__builtin_sme_svmop4s_1x2_za64_f64_f64,
+  BI__builtin_sme_svmop4s_1x2_za64_s16_s16,
+  BI__builtin_sme_svmop4s_1x2_za64_s16_u16,
+  BI__builtin_sme_svmop4s_1x2_za64_u16_s16,
+  BI__builtin_sme_svmop4s_1x2_za64_u16_u16,
+  BI__builtin_sme_svmop4s_2x1_za16_bf16_bf16,
+  BI__builtin_sme_svmop4s_2x1_za16_f16_f16,
+  BI__builtin_sme_svmop4s_2x1_za32_bf16_bf16,
+  BI__builtin_sme_svmop4s_2x1_za32_f16_f16,
+  BI__builtin_sme_svmop4s_2x1_za32_f32_f32,
+  BI__builtin_sme_svmop4s_2x1_za32_s16_s16,
+  BI__builtin_sme_svmop4s_2x1_za32_s8_s8,
+  BI__builtin_sme_svmop4s_2x1_za32_s8_u8,
+  BI__builtin_sme_svmop4s_2x1_za32_u16_u16,
+  BI__builtin_sme_svmop4s_2x1_za32_u8_s8,
+  BI__builtin_sme_svmop4s_2x1_za32_u8_u8,
+  BI__builtin_sme_svmop4s_2x1_za64_f64_f64,
+  BI__builtin_sme_svmop4s_2x1_za64_s16_s16,
+  BI__builtin_sme_svmop4s_2x1_za64_s16_u16,
+  BI__builtin_sme_svmop4s_2x1_za64_u16_s16,
+  BI__builtin_sme_svmop4s_2x1_za64_u16_u16,
+  BI__builtin_sme_svmop4s_2x2_za16_bf16_bf16,
+  BI__builtin_sme_svmop4s_2x2_za16_f16_f16,
+  BI__builtin_sme_svmop4s_2x2_za32_bf16_bf16,
+  BI__builtin_sme_svmop4s_2x2_za32_f16_f16,
+  BI__builtin_sme_svmop4s_2x2_za32_f32_f32,
+  BI__builtin_sme_svmop4s_2x2_za32_s16_s16,
+  BI__builtin_sme_svmop4s_2x2_za32_s8_s8,
+  BI__builtin_sme_svmop4s_2x2_za32_s8_u8,
+  BI__builtin_sme_svmop4s_2x2_za32_u16_u16,
+  BI__builtin_sme_svmop4s_2x2_za32_u8_s8,
+  BI__builtin_sme_svmop4s_2x2_za32_u8_u8,
+  BI__builtin_sme_svmop4s_2x2_za64_f64_f64,
+  BI__builtin_sme_svmop4s_2x2_za64_s16_s16,
+  BI__builtin_sme_svmop4s_2x2_za64_s16_u16,
+  BI__builtin_sme_svmop4s_2x2_za64_u16_s16,
+  BI__builtin_sme_svmop4s_2x2_za64_u16_u16,
+  BI__builtin_sme_svmopa_za16_bf16_m,
+  BI__builtin_sme_svmopa_za16_f16_m,
+  BI__builtin_sme_svmopa_za16_mf8_m_fpm,
+  BI__builtin_sme_svmopa_za32_bf16_m,
+  BI__builtin_sme_svmopa_za32_f16_m,
+  BI__builtin_sme_svmopa_za32_f32_m,
+  BI__builtin_sme_svmopa_za32_mf8_m_fpm,
+  BI__builtin_sme_svmopa_za32_s16_m,
+  BI__builtin_sme_svmopa_za32_s8_m,
+  BI__builtin_sme_svmopa_za32_u16_m,
+  BI__builtin_sme_svmopa_za32_u8_m,
+  BI__builtin_sme_svmopa_za64_f64_m,
+  BI__builtin_sme_svmopa_za64_s16_m,
+  BI__builtin_sme_svmopa_za64_u16_m,
+  BI__builtin_sme_svmops_za16_bf16_m,
+  BI__builtin_sme_svmops_za16_f16_m,
+  BI__builtin_sme_svmops_za32_bf16_m,
+  BI__builtin_sme_svmops_za32_f16_m,
+  BI__builtin_sme_svmops_za32_f32_m,
+  BI__builtin_sme_svmops_za32_s16_m,
+  BI__builtin_sme_svmops_za32_s8_m,
+  BI__builtin_sme_svmops_za32_u16_m,
+  BI__builtin_sme_svmops_za32_u8_m,
+  BI__builtin_sme_svmops_za64_f64_m,
+  BI__builtin_sme_svmops_za64_s16_m,
+  BI__builtin_sme_svmops_za64_u16_m,
+  BI__builtin_sme_svread_hor_za128_bf16_m,
+  BI__builtin_sme_svread_hor_za128_f16_m,
+  BI__builtin_sme_svread_hor_za128_f32_m,
+  BI__builtin_sme_svread_hor_za128_f64_m,
+  BI__builtin_sme_svread_hor_za128_mf8_m,
+  BI__builtin_sme_svread_hor_za128_s16_m,
+  BI__builtin_sme_svread_hor_za128_s32_m,
+  BI__builtin_sme_svread_hor_za128_s64_m,
+  BI__builtin_sme_svread_hor_za128_s8_m,
+  BI__builtin_sme_svread_hor_za128_u16_m,
+  BI__builtin_sme_svread_hor_za128_u32_m,
+  BI__builtin_sme_svread_hor_za128_u64_m,
+  BI__builtin_sme_svread_hor_za128_u8_m,
+  BI__builtin_sme_svread_hor_za16_bf16_m,
+  BI__builtin_sme_svread_hor_za16_bf16_vg2,
+  BI__builtin_sme_svread_hor_za16_bf16_vg4,
+  BI__builtin_sme_svread_hor_za16_f16_m,
+  BI__builtin_sme_svread_hor_za16_f16_vg2,
+  BI__builtin_sme_svread_hor_za16_f16_vg4,
+  BI__builtin_sme_svread_hor_za16_s16_m,
+  BI__builtin_sme_svread_hor_za16_s16_vg2,
+  BI__builtin_sme_svread_hor_za16_s16_vg4,
+  BI__builtin_sme_svread_hor_za16_u16_m,
+  BI__builtin_sme_svread_hor_za16_u16_vg2,
+  BI__builtin_sme_svread_hor_za16_u16_vg4,
+  BI__builtin_sme_svread_hor_za32_f32_m,
+  BI__builtin_sme_svread_hor_za32_f32_vg2,
+  BI__builtin_sme_svread_hor_za32_f32_vg4,
+  BI__builtin_sme_svread_hor_za32_s32_m,
+  BI__builtin_sme_svread_hor_za32_s32_vg2,
+  BI__builtin_sme_svread_hor_za32_s32_vg4,
+  BI__builtin_sme_svread_hor_za32_u32_m,
+  BI__builtin_sme_svread_hor_za32_u32_vg2,
+  BI__builtin_sme_svread_hor_za32_u32_vg4,
+  BI__builtin_sme_svread_hor_za64_f64_m,
+  BI__builtin_sme_svread_hor_za64_f64_vg2,
+  BI__builtin_sme_svread_hor_za64_f64_vg4,
+  BI__builtin_sme_svread_hor_za64_s64_m,
+  BI__builtin_sme_svread_hor_za64_s64_vg2,
+  BI__builtin_sme_svread_hor_za64_s64_vg4,
+  BI__builtin_sme_svread_hor_za64_u64_m,
+  BI__builtin_sme_svread_hor_za64_u64_vg2,
+  BI__builtin_sme_svread_hor_za64_u64_vg4,
+  BI__builtin_sme_svread_hor_za8_mf8_m,
+  BI__builtin_sme_svread_hor_za8_mf8_vg2,
+  BI__builtin_sme_svread_hor_za8_mf8_vg4,
+  BI__builtin_sme_svread_hor_za8_s8_m,
+  BI__builtin_sme_svread_hor_za8_s8_vg2,
+  BI__builtin_sme_svread_hor_za8_s8_vg4,
+  BI__builtin_sme_svread_hor_za8_u8_m,
+  BI__builtin_sme_svread_hor_za8_u8_vg2,
+  BI__builtin_sme_svread_hor_za8_u8_vg4,
+  BI__builtin_sme_svread_ver_za128_bf16_m,
+  BI__builtin_sme_svread_ver_za128_f16_m,
+  BI__builtin_sme_svread_ver_za128_f32_m,
+  BI__builtin_sme_svread_ver_za128_f64_m,
+  BI__builtin_sme_svread_ver_za128_mf8_m,
+  BI__builtin_sme_svread_ver_za128_s16_m,
+  BI__builtin_sme_svread_ver_za128_s32_m,
+  BI__builtin_sme_svread_ver_za128_s64_m,
+  BI__builtin_sme_svread_ver_za128_s8_m,
+  BI__builtin_sme_svread_ver_za128_u16_m,
+  BI__builtin_sme_svread_ver_za128_u32_m,
+  BI__builtin_sme_svread_ver_za128_u64_m,
+  BI__builtin_sme_svread_ver_za128_u8_m,
+  BI__builtin_sme_svread_ver_za16_bf16_m,
+  BI__builtin_sme_svread_ver_za16_bf16_vg2,
+  BI__builtin_sme_svread_ver_za16_bf16_vg4,
+  BI__builtin_sme_svread_ver_za16_f16_m,
+  BI__builtin_sme_svread_ver_za16_f16_vg2,
+  BI__builtin_sme_svread_ver_za16_f16_vg4,
+  BI__builtin_sme_svread_ver_za16_s16_m,
+  BI__builtin_sme_svread_ver_za16_s16_vg2,
+  BI__builtin_sme_svread_ver_za16_s16_vg4,
+  BI__builtin_sme_svread_ver_za16_u16_m,
+  BI__builtin_sme_svread_ver_za16_u16_vg2,
+  BI__builtin_sme_svread_ver_za16_u16_vg4,
+  BI__builtin_sme_svread_ver_za32_f32_m,
+  BI__builtin_sme_svread_ver_za32_f32_vg2,
+  BI__builtin_sme_svread_ver_za32_f32_vg4,
+  BI__builtin_sme_svread_ver_za32_s32_m,
+  BI__builtin_sme_svread_ver_za32_s32_vg2,
+  BI__builtin_sme_svread_ver_za32_s32_vg4,
+  BI__builtin_sme_svread_ver_za32_u32_m,
+  BI__builtin_sme_svread_ver_za32_u32_vg2,
+  BI__builtin_sme_svread_ver_za32_u32_vg4,
+  BI__builtin_sme_svread_ver_za64_f64_m,
+  BI__builtin_sme_svread_ver_za64_f64_vg2,
+  BI__builtin_sme_svread_ver_za64_f64_vg4,
+  BI__builtin_sme_svread_ver_za64_s64_m,
+  BI__builtin_sme_svread_ver_za64_s64_vg2,
+  BI__builtin_sme_svread_ver_za64_s64_vg4,
+  BI__builtin_sme_svread_ver_za64_u64_m,
+  BI__builtin_sme_svread_ver_za64_u64_vg2,
+  BI__builtin_sme_svread_ver_za64_u64_vg4,
+  BI__builtin_sme_svread_ver_za8_mf8_m,
+  BI__builtin_sme_svread_ver_za8_mf8_vg2,
+  BI__builtin_sme_svread_ver_za8_mf8_vg4,
+  BI__builtin_sme_svread_ver_za8_s8_m,
+  BI__builtin_sme_svread_ver_za8_s8_vg2,
+  BI__builtin_sme_svread_ver_za8_s8_vg4,
+  BI__builtin_sme_svread_ver_za8_u8_m,
+  BI__builtin_sme_svread_ver_za8_u8_vg2,
+  BI__builtin_sme_svread_ver_za8_u8_vg4,
+  BI__builtin_sme_svread_za16_bf16_vg1x2,
+  BI__builtin_sme_svread_za16_bf16_vg1x4,
+  BI__builtin_sme_svread_za16_f16_vg1x2,
+  BI__builtin_sme_svread_za16_f16_vg1x4,
+  BI__builtin_sme_svread_za16_s16_vg1x2,
+  BI__builtin_sme_svread_za16_s16_vg1x4,
+  BI__builtin_sme_svread_za16_u16_vg1x2,
+  BI__builtin_sme_svread_za16_u16_vg1x4,
+  BI__builtin_sme_svread_za32_f32_vg1x2,
+  BI__builtin_sme_svread_za32_f32_vg1x4,
+  BI__builtin_sme_svread_za32_s32_vg1x2,
+  BI__builtin_sme_svread_za32_s32_vg1x4,
+  BI__builtin_sme_svread_za32_u32_vg1x2,
+  BI__builtin_sme_svread_za32_u32_vg1x4,
+  BI__builtin_sme_svread_za64_f64_vg1x2,
+  BI__builtin_sme_svread_za64_f64_vg1x4,
+  BI__builtin_sme_svread_za64_s64_vg1x2,
+  BI__builtin_sme_svread_za64_s64_vg1x4,
+  BI__builtin_sme_svread_za64_u64_vg1x2,
+  BI__builtin_sme_svread_za64_u64_vg1x4,
+  BI__builtin_sme_svread_za8_mf8_vg1x2,
+  BI__builtin_sme_svread_za8_mf8_vg1x4,
+  BI__builtin_sme_svread_za8_s8_vg1x2,
+  BI__builtin_sme_svread_za8_s8_vg1x4,
+  BI__builtin_sme_svread_za8_u8_vg1x2,
+  BI__builtin_sme_svread_za8_u8_vg1x4,
+  BI__builtin_sme_svreadz_hor_za128_bf16,
+  BI__builtin_sme_svreadz_hor_za128_f16,
+  BI__builtin_sme_svreadz_hor_za128_f32,
+  BI__builtin_sme_svreadz_hor_za128_f64,
+  BI__builtin_sme_svreadz_hor_za128_mf8,
+  BI__builtin_sme_svreadz_hor_za128_s16,
+  BI__builtin_sme_svreadz_hor_za128_s32,
+  BI__builtin_sme_svreadz_hor_za128_s64,
+  BI__builtin_sme_svreadz_hor_za128_s8,
+  BI__builtin_sme_svreadz_hor_za128_u16,
+  BI__builtin_sme_svreadz_hor_za128_u32,
+  BI__builtin_sme_svreadz_hor_za128_u64,
+  BI__builtin_sme_svreadz_hor_za128_u8,
+  BI__builtin_sme_svreadz_hor_za16_bf16,
+  BI__builtin_sme_svreadz_hor_za16_bf16_vg2,
+  BI__builtin_sme_svreadz_hor_za16_bf16_vg4,
+  BI__builtin_sme_svreadz_hor_za16_f16,
+  BI__builtin_sme_svreadz_hor_za16_f16_vg2,
+  BI__builtin_sme_svreadz_hor_za16_f16_vg4,
+  BI__builtin_sme_svreadz_hor_za16_s16,
+  BI__builtin_sme_svreadz_hor_za16_s16_vg2,
+  BI__builtin_sme_svreadz_hor_za16_s16_vg4,
+  BI__builtin_sme_svreadz_hor_za16_u16,
+  BI__builtin_sme_svreadz_hor_za16_u16_vg2,
+  BI__builtin_sme_svreadz_hor_za16_u16_vg4,
+  BI__builtin_sme_svreadz_hor_za32_f32,
+  BI__builtin_sme_svreadz_hor_za32_f32_vg2,
+  BI__builtin_sme_svreadz_hor_za32_f32_vg4,
+  BI__builtin_sme_svreadz_hor_za32_s32,
+  BI__builtin_sme_svreadz_hor_za32_s32_vg2,
+  BI__builtin_sme_svreadz_hor_za32_s32_vg4,
+  BI__builtin_sme_svreadz_hor_za32_u32,
+  BI__builtin_sme_svreadz_hor_za32_u32_vg2,
+  BI__builtin_sme_svreadz_hor_za32_u32_vg4,
+  BI__builtin_sme_svreadz_hor_za64_f64,
+  BI__builtin_sme_svreadz_hor_za64_f64_vg2,
+  BI__builtin_sme_svreadz_hor_za64_f64_vg4,
+  BI__builtin_sme_svreadz_hor_za64_s64,
+  BI__builtin_sme_svreadz_hor_za64_s64_vg2,
+  BI__builtin_sme_svreadz_hor_za64_s64_vg4,
+  BI__builtin_sme_svreadz_hor_za64_u64,
+  BI__builtin_sme_svreadz_hor_za64_u64_vg2,
+  BI__builtin_sme_svreadz_hor_za64_u64_vg4,
+  BI__builtin_sme_svreadz_hor_za8_mf8,
+  BI__builtin_sme_svreadz_hor_za8_mf8_vg2,
+  BI__builtin_sme_svreadz_hor_za8_mf8_vg4,
+  BI__builtin_sme_svreadz_hor_za8_s8,
+  BI__builtin_sme_svreadz_hor_za8_s8_vg2,
+  BI__builtin_sme_svreadz_hor_za8_s8_vg4,
+  BI__builtin_sme_svreadz_hor_za8_u8,
+  BI__builtin_sme_svreadz_hor_za8_u8_vg2,
+  BI__builtin_sme_svreadz_hor_za8_u8_vg4,
+  BI__builtin_sme_svreadz_ver_za128_bf16,
+  BI__builtin_sme_svreadz_ver_za128_f16,
+  BI__builtin_sme_svreadz_ver_za128_f32,
+  BI__builtin_sme_svreadz_ver_za128_f64,
+  BI__builtin_sme_svreadz_ver_za128_mf8,
+  BI__builtin_sme_svreadz_ver_za128_s16,
+  BI__builtin_sme_svreadz_ver_za128_s32,
+  BI__builtin_sme_svreadz_ver_za128_s64,
+  BI__builtin_sme_svreadz_ver_za128_s8,
+  BI__builtin_sme_svreadz_ver_za128_u16,
+  BI__builtin_sme_svreadz_ver_za128_u32,
+  BI__builtin_sme_svreadz_ver_za128_u64,
+  BI__builtin_sme_svreadz_ver_za128_u8,
+  BI__builtin_sme_svreadz_ver_za16_bf16,
+  BI__builtin_sme_svreadz_ver_za16_bf16_vg2,
+  BI__builtin_sme_svreadz_ver_za16_bf16_vg4,
+  BI__builtin_sme_svreadz_ver_za16_f16,
+  BI__builtin_sme_svreadz_ver_za16_f16_vg2,
+  BI__builtin_sme_svreadz_ver_za16_f16_vg4,
+  BI__builtin_sme_svreadz_ver_za16_s16,
+  BI__builtin_sme_svreadz_ver_za16_s16_vg2,
+  BI__builtin_sme_svreadz_ver_za16_s16_vg4,
+  BI__builtin_sme_svreadz_ver_za16_u16,
+  BI__builtin_sme_svreadz_ver_za16_u16_vg2,
+  BI__builtin_sme_svreadz_ver_za16_u16_vg4,
+  BI__builtin_sme_svreadz_ver_za32_f32,
+  BI__builtin_sme_svreadz_ver_za32_f32_vg2,
+  BI__builtin_sme_svreadz_ver_za32_f32_vg4,
+  BI__builtin_sme_svreadz_ver_za32_s32,
+  BI__builtin_sme_svreadz_ver_za32_s32_vg2,
+  BI__builtin_sme_svreadz_ver_za32_s32_vg4,
+  BI__builtin_sme_svreadz_ver_za32_u32,
+  BI__builtin_sme_svreadz_ver_za32_u32_vg2,
+  BI__builtin_sme_svreadz_ver_za32_u32_vg4,
+  BI__builtin_sme_svreadz_ver_za64_f64,
+  BI__builtin_sme_svreadz_ver_za64_f64_vg2,
+  BI__builtin_sme_svreadz_ver_za64_f64_vg4,
+  BI__builtin_sme_svreadz_ver_za64_s64,
+  BI__builtin_sme_svreadz_ver_za64_s64_vg2,
+  BI__builtin_sme_svreadz_ver_za64_s64_vg4,
+  BI__builtin_sme_svreadz_ver_za64_u64,
+  BI__builtin_sme_svreadz_ver_za64_u64_vg2,
+  BI__builtin_sme_svreadz_ver_za64_u64_vg4,
+  BI__builtin_sme_svreadz_ver_za8_mf8,
+  BI__builtin_sme_svreadz_ver_za8_mf8_vg2,
+  BI__builtin_sme_svreadz_ver_za8_mf8_vg4,
+  BI__builtin_sme_svreadz_ver_za8_s8,
+  BI__builtin_sme_svreadz_ver_za8_s8_vg2,
+  BI__builtin_sme_svreadz_ver_za8_s8_vg4,
+  BI__builtin_sme_svreadz_ver_za8_u8,
+  BI__builtin_sme_svreadz_ver_za8_u8_vg2,
+  BI__builtin_sme_svreadz_ver_za8_u8_vg4,
+  BI__builtin_sme_svreadz_za16_bf16_vg1x2,
+  BI__builtin_sme_svreadz_za16_bf16_vg1x4,
+  BI__builtin_sme_svreadz_za16_f16_vg1x2,
+  BI__builtin_sme_svreadz_za16_f16_vg1x4,
+  BI__builtin_sme_svreadz_za16_s16_vg1x2,
+  BI__builtin_sme_svreadz_za16_s16_vg1x4,
+  BI__builtin_sme_svreadz_za16_u16_vg1x2,
+  BI__builtin_sme_svreadz_za16_u16_vg1x4,
+  BI__builtin_sme_svreadz_za32_f32_vg1x2,
+  BI__builtin_sme_svreadz_za32_f32_vg1x4,
+  BI__builtin_sme_svreadz_za32_s32_vg1x2,
+  BI__builtin_sme_svreadz_za32_s32_vg1x4,
+  BI__builtin_sme_svreadz_za32_u32_vg1x2,
+  BI__builtin_sme_svreadz_za32_u32_vg1x4,
+  BI__builtin_sme_svreadz_za64_f64_vg1x2,
+  BI__builtin_sme_svreadz_za64_f64_vg1x4,
+  BI__builtin_sme_svreadz_za64_s64_vg1x2,
+  BI__builtin_sme_svreadz_za64_s64_vg1x4,
+  BI__builtin_sme_svreadz_za64_u64_vg1x2,
+  BI__builtin_sme_svreadz_za64_u64_vg1x4,
+  BI__builtin_sme_svreadz_za8_mf8_vg1x2,
+  BI__builtin_sme_svreadz_za8_mf8_vg1x4,
+  BI__builtin_sme_svreadz_za8_s8_vg1x2,
+  BI__builtin_sme_svreadz_za8_s8_vg1x4,
+  BI__builtin_sme_svreadz_za8_u8_vg1x2,
+  BI__builtin_sme_svreadz_za8_u8_vg1x4,
+  BI__builtin_sme_svst1_hor_vnum_za128,
+  BI__builtin_sme_svst1_hor_vnum_za16,
+  BI__builtin_sme_svst1_hor_vnum_za32,
+  BI__builtin_sme_svst1_hor_vnum_za64,
+  BI__builtin_sme_svst1_hor_vnum_za8,
+  BI__builtin_sme_svst1_hor_za128,
+  BI__builtin_sme_svst1_hor_za16,
+  BI__builtin_sme_svst1_hor_za32,
+  BI__builtin_sme_svst1_hor_za64,
+  BI__builtin_sme_svst1_hor_za8,
+  BI__builtin_sme_svst1_ver_vnum_za128,
+  BI__builtin_sme_svst1_ver_vnum_za16,
+  BI__builtin_sme_svst1_ver_vnum_za32,
+  BI__builtin_sme_svst1_ver_vnum_za64,
+  BI__builtin_sme_svst1_ver_vnum_za8,
+  BI__builtin_sme_svst1_ver_za128,
+  BI__builtin_sme_svst1_ver_za16,
+  BI__builtin_sme_svst1_ver_za32,
+  BI__builtin_sme_svst1_ver_za64,
+  BI__builtin_sme_svst1_ver_za8,
+  BI__builtin_sme_svstr_vnum_za,
+  BI__builtin_sme_svstr_za,
+  BI__builtin_sme_svstr_zt,
+  BI__builtin_sme_svsub_write_single_za32_s32_vg1x2,
+  BI__builtin_sme_svsub_write_single_za32_s32_vg1x4,
+  BI__builtin_sme_svsub_write_single_za32_u32_vg1x2,
+  BI__builtin_sme_svsub_write_single_za32_u32_vg1x4,
+  BI__builtin_sme_svsub_write_single_za64_s64_vg1x2,
+  BI__builtin_sme_svsub_write_single_za64_s64_vg1x4,
+  BI__builtin_sme_svsub_write_single_za64_u64_vg1x2,
+  BI__builtin_sme_svsub_write_single_za64_u64_vg1x4,
+  BI__builtin_sme_svsub_write_za32_s32_vg1x2,
+  BI__builtin_sme_svsub_write_za32_s32_vg1x4,
+  BI__builtin_sme_svsub_write_za32_u32_vg1x2,
+  BI__builtin_sme_svsub_write_za32_u32_vg1x4,
+  BI__builtin_sme_svsub_write_za64_s64_vg1x2,
+  BI__builtin_sme_svsub_write_za64_s64_vg1x4,
+  BI__builtin_sme_svsub_write_za64_u64_vg1x2,
+  BI__builtin_sme_svsub_write_za64_u64_vg1x4,
+  BI__builtin_sme_svsub_za16_bf16_vg1x2,
+  BI__builtin_sme_svsub_za16_bf16_vg1x4,
+  BI__builtin_sme_svsub_za16_f16_vg1x2,
+  BI__builtin_sme_svsub_za16_f16_vg1x4,
+  BI__builtin_sme_svsub_za32_f32_vg1x2,
+  BI__builtin_sme_svsub_za32_f32_vg1x4,
+  BI__builtin_sme_svsub_za32_s32_vg1x2,
+  BI__builtin_sme_svsub_za32_s32_vg1x4,
+  BI__builtin_sme_svsub_za32_u32_vg1x2,
+  BI__builtin_sme_svsub_za32_u32_vg1x4,
+  BI__builtin_sme_svsub_za64_f64_vg1x2,
+  BI__builtin_sme_svsub_za64_f64_vg1x4,
+  BI__builtin_sme_svsub_za64_s64_vg1x2,
+  BI__builtin_sme_svsub_za64_s64_vg1x4,
+  BI__builtin_sme_svsub_za64_u64_vg1x2,
+  BI__builtin_sme_svsub_za64_u64_vg1x4,
+  BI__builtin_sme_svsudot_lane_za32_s8_vg1x2,
+  BI__builtin_sme_svsudot_lane_za32_s8_vg1x4,
+  BI__builtin_sme_svsudot_single_za32_s8_vg1x2,
+  BI__builtin_sme_svsudot_single_za32_s8_vg1x4,
+  BI__builtin_sme_svsudot_za32_s8_vg1x2,
+  BI__builtin_sme_svsudot_za32_s8_vg1x4,
+  BI__builtin_sme_svsumla_lane_za32_s8_vg4x1,
+  BI__builtin_sme_svsumla_lane_za32_s8_vg4x2,
+  BI__builtin_sme_svsumla_lane_za32_s8_vg4x4,
+  BI__builtin_sme_svsumla_single_za32_s8_vg4x2,
+  BI__builtin_sme_svsumla_single_za32_s8_vg4x4,
+  BI__builtin_sme_svsumla_za32_s8_vg4x1,
+  BI__builtin_sme_svsumla_za32_s8_vg4x2,
+  BI__builtin_sme_svsumla_za32_s8_vg4x4,
+  BI__builtin_sme_svsumopa_za32_s8_m,
+  BI__builtin_sme_svsumopa_za64_s16_m,
+  BI__builtin_sme_svsumops_za32_s8_m,
+  BI__builtin_sme_svsumops_za64_s16_m,
+  BI__builtin_sme_svsuvdot_lane_za32_s8_vg1x4,
+  BI__builtin_sme_svtmopa_lane_za16_bf16_bf16,
+  BI__builtin_sme_svtmopa_lane_za16_f16_f16,
+  BI__builtin_sme_svtmopa_lane_za16_mf8_mf8_fpm,
+  BI__builtin_sme_svtmopa_lane_za32_bf16_bf16,
+  BI__builtin_sme_svtmopa_lane_za32_f16_f16,
+  BI__builtin_sme_svtmopa_lane_za32_f32_f32,
+  BI__builtin_sme_svtmopa_lane_za32_mf8_mf8_fpm,
+  BI__builtin_sme_svtmopa_lane_za32_s16_s16,
+  BI__builtin_sme_svtmopa_lane_za32_s8_s8,
+  BI__builtin_sme_svtmopa_lane_za32_s8_u8,
+  BI__builtin_sme_svtmopa_lane_za32_u16_u16,
+  BI__builtin_sme_svtmopa_lane_za32_u8_s8,
+  BI__builtin_sme_svtmopa_lane_za32_u8_u8,
+  BI__builtin_sme_svusdot_lane_za32_u8_vg1x2,
+  BI__builtin_sme_svusdot_lane_za32_u8_vg1x4,
+  BI__builtin_sme_svusdot_single_za32_u8_vg1x2,
+  BI__builtin_sme_svusdot_single_za32_u8_vg1x4,
+  BI__builtin_sme_svusdot_za32_u8_vg1x2,
+  BI__builtin_sme_svusdot_za32_u8_vg1x4,
+  BI__builtin_sme_svusmla_lane_za32_u8_vg4x1,
+  BI__builtin_sme_svusmla_lane_za32_u8_vg4x2,
+  BI__builtin_sme_svusmla_lane_za32_u8_vg4x4,
+  BI__builtin_sme_svusmla_single_za32_u8_vg4x2,
+  BI__builtin_sme_svusmla_single_za32_u8_vg4x4,
+  BI__builtin_sme_svusmla_za32_u8_vg4x1,
+  BI__builtin_sme_svusmla_za32_u8_vg4x2,
+  BI__builtin_sme_svusmla_za32_u8_vg4x4,
+  BI__builtin_sme_svusmopa_za32_u8_m,
+  BI__builtin_sme_svusmopa_za64_u16_m,
+  BI__builtin_sme_svusmops_za32_u8_m,
+  BI__builtin_sme_svusmops_za64_u16_m,
+  BI__builtin_sme_svusvdot_lane_za32_u8_vg1x4,
+  BI__builtin_sme_svvdot_lane_za16_mf8_vg1x2_fpm,
+  BI__builtin_sme_svvdot_lane_za32_bf16_vg1x2,
+  BI__builtin_sme_svvdot_lane_za32_f16_vg1x2,
+  BI__builtin_sme_svvdot_lane_za32_s16_vg1x2,
+  BI__builtin_sme_svvdot_lane_za32_s8_vg1x4,
+  BI__builtin_sme_svvdot_lane_za32_u16_vg1x2,
+  BI__builtin_sme_svvdot_lane_za32_u8_vg1x4,
+  BI__builtin_sme_svvdot_lane_za64_s16_vg1x4,
+  BI__builtin_sme_svvdot_lane_za64_u16_vg1x4,
+  BI__builtin_sme_svvdotb_lane_za32_mf8_vg1x4_fpm,
+  BI__builtin_sme_svvdott_lane_za32_mf8_vg1x4_fpm,
+  BI__builtin_sme_svwrite_hor_za128_bf16_m,
+  BI__builtin_sme_svwrite_hor_za128_f16_m,
+  BI__builtin_sme_svwrite_hor_za128_f32_m,
+  BI__builtin_sme_svwrite_hor_za128_f64_m,
+  BI__builtin_sme_svwrite_hor_za128_mf8_m,
+  BI__builtin_sme_svwrite_hor_za128_s16_m,
+  BI__builtin_sme_svwrite_hor_za128_s32_m,
+  BI__builtin_sme_svwrite_hor_za128_s64_m,
+  BI__builtin_sme_svwrite_hor_za128_s8_m,
+  BI__builtin_sme_svwrite_hor_za128_u16_m,
+  BI__builtin_sme_svwrite_hor_za128_u32_m,
+  BI__builtin_sme_svwrite_hor_za128_u64_m,
+  BI__builtin_sme_svwrite_hor_za128_u8_m,
+  BI__builtin_sme_svwrite_hor_za16_bf16_m,
+  BI__builtin_sme_svwrite_hor_za16_bf16_vg2,
+  BI__builtin_sme_svwrite_hor_za16_bf16_vg4,
+  BI__builtin_sme_svwrite_hor_za16_f16_m,
+  BI__builtin_sme_svwrite_hor_za16_f16_vg2,
+  BI__builtin_sme_svwrite_hor_za16_f16_vg4,
+  BI__builtin_sme_svwrite_hor_za16_s16_m,
+  BI__builtin_sme_svwrite_hor_za16_s16_vg2,
+  BI__builtin_sme_svwrite_hor_za16_s16_vg4,
+  BI__builtin_sme_svwrite_hor_za16_u16_m,
+  BI__builtin_sme_svwrite_hor_za16_u16_vg2,
+  BI__builtin_sme_svwrite_hor_za16_u16_vg4,
+  BI__builtin_sme_svwrite_hor_za32_f32_m,
+  BI__builtin_sme_svwrite_hor_za32_f32_vg2,
+  BI__builtin_sme_svwrite_hor_za32_f32_vg4,
+  BI__builtin_sme_svwrite_hor_za32_s32_m,
+  BI__builtin_sme_svwrite_hor_za32_s32_vg2,
+  BI__builtin_sme_svwrite_hor_za32_s32_vg4,
+  BI__builtin_sme_svwrite_hor_za32_u32_m,
+  BI__builtin_sme_svwrite_hor_za32_u32_vg2,
+  BI__builtin_sme_svwrite_hor_za32_u32_vg4,
+  BI__builtin_sme_svwrite_hor_za64_f64_m,
+  BI__builtin_sme_svwrite_hor_za64_f64_vg2,
+  BI__builtin_sme_svwrite_hor_za64_f64_vg4,
+  BI__builtin_sme_svwrite_hor_za64_s64_m,
+  BI__builtin_sme_svwrite_hor_za64_s64_vg2,
+  BI__builtin_sme_svwrite_hor_za64_s64_vg4,
+  BI__builtin_sme_svwrite_hor_za64_u64_m,
+  BI__builtin_sme_svwrite_hor_za64_u64_vg2,
+  BI__builtin_sme_svwrite_hor_za64_u64_vg4,
+  BI__builtin_sme_svwrite_hor_za8_mf8_m,
+  BI__builtin_sme_svwrite_hor_za8_mf8_vg2,
+  BI__builtin_sme_svwrite_hor_za8_mf8_vg4,
+  BI__builtin_sme_svwrite_hor_za8_s8_m,
+  BI__builtin_sme_svwrite_hor_za8_s8_vg2,
+  BI__builtin_sme_svwrite_hor_za8_s8_vg4,
+  BI__builtin_sme_svwrite_hor_za8_u8_m,
+  BI__builtin_sme_svwrite_hor_za8_u8_vg2,
+  BI__builtin_sme_svwrite_hor_za8_u8_vg4,
+  BI__builtin_sme_svwrite_lane_zt_bf16,
+  BI__builtin_sme_svwrite_lane_zt_f16,
+  BI__builtin_sme_svwrite_lane_zt_f32,
+  BI__builtin_sme_svwrite_lane_zt_f64,
+  BI__builtin_sme_svwrite_lane_zt_s16,
+  BI__builtin_sme_svwrite_lane_zt_s32,
+  BI__builtin_sme_svwrite_lane_zt_s64,
+  BI__builtin_sme_svwrite_lane_zt_s8,
+  BI__builtin_sme_svwrite_lane_zt_u16,
+  BI__builtin_sme_svwrite_lane_zt_u32,
+  BI__builtin_sme_svwrite_lane_zt_u64,
+  BI__builtin_sme_svwrite_lane_zt_u8,
+  BI__builtin_sme_svwrite_ver_za128_bf16_m,
+  BI__builtin_sme_svwrite_ver_za128_f16_m,
+  BI__builtin_sme_svwrite_ver_za128_f32_m,
+  BI__builtin_sme_svwrite_ver_za128_f64_m,
+  BI__builtin_sme_svwrite_ver_za128_mf8_m,
+  BI__builtin_sme_svwrite_ver_za128_s16_m,
+  BI__builtin_sme_svwrite_ver_za128_s32_m,
+  BI__builtin_sme_svwrite_ver_za128_s64_m,
+  BI__builtin_sme_svwrite_ver_za128_s8_m,
+  BI__builtin_sme_svwrite_ver_za128_u16_m,
+  BI__builtin_sme_svwrite_ver_za128_u32_m,
+  BI__builtin_sme_svwrite_ver_za128_u64_m,
+  BI__builtin_sme_svwrite_ver_za128_u8_m,
+  BI__builtin_sme_svwrite_ver_za16_bf16_m,
+  BI__builtin_sme_svwrite_ver_za16_bf16_vg2,
+  BI__builtin_sme_svwrite_ver_za16_bf16_vg4,
+  BI__builtin_sme_svwrite_ver_za16_f16_m,
+  BI__builtin_sme_svwrite_ver_za16_f16_vg2,
+  BI__builtin_sme_svwrite_ver_za16_f16_vg4,
+  BI__builtin_sme_svwrite_ver_za16_s16_m,
+  BI__builtin_sme_svwrite_ver_za16_s16_vg2,
+  BI__builtin_sme_svwrite_ver_za16_s16_vg4,
+  BI__builtin_sme_svwrite_ver_za16_u16_m,
+  BI__builtin_sme_svwrite_ver_za16_u16_vg2,
+  BI__builtin_sme_svwrite_ver_za16_u16_vg4,
+  BI__builtin_sme_svwrite_ver_za32_f32_m,
+  BI__builtin_sme_svwrite_ver_za32_f32_vg2,
+  BI__builtin_sme_svwrite_ver_za32_f32_vg4,
+  BI__builtin_sme_svwrite_ver_za32_s32_m,
+  BI__builtin_sme_svwrite_ver_za32_s32_vg2,
+  BI__builtin_sme_svwrite_ver_za32_s32_vg4,
+  BI__builtin_sme_svwrite_ver_za32_u32_m,
+  BI__builtin_sme_svwrite_ver_za32_u32_vg2,
+  BI__builtin_sme_svwrite_ver_za32_u32_vg4,
+  BI__builtin_sme_svwrite_ver_za64_f64_m,
+  BI__builtin_sme_svwrite_ver_za64_f64_vg2,
+  BI__builtin_sme_svwrite_ver_za64_f64_vg4,
+  BI__builtin_sme_svwrite_ver_za64_s64_m,
+  BI__builtin_sme_svwrite_ver_za64_s64_vg2,
+  BI__builtin_sme_svwrite_ver_za64_s64_vg4,
+  BI__builtin_sme_svwrite_ver_za64_u64_m,
+  BI__builtin_sme_svwrite_ver_za64_u64_vg2,
+  BI__builtin_sme_svwrite_ver_za64_u64_vg4,
+  BI__builtin_sme_svwrite_ver_za8_mf8_m,
+  BI__builtin_sme_svwrite_ver_za8_mf8_vg2,
+  BI__builtin_sme_svwrite_ver_za8_mf8_vg4,
+  BI__builtin_sme_svwrite_ver_za8_s8_m,
+  BI__builtin_sme_svwrite_ver_za8_s8_vg2,
+  BI__builtin_sme_svwrite_ver_za8_s8_vg4,
+  BI__builtin_sme_svwrite_ver_za8_u8_m,
+  BI__builtin_sme_svwrite_ver_za8_u8_vg2,
+  BI__builtin_sme_svwrite_ver_za8_u8_vg4,
+  BI__builtin_sme_svwrite_za16_bf16_vg1x2,
+  BI__builtin_sme_svwrite_za16_bf16_vg1x4,
+  BI__builtin_sme_svwrite_za16_f16_vg1x2,
+  BI__builtin_sme_svwrite_za16_f16_vg1x4,
+  BI__builtin_sme_svwrite_za16_s16_vg1x2,
+  BI__builtin_sme_svwrite_za16_s16_vg1x4,
+  BI__builtin_sme_svwrite_za16_u16_vg1x2,
+  BI__builtin_sme_svwrite_za16_u16_vg1x4,
+  BI__builtin_sme_svwrite_za32_f32_vg1x2,
+  BI__builtin_sme_svwrite_za32_f32_vg1x4,
+  BI__builtin_sme_svwrite_za32_s32_vg1x2,
+  BI__builtin_sme_svwrite_za32_s32_vg1x4,
+  BI__builtin_sme_svwrite_za32_u32_vg1x2,
+  BI__builtin_sme_svwrite_za32_u32_vg1x4,
+  BI__builtin_sme_svwrite_za64_f64_vg1x2,
+  BI__builtin_sme_svwrite_za64_f64_vg1x4,
+  BI__builtin_sme_svwrite_za64_s64_vg1x2,
+  BI__builtin_sme_svwrite_za64_s64_vg1x4,
+  BI__builtin_sme_svwrite_za64_u64_vg1x2,
+  BI__builtin_sme_svwrite_za64_u64_vg1x4,
+  BI__builtin_sme_svwrite_za8_mf8_vg1x2,
+  BI__builtin_sme_svwrite_za8_mf8_vg1x4,
+  BI__builtin_sme_svwrite_za8_s8_vg1x2,
+  BI__builtin_sme_svwrite_za8_s8_vg1x4,
+  BI__builtin_sme_svwrite_za8_u8_vg1x2,
+  BI__builtin_sme_svwrite_za8_u8_vg1x4,
+  BI__builtin_sme_svwrite_zt_bf16,
+  BI__builtin_sme_svwrite_zt_f16,
+  BI__builtin_sme_svwrite_zt_f32,
+  BI__builtin_sme_svwrite_zt_f64,
+  BI__builtin_sme_svwrite_zt_s16,
+  BI__builtin_sme_svwrite_zt_s32,
+  BI__builtin_sme_svwrite_zt_s64,
+  BI__builtin_sme_svwrite_zt_s8,
+  BI__builtin_sme_svwrite_zt_u16,
+  BI__builtin_sme_svwrite_zt_u32,
+  BI__builtin_sme_svwrite_zt_u64,
+  BI__builtin_sme_svwrite_zt_u8,
+  BI__builtin_sme_svzero_mask_za,
+  BI__builtin_sme_svzero_za,
+  BI__builtin_sme_svzero_za64_vg1x2,
+  BI__builtin_sme_svzero_za64_vg1x4,
+  BI__builtin_sme_svzero_za64_vg2x1,
+  BI__builtin_sme_svzero_za64_vg2x2,
+  BI__builtin_sme_svzero_za64_vg2x4,
+  BI__builtin_sme_svzero_za64_vg4x1,
+  BI__builtin_sme_svzero_za64_vg4x2,
+  BI__builtin_sme_svzero_za64_vg4x4,
+  BI__builtin_sme_svzero_zt,
+#endif // GET_SME_BUILTIN_ENUMERATORS
+
+#ifdef GET_SME_BUILTIN_STR_TABLE
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverlength-strings"
+#endif
+static constexpr char BuiltinStringsStorage[] =
+  "\0"
+  "n\0"
+  "__arm_in_streaming_mode\0"
+  "bv\0"
+  "sme\0"
+  "svadd_write_single_za32_s32_vg1x2\0"
+  "vUiq8iq4i\0"
+  "sme,sme2\0"
+  "svadd_write_single_za32_s32_vg1x4\0"
+  "vUiq16iq4i\0"
+  "svadd_write_single_za32_u32_vg1x2\0"
+  "vUiq8Uiq4Ui\0"
+  "svadd_write_single_za32_u32_vg1x4\0"
+  "vUiq16Uiq4Ui\0"
+  "svadd_write_single_za64_s64_vg1x2\0"
+  "vUiq4Wiq2Wi\0"
+  "sme,sme2,sme-i16i64\0"
+  "svadd_write_single_za64_s64_vg1x4\0"
+  "vUiq8Wiq2Wi\0"
+  "svadd_write_single_za64_u64_vg1x2\0"
+  "vUiq4UWiq2UWi\0"
+  "svadd_write_single_za64_u64_vg1x4\0"
+  "vUiq8UWiq2UWi\0"
+  "svadd_write_za32_s32_vg1x2\0"
+  "vUiq8iq8i\0"
+  "svadd_write_za32_s32_vg1x4\0"
+  "vUiq16iq16i\0"
+  "svadd_write_za32_u32_vg1x2\0"
+  "vUiq8Uiq8Ui\0"
+  "svadd_write_za32_u32_vg1x4\0"
+  "vUiq16Uiq16Ui\0"
+  "svadd_write_za64_s64_vg1x2\0"
+  "vUiq4Wiq4Wi\0"
+  "svadd_write_za64_s64_vg1x4\0"
+  "vUiq8Wiq8Wi\0"
+  "svadd_write_za64_u64_vg1x2\0"
+  "vUiq4UWiq4UWi\0"
+  "svadd_write_za64_u64_vg1x4\0"
+  "vUiq8UWiq8UWi\0"
+  "svadd_za16_bf16_vg1x2\0"
+  "vUiq16y\0"
+  "sme,sme-b16b16\0"
+  "svadd_za16_bf16_vg1x4\0"
+  "vUiq32y\0"
+  "svadd_za16_f16_vg1x2\0"
+  "vUiq16h\0"
+  "sme,(sme-f16f16|sme-f8f16)\0"
+  "svadd_za16_f16_vg1x4\0"
+  "vUiq32h\0"
+  "svadd_za32_f32_vg1x2\0"
+  "vUiq8f\0"
+  "svadd_za32_f32_vg1x4\0"
+  "vUiq16f\0"
+  "svadd_za32_s32_vg1x2\0"
+  "vUiq8i\0"
+  "svadd_za32_s32_vg1x4\0"
+  "vUiq16i\0"
+  "svadd_za32_u32_vg1x2\0"
+  "vUiq8Ui\0"
+  "svadd_za32_u32_vg1x4\0"
+  "vUiq16Ui\0"
+  "svadd_za64_f64_vg1x2\0"
+  "vUiq4d\0"
+  "sme,sme2,sme-f64f64\0"
+  "svadd_za64_f64_vg1x4\0"
+  "vUiq8d\0"
+  "svadd_za64_s64_vg1x2\0"
+  "vUiq4Wi\0"
+  "svadd_za64_s64_vg1x4\0"
+  "vUiq8Wi\0"
+  "svadd_za64_u64_vg1x2\0"
+  "vUiq4UWi\0"
+  "svadd_za64_u64_vg1x4\0"
+  "vUiq8UWi\0"
+  "svaddha_za32_s32_m\0"
+  "vIUWiq16bq16bq4i\0"
+  "svaddha_za32_u32_m\0"
+  "vIUWiq16bq16bq4Ui\0"
+  "svaddha_za64_s64_m\0"
+  "vIUWiq16bq16bq2Wi\0"
+  "sme,sme-i16i64\0"
+  "svaddha_za64_u64_m\0"
+  "vIUWiq16bq16bq2UWi\0"
+  "svaddva_za32_s32_m\0"
+  "svaddva_za32_u32_m\0"
+  "svaddva_za64_s64_m\0"
+  "svaddva_za64_u64_m\0"
+  "svbmopa_za32_s32_m\0"
+  "vIUWiq16bq16bq4iq4i\0"
+  "svbmopa_za32_u32_m\0"
+  "vIUWiq16bq16bq4Uiq4Ui\0"
+  "svbmops_za32_s32_m\0"
+  "svbmops_za32_u32_m\0"
+  "svcntsb\0"
+  "UWiv\0"
+  "svcntsd\0"
+  "svcntsh\0"
+  "svcntsw\0"
+  "svdot_lane_za16_mf8_vg1x2_fpm\0"
+  "vUiq32mq16mIUWiUWi\0"
+  "sme,sme-f8f16\0"
+  "svdot_lane_za16_mf8_vg1x4_fpm\0"
+  "vUiq64mq16mIUWiUWi\0"
+  "svdot_lane_za32_bf16_vg1x2\0"
+  "vUiq16yq8yIUWi\0"
+  "svdot_lane_za32_bf16_vg1x4\0"
+  "vUiq32yq8yIUWi\0"
+  "svdot_lane_za32_f16_vg1x2\0"
+  "vUiq16hq8hIUWi\0"
+  "svdot_lane_za32_f16_vg1x4\0"
+  "vUiq32hq8hIUWi\0"
+  "svdot_lane_za32_mf8_vg1x2_fpm\0"
+  "sme,sme-f8f32\0"
+  "svdot_lane_za32_mf8_vg1x4_fpm\0"
+  "svdot_lane_za32_s16_vg1x2\0"
+  "vUiq16sq8sIUWi\0"
+  "svdot_lane_za32_s16_vg1x4\0"
+  "vUiq32sq8sIUWi\0"
+  "svdot_lane_za32_s8_vg1x2\0"
+  "vUiq32Scq16ScIUWi\0"
+  "svdot_lane_za32_s8_vg1x4\0"
+  "vUiq64Scq16ScIUWi\0"
+  "svdot_lane_za32_u16_vg1x2\0"
+  "vUiq16Usq8UsIUWi\0"
+  "svdot_lane_za32_u16_vg1x4\0"
+  "vUiq32Usq8UsIUWi\0"
+  "svdot_lane_za32_u8_vg1x2\0"
+  "vUiq32Ucq16UcIUWi\0"
+  "svdot_lane_za32_u8_vg1x4\0"
+  "vUiq64Ucq16UcIUWi\0"
+  "svdot_lane_za64_s16_vg1x2\0"
+  "svdot_lane_za64_s16_vg1x4\0"
+  "svdot_lane_za64_u16_vg1x2\0"
+  "svdot_lane_za64_u16_vg1x4\0"
+  "svdot_single_za16_mf8_vg1x2_fpm\0"
+  "vUiq32mq16mUWi\0"
+  "svdot_single_za16_mf8_vg1x4_fpm\0"
+  "vUiq64mq16mUWi\0"
+  "svdot_single_za32_bf16_vg1x2\0"
+  "vUiq16yq8y\0"
+  "svdot_single_za32_bf16_vg1x4\0"
+  "vUiq32yq8y\0"
+  "svdot_single_za32_f16_vg1x2\0"
+  "vUiq16hq8h\0"
+  "svdot_single_za32_f16_vg1x4\0"
+  "vUiq32hq8h\0"
+  "svdot_single_za32_mf8_vg1x2_fpm\0"
+  "svdot_single_za32_mf8_vg1x4_fpm\0"
+  "svdot_single_za32_s16_vg1x2\0"
+  "vUiq16sq8s\0"
+  "svdot_single_za32_s16_vg1x4\0"
+  "vUiq32sq8s\0"
+  "svdot_single_za32_s8_vg1x2\0"
+  "vUiq32Scq16Sc\0"
+  "svdot_single_za32_s8_vg1x4\0"
+  "vUiq64Scq16Sc\0"
+  "svdot_single_za32_u16_vg1x2\0"
+  "vUiq16Usq8Us\0"
+  "svdot_single_za32_u16_vg1x4\0"
+  "vUiq32Usq8Us\0"
+  "svdot_single_za32_u8_vg1x2\0"
+  "vUiq32Ucq16Uc\0"
+  "svdot_single_za32_u8_vg1x4\0"
+  "vUiq64Ucq16Uc\0"
+  "svdot_single_za64_s16_vg1x2\0"
+  "svdot_single_za64_s16_vg1x4\0"
+  "svdot_single_za64_u16_vg1x2\0"
+  "svdot_single_za64_u16_vg1x4\0"
+  "svdot_za16_mf8_vg1x2_fpm\0"
+  "vUiq32mq32mUWi\0"
+  "svdot_za16_mf8_vg1x4_fpm\0"
+  "vUiq64mq64mUWi\0"
+  "svdot_za32_bf16_vg1x2\0"
+  "vUiq16yq16y\0"
+  "svdot_za32_bf16_vg1x4\0"
+  "vUiq32yq32y\0"
+  "svdot_za32_f16_vg1x2\0"
+  "vUiq16hq16h\0"
+  "svdot_za32_f16_vg1x4\0"
+  "vUiq32hq32h\0"
+  "svdot_za32_mf8_vg1x2_fpm\0"
+  "svdot_za32_mf8_vg1x4_fpm\0"
+  "svdot_za32_s16_vg1x2\0"
+  "vUiq16sq16s\0"
+  "svdot_za32_s16_vg1x4\0"
+  "vUiq32sq32s\0"
+  "svdot_za32_s8_vg1x2\0"
+  "vUiq32Scq32Sc\0"
+  "svdot_za32_s8_vg1x4\0"
+  "vUiq64Scq64Sc\0"
+  "svdot_za32_u16_vg1x2\0"
+  "vUiq16Usq16Us\0"
+  "svdot_za32_u16_vg1x4\0"
+  "vUiq32Usq32Us\0"
+  "svdot_za32_u8_vg1x2\0"
+  "vUiq32Ucq32Uc\0"
+  "svdot_za32_u8_vg1x4\0"
+  "vUiq64Ucq64Uc\0"
+  "svdot_za64_s16_vg1x2\0"
+  "svdot_za64_s16_vg1x4\0"
+  "svdot_za64_u16_vg1x2\0"
+  "svdot_za64_u16_vg1x4\0"
+  "svld1_hor_vnum_za128\0"
+  "vIUWiUiq16bvC*Wi\0"
+  "svld1_hor_vnum_za16\0"
+  "svld1_hor_vnum_za32\0"
+  "svld1_hor_vnum_za64\0"
+  "svld1_hor_vnum_za8\0"
+  "svld1_hor_za128\0"
+  "vIUWiUiq16bvC*\0"
+  "svld1_hor_za16\0"
+  "svld1_hor_za32\0"
+  "svld1_hor_za64\0"
+  "svld1_hor_za8\0"
+  "svld1_ver_vnum_za128\0"
+  "svld1_ver_vnum_za16\0"
+  "svld1_ver_vnum_za32\0"
+  "svld1_ver_vnum_za64\0"
+  "svld1_ver_vnum_za8\0"
+  "svld1_ver_za128\0"
+  "svld1_ver_za16\0"
+  "svld1_ver_za32\0"
+  "svld1_ver_za64\0"
+  "svld1_ver_za8\0"
+  "svldr_vnum_za\0"
+  "vUivC*Wi\0"
+  "svldr_za\0"
+  "vUivC*\0"
+  "svldr_zt\0"
+  "vIUWivC*\0"
+  "svluti2_lane_zt_bf16\0"
+  "q8yIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_bf16_x2\0"
+  "q16yIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_bf16_x4\0"
+  "q32yIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f16\0"
+  "q8hIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f16_x2\0"
+  "q16hIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f16_x4\0"
+  "q32hIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f32\0"
+  "q4fIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f32_x2\0"
+  "q8fIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_f32_x4\0"
+  "q16fIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_mf8\0"
+  "q16mIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_mf8_x2\0"
+  "q32mIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_mf8_x4\0"
+  "q64mIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s16\0"
+  "q8sIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s16_x2\0"
+  "q16sIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s16_x4\0"
+  "q32sIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s32\0"
+  "q4iIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s32_x2\0"
+  "q8iIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s32_x4\0"
+  "q16iIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s8\0"
+  "q16ScIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s8_x2\0"
+  "q32ScIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_s8_x4\0"
+  "q64ScIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u16\0"
+  "q8UsIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u16_x2\0"
+  "q16UsIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u16_x4\0"
+  "q32UsIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u32\0"
+  "q4UiIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u32_x2\0"
+  "q8UiIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u32_x4\0"
+  "q16UiIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u8\0"
+  "q16UcIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u8_x2\0"
+  "q32UcIUWiq16UcIUWi\0"
+  "svluti2_lane_zt_u8_x4\0"
+  "q64UcIUWiq16UcIUWi\0"
+  "svluti4_lane_zt_bf16\0"
+  "svluti4_lane_zt_bf16_x2\0"
+  "svluti4_lane_zt_bf16_x4\0"
+  "svluti4_lane_zt_f16\0"
+  "svluti4_lane_zt_f16_x2\0"
+  "svluti4_lane_zt_f16_x4\0"
+  "svluti4_lane_zt_f32\0"
+  "svluti4_lane_zt_f32_x2\0"
+  "svluti4_lane_zt_f32_x4\0"
+  "svluti4_lane_zt_mf8\0"
+  "svluti4_lane_zt_mf8_x2\0"
+  "svluti4_lane_zt_s16\0"
+  "svluti4_lane_zt_s16_x2\0"
+  "svluti4_lane_zt_s16_x4\0"
+  "svluti4_lane_zt_s32\0"
+  "svluti4_lane_zt_s32_x2\0"
+  "svluti4_lane_zt_s32_x4\0"
+  "svluti4_lane_zt_s8\0"
+  "svluti4_lane_zt_s8_x2\0"
+  "svluti4_lane_zt_u16\0"
+  "svluti4_lane_zt_u16_x2\0"
+  "svluti4_lane_zt_u16_x4\0"
+  "svluti4_lane_zt_u32\0"
+  "svluti4_lane_zt_u32_x2\0"
+  "svluti4_lane_zt_u32_x4\0"
+  "svluti4_lane_zt_u8\0"
+  "svluti4_lane_zt_u8_x2\0"
+  "svluti4_zt_s8_x4\0"
+  "q64ScIUWiq32Uc\0"
+  "sme,sme-lutv2\0"
+  "svluti4_zt_u8_x4\0"
+  "q64UcIUWiq32Uc\0"
+  "svluti6_zt_mf8\0"
+  "q16mIUWiq16Uc\0"
+  "sme,sme2p3\0"
+  "svluti6_zt_mf8_x4\0"
+  "q64mIUWiq48Uc\0"
+  "svluti6_zt_s8\0"
+  "q16ScIUWiq16Uc\0"
+  "svluti6_zt_s8_x4\0"
+  "q64ScIUWiq48Uc\0"
+  "svluti6_zt_u8\0"
+  "q16UcIUWiq16Uc\0"
+  "svluti6_zt_u8_x4\0"
+  "q64UcIUWiq48Uc\0"
+  "svmla_lane_za16_bf16_vg1x2\0"
+  "svmla_lane_za16_bf16_vg1x4\0"
+  "svmla_lane_za16_f16_vg1x2\0"
+  "sme,sme-f16f16\0"
+  "svmla_lane_za16_f16_vg1x4\0"
+  "svmla_lane_za16_mf8_vg2x1_fpm\0"
+  "vUiq16mq16mIUWiUWi\0"
+  "svmla_lane_za16_mf8_vg2x2_fpm\0"
+  "svmla_lane_za16_mf8_vg2x4_fpm\0"
+  "svmla_lane_za32_bf16_vg2x1\0"
+  "vUiq8yq8yIUWi\0"
+  "svmla_lane_za32_bf16_vg2x2\0"
+  "svmla_lane_za32_bf16_vg2x4\0"
+  "svmla_lane_za32_f16_vg2x1\0"
+  "vUiq8hq8hIUWi\0"
+  "svmla_lane_za32_f16_vg2x2\0"
+  "svmla_lane_za32_f16_vg2x4\0"
+  "svmla_lane_za32_f32_vg1x2\0"
+  "vUiq8fq4fIUWi\0"
+  "svmla_lane_za32_f32_vg1x4\0"
+  "vUiq16fq4fIUWi\0"
+  "svmla_lane_za32_mf8_vg4x1_fpm\0"
+  "svmla_lane_za32_mf8_vg4x2_fpm\0"
+  "svmla_lane_za32_mf8_vg4x4_fpm\0"
+  "svmla_lane_za32_s16_vg2x1\0"
+  "vUiq8sq8sIUWi\0"
+  "svmla_lane_za32_s16_vg2x2\0"
+  "svmla_lane_za32_s16_vg2x4\0"
+  "svmla_lane_za32_s8_vg4x1\0"
+  "vUiq16Scq16ScIUWi\0"
+  "svmla_lane_za32_s8_vg4x2\0"
+  "svmla_lane_za32_s8_vg4x4\0"
+  "svmla_lane_za32_u16_vg2x1\0"
+  "vUiq8Usq8UsIUWi\0"
+  "svmla_lane_za32_u16_vg2x2\0"
+  "svmla_lane_za32_u16_vg2x4\0"
+  "svmla_lane_za32_u8_vg4x1\0"
+  "vUiq16Ucq16UcIUWi\0"
+  "svmla_lane_za32_u8_vg4x2\0"
+  "svmla_lane_za32_u8_vg4x4\0"
+  "svmla_lane_za64_f64_vg1x2\0"
+  "vUiq4dq2dIUWi\0"
+  "svmla_lane_za64_f64_vg1x4\0"
+  "vUiq8dq2dIUWi\0"
+  "svmla_lane_za64_s16_vg4x1\0"
+  "svmla_lane_za64_s16_vg4x2\0"
+  "svmla_lane_za64_s16_vg4x4\0"
+  "svmla_lane_za64_u16_vg4x1\0"
+  "svmla_lane_za64_u16_vg4x2\0"
+  "svmla_lane_za64_u16_vg4x4\0"
+  "svmla_single_za16_bf16_vg1x2\0"
+  "svmla_single_za16_bf16_vg1x4\0"
+  "svmla_single_za16_f16_vg1x2\0"
+  "svmla_single_za16_f16_vg1x4\0"
+  "svmla_single_za16_mf8_vg2x2_fpm\0"
+  "svmla_single_za16_mf8_vg2x4_fpm\0"
+  "svmla_single_za32_bf16_vg2x2\0"
+  "svmla_single_za32_bf16_vg2x4\0"
+  "svmla_single_za32_f16_vg2x2\0"
+  "svmla_single_za32_f16_vg2x4\0"
+  "svmla_single_za32_f32_vg1x2\0"
+  "vUiq8fq4f\0"
+  "svmla_single_za32_f32_vg1x4\0"
+  "vUiq16fq4f\0"
+  "svmla_single_za32_mf8_vg4x2_fpm\0"
+  "svmla_single_za32_mf8_vg4x4_fpm\0"
+  "svmla_single_za32_s16_vg2x2\0"
+  "svmla_single_za32_s16_vg2x4\0"
+  "svmla_single_za32_s8_vg4x2\0"
+  "svmla_single_za32_s8_vg4x4\0"
+  "svmla_single_za32_u16_vg2x2\0"
+  "svmla_single_za32_u16_vg2x4\0"
+  "svmla_single_za32_u8_vg4x2\0"
+  "svmla_single_za32_u8_vg4x4\0"
+  "svmla_single_za64_f64_vg1x2\0"
+  "vUiq4dq2d\0"
+  "svmla_single_za64_f64_vg1x4\0"
+  "vUiq8dq2d\0"
+  "svmla_single_za64_s16_vg4x2\0"
+  "svmla_single_za64_s16_vg4x4\0"
+  "svmla_single_za64_u16_vg4x2\0"
+  "svmla_single_za64_u16_vg4x4\0"
+  "svmla_za16_bf16_vg1x2\0"
+  "svmla_za16_bf16_vg1x4\0"
+  "svmla_za16_f16_vg1x2\0"
+  "svmla_za16_f16_vg1x4\0"
+  "svmla_za16_mf8_vg2x1_fpm\0"
+  "vUiq16mq16mUWi\0"
+  "svmla_za16_mf8_vg2x2_fpm\0"
+  "svmla_za16_mf8_vg2x4_fpm\0"
+  "svmla_za32_bf16_vg2x1\0"
+  "vUiq8yq8y\0"
+  "svmla_za32_bf16_vg2x2\0"
+  "svmla_za32_bf16_vg2x4\0"
+  "svmla_za32_f16_vg2x1\0"
+  "vUiq8hq8h\0"
+  "svmla_za32_f16_vg2x2\0"
+  "svmla_za32_f16_vg2x4\0"
+  "svmla_za32_f32_vg1x2\0"
+  "vUiq8fq8f\0"
+  "svmla_za32_f32_vg1x4\0"
+  "vUiq16fq16f\0"
+  "svmla_za32_mf8_vg4x1_fpm\0"
+  "svmla_za32_mf8_vg4x2_fpm\0"
+  "svmla_za32_mf8_vg4x4_fpm\0"
+  "svmla_za32_s16_vg2x1\0"
+  "vUiq8sq8s\0"
+  "svmla_za32_s16_vg2x2\0"
+  "svmla_za32_s16_vg2x4\0"
+  "svmla_za32_s8_vg4x1\0"
+  "vUiq16Scq16Sc\0"
+  "svmla_za32_s8_vg4x2\0"
+  "svmla_za32_s8_vg4x4\0"
+  "svmla_za32_u16_vg2x1\0"
+  "vUiq8Usq8Us\0"
+  "svmla_za32_u16_vg2x2\0"
+  "svmla_za32_u16_vg2x4\0"
+  "svmla_za32_u8_vg4x1\0"
+  "vUiq16Ucq16Uc\0"
+  "svmla_za32_u8_vg4x2\0"
+  "svmla_za32_u8_vg4x4\0"
+  "svmla_za64_f64_vg1x2\0"
+  "vUiq4dq4d\0"
+  "svmla_za64_f64_vg1x4\0"
+  "vUiq8dq8d\0"
+  "svmla_za64_s16_vg4x1\0"
+  "svmla_za64_s16_vg4x2\0"
+  "svmla_za64_s16_vg4x4\0"
+  "svmla_za64_u16_vg4x1\0"
+  "svmla_za64_u16_vg4x2\0"
+  "svmla_za64_u16_vg4x4\0"
+  "svmls_lane_za16_bf16_vg1x2\0"
+  "svmls_lane_za16_bf16_vg1x4\0"
+  "svmls_lane_za16_f16_vg1x2\0"
+  "svmls_lane_za16_f16_vg1x4\0"
+  "svmls_lane_za32_bf16_vg2x1\0"
+  "svmls_lane_za32_bf16_vg2x2\0"
+  "svmls_lane_za32_bf16_vg2x4\0"
+  "svmls_lane_za32_f16_vg2x1\0"
+  "svmls_lane_za32_f16_vg2x2\0"
+  "svmls_lane_za32_f16_vg2x4\0"
+  "svmls_lane_za32_f32_vg1x2\0"
+  "svmls_lane_za32_f32_vg1x4\0"
+  "svmls_lane_za32_s16_vg2x1\0"
+  "svmls_lane_za32_s16_vg2x2\0"
+  "svmls_lane_za32_s16_vg2x4\0"
+  "svmls_lane_za32_s8_vg4x1\0"
+  "svmls_lane_za32_s8_vg4x2\0"
+  "svmls_lane_za32_s8_vg4x4\0"
+  "svmls_lane_za32_u16_vg2x1\0"
+  "svmls_lane_za32_u16_vg2x2\0"
+  "svmls_lane_za32_u16_vg2x4\0"
+  "svmls_lane_za32_u8_vg4x1\0"
+  "svmls_lane_za32_u8_vg4x2\0"
+  "svmls_lane_za32_u8_vg4x4\0"
+  "svmls_lane_za64_f64_vg1x2\0"
+  "svmls_lane_za64_f64_vg1x4\0"
+  "svmls_lane_za64_s16_vg4x1\0"
+  "svmls_lane_za64_s16_vg4x2\0"
+  "svmls_lane_za64_s16_vg4x4\0"
+  "svmls_lane_za64_u16_vg4x1\0"
+  "svmls_lane_za64_u16_vg4x2\0"
+  "svmls_lane_za64_u16_vg4x4\0"
+  "svmls_single_za16_bf16_vg1x2\0"
+  "svmls_single_za16_bf16_vg1x4\0"
+  "svmls_single_za16_f16_vg1x2\0"
+  "svmls_single_za16_f16_vg1x4\0"
+  "svmls_single_za32_bf16_vg2x2\0"
+  "svmls_single_za32_bf16_vg2x4\0"
+  "svmls_single_za32_f16_vg2x2\0"
+  "svmls_single_za32_f16_vg2x4\0"
+  "svmls_single_za32_f32_vg1x2\0"
+  "svmls_single_za32_f32_vg1x4\0"
+  "svmls_single_za32_s16_vg2x2\0"
+  "svmls_single_za32_s16_vg2x4\0"
+  "svmls_single_za32_s8_vg4x2\0"
+  "svmls_single_za32_s8_vg4x4\0"
+  "svmls_single_za32_u16_vg2x2\0"
+  "svmls_single_za32_u16_vg2x4\0"
+  "svmls_single_za32_u8_vg4x2\0"
+  "svmls_single_za32_u8_vg4x4\0"
+  "svmls_single_za64_f64_vg1x2\0"
+  "svmls_single_za64_f64_vg1x4\0"
+  "svmls_single_za64_s16_vg4x2\0"
+  "svmls_single_za64_s16_vg4x4\0"
+  "svmls_single_za64_u16_vg4x2\0"
+  "svmls_single_za64_u16_vg4x4\0"
+  "svmls_za16_bf16_vg1x2\0"
+  "svmls_za16_bf16_vg1x4\0"
+  "svmls_za16_f16_vg1x2\0"
+  "svmls_za16_f16_vg1x4\0"
+  "svmls_za32_bf16_vg2x1\0"
+  "svmls_za32_bf16_vg2x2\0"
+  "svmls_za32_bf16_vg2x4\0"
+  "svmls_za32_f16_vg2x1\0"
+  "svmls_za32_f16_vg2x2\0"
+  "svmls_za32_f16_vg2x4\0"
+  "svmls_za32_f32_vg1x2\0"
+  "svmls_za32_f32_vg1x4\0"
+  "svmls_za32_s16_vg2x1\0"
+  "svmls_za32_s16_vg2x2\0"
+  "svmls_za32_s16_vg2x4\0"
+  "svmls_za32_s8_vg4x1\0"
+  "svmls_za32_s8_vg4x2\0"
+  "svmls_za32_s8_vg4x4\0"
+  "svmls_za32_u16_vg2x1\0"
+  "svmls_za32_u16_vg2x2\0"
+  "svmls_za32_u16_vg2x4\0"
+  "svmls_za32_u8_vg4x1\0"
+  "svmls_za32_u8_vg4x2\0"
+  "svmls_za32_u8_vg4x4\0"
+  "svmls_za64_f64_vg1x2\0"
+  "svmls_za64_f64_vg1x4\0"
+  "svmls_za64_s16_vg4x1\0"
+  "svmls_za64_s16_vg4x2\0"
+  "svmls_za64_s16_vg4x4\0"
+  "svmls_za64_u16_vg4x1\0"
+  "svmls_za64_u16_vg4x2\0"
+  "svmls_za64_u16_vg4x4\0"
+  "svmop4a_1x1_za16_bf16_bf16\0"
+  "vIUWiq8yq8y\0"
+  "sme,sme2,sme-mop4,sme-b16b16\0"
+  "svmop4a_1x1_za16_f16_f16\0"
+  "vIUWiq8hq8h\0"
+  "sme,sme2,sme-mop4,sme-f16f16\0"
+  "svmop4a_1x1_za16_mf8_mf8_fpm\0"
+  "vIUWiq16mq16mUWi\0"
+  "sme,sme2,sme-mop4,sme-f8f16\0"
+  "svmop4a_1x1_za32_bf16_bf16\0"
+  "sme,sme2,sme-mop4\0"
+  "svmop4a_1x1_za32_f16_f16\0"
+  "svmop4a_1x1_za32_f32_f32\0"
+  "vIUWiq4fq4f\0"
+  "svmop4a_1x1_za32_mf8_mf8_fpm\0"
+  "sme,sme2,sme-mop4,sme-f8f32\0"
+  "svmop4a_1x1_za32_s16_s16\0"
+  "vIUWiq8sq8s\0"
+  "svmop4a_1x1_za32_s8_s8\0"
+  "vIUWiq16Scq16Sc\0"
+  "svmop4a_1x1_za32_s8_u8\0"
+  "vIUWiq16Scq16Uc\0"
+  "svmop4a_1x1_za32_u16_u16\0"
+  "vIUWiq8Usq8Us\0"
+  "svmop4a_1x1_za32_u8_s8\0"
+  "vIUWiq16Ucq16Sc\0"
+  "svmop4a_1x1_za32_u8_u8\0"
+  "vIUWiq16Ucq16Uc\0"
+  "svmop4a_1x1_za64_f64_f64\0"
+  "vIUWiq2dq2d\0"
+  "sme,sme2,sme-mop4,sme-f64f64\0"
+  "svmop4a_1x1_za64_s16_s16\0"
+  "sme,sme2,sme-mop4,sme-i16i64\0"
+  "svmop4a_1x1_za64_s16_u16\0"
+  "vIUWiq8sq8Us\0"
+  "svmop4a_1x1_za64_u16_s16\0"
+  "vIUWiq8Usq8s\0"
+  "svmop4a_1x1_za64_u16_u16\0"
+  "svmop4a_1x2_za16_bf16_bf16\0"
+  "vIUWiq8yq16y\0"
+  "svmop4a_1x2_za16_f16_f16\0"
+  "vIUWiq8hq16h\0"
+  "svmop4a_1x2_za16_mf8_mf8_fpm\0"
+  "vIUWiq16mq32mUWi\0"
+  "svmop4a_1x2_za32_bf16_bf16\0"
+  "svmop4a_1x2_za32_f16_f16\0"
+  "svmop4a_1x2_za32_f32_f32\0"
+  "vIUWiq4fq8f\0"
+  "svmop4a_1x2_za32_mf8_mf8_fpm\0"
+  "svmop4a_1x2_za32_s16_s16\0"
+  "vIUWiq8sq16s\0"
+  "svmop4a_1x2_za32_s8_s8\0"
+  "vIUWiq16Scq32Sc\0"
+  "svmop4a_1x2_za32_s8_u8\0"
+  "vIUWiq16Scq32Uc\0"
+  "svmop4a_1x2_za32_u16_u16\0"
+  "vIUWiq8Usq16Us\0"
+  "svmop4a_1x2_za32_u8_s8\0"
+  "vIUWiq16Ucq32Sc\0"
+  "svmop4a_1x2_za32_u8_u8\0"
+  "vIUWiq16Ucq32Uc\0"
+  "svmop4a_1x2_za64_f64_f64\0"
+  "vIUWiq2dq4d\0"
+  "svmop4a_1x2_za64_s16_s16\0"
+  "svmop4a_1x2_za64_s16_u16\0"
+  "vIUWiq8sq16Us\0"
+  "svmop4a_1x2_za64_u16_s16\0"
+  "vIUWiq8Usq16s\0"
+  "svmop4a_1x2_za64_u16_u16\0"
+  "svmop4a_2x1_za16_bf16_bf16\0"
+  "vIUWiq16yq8y\0"
+  "svmop4a_2x1_za16_f16_f16\0"
+  "vIUWiq16hq8h\0"
+  "svmop4a_2x1_za16_mf8_mf8_fpm\0"
+  "vIUWiq32mq16mUWi\0"
+  "svmop4a_2x1_za32_bf16_bf16\0"
+  "svmop4a_2x1_za32_f16_f16\0"
+  "svmop4a_2x1_za32_f32_f32\0"
+  "vIUWiq8fq4f\0"
+  "svmop4a_2x1_za32_mf8_mf8_fpm\0"
+  "svmop4a_2x1_za32_s16_s16\0"
+  "vIUWiq16sq8s\0"
+  "svmop4a_2x1_za32_s8_s8\0"
+  "vIUWiq32Scq16Sc\0"
+  "svmop4a_2x1_za32_s8_u8\0"
+  "vIUWiq32Scq16Uc\0"
+  "svmop4a_2x1_za32_u16_u16\0"
+  "vIUWiq16Usq8Us\0"
+  "svmop4a_2x1_za32_u8_s8\0"
+  "vIUWiq32Ucq16Sc\0"
+  "svmop4a_2x1_za32_u8_u8\0"
+  "vIUWiq32Ucq16Uc\0"
+  "svmop4a_2x1_za64_f64_f64\0"
+  "vIUWiq4dq2d\0"
+  "svmop4a_2x1_za64_s16_s16\0"
+  "svmop4a_2x1_za64_s16_u16\0"
+  "vIUWiq16sq8Us\0"
+  "svmop4a_2x1_za64_u16_s16\0"
+  "vIUWiq16Usq8s\0"
+  "svmop4a_2x1_za64_u16_u16\0"
+  "svmop4a_2x2_za16_bf16_bf16\0"
+  "vIUWiq16yq16y\0"
+  "svmop4a_2x2_za16_f16_f16\0"
+  "vIUWiq16hq16h\0"
+  "svmop4a_2x2_za16_mf8_mf8_fpm\0"
+  "vIUWiq32mq32mUWi\0"
+  "svmop4a_2x2_za32_bf16_bf16\0"
+  "svmop4a_2x2_za32_f16_f16\0"
+  "svmop4a_2x2_za32_f32_f32\0"
+  "vIUWiq8fq8f\0"
+  "svmop4a_2x2_za32_mf8_mf8_fpm\0"
+  "svmop4a_2x2_za32_s16_s16\0"
+  "vIUWiq16sq16s\0"
+  "svmop4a_2x2_za32_s8_s8\0"
+  "vIUWiq32Scq32Sc\0"
+  "svmop4a_2x2_za32_s8_u8\0"
+  "vIUWiq32Scq32Uc\0"
+  "svmop4a_2x2_za32_u16_u16\0"
+  "vIUWiq16Usq16Us\0"
+  "svmop4a_2x2_za32_u8_s8\0"
+  "vIUWiq32Ucq32Sc\0"
+  "svmop4a_2x2_za32_u8_u8\0"
+  "vIUWiq32Ucq32Uc\0"
+  "svmop4a_2x2_za64_f64_f64\0"
+  "vIUWiq4dq4d\0"
+  "svmop4a_2x2_za64_s16_s16\0"
+  "svmop4a_2x2_za64_s16_u16\0"
+  "vIUWiq16sq16Us\0"
+  "svmop4a_2x2_za64_u16_s16\0"
+  "vIUWiq16Usq16s\0"
+  "svmop4a_2x2_za64_u16_u16\0"
+  "svmop4s_1x1_za16_bf16_bf16\0"
+  "svmop4s_1x1_za16_f16_f16\0"
+  "svmop4s_1x1_za32_bf16_bf16\0"
+  "svmop4s_1x1_za32_f16_f16\0"
+  "svmop4s_1x1_za32_f32_f32\0"
+  "svmop4s_1x1_za32_s16_s16\0"
+  "svmop4s_1x1_za32_s8_s8\0"
+  "svmop4s_1x1_za32_s8_u8\0"
+  "svmop4s_1x1_za32_u16_u16\0"
+  "svmop4s_1x1_za32_u8_s8\0"
+  "svmop4s_1x1_za32_u8_u8\0"
+  "svmop4s_1x1_za64_f64_f64\0"
+  "svmop4s_1x1_za64_s16_s16\0"
+  "svmop4s_1x1_za64_s16_u16\0"
+  "svmop4s_1x1_za64_u16_s16\0"
+  "svmop4s_1x1_za64_u16_u16\0"
+  "svmop4s_1x2_za16_bf16_bf16\0"
+  "svmop4s_1x2_za16_f16_f16\0"
+  "svmop4s_1x2_za32_bf16_bf16\0"
+  "svmop4s_1x2_za32_f16_f16\0"
+  "svmop4s_1x2_za32_f32_f32\0"
+  "svmop4s_1x2_za32_s16_s16\0"
+  "svmop4s_1x2_za32_s8_s8\0"
+  "svmop4s_1x2_za32_s8_u8\0"
+  "svmop4s_1x2_za32_u16_u16\0"
+  "svmop4s_1x2_za32_u8_s8\0"
+  "svmop4s_1x2_za32_u8_u8\0"
+  "svmop4s_1x2_za64_f64_f64\0"
+  "svmop4s_1x2_za64_s16_s16\0"
+  "svmop4s_1x2_za64_s16_u16\0"
+  "svmop4s_1x2_za64_u16_s16\0"
+  "svmop4s_1x2_za64_u16_u16\0"
+  "svmop4s_2x1_za16_bf16_bf16\0"
+  "svmop4s_2x1_za16_f16_f16\0"
+  "svmop4s_2x1_za32_bf16_bf16\0"
+  "svmop4s_2x1_za32_f16_f16\0"
+  "svmop4s_2x1_za32_f32_f32\0"
+  "svmop4s_2x1_za32_s16_s16\0"
+  "svmop4s_2x1_za32_s8_s8\0"
+  "svmop4s_2x1_za32_s8_u8\0"
+  "svmop4s_2x1_za32_u16_u16\0"
+  "svmop4s_2x1_za32_u8_s8\0"
+  "svmop4s_2x1_za32_u8_u8\0"
+  "svmop4s_2x1_za64_f64_f64\0"
+  "svmop4s_2x1_za64_s16_s16\0"
+  "svmop4s_2x1_za64_s16_u16\0"
+  "svmop4s_2x1_za64_u16_s16\0"
+  "svmop4s_2x1_za64_u16_u16\0"
+  "svmop4s_2x2_za16_bf16_bf16\0"
+  "svmop4s_2x2_za16_f16_f16\0"
+  "svmop4s_2x2_za32_bf16_bf16\0"
+  "svmop4s_2x2_za32_f16_f16\0"
+  "svmop4s_2x2_za32_f32_f32\0"
+  "svmop4s_2x2_za32_s16_s16\0"
+  "svmop4s_2x2_za32_s8_s8\0"
+  "svmop4s_2x2_za32_s8_u8\0"
+  "svmop4s_2x2_za32_u16_u16\0"
+  "svmop4s_2x2_za32_u8_s8\0"
+  "svmop4s_2x2_za32_u8_u8\0"
+  "svmop4s_2x2_za64_f64_f64\0"
+  "svmop4s_2x2_za64_s16_s16\0"
+  "svmop4s_2x2_za64_s16_u16\0"
+  "svmop4s_2x2_za64_u16_s16\0"
+  "svmop4s_2x2_za64_u16_u16\0"
+  "svmopa_za16_bf16_m\0"
+  "vIUWiq16bq16bq8yq8y\0"
+  "svmopa_za16_f16_m\0"
+  "vIUWiq16bq16bq8hq8h\0"
+  "svmopa_za16_mf8_m_fpm\0"
+  "vIUWiq16bq16bq16mq16mUWi\0"
+  "svmopa_za32_bf16_m\0"
+  "svmopa_za32_f16_m\0"
+  "svmopa_za32_f32_m\0"
+  "vIUWiq16bq16bq4fq4f\0"
+  "svmopa_za32_mf8_m_fpm\0"
+  "svmopa_za32_s16_m\0"
+  "vIUWiq16bq16bq8sq8s\0"
+  "svmopa_za32_s8_m\0"
+  "vIUWiq16bq16bq16Scq16Sc\0"
+  "svmopa_za32_u16_m\0"
+  "vIUWiq16bq16bq8Usq8Us\0"
+  "svmopa_za32_u8_m\0"
+  "vIUWiq16bq16bq16Ucq16Uc\0"
+  "svmopa_za64_f64_m\0"
+  "vIUWiq16bq16bq2dq2d\0"
+  "sme,sme-f64f64\0"
+  "svmopa_za64_s16_m\0"
+  "svmopa_za64_u16_m\0"
+  "svmops_za16_bf16_m\0"
+  "svmops_za16_f16_m\0"
+  "svmops_za32_bf16_m\0"
+  "svmops_za32_f16_m\0"
+  "svmops_za32_f32_m\0"
+  "svmops_za32_s16_m\0"
+  "svmops_za32_s8_m\0"
+  "svmops_za32_u16_m\0"
+  "svmops_za32_u8_m\0"
+  "svmops_za64_f64_m\0"
+  "svmops_za64_s16_m\0"
+  "svmops_za64_u16_m\0"
+  "svread_hor_za128_bf16_m\0"
+  "q8yq8yq16bIUWiUi\0"
+  "svread_hor_za128_f16_m\0"
+  "q8hq8hq16bIUWiUi\0"
+  "svread_hor_za128_f32_m\0"
+  "q4fq4fq16bIUWiUi\0"
+  "svread_hor_za128_f64_m\0"
+  "q2dq2dq16bIUWiUi\0"
+  "svread_hor_za128_mf8_m\0"
+  "q16mq16mq16bIUWiUi\0"
+  "svread_hor_za128_s16_m\0"
+  "q8sq8sq16bIUWiUi\0"
+  "svread_hor_za128_s32_m\0"
+  "q4iq4iq16bIUWiUi\0"
+  "svread_hor_za128_s64_m\0"
+  "q2Wiq2Wiq16bIUWiUi\0"
+  "svread_hor_za128_s8_m\0"
+  "q16Scq16Scq16bIUWiUi\0"
+  "svread_hor_za128_u16_m\0"
+  "q8Usq8Usq16bIUWiUi\0"
+  "svread_hor_za128_u32_m\0"
+  "q4Uiq4Uiq16bIUWiUi\0"
+  "svread_hor_za128_u64_m\0"
+  "q2UWiq2UWiq16bIUWiUi\0"
+  "svread_hor_za128_u8_m\0"
+  "q16Ucq16Ucq16bIUWiUi\0"
+  "svread_hor_za16_bf16_m\0"
+  "svread_hor_za16_bf16_vg2\0"
+  "q16yIUWiUi\0"
+  "svread_hor_za16_bf16_vg4\0"
+  "q32yIUWiUi\0"
+  "svread_hor_za16_f16_m\0"
+  "svread_hor_za16_f16_vg2\0"
+  "q16hIUWiUi\0"
+  "svread_hor_za16_f16_vg4\0"
+  "q32hIUWiUi\0"
+  "svread_hor_za16_s16_m\0"
+  "svread_hor_za16_s16_vg2\0"
+  "q16sIUWiUi\0"
+  "svread_hor_za16_s16_vg4\0"
+  "q32sIUWiUi\0"
+  "svread_hor_za16_u16_m\0"
+  "svread_hor_za16_u16_vg2\0"
+  "q16UsIUWiUi\0"
+  "svread_hor_za16_u16_vg4\0"
+  "q32UsIUWiUi\0"
+  "svread_hor_za32_f32_m\0"
+  "svread_hor_za32_f32_vg2\0"
+  "q8fIUWiUi\0"
+  "svread_hor_za32_f32_vg4\0"
+  "q16fIUWiUi\0"
+  "svread_hor_za32_s32_m\0"
+  "svread_hor_za32_s32_vg2\0"
+  "q8iIUWiUi\0"
+  "svread_hor_za32_s32_vg4\0"
+  "q16iIUWiUi\0"
+  "svread_hor_za32_u32_m\0"
+  "svread_hor_za32_u32_vg2\0"
+  "q8UiIUWiUi\0"
+  "svread_hor_za32_u32_vg4\0"
+  "q16UiIUWiUi\0"
+  "svread_hor_za64_f64_m\0"
+  "svread_hor_za64_f64_vg2\0"
+  "q4dIUWiUi\0"
+  "svread_hor_za64_f64_vg4\0"
+  "q8dIUWiUi\0"
+  "svread_hor_za64_s64_m\0"
+  "svread_hor_za64_s64_vg2\0"
+  "q4WiIUWiUi\0"
+  "svread_hor_za64_s64_vg4\0"
+  "q8WiIUWiUi\0"
+  "svread_hor_za64_u64_m\0"
+  "svread_hor_za64_u64_vg2\0"
+  "q4UWiIUWiUi\0"
+  "svread_hor_za64_u64_vg4\0"
+  "q8UWiIUWiUi\0"
+  "svread_hor_za8_mf8_m\0"
+  "svread_hor_za8_mf8_vg2\0"
+  "q32mIUWiUi\0"
+  "svread_hor_za8_mf8_vg4\0"
+  "q64mIUWiUi\0"
+  "svread_hor_za8_s8_m\0"
+  "svread_hor_za8_s8_vg2\0"
+  "q32ScIUWiUi\0"
+  "svread_hor_za8_s8_vg4\0"
+  "q64ScIUWiUi\0"
+  "svread_hor_za8_u8_m\0"
+  "svread_hor_za8_u8_vg2\0"
+  "q32UcIUWiUi\0"
+  "svread_hor_za8_u8_vg4\0"
+  "q64UcIUWiUi\0"
+  "svread_ver_za128_bf16_m\0"
+  "svread_ver_za128_f16_m\0"
+  "svread_ver_za128_f32_m\0"
+  "svread_ver_za128_f64_m\0"
+  "svread_ver_za128_mf8_m\0"
+  "svread_ver_za128_s16_m\0"
+  "svread_ver_za128_s32_m\0"
+  "svread_ver_za128_s64_m\0"
+  "svread_ver_za128_s8_m\0"
+  "svread_ver_za128_u16_m\0"
+  "svread_ver_za128_u32_m\0"
+  "svread_ver_za128_u64_m\0"
+  "svread_ver_za128_u8_m\0"
+  "svread_ver_za16_bf16_m\0"
+  "svread_ver_za16_bf16_vg2\0"
+  "svread_ver_za16_bf16_vg4\0"
+  "svread_ver_za16_f16_m\0"
+  "svread_ver_za16_f16_vg2\0"
+  "svread_ver_za16_f16_vg4\0"
+  "svread_ver_za16_s16_m\0"
+  "svread_ver_za16_s16_vg2\0"
+  "svread_ver_za16_s16_vg4\0"
+  "svread_ver_za16_u16_m\0"
+  "svread_ver_za16_u16_vg2\0"
+  "svread_ver_za16_u16_vg4\0"
+  "svread_ver_za32_f32_m\0"
+  "svread_ver_za32_f32_vg2\0"
+  "svread_ver_za32_f32_vg4\0"
+  "svread_ver_za32_s32_m\0"
+  "svread_ver_za32_s32_vg2\0"
+  "svread_ver_za32_s32_vg4\0"
+  "svread_ver_za32_u32_m\0"
+  "svread_ver_za32_u32_vg2\0"
+  "svread_ver_za32_u32_vg4\0"
+  "svread_ver_za64_f64_m\0"
+  "svread_ver_za64_f64_vg2\0"
+  "svread_ver_za64_f64_vg4\0"
+  "svread_ver_za64_s64_m\0"
+  "svread_ver_za64_s64_vg2\0"
+  "svread_ver_za64_s64_vg4\0"
+  "svread_ver_za64_u64_m\0"
+  "svread_ver_za64_u64_vg2\0"
+  "svread_ver_za64_u64_vg4\0"
+  "svread_ver_za8_mf8_m\0"
+  "svread_ver_za8_mf8_vg2\0"
+  "svread_ver_za8_mf8_vg4\0"
+  "svread_ver_za8_s8_m\0"
+  "svread_ver_za8_s8_vg2\0"
+  "svread_ver_za8_s8_vg4\0"
+  "svread_ver_za8_u8_m\0"
+  "svread_ver_za8_u8_vg2\0"
+  "svread_ver_za8_u8_vg4\0"
+  "svread_za16_bf16_vg1x2\0"
+  "q16yUi\0"
+  "svread_za16_bf16_vg1x4\0"
+  "q32yUi\0"
+  "svread_za16_f16_vg1x2\0"
+  "q16hUi\0"
+  "svread_za16_f16_vg1x4\0"
+  "q32hUi\0"
+  "svread_za16_s16_vg1x2\0"
+  "q16sUi\0"
+  "svread_za16_s16_vg1x4\0"
+  "q32sUi\0"
+  "svread_za16_u16_vg1x2\0"
+  "q16UsUi\0"
+  "svread_za16_u16_vg1x4\0"
+  "q32UsUi\0"
+  "svread_za32_f32_vg1x2\0"
+  "q8fUi\0"
+  "svread_za32_f32_vg1x4\0"
+  "q16fUi\0"
+  "svread_za32_s32_vg1x2\0"
+  "q8iUi\0"
+  "svread_za32_s32_vg1x4\0"
+  "q16iUi\0"
+  "svread_za32_u32_vg1x2\0"
+  "q8UiUi\0"
+  "svread_za32_u32_vg1x4\0"
+  "q16UiUi\0"
+  "svread_za64_f64_vg1x2\0"
+  "q4dUi\0"
+  "svread_za64_f64_vg1x4\0"
+  "q8dUi\0"
+  "svread_za64_s64_vg1x2\0"
+  "q4WiUi\0"
+  "svread_za64_s64_vg1x4\0"
+  "q8WiUi\0"
+  "svread_za64_u64_vg1x2\0"
+  "q4UWiUi\0"
+  "svread_za64_u64_vg1x4\0"
+  "q8UWiUi\0"
+  "svread_za8_mf8_vg1x2\0"
+  "q32mUi\0"
+  "svread_za8_mf8_vg1x4\0"
+  "q64mUi\0"
+  "svread_za8_s8_vg1x2\0"
+  "q32ScUi\0"
+  "svread_za8_s8_vg1x4\0"
+  "q64ScUi\0"
+  "svread_za8_u8_vg1x2\0"
+  "q32UcUi\0"
+  "svread_za8_u8_vg1x4\0"
+  "q64UcUi\0"
+  "svreadz_hor_za128_bf16\0"
+  "q8yIUWiUi\0"
+  "sme,sme2p1\0"
+  "svreadz_hor_za128_f16\0"
+  "q8hIUWiUi\0"
+  "svreadz_hor_za128_f32\0"
+  "q4fIUWiUi\0"
+  "svreadz_hor_za128_f64\0"
+  "q2dIUWiUi\0"
+  "svreadz_hor_za128_mf8\0"
+  "q16mIUWiUi\0"
+  "svreadz_hor_za128_s16\0"
+  "q8sIUWiUi\0"
+  "svreadz_hor_za128_s32\0"
+  "q4iIUWiUi\0"
+  "svreadz_hor_za128_s64\0"
+  "q2WiIUWiUi\0"
+  "svreadz_hor_za128_s8\0"
+  "q16ScIUWiUi\0"
+  "svreadz_hor_za128_u16\0"
+  "q8UsIUWiUi\0"
+  "svreadz_hor_za128_u32\0"
+  "q4UiIUWiUi\0"
+  "svreadz_hor_za128_u64\0"
+  "q2UWiIUWiUi\0"
+  "svreadz_hor_za128_u8\0"
+  "q16UcIUWiUi\0"
+  "svreadz_hor_za16_bf16\0"
+  "svreadz_hor_za16_bf16_vg2\0"
+  "svreadz_hor_za16_bf16_vg4\0"
+  "svreadz_hor_za16_f16\0"
+  "svreadz_hor_za16_f16_vg2\0"
+  "svreadz_hor_za16_f16_vg4\0"
+  "svreadz_hor_za16_s16\0"
+  "svreadz_hor_za16_s16_vg2\0"
+  "svreadz_hor_za16_s16_vg4\0"
+  "svreadz_hor_za16_u16\0"
+  "svreadz_hor_za16_u16_vg2\0"
+  "svreadz_hor_za16_u16_vg4\0"
+  "svreadz_hor_za32_f32\0"
+  "svreadz_hor_za32_f32_vg2\0"
+  "svreadz_hor_za32_f32_vg4\0"
+  "svreadz_hor_za32_s32\0"
+  "svreadz_hor_za32_s32_vg2\0"
+  "svreadz_hor_za32_s32_vg4\0"
+  "svreadz_hor_za32_u32\0"
+  "svreadz_hor_za32_u32_vg2\0"
+  "svreadz_hor_za32_u32_vg4\0"
+  "svreadz_hor_za64_f64\0"
+  "svreadz_hor_za64_f64_vg2\0"
+  "svreadz_hor_za64_f64_vg4\0"
+  "svreadz_hor_za64_s64\0"
+  "svreadz_hor_za64_s64_vg2\0"
+  "svreadz_hor_za64_s64_vg4\0"
+  "svreadz_hor_za64_u64\0"
+  "svreadz_hor_za64_u64_vg2\0"
+  "svreadz_hor_za64_u64_vg4\0"
+  "svreadz_hor_za8_mf8\0"
+  "svreadz_hor_za8_mf8_vg2\0"
+  "svreadz_hor_za8_mf8_vg4\0"
+  "svreadz_hor_za8_s8\0"
+  "svreadz_hor_za8_s8_vg2\0"
+  "svreadz_hor_za8_s8_vg4\0"
+  "svreadz_hor_za8_u8\0"
+  "svreadz_hor_za8_u8_vg2\0"
+  "svreadz_hor_za8_u8_vg4\0"
+  "svreadz_ver_za128_bf16\0"
+  "svreadz_ver_za128_f16\0"
+  "svreadz_ver_za128_f32\0"
+  "svreadz_ver_za128_f64\0"
+  "svreadz_ver_za128_mf8\0"
+  "svreadz_ver_za128_s16\0"
+  "svreadz_ver_za128_s32\0"
+  "svreadz_ver_za128_s64\0"
+  "svreadz_ver_za128_s8\0"
+  "svreadz_ver_za128_u16\0"
+  "svreadz_ver_za128_u32\0"
+  "svreadz_ver_za128_u64\0"
+  "svreadz_ver_za128_u8\0"
+  "svreadz_ver_za16_bf16\0"
+  "svreadz_ver_za16_bf16_vg2\0"
+  "svreadz_ver_za16_bf16_vg4\0"
+  "svreadz_ver_za16_f16\0"
+  "svreadz_ver_za16_f16_vg2\0"
+  "svreadz_ver_za16_f16_vg4\0"
+  "svreadz_ver_za16_s16\0"
+  "svreadz_ver_za16_s16_vg2\0"
+  "svreadz_ver_za16_s16_vg4\0"
+  "svreadz_ver_za16_u16\0"
+  "svreadz_ver_za16_u16_vg2\0"
+  "svreadz_ver_za16_u16_vg4\0"
+  "svreadz_ver_za32_f32\0"
+  "svreadz_ver_za32_f32_vg2\0"
+  "svreadz_ver_za32_f32_vg4\0"
+  "svreadz_ver_za32_s32\0"
+  "svreadz_ver_za32_s32_vg2\0"
+  "svreadz_ver_za32_s32_vg4\0"
+  "svreadz_ver_za32_u32\0"
+  "svreadz_ver_za32_u32_vg2\0"
+  "svreadz_ver_za32_u32_vg4\0"
+  "svreadz_ver_za64_f64\0"
+  "svreadz_ver_za64_f64_vg2\0"
+  "svreadz_ver_za64_f64_vg4\0"
+  "svreadz_ver_za64_s64\0"
+  "svreadz_ver_za64_s64_vg2\0"
+  "svreadz_ver_za64_s64_vg4\0"
+  "svreadz_ver_za64_u64\0"
+  "svreadz_ver_za64_u64_vg2\0"
+  "svreadz_ver_za64_u64_vg4\0"
+  "svreadz_ver_za8_mf8\0"
+  "svreadz_ver_za8_mf8_vg2\0"
+  "svreadz_ver_za8_mf8_vg4\0"
+  "svreadz_ver_za8_s8\0"
+  "svreadz_ver_za8_s8_vg2\0"
+  "svreadz_ver_za8_s8_vg4\0"
+  "svreadz_ver_za8_u8\0"
+  "svreadz_ver_za8_u8_vg2\0"
+  "svreadz_ver_za8_u8_vg4\0"
+  "svreadz_za16_bf16_vg1x2\0"
+  "svreadz_za16_bf16_vg1x4\0"
+  "svreadz_za16_f16_vg1x2\0"
+  "svreadz_za16_f16_vg1x4\0"
+  "svreadz_za16_s16_vg1x2\0"
+  "svreadz_za16_s16_vg1x4\0"
+  "svreadz_za16_u16_vg1x2\0"
+  "svreadz_za16_u16_vg1x4\0"
+  "svreadz_za32_f32_vg1x2\0"
+  "svreadz_za32_f32_vg1x4\0"
+  "svreadz_za32_s32_vg1x2\0"
+  "svreadz_za32_s32_vg1x4\0"
+  "svreadz_za32_u32_vg1x2\0"
+  "svreadz_za32_u32_vg1x4\0"
+  "svreadz_za64_f64_vg1x2\0"
+  "svreadz_za64_f64_vg1x4\0"
+  "svreadz_za64_s64_vg1x2\0"
+  "svreadz_za64_s64_vg1x4\0"
+  "svreadz_za64_u64_vg1x2\0"
+  "svreadz_za64_u64_vg1x4\0"
+  "svreadz_za8_mf8_vg1x2\0"
+  "svreadz_za8_mf8_vg1x4\0"
+  "svreadz_za8_s8_vg1x2\0"
+  "svreadz_za8_s8_vg1x4\0"
+  "svreadz_za8_u8_vg1x2\0"
+  "svreadz_za8_u8_vg1x4\0"
+  "svst1_hor_vnum_za128\0"
+  "vIUWiUiq16bv*Wi\0"
+  "svst1_hor_vnum_za16\0"
+  "svst1_hor_vnum_za32\0"
+  "svst1_hor_vnum_za64\0"
+  "svst1_hor_vnum_za8\0"
+  "svst1_hor_za128\0"
+  "vIUWiUiq16bv*\0"
+  "svst1_hor_za16\0"
+  "svst1_hor_za32\0"
+  "svst1_hor_za64\0"
+  "svst1_hor_za8\0"
+  "svst1_ver_vnum_za128\0"
+  "svst1_ver_vnum_za16\0"
+  "svst1_ver_vnum_za32\0"
+  "svst1_ver_vnum_za64\0"
+  "svst1_ver_vnum_za8\0"
+  "svst1_ver_za128\0"
+  "svst1_ver_za16\0"
+  "svst1_ver_za32\0"
+  "svst1_ver_za64\0"
+  "svst1_ver_za8\0"
+  "svstr_vnum_za\0"
+  "vUiv*Wi\0"
+  "svstr_za\0"
+  "vUiv*\0"
+  "svstr_zt\0"
+  "vIUWiv*\0"
+  "svsub_write_single_za32_s32_vg1x2\0"
+  "svsub_write_single_za32_s32_vg1x4\0"
+  "svsub_write_single_za32_u32_vg1x2\0"
+  "svsub_write_single_za32_u32_vg1x4\0"
+  "svsub_write_single_za64_s64_vg1x2\0"
+  "svsub_write_single_za64_s64_vg1x4\0"
+  "svsub_write_single_za64_u64_vg1x2\0"
+  "svsub_write_single_za64_u64_vg1x4\0"
+  "svsub_write_za32_s32_vg1x2\0"
+  "svsub_write_za32_s32_vg1x4\0"
+  "svsub_write_za32_u32_vg1x2\0"
+  "svsub_write_za32_u32_vg1x4\0"
+  "svsub_write_za64_s64_vg1x2\0"
+  "svsub_write_za64_s64_vg1x4\0"
+  "svsub_write_za64_u64_vg1x2\0"
+  "svsub_write_za64_u64_vg1x4\0"
+  "svsub_za16_bf16_vg1x2\0"
+  "svsub_za16_bf16_vg1x4\0"
+  "svsub_za16_f16_vg1x2\0"
+  "svsub_za16_f16_vg1x4\0"
+  "svsub_za32_f32_vg1x2\0"
+  "svsub_za32_f32_vg1x4\0"
+  "svsub_za32_s32_vg1x2\0"
+  "svsub_za32_s32_vg1x4\0"
+  "svsub_za32_u32_vg1x2\0"
+  "svsub_za32_u32_vg1x4\0"
+  "svsub_za64_f64_vg1x2\0"
+  "svsub_za64_f64_vg1x4\0"
+  "svsub_za64_s64_vg1x2\0"
+  "svsub_za64_s64_vg1x4\0"
+  "svsub_za64_u64_vg1x2\0"
+  "svsub_za64_u64_vg1x4\0"
+  "svsudot_lane_za32_s8_vg1x2\0"
+  "vUiq32Scq16UcIUWi\0"
+  "svsudot_lane_za32_s8_vg1x4\0"
+  "vUiq64Scq16UcIUWi\0"
+  "svsudot_single_za32_s8_vg1x2\0"
+  "vUiq32Scq16Uc\0"
+  "svsudot_single_za32_s8_vg1x4\0"
+  "vUiq64Scq16Uc\0"
+  "svsudot_za32_s8_vg1x2\0"
+  "vUiq32Scq32Uc\0"
+  "svsudot_za32_s8_vg1x4\0"
+  "vUiq64Scq64Uc\0"
+  "svsumla_lane_za32_s8_vg4x1\0"
+  "vUiq16Scq16UcIUWi\0"
+  "svsumla_lane_za32_s8_vg4x2\0"
+  "svsumla_lane_za32_s8_vg4x4\0"
+  "svsumla_single_za32_s8_vg4x2\0"
+  "svsumla_single_za32_s8_vg4x4\0"
+  "svsumla_za32_s8_vg4x1\0"
+  "vUiq16Scq16Uc\0"
+  "svsumla_za32_s8_vg4x2\0"
+  "svsumla_za32_s8_vg4x4\0"
+  "svsumopa_za32_s8_m\0"
+  "vIUWiq16bq16bq16Scq16Uc\0"
+  "svsumopa_za64_s16_m\0"
+  "vIUWiq16bq16bq8sq8Us\0"
+  "svsumops_za32_s8_m\0"
+  "svsumops_za64_s16_m\0"
+  "svsuvdot_lane_za32_s8_vg1x4\0"
+  "svtmopa_lane_za16_bf16_bf16\0"
+  "vIUWiq16yq8yq16UcIUWi\0"
+  "sme,sme2,sme-tmop,sme-b16b16\0"
+  "svtmopa_lane_za16_f16_f16\0"
+  "vIUWiq16hq8hq16UcIUWi\0"
+  "sme,sme2,sme-tmop,sme-f16f16\0"
+  "svtmopa_lane_za16_mf8_mf8_fpm\0"
+  "vIUWiq32mq16mq16UcIUWiUWi\0"
+  "sme,sme2,sme-tmop,sme-f8f16\0"
+  "svtmopa_lane_za32_bf16_bf16\0"
+  "sme,sme2,sme-tmop\0"
+  "svtmopa_lane_za32_f16_f16\0"
+  "svtmopa_lane_za32_f32_f32\0"
+  "vIUWiq8fq4fq16UcIUWi\0"
+  "svtmopa_lane_za32_mf8_mf8_fpm\0"
+  "sme,sme2,sme-tmop,sme-f8f32\0"
+  "svtmopa_lane_za32_s16_s16\0"
+  "vIUWiq16sq8sq16UcIUWi\0"
+  "svtmopa_lane_za32_s8_s8\0"
+  "vIUWiq32Scq16Scq16UcIUWi\0"
+  "svtmopa_lane_za32_s8_u8\0"
+  "vIUWiq32Scq16Ucq16UcIUWi\0"
+  "svtmopa_lane_za32_u16_u16\0"
+  "vIUWiq16Usq8Usq16UcIUWi\0"
+  "svtmopa_lane_za32_u8_s8\0"
+  "vIUWiq32Ucq16Scq16UcIUWi\0"
+  "svtmopa_lane_za32_u8_u8\0"
+  "vIUWiq32Ucq16Ucq16UcIUWi\0"
+  "svusdot_lane_za32_u8_vg1x2\0"
+  "vUiq32Ucq16ScIUWi\0"
+  "svusdot_lane_za32_u8_vg1x4\0"
+  "vUiq64Ucq16ScIUWi\0"
+  "svusdot_single_za32_u8_vg1x2\0"
+  "vUiq32Ucq16Sc\0"
+  "svusdot_single_za32_u8_vg1x4\0"
+  "vUiq64Ucq16Sc\0"
+  "svusdot_za32_u8_vg1x2\0"
+  "vUiq32Ucq32Sc\0"
+  "svusdot_za32_u8_vg1x4\0"
+  "vUiq64Ucq64Sc\0"
+  "svusmla_lane_za32_u8_vg4x1\0"
+  "vUiq16Ucq16ScIUWi\0"
+  "svusmla_lane_za32_u8_vg4x2\0"
+  "svusmla_lane_za32_u8_vg4x4\0"
+  "svusmla_single_za32_u8_vg4x2\0"
+  "svusmla_single_za32_u8_vg4x4\0"
+  "svusmla_za32_u8_vg4x1\0"
+  "vUiq16Ucq16Sc\0"
+  "svusmla_za32_u8_vg4x2\0"
+  "svusmla_za32_u8_vg4x4\0"
+  "svusmopa_za32_u8_m\0"
+  "vIUWiq16bq16bq16Ucq16Sc\0"
+  "svusmopa_za64_u16_m\0"
+  "vIUWiq16bq16bq8Usq8s\0"
+  "svusmops_za32_u8_m\0"
+  "svusmops_za64_u16_m\0"
+  "svusvdot_lane_za32_u8_vg1x4\0"
+  "svvdot_lane_za16_mf8_vg1x2_fpm\0"
+  "svvdot_lane_za32_bf16_vg1x2\0"
+  "svvdot_lane_za32_f16_vg1x2\0"
+  "svvdot_lane_za32_s16_vg1x2\0"
+  "svvdot_lane_za32_s8_vg1x4\0"
+  "svvdot_lane_za32_u16_vg1x2\0"
+  "svvdot_lane_za32_u8_vg1x4\0"
+  "svvdot_lane_za64_s16_vg1x4\0"
+  "svvdot_lane_za64_u16_vg1x4\0"
+  "svvdotb_lane_za32_mf8_vg1x4_fpm\0"
+  "svvdott_lane_za32_mf8_vg1x4_fpm\0"
+  "svwrite_hor_za128_bf16_m\0"
+  "vIUWiUiq16bq8y\0"
+  "svwrite_hor_za128_f16_m\0"
+  "vIUWiUiq16bq8h\0"
+  "svwrite_hor_za128_f32_m\0"
+  "vIUWiUiq16bq4f\0"
+  "svwrite_hor_za128_f64_m\0"
+  "vIUWiUiq16bq2d\0"
+  "svwrite_hor_za128_mf8_m\0"
+  "vIUWiUiq16bq16m\0"
+  "svwrite_hor_za128_s16_m\0"
+  "vIUWiUiq16bq8s\0"
+  "svwrite_hor_za128_s32_m\0"
+  "vIUWiUiq16bq4i\0"
+  "svwrite_hor_za128_s64_m\0"
+  "vIUWiUiq16bq2Wi\0"
+  "svwrite_hor_za128_s8_m\0"
+  "vIUWiUiq16bq16Sc\0"
+  "svwrite_hor_za128_u16_m\0"
+  "vIUWiUiq16bq8Us\0"
+  "svwrite_hor_za128_u32_m\0"
+  "vIUWiUiq16bq4Ui\0"
+  "svwrite_hor_za128_u64_m\0"
+  "vIUWiUiq16bq2UWi\0"
+  "svwrite_hor_za128_u8_m\0"
+  "vIUWiUiq16bq16Uc\0"
+  "svwrite_hor_za16_bf16_m\0"
+  "svwrite_hor_za16_bf16_vg2\0"
+  "vIUWiUiq16y\0"
+  "svwrite_hor_za16_bf16_vg4\0"
+  "vIUWiUiq32y\0"
+  "svwrite_hor_za16_f16_m\0"
+  "svwrite_hor_za16_f16_vg2\0"
+  "vIUWiUiq16h\0"
+  "svwrite_hor_za16_f16_vg4\0"
+  "vIUWiUiq32h\0"
+  "svwrite_hor_za16_s16_m\0"
+  "svwrite_hor_za16_s16_vg2\0"
+  "vIUWiUiq16s\0"
+  "svwrite_hor_za16_s16_vg4\0"
+  "vIUWiUiq32s\0"
+  "svwrite_hor_za16_u16_m\0"
+  "svwrite_hor_za16_u16_vg2\0"
+  "vIUWiUiq16Us\0"
+  "svwrite_hor_za16_u16_vg4\0"
+  "vIUWiUiq32Us\0"
+  "svwrite_hor_za32_f32_m\0"
+  "svwrite_hor_za32_f32_vg2\0"
+  "vIUWiUiq8f\0"
+  "svwrite_hor_za32_f32_vg4\0"
+  "vIUWiUiq16f\0"
+  "svwrite_hor_za32_s32_m\0"
+  "svwrite_hor_za32_s32_vg2\0"
+  "vIUWiUiq8i\0"
+  "svwrite_hor_za32_s32_vg4\0"
+  "vIUWiUiq16i\0"
+  "svwrite_hor_za32_u32_m\0"
+  "svwrite_hor_za32_u32_vg2\0"
+  "vIUWiUiq8Ui\0"
+  "svwrite_hor_za32_u32_vg4\0"
+  "vIUWiUiq16Ui\0"
+  "svwrite_hor_za64_f64_m\0"
+  "svwrite_hor_za64_f64_vg2\0"
+  "vIUWiUiq4d\0"
+  "svwrite_hor_za64_f64_vg4\0"
+  "vIUWiUiq8d\0"
+  "svwrite_hor_za64_s64_m\0"
+  "svwrite_hor_za64_s64_vg2\0"
+  "vIUWiUiq4Wi\0"
+  "svwrite_hor_za64_s64_vg4\0"
+  "vIUWiUiq8Wi\0"
+  "svwrite_hor_za64_u64_m\0"
+  "svwrite_hor_za64_u64_vg2\0"
+  "vIUWiUiq4UWi\0"
+  "svwrite_hor_za64_u64_vg4\0"
+  "vIUWiUiq8UWi\0"
+  "svwrite_hor_za8_mf8_m\0"
+  "svwrite_hor_za8_mf8_vg2\0"
+  "vIUWiUiq32m\0"
+  "svwrite_hor_za8_mf8_vg4\0"
+  "vIUWiUiq64m\0"
+  "svwrite_hor_za8_s8_m\0"
+  "svwrite_hor_za8_s8_vg2\0"
+  "vIUWiUiq32Sc\0"
+  "svwrite_hor_za8_s8_vg4\0"
+  "vIUWiUiq64Sc\0"
+  "svwrite_hor_za8_u8_m\0"
+  "svwrite_hor_za8_u8_vg2\0"
+  "vIUWiUiq32Uc\0"
+  "svwrite_hor_za8_u8_vg4\0"
+  "vIUWiUiq64Uc\0"
+  "svwrite_lane_zt_bf16\0"
+  "vIUWiq8yIUWi\0"
+  "svwrite_lane_zt_f16\0"
+  "vIUWiq8hIUWi\0"
+  "svwrite_lane_zt_f32\0"
+  "vIUWiq4fIUWi\0"
+  "svwrite_lane_zt_f64\0"
+  "vIUWiq2dIUWi\0"
+  "svwrite_lane_zt_s16\0"
+  "vIUWiq8sIUWi\0"
+  "svwrite_lane_zt_s32\0"
+  "vIUWiq4iIUWi\0"
+  "svwrite_lane_zt_s64\0"
+  "vIUWiq2WiIUWi\0"
+  "svwrite_lane_zt_s8\0"
+  "vIUWiq16ScIUWi\0"
+  "svwrite_lane_zt_u16\0"
+  "vIUWiq8UsIUWi\0"
+  "svwrite_lane_zt_u32\0"
+  "vIUWiq4UiIUWi\0"
+  "svwrite_lane_zt_u64\0"
+  "vIUWiq2UWiIUWi\0"
+  "svwrite_lane_zt_u8\0"
+  "vIUWiq16UcIUWi\0"
+  "svwrite_ver_za128_bf16_m\0"
+  "svwrite_ver_za128_f16_m\0"
+  "svwrite_ver_za128_f32_m\0"
+  "svwrite_ver_za128_f64_m\0"
+  "svwrite_ver_za128_mf8_m\0"
+  "svwrite_ver_za128_s16_m\0"
+  "svwrite_ver_za128_s32_m\0"
+  "svwrite_ver_za128_s64_m\0"
+  "svwrite_ver_za128_s8_m\0"
+  "svwrite_ver_za128_u16_m\0"
+  "svwrite_ver_za128_u32_m\0"
+  "svwrite_ver_za128_u64_m\0"
+  "svwrite_ver_za128_u8_m\0"
+  "svwrite_ver_za16_bf16_m\0"
+  "svwrite_ver_za16_bf16_vg2\0"
+  "svwrite_ver_za16_bf16_vg4\0"
+  "svwrite_ver_za16_f16_m\0"
+  "svwrite_ver_za16_f16_vg2\0"
+  "svwrite_ver_za16_f16_vg4\0"
+  "svwrite_ver_za16_s16_m\0"
+  "svwrite_ver_za16_s16_vg2\0"
+  "svwrite_ver_za16_s16_vg4\0"
+  "svwrite_ver_za16_u16_m\0"
+  "svwrite_ver_za16_u16_vg2\0"
+  "svwrite_ver_za16_u16_vg4\0"
+  "svwrite_ver_za32_f32_m\0"
+  "svwrite_ver_za32_f32_vg2\0"
+  "svwrite_ver_za32_f32_vg4\0"
+  "svwrite_ver_za32_s32_m\0"
+  "svwrite_ver_za32_s32_vg2\0"
+  "svwrite_ver_za32_s32_vg4\0"
+  "svwrite_ver_za32_u32_m\0"
+  "svwrite_ver_za32_u32_vg2\0"
+  "svwrite_ver_za32_u32_vg4\0"
+  "svwrite_ver_za64_f64_m\0"
+  "svwrite_ver_za64_f64_vg2\0"
+  "svwrite_ver_za64_f64_vg4\0"
+  "svwrite_ver_za64_s64_m\0"
+  "svwrite_ver_za64_s64_vg2\0"
+  "svwrite_ver_za64_s64_vg4\0"
+  "svwrite_ver_za64_u64_m\0"
+  "svwrite_ver_za64_u64_vg2\0"
+  "svwrite_ver_za64_u64_vg4\0"
+  "svwrite_ver_za8_mf8_m\0"
+  "svwrite_ver_za8_mf8_vg2\0"
+  "svwrite_ver_za8_mf8_vg4\0"
+  "svwrite_ver_za8_s8_m\0"
+  "svwrite_ver_za8_s8_vg2\0"
+  "svwrite_ver_za8_s8_vg4\0"
+  "svwrite_ver_za8_u8_m\0"
+  "svwrite_ver_za8_u8_vg2\0"
+  "svwrite_ver_za8_u8_vg4\0"
+  "svwrite_za16_bf16_vg1x2\0"
+  "svwrite_za16_bf16_vg1x4\0"
+  "svwrite_za16_f16_vg1x2\0"
+  "svwrite_za16_f16_vg1x4\0"
+  "svwrite_za16_s16_vg1x2\0"
+  "vUiq16s\0"
+  "svwrite_za16_s16_vg1x4\0"
+  "vUiq32s\0"
+  "svwrite_za16_u16_vg1x2\0"
+  "vUiq16Us\0"
+  "svwrite_za16_u16_vg1x4\0"
+  "vUiq32Us\0"
+  "svwrite_za32_f32_vg1x2\0"
+  "svwrite_za32_f32_vg1x4\0"
+  "svwrite_za32_s32_vg1x2\0"
+  "svwrite_za32_s32_vg1x4\0"
+  "svwrite_za32_u32_vg1x2\0"
+  "svwrite_za32_u32_vg1x4\0"
+  "svwrite_za64_f64_vg1x2\0"
+  "svwrite_za64_f64_vg1x4\0"
+  "svwrite_za64_s64_vg1x2\0"
+  "svwrite_za64_s64_vg1x4\0"
+  "svwrite_za64_u64_vg1x2\0"
+  "svwrite_za64_u64_vg1x4\0"
+  "svwrite_za8_mf8_vg1x2\0"
+  "vUiq32m\0"
+  "svwrite_za8_mf8_vg1x4\0"
+  "vUiq64m\0"
+  "svwrite_za8_s8_vg1x2\0"
+  "vUiq32Sc\0"
+  "svwrite_za8_s8_vg1x4\0"
+  "vUiq64Sc\0"
+  "svwrite_za8_u8_vg1x2\0"
+  "vUiq32Uc\0"
+  "svwrite_za8_u8_vg1x4\0"
+  "vUiq64Uc\0"
+  "svwrite_zt_bf16\0"
+  "vIUWiq8y\0"
+  "svwrite_zt_f16\0"
+  "vIUWiq8h\0"
+  "svwrite_zt_f32\0"
+  "vIUWiq4f\0"
+  "svwrite_zt_f64\0"
+  "vIUWiq2d\0"
+  "svwrite_zt_s16\0"
+  "vIUWiq8s\0"
+  "svwrite_zt_s32\0"
+  "vIUWiq4i\0"
+  "svwrite_zt_s64\0"
+  "vIUWiq2Wi\0"
+  "svwrite_zt_s8\0"
+  "vIUWiq16Sc\0"
+  "svwrite_zt_u16\0"
+  "vIUWiq8Us\0"
+  "svwrite_zt_u32\0"
+  "vIUWiq4Ui\0"
+  "svwrite_zt_u64\0"
+  "vIUWiq2UWi\0"
+  "svwrite_zt_u8\0"
+  "vIUWiq16Uc\0"
+  "svzero_mask_za\0"
+  "vIUWi\0"
+  "svzero_za\0"
+  "vv\0"
+  "svzero_za64_vg1x2\0"
+  "vUi\0"
+  "svzero_za64_vg1x4\0"
+  "svzero_za64_vg2x1\0"
+  "svzero_za64_vg2x2\0"
+  "svzero_za64_vg2x4\0"
+  "svzero_za64_vg4x1\0"
+  "svzero_za64_vg4x2\0"
+  "svzero_za64_vg4x4\0"
+  "svzero_zt\0"
+  ;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+static constexpr llvm::StringTable
+BuiltinStrings = BuiltinStringsStorage;
+#endif // GET_SME_BUILTIN_STR_TABLE
+
+#ifdef GET_SME_BUILTIN_INFOS
+    Builtin::Info{Builtin::Info::StrOffsets{3 /* __arm_in_streaming_mode */, 27 /* bv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{34 /* svadd_write_single_za32_s32_vg1x2 */, 68 /* vUiq8iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{87 /* svadd_write_single_za32_s32_vg1x4 */, 121 /* vUiq16iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{132 /* svadd_write_single_za32_u32_vg1x2 */, 166 /* vUiq8Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{178 /* svadd_write_single_za32_u32_vg1x4 */, 212 /* vUiq16Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{225 /* svadd_write_single_za64_s64_vg1x2 */, 259 /* vUiq4Wiq2Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{291 /* svadd_write_single_za64_s64_vg1x4 */, 325 /* vUiq8Wiq2Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{337 /* svadd_write_single_za64_u64_vg1x2 */, 371 /* vUiq4UWiq2UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{385 /* svadd_write_single_za64_u64_vg1x4 */, 419 /* vUiq8UWiq2UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{433 /* svadd_write_za32_s32_vg1x2 */, 460 /* vUiq8iq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{470 /* svadd_write_za32_s32_vg1x4 */, 497 /* vUiq16iq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{509 /* svadd_write_za32_u32_vg1x2 */, 536 /* vUiq8Uiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{548 /* svadd_write_za32_u32_vg1x4 */, 575 /* vUiq16Uiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{589 /* svadd_write_za64_s64_vg1x2 */, 616 /* vUiq4Wiq4Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{628 /* svadd_write_za64_s64_vg1x4 */, 655 /* vUiq8Wiq8Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{667 /* svadd_write_za64_u64_vg1x2 */, 694 /* vUiq4UWiq4UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{708 /* svadd_write_za64_u64_vg1x4 */, 735 /* vUiq8UWiq8UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{749 /* svadd_za16_bf16_vg1x2 */, 771 /* vUiq16y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{794 /* svadd_za16_bf16_vg1x4 */, 816 /* vUiq32y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{824 /* svadd_za16_f16_vg1x2 */, 845 /* vUiq16h */, 1 /* n */, 853 /* sme,(sme-f16f16|sme-f8f16) */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{880 /* svadd_za16_f16_vg1x4 */, 901 /* vUiq32h */, 1 /* n */, 853 /* sme,(sme-f16f16|sme-f8f16) */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{909 /* svadd_za32_f32_vg1x2 */, 930 /* vUiq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{937 /* svadd_za32_f32_vg1x4 */, 958 /* vUiq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{966 /* svadd_za32_s32_vg1x2 */, 987 /* vUiq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{994 /* svadd_za32_s32_vg1x4 */, 1015 /* vUiq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1023 /* svadd_za32_u32_vg1x2 */, 1044 /* vUiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1052 /* svadd_za32_u32_vg1x4 */, 1073 /* vUiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1082 /* svadd_za64_f64_vg1x2 */, 1103 /* vUiq4d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1130 /* svadd_za64_f64_vg1x4 */, 1151 /* vUiq8d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1158 /* svadd_za64_s64_vg1x2 */, 1179 /* vUiq4Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1187 /* svadd_za64_s64_vg1x4 */, 1208 /* vUiq8Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1216 /* svadd_za64_u64_vg1x2 */, 1237 /* vUiq4UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1246 /* svadd_za64_u64_vg1x4 */, 1267 /* vUiq8UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1276 /* svaddha_za32_s32_m */, 1295 /* vIUWiq16bq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1312 /* svaddha_za32_u32_m */, 1331 /* vIUWiq16bq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1349 /* svaddha_za64_s64_m */, 1368 /* vIUWiq16bq16bq2Wi */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1401 /* svaddha_za64_u64_m */, 1420 /* vIUWiq16bq16bq2UWi */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1439 /* svaddva_za32_s32_m */, 1295 /* vIUWiq16bq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1458 /* svaddva_za32_u32_m */, 1331 /* vIUWiq16bq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1477 /* svaddva_za64_s64_m */, 1368 /* vIUWiq16bq16bq2Wi */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1496 /* svaddva_za64_u64_m */, 1420 /* vIUWiq16bq16bq2UWi */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1515 /* svbmopa_za32_s32_m */, 1534 /* vIUWiq16bq16bq4iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1554 /* svbmopa_za32_u32_m */, 1573 /* vIUWiq16bq16bq4Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1595 /* svbmops_za32_s32_m */, 1534 /* vIUWiq16bq16bq4iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1614 /* svbmops_za32_u32_m */, 1573 /* vIUWiq16bq16bq4Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1633 /* svcntsb */, 1641 /* UWiv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1646 /* svcntsd */, 1641 /* UWiv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1654 /* svcntsh */, 1641 /* UWiv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1662 /* svcntsw */, 1641 /* UWiv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1670 /* svdot_lane_za16_mf8_vg1x2_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1733 /* svdot_lane_za16_mf8_vg1x4_fpm */, 1763 /* vUiq64mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1782 /* svdot_lane_za32_bf16_vg1x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1824 /* svdot_lane_za32_bf16_vg1x4 */, 1851 /* vUiq32yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1866 /* svdot_lane_za32_f16_vg1x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1907 /* svdot_lane_za32_f16_vg1x4 */, 1933 /* vUiq32hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1948 /* svdot_lane_za32_mf8_vg1x2_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{1992 /* svdot_lane_za32_mf8_vg1x4_fpm */, 1763 /* vUiq64mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2022 /* svdot_lane_za32_s16_vg1x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2063 /* svdot_lane_za32_s16_vg1x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2104 /* svdot_lane_za32_s8_vg1x2 */, 2129 /* vUiq32Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2147 /* svdot_lane_za32_s8_vg1x4 */, 2172 /* vUiq64Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2190 /* svdot_lane_za32_u16_vg1x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2233 /* svdot_lane_za32_u16_vg1x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2276 /* svdot_lane_za32_u8_vg1x2 */, 2301 /* vUiq32Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2319 /* svdot_lane_za32_u8_vg1x4 */, 2344 /* vUiq64Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2362 /* svdot_lane_za64_s16_vg1x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2388 /* svdot_lane_za64_s16_vg1x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2414 /* svdot_lane_za64_u16_vg1x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2440 /* svdot_lane_za64_u16_vg1x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2466 /* svdot_single_za16_mf8_vg1x2_fpm */, 2498 /* vUiq32mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2513 /* svdot_single_za16_mf8_vg1x4_fpm */, 2545 /* vUiq64mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2560 /* svdot_single_za32_bf16_vg1x2 */, 2589 /* vUiq16yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2600 /* svdot_single_za32_bf16_vg1x4 */, 2629 /* vUiq32yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2640 /* svdot_single_za32_f16_vg1x2 */, 2668 /* vUiq16hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2679 /* svdot_single_za32_f16_vg1x4 */, 2707 /* vUiq32hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2718 /* svdot_single_za32_mf8_vg1x2_fpm */, 2498 /* vUiq32mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2750 /* svdot_single_za32_mf8_vg1x4_fpm */, 2545 /* vUiq64mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2782 /* svdot_single_za32_s16_vg1x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2821 /* svdot_single_za32_s16_vg1x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2860 /* svdot_single_za32_s8_vg1x2 */, 2887 /* vUiq32Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2901 /* svdot_single_za32_s8_vg1x4 */, 2928 /* vUiq64Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2942 /* svdot_single_za32_u16_vg1x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{2983 /* svdot_single_za32_u16_vg1x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3024 /* svdot_single_za32_u8_vg1x2 */, 3051 /* vUiq32Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3065 /* svdot_single_za32_u8_vg1x4 */, 3092 /* vUiq64Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3106 /* svdot_single_za64_s16_vg1x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3134 /* svdot_single_za64_s16_vg1x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3162 /* svdot_single_za64_u16_vg1x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3190 /* svdot_single_za64_u16_vg1x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3218 /* svdot_za16_mf8_vg1x2_fpm */, 3243 /* vUiq32mq32mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3258 /* svdot_za16_mf8_vg1x4_fpm */, 3283 /* vUiq64mq64mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3298 /* svdot_za32_bf16_vg1x2 */, 3320 /* vUiq16yq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3332 /* svdot_za32_bf16_vg1x4 */, 3354 /* vUiq32yq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3366 /* svdot_za32_f16_vg1x2 */, 3387 /* vUiq16hq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3399 /* svdot_za32_f16_vg1x4 */, 3420 /* vUiq32hq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3432 /* svdot_za32_mf8_vg1x2_fpm */, 3243 /* vUiq32mq32mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3457 /* svdot_za32_mf8_vg1x4_fpm */, 3283 /* vUiq64mq64mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3482 /* svdot_za32_s16_vg1x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3515 /* svdot_za32_s16_vg1x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3548 /* svdot_za32_s8_vg1x2 */, 3568 /* vUiq32Scq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3582 /* svdot_za32_s8_vg1x4 */, 3602 /* vUiq64Scq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3616 /* svdot_za32_u16_vg1x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3651 /* svdot_za32_u16_vg1x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3686 /* svdot_za32_u8_vg1x2 */, 3706 /* vUiq32Ucq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3720 /* svdot_za32_u8_vg1x4 */, 3740 /* vUiq64Ucq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3754 /* svdot_za64_s16_vg1x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3775 /* svdot_za64_s16_vg1x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3796 /* svdot_za64_u16_vg1x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3817 /* svdot_za64_u16_vg1x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3838 /* svld1_hor_vnum_za128 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3876 /* svld1_hor_vnum_za16 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3896 /* svld1_hor_vnum_za32 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3916 /* svld1_hor_vnum_za64 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3936 /* svld1_hor_vnum_za8 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3955 /* svld1_hor_za128 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{3986 /* svld1_hor_za16 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4001 /* svld1_hor_za32 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4016 /* svld1_hor_za64 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4031 /* svld1_hor_za8 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4045 /* svld1_ver_vnum_za128 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4066 /* svld1_ver_vnum_za16 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4086 /* svld1_ver_vnum_za32 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4106 /* svld1_ver_vnum_za64 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4126 /* svld1_ver_vnum_za8 */, 3859 /* vIUWiUiq16bvC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4145 /* svld1_ver_za128 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4161 /* svld1_ver_za16 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4176 /* svld1_ver_za32 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4191 /* svld1_ver_za64 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4206 /* svld1_ver_za8 */, 3971 /* vIUWiUiq16bvC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4220 /* svldr_vnum_za */, 4234 /* vUivC*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4243 /* svldr_za */, 4252 /* vUivC* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4259 /* svldr_zt */, 4268 /* vIUWivC* */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4277 /* svluti2_lane_zt_bf16 */, 4298 /* q8yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4315 /* svluti2_lane_zt_bf16_x2 */, 4339 /* q16yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4357 /* svluti2_lane_zt_bf16_x4 */, 4381 /* q32yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4399 /* svluti2_lane_zt_f16 */, 4419 /* q8hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4436 /* svluti2_lane_zt_f16_x2 */, 4459 /* q16hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4477 /* svluti2_lane_zt_f16_x4 */, 4500 /* q32hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4518 /* svluti2_lane_zt_f32 */, 4538 /* q4fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4555 /* svluti2_lane_zt_f32_x2 */, 4578 /* q8fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4595 /* svluti2_lane_zt_f32_x4 */, 4618 /* q16fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4636 /* svluti2_lane_zt_mf8 */, 4656 /* q16mIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4674 /* svluti2_lane_zt_mf8_x2 */, 4697 /* q32mIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4715 /* svluti2_lane_zt_mf8_x4 */, 4738 /* q64mIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4756 /* svluti2_lane_zt_s16 */, 4776 /* q8sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4793 /* svluti2_lane_zt_s16_x2 */, 4816 /* q16sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4834 /* svluti2_lane_zt_s16_x4 */, 4857 /* q32sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4875 /* svluti2_lane_zt_s32 */, 4895 /* q4iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4912 /* svluti2_lane_zt_s32_x2 */, 4935 /* q8iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4952 /* svluti2_lane_zt_s32_x4 */, 4975 /* q16iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{4993 /* svluti2_lane_zt_s8 */, 5012 /* q16ScIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5031 /* svluti2_lane_zt_s8_x2 */, 5053 /* q32ScIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5072 /* svluti2_lane_zt_s8_x4 */, 5094 /* q64ScIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5113 /* svluti2_lane_zt_u16 */, 5133 /* q8UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5151 /* svluti2_lane_zt_u16_x2 */, 5174 /* q16UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5193 /* svluti2_lane_zt_u16_x4 */, 5216 /* q32UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5235 /* svluti2_lane_zt_u32 */, 5255 /* q4UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5273 /* svluti2_lane_zt_u32_x2 */, 5296 /* q8UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5314 /* svluti2_lane_zt_u32_x4 */, 5337 /* q16UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5356 /* svluti2_lane_zt_u8 */, 5375 /* q16UcIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5394 /* svluti2_lane_zt_u8_x2 */, 5416 /* q32UcIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5435 /* svluti2_lane_zt_u8_x4 */, 5457 /* q64UcIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5476 /* svluti4_lane_zt_bf16 */, 4298 /* q8yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5497 /* svluti4_lane_zt_bf16_x2 */, 4339 /* q16yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5521 /* svluti4_lane_zt_bf16_x4 */, 4381 /* q32yIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5545 /* svluti4_lane_zt_f16 */, 4419 /* q8hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5565 /* svluti4_lane_zt_f16_x2 */, 4459 /* q16hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5588 /* svluti4_lane_zt_f16_x4 */, 4500 /* q32hIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5611 /* svluti4_lane_zt_f32 */, 4538 /* q4fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5631 /* svluti4_lane_zt_f32_x2 */, 4578 /* q8fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5654 /* svluti4_lane_zt_f32_x4 */, 4618 /* q16fIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5677 /* svluti4_lane_zt_mf8 */, 4656 /* q16mIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5697 /* svluti4_lane_zt_mf8_x2 */, 4697 /* q32mIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5720 /* svluti4_lane_zt_s16 */, 4776 /* q8sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5740 /* svluti4_lane_zt_s16_x2 */, 4816 /* q16sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5763 /* svluti4_lane_zt_s16_x4 */, 4857 /* q32sIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5786 /* svluti4_lane_zt_s32 */, 4895 /* q4iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5806 /* svluti4_lane_zt_s32_x2 */, 4935 /* q8iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5829 /* svluti4_lane_zt_s32_x4 */, 4975 /* q16iIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5852 /* svluti4_lane_zt_s8 */, 5012 /* q16ScIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5871 /* svluti4_lane_zt_s8_x2 */, 5053 /* q32ScIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5893 /* svluti4_lane_zt_u16 */, 5133 /* q8UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5913 /* svluti4_lane_zt_u16_x2 */, 5174 /* q16UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5936 /* svluti4_lane_zt_u16_x4 */, 5216 /* q32UsIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5959 /* svluti4_lane_zt_u32 */, 5255 /* q4UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{5979 /* svluti4_lane_zt_u32_x2 */, 5296 /* q8UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6002 /* svluti4_lane_zt_u32_x4 */, 5337 /* q16UiIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6025 /* svluti4_lane_zt_u8 */, 5375 /* q16UcIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6044 /* svluti4_lane_zt_u8_x2 */, 5416 /* q32UcIUWiq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6066 /* svluti4_zt_s8_x4 */, 6083 /* q64ScIUWiq32Uc */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6112 /* svluti4_zt_u8_x4 */, 6129 /* q64UcIUWiq32Uc */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6144 /* svluti6_zt_mf8 */, 6159 /* q16mIUWiq16Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6184 /* svluti6_zt_mf8_x4 */, 6202 /* q64mIUWiq48Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6216 /* svluti6_zt_s8 */, 6230 /* q16ScIUWiq16Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6245 /* svluti6_zt_s8_x4 */, 6262 /* q64ScIUWiq48Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6277 /* svluti6_zt_u8 */, 6291 /* q16UcIUWiq16Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6306 /* svluti6_zt_u8_x4 */, 6323 /* q64UcIUWiq48Uc */, 1 /* n */, 6173 /* sme,sme2p3 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6338 /* svmla_lane_za16_bf16_vg1x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6365 /* svmla_lane_za16_bf16_vg1x4 */, 1851 /* vUiq32yq8yIUWi */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6392 /* svmla_lane_za16_f16_vg1x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6433 /* svmla_lane_za16_f16_vg1x4 */, 1933 /* vUiq32hq8hIUWi */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6459 /* svmla_lane_za16_mf8_vg2x1_fpm */, 6489 /* vUiq16mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6508 /* svmla_lane_za16_mf8_vg2x2_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6538 /* svmla_lane_za16_mf8_vg2x4_fpm */, 1763 /* vUiq64mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6568 /* svmla_lane_za32_bf16_vg2x1 */, 6595 /* vUiq8yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6609 /* svmla_lane_za32_bf16_vg2x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6636 /* svmla_lane_za32_bf16_vg2x4 */, 1851 /* vUiq32yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6663 /* svmla_lane_za32_f16_vg2x1 */, 6689 /* vUiq8hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6703 /* svmla_lane_za32_f16_vg2x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6729 /* svmla_lane_za32_f16_vg2x4 */, 1933 /* vUiq32hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6755 /* svmla_lane_za32_f32_vg1x2 */, 6781 /* vUiq8fq4fIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6795 /* svmla_lane_za32_f32_vg1x4 */, 6821 /* vUiq16fq4fIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6836 /* svmla_lane_za32_mf8_vg4x1_fpm */, 6489 /* vUiq16mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6866 /* svmla_lane_za32_mf8_vg4x2_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6896 /* svmla_lane_za32_mf8_vg4x4_fpm */, 1763 /* vUiq64mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6926 /* svmla_lane_za32_s16_vg2x1 */, 6952 /* vUiq8sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6966 /* svmla_lane_za32_s16_vg2x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{6992 /* svmla_lane_za32_s16_vg2x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7018 /* svmla_lane_za32_s8_vg4x1 */, 7043 /* vUiq16Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7061 /* svmla_lane_za32_s8_vg4x2 */, 2129 /* vUiq32Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7086 /* svmla_lane_za32_s8_vg4x4 */, 2172 /* vUiq64Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7111 /* svmla_lane_za32_u16_vg2x1 */, 7137 /* vUiq8Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7153 /* svmla_lane_za32_u16_vg2x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7179 /* svmla_lane_za32_u16_vg2x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7205 /* svmla_lane_za32_u8_vg4x1 */, 7230 /* vUiq16Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7248 /* svmla_lane_za32_u8_vg4x2 */, 2301 /* vUiq32Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7273 /* svmla_lane_za32_u8_vg4x4 */, 2344 /* vUiq64Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7298 /* svmla_lane_za64_f64_vg1x2 */, 7324 /* vUiq4dq2dIUWi */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7338 /* svmla_lane_za64_f64_vg1x4 */, 7364 /* vUiq8dq2dIUWi */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7378 /* svmla_lane_za64_s16_vg4x1 */, 6952 /* vUiq8sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7404 /* svmla_lane_za64_s16_vg4x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7430 /* svmla_lane_za64_s16_vg4x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7456 /* svmla_lane_za64_u16_vg4x1 */, 7137 /* vUiq8Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7482 /* svmla_lane_za64_u16_vg4x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7508 /* svmla_lane_za64_u16_vg4x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7534 /* svmla_single_za16_bf16_vg1x2 */, 2589 /* vUiq16yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7563 /* svmla_single_za16_bf16_vg1x4 */, 2629 /* vUiq32yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7592 /* svmla_single_za16_f16_vg1x2 */, 2668 /* vUiq16hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7620 /* svmla_single_za16_f16_vg1x4 */, 2707 /* vUiq32hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7648 /* svmla_single_za16_mf8_vg2x2_fpm */, 2498 /* vUiq32mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7680 /* svmla_single_za16_mf8_vg2x4_fpm */, 2545 /* vUiq64mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7712 /* svmla_single_za32_bf16_vg2x2 */, 2589 /* vUiq16yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7741 /* svmla_single_za32_bf16_vg2x4 */, 2629 /* vUiq32yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7770 /* svmla_single_za32_f16_vg2x2 */, 2668 /* vUiq16hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7798 /* svmla_single_za32_f16_vg2x4 */, 2707 /* vUiq32hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7826 /* svmla_single_za32_f32_vg1x2 */, 7854 /* vUiq8fq4f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7864 /* svmla_single_za32_f32_vg1x4 */, 7892 /* vUiq16fq4f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7903 /* svmla_single_za32_mf8_vg4x2_fpm */, 2498 /* vUiq32mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7935 /* svmla_single_za32_mf8_vg4x4_fpm */, 2545 /* vUiq64mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7967 /* svmla_single_za32_s16_vg2x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{7995 /* svmla_single_za32_s16_vg2x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8023 /* svmla_single_za32_s8_vg4x2 */, 2887 /* vUiq32Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8050 /* svmla_single_za32_s8_vg4x4 */, 2928 /* vUiq64Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8077 /* svmla_single_za32_u16_vg2x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8105 /* svmla_single_za32_u16_vg2x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8133 /* svmla_single_za32_u8_vg4x2 */, 3051 /* vUiq32Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8160 /* svmla_single_za32_u8_vg4x4 */, 3092 /* vUiq64Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8187 /* svmla_single_za64_f64_vg1x2 */, 8215 /* vUiq4dq2d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8225 /* svmla_single_za64_f64_vg1x4 */, 8253 /* vUiq8dq2d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8263 /* svmla_single_za64_s16_vg4x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8291 /* svmla_single_za64_s16_vg4x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8319 /* svmla_single_za64_u16_vg4x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8347 /* svmla_single_za64_u16_vg4x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8375 /* svmla_za16_bf16_vg1x2 */, 3320 /* vUiq16yq16y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8397 /* svmla_za16_bf16_vg1x4 */, 3354 /* vUiq32yq32y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8419 /* svmla_za16_f16_vg1x2 */, 3387 /* vUiq16hq16h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8440 /* svmla_za16_f16_vg1x4 */, 3420 /* vUiq32hq32h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8461 /* svmla_za16_mf8_vg2x1_fpm */, 8486 /* vUiq16mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8501 /* svmla_za16_mf8_vg2x2_fpm */, 3243 /* vUiq32mq32mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8526 /* svmla_za16_mf8_vg2x4_fpm */, 3283 /* vUiq64mq64mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8551 /* svmla_za32_bf16_vg2x1 */, 8573 /* vUiq8yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8583 /* svmla_za32_bf16_vg2x2 */, 3320 /* vUiq16yq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8605 /* svmla_za32_bf16_vg2x4 */, 3354 /* vUiq32yq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8627 /* svmla_za32_f16_vg2x1 */, 8648 /* vUiq8hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8658 /* svmla_za32_f16_vg2x2 */, 3387 /* vUiq16hq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8679 /* svmla_za32_f16_vg2x4 */, 3420 /* vUiq32hq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8700 /* svmla_za32_f32_vg1x2 */, 8721 /* vUiq8fq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8731 /* svmla_za32_f32_vg1x4 */, 8752 /* vUiq16fq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8764 /* svmla_za32_mf8_vg4x1_fpm */, 8486 /* vUiq16mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8789 /* svmla_za32_mf8_vg4x2_fpm */, 3243 /* vUiq32mq32mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8814 /* svmla_za32_mf8_vg4x4_fpm */, 3283 /* vUiq64mq64mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8839 /* svmla_za32_s16_vg2x1 */, 8860 /* vUiq8sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8870 /* svmla_za32_s16_vg2x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8891 /* svmla_za32_s16_vg2x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8912 /* svmla_za32_s8_vg4x1 */, 8932 /* vUiq16Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8946 /* svmla_za32_s8_vg4x2 */, 3568 /* vUiq32Scq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8966 /* svmla_za32_s8_vg4x4 */, 3602 /* vUiq64Scq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{8986 /* svmla_za32_u16_vg2x1 */, 9007 /* vUiq8Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9019 /* svmla_za32_u16_vg2x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9040 /* svmla_za32_u16_vg2x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9061 /* svmla_za32_u8_vg4x1 */, 9081 /* vUiq16Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9095 /* svmla_za32_u8_vg4x2 */, 3706 /* vUiq32Ucq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9115 /* svmla_za32_u8_vg4x4 */, 3740 /* vUiq64Ucq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9135 /* svmla_za64_f64_vg1x2 */, 9156 /* vUiq4dq4d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9166 /* svmla_za64_f64_vg1x4 */, 9187 /* vUiq8dq8d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9197 /* svmla_za64_s16_vg4x1 */, 8860 /* vUiq8sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9218 /* svmla_za64_s16_vg4x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9239 /* svmla_za64_s16_vg4x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9260 /* svmla_za64_u16_vg4x1 */, 9007 /* vUiq8Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9281 /* svmla_za64_u16_vg4x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9302 /* svmla_za64_u16_vg4x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9323 /* svmls_lane_za16_bf16_vg1x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9350 /* svmls_lane_za16_bf16_vg1x4 */, 1851 /* vUiq32yq8yIUWi */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9377 /* svmls_lane_za16_f16_vg1x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9403 /* svmls_lane_za16_f16_vg1x4 */, 1933 /* vUiq32hq8hIUWi */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9429 /* svmls_lane_za32_bf16_vg2x1 */, 6595 /* vUiq8yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9456 /* svmls_lane_za32_bf16_vg2x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9483 /* svmls_lane_za32_bf16_vg2x4 */, 1851 /* vUiq32yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9510 /* svmls_lane_za32_f16_vg2x1 */, 6689 /* vUiq8hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9536 /* svmls_lane_za32_f16_vg2x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9562 /* svmls_lane_za32_f16_vg2x4 */, 1933 /* vUiq32hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9588 /* svmls_lane_za32_f32_vg1x2 */, 6781 /* vUiq8fq4fIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9614 /* svmls_lane_za32_f32_vg1x4 */, 6821 /* vUiq16fq4fIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9640 /* svmls_lane_za32_s16_vg2x1 */, 6952 /* vUiq8sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9666 /* svmls_lane_za32_s16_vg2x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9692 /* svmls_lane_za32_s16_vg2x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9718 /* svmls_lane_za32_s8_vg4x1 */, 7043 /* vUiq16Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9743 /* svmls_lane_za32_s8_vg4x2 */, 2129 /* vUiq32Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9768 /* svmls_lane_za32_s8_vg4x4 */, 2172 /* vUiq64Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9793 /* svmls_lane_za32_u16_vg2x1 */, 7137 /* vUiq8Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9819 /* svmls_lane_za32_u16_vg2x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9845 /* svmls_lane_za32_u16_vg2x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9871 /* svmls_lane_za32_u8_vg4x1 */, 7230 /* vUiq16Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9896 /* svmls_lane_za32_u8_vg4x2 */, 2301 /* vUiq32Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9921 /* svmls_lane_za32_u8_vg4x4 */, 2344 /* vUiq64Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9946 /* svmls_lane_za64_f64_vg1x2 */, 7324 /* vUiq4dq2dIUWi */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9972 /* svmls_lane_za64_f64_vg1x4 */, 7364 /* vUiq8dq2dIUWi */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{9998 /* svmls_lane_za64_s16_vg4x1 */, 6952 /* vUiq8sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10024 /* svmls_lane_za64_s16_vg4x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10050 /* svmls_lane_za64_s16_vg4x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10076 /* svmls_lane_za64_u16_vg4x1 */, 7137 /* vUiq8Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10102 /* svmls_lane_za64_u16_vg4x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10128 /* svmls_lane_za64_u16_vg4x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10154 /* svmls_single_za16_bf16_vg1x2 */, 2589 /* vUiq16yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10183 /* svmls_single_za16_bf16_vg1x4 */, 2629 /* vUiq32yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10212 /* svmls_single_za16_f16_vg1x2 */, 2668 /* vUiq16hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10240 /* svmls_single_za16_f16_vg1x4 */, 2707 /* vUiq32hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10268 /* svmls_single_za32_bf16_vg2x2 */, 2589 /* vUiq16yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10297 /* svmls_single_za32_bf16_vg2x4 */, 2629 /* vUiq32yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10326 /* svmls_single_za32_f16_vg2x2 */, 2668 /* vUiq16hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10354 /* svmls_single_za32_f16_vg2x4 */, 2707 /* vUiq32hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10382 /* svmls_single_za32_f32_vg1x2 */, 7854 /* vUiq8fq4f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10410 /* svmls_single_za32_f32_vg1x4 */, 7892 /* vUiq16fq4f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10438 /* svmls_single_za32_s16_vg2x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10466 /* svmls_single_za32_s16_vg2x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10494 /* svmls_single_za32_s8_vg4x2 */, 2887 /* vUiq32Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10521 /* svmls_single_za32_s8_vg4x4 */, 2928 /* vUiq64Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10548 /* svmls_single_za32_u16_vg2x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10576 /* svmls_single_za32_u16_vg2x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10604 /* svmls_single_za32_u8_vg4x2 */, 3051 /* vUiq32Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10631 /* svmls_single_za32_u8_vg4x4 */, 3092 /* vUiq64Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10658 /* svmls_single_za64_f64_vg1x2 */, 8215 /* vUiq4dq2d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10686 /* svmls_single_za64_f64_vg1x4 */, 8253 /* vUiq8dq2d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10714 /* svmls_single_za64_s16_vg4x2 */, 2810 /* vUiq16sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10742 /* svmls_single_za64_s16_vg4x4 */, 2849 /* vUiq32sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10770 /* svmls_single_za64_u16_vg4x2 */, 2970 /* vUiq16Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10798 /* svmls_single_za64_u16_vg4x4 */, 3011 /* vUiq32Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10826 /* svmls_za16_bf16_vg1x2 */, 3320 /* vUiq16yq16y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10848 /* svmls_za16_bf16_vg1x4 */, 3354 /* vUiq32yq32y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10870 /* svmls_za16_f16_vg1x2 */, 3387 /* vUiq16hq16h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10891 /* svmls_za16_f16_vg1x4 */, 3420 /* vUiq32hq32h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10912 /* svmls_za32_bf16_vg2x1 */, 8573 /* vUiq8yq8y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10934 /* svmls_za32_bf16_vg2x2 */, 3320 /* vUiq16yq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10956 /* svmls_za32_bf16_vg2x4 */, 3354 /* vUiq32yq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10978 /* svmls_za32_f16_vg2x1 */, 8648 /* vUiq8hq8h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{10999 /* svmls_za32_f16_vg2x2 */, 3387 /* vUiq16hq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11020 /* svmls_za32_f16_vg2x4 */, 3420 /* vUiq32hq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11041 /* svmls_za32_f32_vg1x2 */, 8721 /* vUiq8fq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11062 /* svmls_za32_f32_vg1x4 */, 8752 /* vUiq16fq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11083 /* svmls_za32_s16_vg2x1 */, 8860 /* vUiq8sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11104 /* svmls_za32_s16_vg2x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11125 /* svmls_za32_s16_vg2x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11146 /* svmls_za32_s8_vg4x1 */, 8932 /* vUiq16Scq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11166 /* svmls_za32_s8_vg4x2 */, 3568 /* vUiq32Scq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11186 /* svmls_za32_s8_vg4x4 */, 3602 /* vUiq64Scq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11206 /* svmls_za32_u16_vg2x1 */, 9007 /* vUiq8Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11227 /* svmls_za32_u16_vg2x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11248 /* svmls_za32_u16_vg2x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11269 /* svmls_za32_u8_vg4x1 */, 9081 /* vUiq16Ucq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11289 /* svmls_za32_u8_vg4x2 */, 3706 /* vUiq32Ucq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11309 /* svmls_za32_u8_vg4x4 */, 3740 /* vUiq64Ucq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11329 /* svmls_za64_f64_vg1x2 */, 9156 /* vUiq4dq4d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11350 /* svmls_za64_f64_vg1x4 */, 9187 /* vUiq8dq8d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11371 /* svmls_za64_s16_vg4x1 */, 8860 /* vUiq8sq8s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11392 /* svmls_za64_s16_vg4x2 */, 3503 /* vUiq16sq16s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11413 /* svmls_za64_s16_vg4x4 */, 3536 /* vUiq32sq32s */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11434 /* svmls_za64_u16_vg4x1 */, 9007 /* vUiq8Usq8Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11455 /* svmls_za64_u16_vg4x2 */, 3637 /* vUiq16Usq16Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11476 /* svmls_za64_u16_vg4x4 */, 3672 /* vUiq32Usq32Us */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11497 /* svmop4a_1x1_za16_bf16_bf16 */, 11524 /* vIUWiq8yq8y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11565 /* svmop4a_1x1_za16_f16_f16 */, 11590 /* vIUWiq8hq8h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11631 /* svmop4a_1x1_za16_mf8_mf8_fpm */, 11660 /* vIUWiq16mq16mUWi */, 1 /* n */, 11677 /* sme,sme2,sme-mop4,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11705 /* svmop4a_1x1_za32_bf16_bf16 */, 11524 /* vIUWiq8yq8y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11750 /* svmop4a_1x1_za32_f16_f16 */, 11590 /* vIUWiq8hq8h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11775 /* svmop4a_1x1_za32_f32_f32 */, 11800 /* vIUWiq4fq4f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11812 /* svmop4a_1x1_za32_mf8_mf8_fpm */, 11660 /* vIUWiq16mq16mUWi */, 1 /* n */, 11841 /* sme,sme2,sme-mop4,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11869 /* svmop4a_1x1_za32_s16_s16 */, 11894 /* vIUWiq8sq8s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11906 /* svmop4a_1x1_za32_s8_s8 */, 11929 /* vIUWiq16Scq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11945 /* svmop4a_1x1_za32_s8_u8 */, 11968 /* vIUWiq16Scq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{11984 /* svmop4a_1x1_za32_u16_u16 */, 12009 /* vIUWiq8Usq8Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12023 /* svmop4a_1x1_za32_u8_s8 */, 12046 /* vIUWiq16Ucq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12062 /* svmop4a_1x1_za32_u8_u8 */, 12085 /* vIUWiq16Ucq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12101 /* svmop4a_1x1_za64_f64_f64 */, 12126 /* vIUWiq2dq2d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12167 /* svmop4a_1x1_za64_s16_s16 */, 11894 /* vIUWiq8sq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12221 /* svmop4a_1x1_za64_s16_u16 */, 12246 /* vIUWiq8sq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12259 /* svmop4a_1x1_za64_u16_s16 */, 12284 /* vIUWiq8Usq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12297 /* svmop4a_1x1_za64_u16_u16 */, 12009 /* vIUWiq8Usq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12322 /* svmop4a_1x2_za16_bf16_bf16 */, 12349 /* vIUWiq8yq16y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12362 /* svmop4a_1x2_za16_f16_f16 */, 12387 /* vIUWiq8hq16h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12400 /* svmop4a_1x2_za16_mf8_mf8_fpm */, 12429 /* vIUWiq16mq32mUWi */, 1 /* n */, 11677 /* sme,sme2,sme-mop4,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12446 /* svmop4a_1x2_za32_bf16_bf16 */, 12349 /* vIUWiq8yq16y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12473 /* svmop4a_1x2_za32_f16_f16 */, 12387 /* vIUWiq8hq16h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12498 /* svmop4a_1x2_za32_f32_f32 */, 12523 /* vIUWiq4fq8f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12535 /* svmop4a_1x2_za32_mf8_mf8_fpm */, 12429 /* vIUWiq16mq32mUWi */, 1 /* n */, 11841 /* sme,sme2,sme-mop4,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12564 /* svmop4a_1x2_za32_s16_s16 */, 12589 /* vIUWiq8sq16s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12602 /* svmop4a_1x2_za32_s8_s8 */, 12625 /* vIUWiq16Scq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12641 /* svmop4a_1x2_za32_s8_u8 */, 12664 /* vIUWiq16Scq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12680 /* svmop4a_1x2_za32_u16_u16 */, 12705 /* vIUWiq8Usq16Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12720 /* svmop4a_1x2_za32_u8_s8 */, 12743 /* vIUWiq16Ucq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12759 /* svmop4a_1x2_za32_u8_u8 */, 12782 /* vIUWiq16Ucq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12798 /* svmop4a_1x2_za64_f64_f64 */, 12823 /* vIUWiq2dq4d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12835 /* svmop4a_1x2_za64_s16_s16 */, 12589 /* vIUWiq8sq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12860 /* svmop4a_1x2_za64_s16_u16 */, 12885 /* vIUWiq8sq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12899 /* svmop4a_1x2_za64_u16_s16 */, 12924 /* vIUWiq8Usq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12938 /* svmop4a_1x2_za64_u16_u16 */, 12705 /* vIUWiq8Usq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{12963 /* svmop4a_2x1_za16_bf16_bf16 */, 12990 /* vIUWiq16yq8y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13003 /* svmop4a_2x1_za16_f16_f16 */, 13028 /* vIUWiq16hq8h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13041 /* svmop4a_2x1_za16_mf8_mf8_fpm */, 13070 /* vIUWiq32mq16mUWi */, 1 /* n */, 11677 /* sme,sme2,sme-mop4,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13087 /* svmop4a_2x1_za32_bf16_bf16 */, 12990 /* vIUWiq16yq8y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13114 /* svmop4a_2x1_za32_f16_f16 */, 13028 /* vIUWiq16hq8h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13139 /* svmop4a_2x1_za32_f32_f32 */, 13164 /* vIUWiq8fq4f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13176 /* svmop4a_2x1_za32_mf8_mf8_fpm */, 13070 /* vIUWiq32mq16mUWi */, 1 /* n */, 11841 /* sme,sme2,sme-mop4,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13205 /* svmop4a_2x1_za32_s16_s16 */, 13230 /* vIUWiq16sq8s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13243 /* svmop4a_2x1_za32_s8_s8 */, 13266 /* vIUWiq32Scq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13282 /* svmop4a_2x1_za32_s8_u8 */, 13305 /* vIUWiq32Scq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13321 /* svmop4a_2x1_za32_u16_u16 */, 13346 /* vIUWiq16Usq8Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13361 /* svmop4a_2x1_za32_u8_s8 */, 13384 /* vIUWiq32Ucq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13400 /* svmop4a_2x1_za32_u8_u8 */, 13423 /* vIUWiq32Ucq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13439 /* svmop4a_2x1_za64_f64_f64 */, 13464 /* vIUWiq4dq2d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13476 /* svmop4a_2x1_za64_s16_s16 */, 13230 /* vIUWiq16sq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13501 /* svmop4a_2x1_za64_s16_u16 */, 13526 /* vIUWiq16sq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13540 /* svmop4a_2x1_za64_u16_s16 */, 13565 /* vIUWiq16Usq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13579 /* svmop4a_2x1_za64_u16_u16 */, 13346 /* vIUWiq16Usq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13604 /* svmop4a_2x2_za16_bf16_bf16 */, 13631 /* vIUWiq16yq16y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13645 /* svmop4a_2x2_za16_f16_f16 */, 13670 /* vIUWiq16hq16h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13684 /* svmop4a_2x2_za16_mf8_mf8_fpm */, 13713 /* vIUWiq32mq32mUWi */, 1 /* n */, 11677 /* sme,sme2,sme-mop4,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13730 /* svmop4a_2x2_za32_bf16_bf16 */, 13631 /* vIUWiq16yq16y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13757 /* svmop4a_2x2_za32_f16_f16 */, 13670 /* vIUWiq16hq16h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13782 /* svmop4a_2x2_za32_f32_f32 */, 13807 /* vIUWiq8fq8f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13819 /* svmop4a_2x2_za32_mf8_mf8_fpm */, 13713 /* vIUWiq32mq32mUWi */, 1 /* n */, 11841 /* sme,sme2,sme-mop4,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13848 /* svmop4a_2x2_za32_s16_s16 */, 13873 /* vIUWiq16sq16s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13887 /* svmop4a_2x2_za32_s8_s8 */, 13910 /* vIUWiq32Scq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13926 /* svmop4a_2x2_za32_s8_u8 */, 13949 /* vIUWiq32Scq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{13965 /* svmop4a_2x2_za32_u16_u16 */, 13990 /* vIUWiq16Usq16Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14006 /* svmop4a_2x2_za32_u8_s8 */, 14029 /* vIUWiq32Ucq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14045 /* svmop4a_2x2_za32_u8_u8 */, 14068 /* vIUWiq32Ucq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14084 /* svmop4a_2x2_za64_f64_f64 */, 14109 /* vIUWiq4dq4d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14121 /* svmop4a_2x2_za64_s16_s16 */, 13873 /* vIUWiq16sq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14146 /* svmop4a_2x2_za64_s16_u16 */, 14171 /* vIUWiq16sq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14186 /* svmop4a_2x2_za64_u16_s16 */, 14211 /* vIUWiq16Usq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14226 /* svmop4a_2x2_za64_u16_u16 */, 13990 /* vIUWiq16Usq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14251 /* svmop4s_1x1_za16_bf16_bf16 */, 11524 /* vIUWiq8yq8y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14278 /* svmop4s_1x1_za16_f16_f16 */, 11590 /* vIUWiq8hq8h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14303 /* svmop4s_1x1_za32_bf16_bf16 */, 11524 /* vIUWiq8yq8y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14330 /* svmop4s_1x1_za32_f16_f16 */, 11590 /* vIUWiq8hq8h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14355 /* svmop4s_1x1_za32_f32_f32 */, 11800 /* vIUWiq4fq4f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14380 /* svmop4s_1x1_za32_s16_s16 */, 11894 /* vIUWiq8sq8s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14405 /* svmop4s_1x1_za32_s8_s8 */, 11929 /* vIUWiq16Scq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14428 /* svmop4s_1x1_za32_s8_u8 */, 11968 /* vIUWiq16Scq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14451 /* svmop4s_1x1_za32_u16_u16 */, 12009 /* vIUWiq8Usq8Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14476 /* svmop4s_1x1_za32_u8_s8 */, 12046 /* vIUWiq16Ucq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14499 /* svmop4s_1x1_za32_u8_u8 */, 12085 /* vIUWiq16Ucq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14522 /* svmop4s_1x1_za64_f64_f64 */, 12126 /* vIUWiq2dq2d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14547 /* svmop4s_1x1_za64_s16_s16 */, 11894 /* vIUWiq8sq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14572 /* svmop4s_1x1_za64_s16_u16 */, 12246 /* vIUWiq8sq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14597 /* svmop4s_1x1_za64_u16_s16 */, 12284 /* vIUWiq8Usq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14622 /* svmop4s_1x1_za64_u16_u16 */, 12009 /* vIUWiq8Usq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14647 /* svmop4s_1x2_za16_bf16_bf16 */, 12349 /* vIUWiq8yq16y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14674 /* svmop4s_1x2_za16_f16_f16 */, 12387 /* vIUWiq8hq16h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14699 /* svmop4s_1x2_za32_bf16_bf16 */, 12349 /* vIUWiq8yq16y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14726 /* svmop4s_1x2_za32_f16_f16 */, 12387 /* vIUWiq8hq16h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14751 /* svmop4s_1x2_za32_f32_f32 */, 12523 /* vIUWiq4fq8f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14776 /* svmop4s_1x2_za32_s16_s16 */, 12589 /* vIUWiq8sq16s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14801 /* svmop4s_1x2_za32_s8_s8 */, 12625 /* vIUWiq16Scq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14824 /* svmop4s_1x2_za32_s8_u8 */, 12664 /* vIUWiq16Scq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14847 /* svmop4s_1x2_za32_u16_u16 */, 12705 /* vIUWiq8Usq16Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14872 /* svmop4s_1x2_za32_u8_s8 */, 12743 /* vIUWiq16Ucq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14895 /* svmop4s_1x2_za32_u8_u8 */, 12782 /* vIUWiq16Ucq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14918 /* svmop4s_1x2_za64_f64_f64 */, 12823 /* vIUWiq2dq4d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14943 /* svmop4s_1x2_za64_s16_s16 */, 12589 /* vIUWiq8sq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14968 /* svmop4s_1x2_za64_s16_u16 */, 12885 /* vIUWiq8sq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{14993 /* svmop4s_1x2_za64_u16_s16 */, 12924 /* vIUWiq8Usq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15018 /* svmop4s_1x2_za64_u16_u16 */, 12705 /* vIUWiq8Usq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15043 /* svmop4s_2x1_za16_bf16_bf16 */, 12990 /* vIUWiq16yq8y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15070 /* svmop4s_2x1_za16_f16_f16 */, 13028 /* vIUWiq16hq8h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15095 /* svmop4s_2x1_za32_bf16_bf16 */, 12990 /* vIUWiq16yq8y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15122 /* svmop4s_2x1_za32_f16_f16 */, 13028 /* vIUWiq16hq8h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15147 /* svmop4s_2x1_za32_f32_f32 */, 13164 /* vIUWiq8fq4f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15172 /* svmop4s_2x1_za32_s16_s16 */, 13230 /* vIUWiq16sq8s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15197 /* svmop4s_2x1_za32_s8_s8 */, 13266 /* vIUWiq32Scq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15220 /* svmop4s_2x1_za32_s8_u8 */, 13305 /* vIUWiq32Scq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15243 /* svmop4s_2x1_za32_u16_u16 */, 13346 /* vIUWiq16Usq8Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15268 /* svmop4s_2x1_za32_u8_s8 */, 13384 /* vIUWiq32Ucq16Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15291 /* svmop4s_2x1_za32_u8_u8 */, 13423 /* vIUWiq32Ucq16Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15314 /* svmop4s_2x1_za64_f64_f64 */, 13464 /* vIUWiq4dq2d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15339 /* svmop4s_2x1_za64_s16_s16 */, 13230 /* vIUWiq16sq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15364 /* svmop4s_2x1_za64_s16_u16 */, 13526 /* vIUWiq16sq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15389 /* svmop4s_2x1_za64_u16_s16 */, 13565 /* vIUWiq16Usq8s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15414 /* svmop4s_2x1_za64_u16_u16 */, 13346 /* vIUWiq16Usq8Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15439 /* svmop4s_2x2_za16_bf16_bf16 */, 13631 /* vIUWiq16yq16y */, 1 /* n */, 11536 /* sme,sme2,sme-mop4,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15466 /* svmop4s_2x2_za16_f16_f16 */, 13670 /* vIUWiq16hq16h */, 1 /* n */, 11602 /* sme,sme2,sme-mop4,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15491 /* svmop4s_2x2_za32_bf16_bf16 */, 13631 /* vIUWiq16yq16y */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15518 /* svmop4s_2x2_za32_f16_f16 */, 13670 /* vIUWiq16hq16h */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15543 /* svmop4s_2x2_za32_f32_f32 */, 13807 /* vIUWiq8fq8f */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15568 /* svmop4s_2x2_za32_s16_s16 */, 13873 /* vIUWiq16sq16s */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15593 /* svmop4s_2x2_za32_s8_s8 */, 13910 /* vIUWiq32Scq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15616 /* svmop4s_2x2_za32_s8_u8 */, 13949 /* vIUWiq32Scq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15639 /* svmop4s_2x2_za32_u16_u16 */, 13990 /* vIUWiq16Usq16Us */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15664 /* svmop4s_2x2_za32_u8_s8 */, 14029 /* vIUWiq32Ucq32Sc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15687 /* svmop4s_2x2_za32_u8_u8 */, 14068 /* vIUWiq32Ucq32Uc */, 1 /* n */, 11732 /* sme,sme2,sme-mop4 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15710 /* svmop4s_2x2_za64_f64_f64 */, 14109 /* vIUWiq4dq4d */, 1 /* n */, 12138 /* sme,sme2,sme-mop4,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15735 /* svmop4s_2x2_za64_s16_s16 */, 13873 /* vIUWiq16sq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15760 /* svmop4s_2x2_za64_s16_u16 */, 14171 /* vIUWiq16sq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15785 /* svmop4s_2x2_za64_u16_s16 */, 14211 /* vIUWiq16Usq16s */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15810 /* svmop4s_2x2_za64_u16_u16 */, 13990 /* vIUWiq16Usq16Us */, 1 /* n */, 12192 /* sme,sme2,sme-mop4,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15835 /* svmopa_za16_bf16_m */, 15854 /* vIUWiq16bq16bq8yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15874 /* svmopa_za16_f16_m */, 15892 /* vIUWiq16bq16bq8hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15912 /* svmopa_za16_mf8_m_fpm */, 15934 /* vIUWiq16bq16bq16mq16mUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15959 /* svmopa_za32_bf16_m */, 15854 /* vIUWiq16bq16bq8yq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15978 /* svmopa_za32_f16_m */, 15892 /* vIUWiq16bq16bq8hq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{15996 /* svmopa_za32_f32_m */, 16014 /* vIUWiq16bq16bq4fq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16034 /* svmopa_za32_mf8_m_fpm */, 15934 /* vIUWiq16bq16bq16mq16mUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16056 /* svmopa_za32_s16_m */, 16074 /* vIUWiq16bq16bq8sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16094 /* svmopa_za32_s8_m */, 16111 /* vIUWiq16bq16bq16Scq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16135 /* svmopa_za32_u16_m */, 16153 /* vIUWiq16bq16bq8Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16175 /* svmopa_za32_u8_m */, 16192 /* vIUWiq16bq16bq16Ucq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16216 /* svmopa_za64_f64_m */, 16234 /* vIUWiq16bq16bq2dq2d */, 1 /* n */, 16254 /* sme,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16269 /* svmopa_za64_s16_m */, 16074 /* vIUWiq16bq16bq8sq8s */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16287 /* svmopa_za64_u16_m */, 16153 /* vIUWiq16bq16bq8Usq8Us */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16305 /* svmops_za16_bf16_m */, 15854 /* vIUWiq16bq16bq8yq8y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16324 /* svmops_za16_f16_m */, 15892 /* vIUWiq16bq16bq8hq8h */, 1 /* n */, 6418 /* sme,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16342 /* svmops_za32_bf16_m */, 15854 /* vIUWiq16bq16bq8yq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16361 /* svmops_za32_f16_m */, 15892 /* vIUWiq16bq16bq8hq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16379 /* svmops_za32_f32_m */, 16014 /* vIUWiq16bq16bq4fq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16397 /* svmops_za32_s16_m */, 16074 /* vIUWiq16bq16bq8sq8s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16415 /* svmops_za32_s8_m */, 16111 /* vIUWiq16bq16bq16Scq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16432 /* svmops_za32_u16_m */, 16153 /* vIUWiq16bq16bq8Usq8Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16450 /* svmops_za32_u8_m */, 16192 /* vIUWiq16bq16bq16Ucq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16467 /* svmops_za64_f64_m */, 16234 /* vIUWiq16bq16bq2dq2d */, 1 /* n */, 16254 /* sme,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16485 /* svmops_za64_s16_m */, 16074 /* vIUWiq16bq16bq8sq8s */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16503 /* svmops_za64_u16_m */, 16153 /* vIUWiq16bq16bq8Usq8Us */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16521 /* svread_hor_za128_bf16_m */, 16545 /* q8yq8yq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16562 /* svread_hor_za128_f16_m */, 16585 /* q8hq8hq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16602 /* svread_hor_za128_f32_m */, 16625 /* q4fq4fq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16642 /* svread_hor_za128_f64_m */, 16665 /* q2dq2dq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16682 /* svread_hor_za128_mf8_m */, 16705 /* q16mq16mq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16724 /* svread_hor_za128_s16_m */, 16747 /* q8sq8sq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16764 /* svread_hor_za128_s32_m */, 16787 /* q4iq4iq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16804 /* svread_hor_za128_s64_m */, 16827 /* q2Wiq2Wiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16846 /* svread_hor_za128_s8_m */, 16868 /* q16Scq16Scq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16889 /* svread_hor_za128_u16_m */, 16912 /* q8Usq8Usq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16931 /* svread_hor_za128_u32_m */, 16954 /* q4Uiq4Uiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{16973 /* svread_hor_za128_u64_m */, 16996 /* q2UWiq2UWiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17017 /* svread_hor_za128_u8_m */, 17039 /* q16Ucq16Ucq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17060 /* svread_hor_za16_bf16_m */, 16545 /* q8yq8yq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17083 /* svread_hor_za16_bf16_vg2 */, 17108 /* q16yIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17119 /* svread_hor_za16_bf16_vg4 */, 17144 /* q32yIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17155 /* svread_hor_za16_f16_m */, 16585 /* q8hq8hq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17177 /* svread_hor_za16_f16_vg2 */, 17201 /* q16hIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17212 /* svread_hor_za16_f16_vg4 */, 17236 /* q32hIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17247 /* svread_hor_za16_s16_m */, 16747 /* q8sq8sq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17269 /* svread_hor_za16_s16_vg2 */, 17293 /* q16sIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17304 /* svread_hor_za16_s16_vg4 */, 17328 /* q32sIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17339 /* svread_hor_za16_u16_m */, 16912 /* q8Usq8Usq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17361 /* svread_hor_za16_u16_vg2 */, 17385 /* q16UsIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17397 /* svread_hor_za16_u16_vg4 */, 17421 /* q32UsIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17433 /* svread_hor_za32_f32_m */, 16625 /* q4fq4fq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17455 /* svread_hor_za32_f32_vg2 */, 17479 /* q8fIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17489 /* svread_hor_za32_f32_vg4 */, 17513 /* q16fIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17524 /* svread_hor_za32_s32_m */, 16787 /* q4iq4iq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17546 /* svread_hor_za32_s32_vg2 */, 17570 /* q8iIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17580 /* svread_hor_za32_s32_vg4 */, 17604 /* q16iIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17615 /* svread_hor_za32_u32_m */, 16954 /* q4Uiq4Uiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17637 /* svread_hor_za32_u32_vg2 */, 17661 /* q8UiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17672 /* svread_hor_za32_u32_vg4 */, 17696 /* q16UiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17708 /* svread_hor_za64_f64_m */, 16665 /* q2dq2dq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17730 /* svread_hor_za64_f64_vg2 */, 17754 /* q4dIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17764 /* svread_hor_za64_f64_vg4 */, 17788 /* q8dIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17798 /* svread_hor_za64_s64_m */, 16827 /* q2Wiq2Wiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17820 /* svread_hor_za64_s64_vg2 */, 17844 /* q4WiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17855 /* svread_hor_za64_s64_vg4 */, 17879 /* q8WiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17890 /* svread_hor_za64_u64_m */, 16996 /* q2UWiq2UWiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17912 /* svread_hor_za64_u64_vg2 */, 17936 /* q4UWiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17948 /* svread_hor_za64_u64_vg4 */, 17972 /* q8UWiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{17984 /* svread_hor_za8_mf8_m */, 16705 /* q16mq16mq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18005 /* svread_hor_za8_mf8_vg2 */, 18028 /* q32mIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18039 /* svread_hor_za8_mf8_vg4 */, 18062 /* q64mIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18073 /* svread_hor_za8_s8_m */, 16868 /* q16Scq16Scq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18093 /* svread_hor_za8_s8_vg2 */, 18115 /* q32ScIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18127 /* svread_hor_za8_s8_vg4 */, 18149 /* q64ScIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18161 /* svread_hor_za8_u8_m */, 17039 /* q16Ucq16Ucq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18181 /* svread_hor_za8_u8_vg2 */, 18203 /* q32UcIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18215 /* svread_hor_za8_u8_vg4 */, 18237 /* q64UcIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18249 /* svread_ver_za128_bf16_m */, 16545 /* q8yq8yq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18273 /* svread_ver_za128_f16_m */, 16585 /* q8hq8hq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18296 /* svread_ver_za128_f32_m */, 16625 /* q4fq4fq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18319 /* svread_ver_za128_f64_m */, 16665 /* q2dq2dq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18342 /* svread_ver_za128_mf8_m */, 16705 /* q16mq16mq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18365 /* svread_ver_za128_s16_m */, 16747 /* q8sq8sq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18388 /* svread_ver_za128_s32_m */, 16787 /* q4iq4iq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18411 /* svread_ver_za128_s64_m */, 16827 /* q2Wiq2Wiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18434 /* svread_ver_za128_s8_m */, 16868 /* q16Scq16Scq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18456 /* svread_ver_za128_u16_m */, 16912 /* q8Usq8Usq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18479 /* svread_ver_za128_u32_m */, 16954 /* q4Uiq4Uiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18502 /* svread_ver_za128_u64_m */, 16996 /* q2UWiq2UWiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18525 /* svread_ver_za128_u8_m */, 17039 /* q16Ucq16Ucq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18547 /* svread_ver_za16_bf16_m */, 16545 /* q8yq8yq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18570 /* svread_ver_za16_bf16_vg2 */, 17108 /* q16yIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18595 /* svread_ver_za16_bf16_vg4 */, 17144 /* q32yIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18620 /* svread_ver_za16_f16_m */, 16585 /* q8hq8hq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18642 /* svread_ver_za16_f16_vg2 */, 17201 /* q16hIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18666 /* svread_ver_za16_f16_vg4 */, 17236 /* q32hIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18690 /* svread_ver_za16_s16_m */, 16747 /* q8sq8sq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18712 /* svread_ver_za16_s16_vg2 */, 17293 /* q16sIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18736 /* svread_ver_za16_s16_vg4 */, 17328 /* q32sIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18760 /* svread_ver_za16_u16_m */, 16912 /* q8Usq8Usq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18782 /* svread_ver_za16_u16_vg2 */, 17385 /* q16UsIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18806 /* svread_ver_za16_u16_vg4 */, 17421 /* q32UsIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18830 /* svread_ver_za32_f32_m */, 16625 /* q4fq4fq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18852 /* svread_ver_za32_f32_vg2 */, 17479 /* q8fIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18876 /* svread_ver_za32_f32_vg4 */, 17513 /* q16fIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18900 /* svread_ver_za32_s32_m */, 16787 /* q4iq4iq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18922 /* svread_ver_za32_s32_vg2 */, 17570 /* q8iIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18946 /* svread_ver_za32_s32_vg4 */, 17604 /* q16iIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18970 /* svread_ver_za32_u32_m */, 16954 /* q4Uiq4Uiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{18992 /* svread_ver_za32_u32_vg2 */, 17661 /* q8UiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19016 /* svread_ver_za32_u32_vg4 */, 17696 /* q16UiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19040 /* svread_ver_za64_f64_m */, 16665 /* q2dq2dq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19062 /* svread_ver_za64_f64_vg2 */, 17754 /* q4dIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19086 /* svread_ver_za64_f64_vg4 */, 17788 /* q8dIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19110 /* svread_ver_za64_s64_m */, 16827 /* q2Wiq2Wiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19132 /* svread_ver_za64_s64_vg2 */, 17844 /* q4WiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19156 /* svread_ver_za64_s64_vg4 */, 17879 /* q8WiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19180 /* svread_ver_za64_u64_m */, 16996 /* q2UWiq2UWiq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19202 /* svread_ver_za64_u64_vg2 */, 17936 /* q4UWiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19226 /* svread_ver_za64_u64_vg4 */, 17972 /* q8UWiIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19250 /* svread_ver_za8_mf8_m */, 16705 /* q16mq16mq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19271 /* svread_ver_za8_mf8_vg2 */, 18028 /* q32mIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19294 /* svread_ver_za8_mf8_vg4 */, 18062 /* q64mIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19317 /* svread_ver_za8_s8_m */, 16868 /* q16Scq16Scq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19337 /* svread_ver_za8_s8_vg2 */, 18115 /* q32ScIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19359 /* svread_ver_za8_s8_vg4 */, 18149 /* q64ScIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19381 /* svread_ver_za8_u8_m */, 17039 /* q16Ucq16Ucq16bIUWiUi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19401 /* svread_ver_za8_u8_vg2 */, 18203 /* q32UcIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19423 /* svread_ver_za8_u8_vg4 */, 18237 /* q64UcIUWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19445 /* svread_za16_bf16_vg1x2 */, 19468 /* q16yUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19475 /* svread_za16_bf16_vg1x4 */, 19498 /* q32yUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19505 /* svread_za16_f16_vg1x2 */, 19527 /* q16hUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19534 /* svread_za16_f16_vg1x4 */, 19556 /* q32hUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19563 /* svread_za16_s16_vg1x2 */, 19585 /* q16sUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19592 /* svread_za16_s16_vg1x4 */, 19614 /* q32sUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19621 /* svread_za16_u16_vg1x2 */, 19643 /* q16UsUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19651 /* svread_za16_u16_vg1x4 */, 19673 /* q32UsUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19681 /* svread_za32_f32_vg1x2 */, 19703 /* q8fUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19709 /* svread_za32_f32_vg1x4 */, 19731 /* q16fUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19738 /* svread_za32_s32_vg1x2 */, 19760 /* q8iUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19766 /* svread_za32_s32_vg1x4 */, 19788 /* q16iUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19795 /* svread_za32_u32_vg1x2 */, 19817 /* q8UiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19824 /* svread_za32_u32_vg1x4 */, 19846 /* q16UiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19854 /* svread_za64_f64_vg1x2 */, 19876 /* q4dUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19882 /* svread_za64_f64_vg1x4 */, 19904 /* q8dUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19910 /* svread_za64_s64_vg1x2 */, 19932 /* q4WiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19939 /* svread_za64_s64_vg1x4 */, 19961 /* q8WiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19968 /* svread_za64_u64_vg1x2 */, 19990 /* q4UWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{19998 /* svread_za64_u64_vg1x4 */, 20020 /* q8UWiUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20028 /* svread_za8_mf8_vg1x2 */, 20049 /* q32mUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20056 /* svread_za8_mf8_vg1x4 */, 20077 /* q64mUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20084 /* svread_za8_s8_vg1x2 */, 20104 /* q32ScUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20112 /* svread_za8_s8_vg1x4 */, 20132 /* q64ScUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20140 /* svread_za8_u8_vg1x2 */, 20160 /* q32UcUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20168 /* svread_za8_u8_vg1x4 */, 20188 /* q64UcUi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20196 /* svreadz_hor_za128_bf16 */, 20219 /* q8yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20240 /* svreadz_hor_za128_f16 */, 20262 /* q8hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20272 /* svreadz_hor_za128_f32 */, 20294 /* q4fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20304 /* svreadz_hor_za128_f64 */, 20326 /* q2dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20336 /* svreadz_hor_za128_mf8 */, 20358 /* q16mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20369 /* svreadz_hor_za128_s16 */, 20391 /* q8sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20401 /* svreadz_hor_za128_s32 */, 20423 /* q4iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20433 /* svreadz_hor_za128_s64 */, 20455 /* q2WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20466 /* svreadz_hor_za128_s8 */, 20487 /* q16ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20499 /* svreadz_hor_za128_u16 */, 20521 /* q8UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20532 /* svreadz_hor_za128_u32 */, 20554 /* q4UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20565 /* svreadz_hor_za128_u64 */, 20587 /* q2UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20599 /* svreadz_hor_za128_u8 */, 20620 /* q16UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20632 /* svreadz_hor_za16_bf16 */, 20219 /* q8yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20654 /* svreadz_hor_za16_bf16_vg2 */, 17108 /* q16yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20680 /* svreadz_hor_za16_bf16_vg4 */, 17144 /* q32yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20706 /* svreadz_hor_za16_f16 */, 20262 /* q8hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20727 /* svreadz_hor_za16_f16_vg2 */, 17201 /* q16hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20752 /* svreadz_hor_za16_f16_vg4 */, 17236 /* q32hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20777 /* svreadz_hor_za16_s16 */, 20391 /* q8sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20798 /* svreadz_hor_za16_s16_vg2 */, 17293 /* q16sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20823 /* svreadz_hor_za16_s16_vg4 */, 17328 /* q32sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20848 /* svreadz_hor_za16_u16 */, 20521 /* q8UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20869 /* svreadz_hor_za16_u16_vg2 */, 17385 /* q16UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20894 /* svreadz_hor_za16_u16_vg4 */, 17421 /* q32UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20919 /* svreadz_hor_za32_f32 */, 20294 /* q4fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20940 /* svreadz_hor_za32_f32_vg2 */, 17479 /* q8fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20965 /* svreadz_hor_za32_f32_vg4 */, 17513 /* q16fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{20990 /* svreadz_hor_za32_s32 */, 20423 /* q4iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21011 /* svreadz_hor_za32_s32_vg2 */, 17570 /* q8iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21036 /* svreadz_hor_za32_s32_vg4 */, 17604 /* q16iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21061 /* svreadz_hor_za32_u32 */, 20554 /* q4UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21082 /* svreadz_hor_za32_u32_vg2 */, 17661 /* q8UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21107 /* svreadz_hor_za32_u32_vg4 */, 17696 /* q16UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21132 /* svreadz_hor_za64_f64 */, 20326 /* q2dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21153 /* svreadz_hor_za64_f64_vg2 */, 17754 /* q4dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21178 /* svreadz_hor_za64_f64_vg4 */, 17788 /* q8dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21203 /* svreadz_hor_za64_s64 */, 20455 /* q2WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21224 /* svreadz_hor_za64_s64_vg2 */, 17844 /* q4WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21249 /* svreadz_hor_za64_s64_vg4 */, 17879 /* q8WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21274 /* svreadz_hor_za64_u64 */, 20587 /* q2UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21295 /* svreadz_hor_za64_u64_vg2 */, 17936 /* q4UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21320 /* svreadz_hor_za64_u64_vg4 */, 17972 /* q8UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21345 /* svreadz_hor_za8_mf8 */, 20358 /* q16mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21365 /* svreadz_hor_za8_mf8_vg2 */, 18028 /* q32mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21389 /* svreadz_hor_za8_mf8_vg4 */, 18062 /* q64mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21413 /* svreadz_hor_za8_s8 */, 20487 /* q16ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21432 /* svreadz_hor_za8_s8_vg2 */, 18115 /* q32ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21455 /* svreadz_hor_za8_s8_vg4 */, 18149 /* q64ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21478 /* svreadz_hor_za8_u8 */, 20620 /* q16UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21497 /* svreadz_hor_za8_u8_vg2 */, 18203 /* q32UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21520 /* svreadz_hor_za8_u8_vg4 */, 18237 /* q64UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21543 /* svreadz_ver_za128_bf16 */, 20219 /* q8yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21566 /* svreadz_ver_za128_f16 */, 20262 /* q8hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21588 /* svreadz_ver_za128_f32 */, 20294 /* q4fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21610 /* svreadz_ver_za128_f64 */, 20326 /* q2dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21632 /* svreadz_ver_za128_mf8 */, 20358 /* q16mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21654 /* svreadz_ver_za128_s16 */, 20391 /* q8sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21676 /* svreadz_ver_za128_s32 */, 20423 /* q4iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21698 /* svreadz_ver_za128_s64 */, 20455 /* q2WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21720 /* svreadz_ver_za128_s8 */, 20487 /* q16ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21741 /* svreadz_ver_za128_u16 */, 20521 /* q8UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21763 /* svreadz_ver_za128_u32 */, 20554 /* q4UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21785 /* svreadz_ver_za128_u64 */, 20587 /* q2UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21807 /* svreadz_ver_za128_u8 */, 20620 /* q16UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21828 /* svreadz_ver_za16_bf16 */, 20219 /* q8yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21850 /* svreadz_ver_za16_bf16_vg2 */, 17108 /* q16yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21876 /* svreadz_ver_za16_bf16_vg4 */, 17144 /* q32yIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21902 /* svreadz_ver_za16_f16 */, 20262 /* q8hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21923 /* svreadz_ver_za16_f16_vg2 */, 17201 /* q16hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21948 /* svreadz_ver_za16_f16_vg4 */, 17236 /* q32hIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21973 /* svreadz_ver_za16_s16 */, 20391 /* q8sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{21994 /* svreadz_ver_za16_s16_vg2 */, 17293 /* q16sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22019 /* svreadz_ver_za16_s16_vg4 */, 17328 /* q32sIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22044 /* svreadz_ver_za16_u16 */, 20521 /* q8UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22065 /* svreadz_ver_za16_u16_vg2 */, 17385 /* q16UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22090 /* svreadz_ver_za16_u16_vg4 */, 17421 /* q32UsIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22115 /* svreadz_ver_za32_f32 */, 20294 /* q4fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22136 /* svreadz_ver_za32_f32_vg2 */, 17479 /* q8fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22161 /* svreadz_ver_za32_f32_vg4 */, 17513 /* q16fIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22186 /* svreadz_ver_za32_s32 */, 20423 /* q4iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22207 /* svreadz_ver_za32_s32_vg2 */, 17570 /* q8iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22232 /* svreadz_ver_za32_s32_vg4 */, 17604 /* q16iIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22257 /* svreadz_ver_za32_u32 */, 20554 /* q4UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22278 /* svreadz_ver_za32_u32_vg2 */, 17661 /* q8UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22303 /* svreadz_ver_za32_u32_vg4 */, 17696 /* q16UiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22328 /* svreadz_ver_za64_f64 */, 20326 /* q2dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22349 /* svreadz_ver_za64_f64_vg2 */, 17754 /* q4dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22374 /* svreadz_ver_za64_f64_vg4 */, 17788 /* q8dIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22399 /* svreadz_ver_za64_s64 */, 20455 /* q2WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22420 /* svreadz_ver_za64_s64_vg2 */, 17844 /* q4WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22445 /* svreadz_ver_za64_s64_vg4 */, 17879 /* q8WiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22470 /* svreadz_ver_za64_u64 */, 20587 /* q2UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22491 /* svreadz_ver_za64_u64_vg2 */, 17936 /* q4UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22516 /* svreadz_ver_za64_u64_vg4 */, 17972 /* q8UWiIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22541 /* svreadz_ver_za8_mf8 */, 20358 /* q16mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22561 /* svreadz_ver_za8_mf8_vg2 */, 18028 /* q32mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22585 /* svreadz_ver_za8_mf8_vg4 */, 18062 /* q64mIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22609 /* svreadz_ver_za8_s8 */, 20487 /* q16ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22628 /* svreadz_ver_za8_s8_vg2 */, 18115 /* q32ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22651 /* svreadz_ver_za8_s8_vg4 */, 18149 /* q64ScIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22674 /* svreadz_ver_za8_u8 */, 20620 /* q16UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22693 /* svreadz_ver_za8_u8_vg2 */, 18203 /* q32UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22716 /* svreadz_ver_za8_u8_vg4 */, 18237 /* q64UcIUWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22739 /* svreadz_za16_bf16_vg1x2 */, 19468 /* q16yUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22763 /* svreadz_za16_bf16_vg1x4 */, 19498 /* q32yUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22787 /* svreadz_za16_f16_vg1x2 */, 19527 /* q16hUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22810 /* svreadz_za16_f16_vg1x4 */, 19556 /* q32hUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22833 /* svreadz_za16_s16_vg1x2 */, 19585 /* q16sUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22856 /* svreadz_za16_s16_vg1x4 */, 19614 /* q32sUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22879 /* svreadz_za16_u16_vg1x2 */, 19643 /* q16UsUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22902 /* svreadz_za16_u16_vg1x4 */, 19673 /* q32UsUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22925 /* svreadz_za32_f32_vg1x2 */, 19703 /* q8fUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22948 /* svreadz_za32_f32_vg1x4 */, 19731 /* q16fUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22971 /* svreadz_za32_s32_vg1x2 */, 19760 /* q8iUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{22994 /* svreadz_za32_s32_vg1x4 */, 19788 /* q16iUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23017 /* svreadz_za32_u32_vg1x2 */, 19817 /* q8UiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23040 /* svreadz_za32_u32_vg1x4 */, 19846 /* q16UiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23063 /* svreadz_za64_f64_vg1x2 */, 19876 /* q4dUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23086 /* svreadz_za64_f64_vg1x4 */, 19904 /* q8dUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23109 /* svreadz_za64_s64_vg1x2 */, 19932 /* q4WiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23132 /* svreadz_za64_s64_vg1x4 */, 19961 /* q8WiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23155 /* svreadz_za64_u64_vg1x2 */, 19990 /* q4UWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23178 /* svreadz_za64_u64_vg1x4 */, 20020 /* q8UWiUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23201 /* svreadz_za8_mf8_vg1x2 */, 20049 /* q32mUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23223 /* svreadz_za8_mf8_vg1x4 */, 20077 /* q64mUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23245 /* svreadz_za8_s8_vg1x2 */, 20104 /* q32ScUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23266 /* svreadz_za8_s8_vg1x4 */, 20132 /* q64ScUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23287 /* svreadz_za8_u8_vg1x2 */, 20160 /* q32UcUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23308 /* svreadz_za8_u8_vg1x4 */, 20188 /* q64UcUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23329 /* svst1_hor_vnum_za128 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23366 /* svst1_hor_vnum_za16 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23386 /* svst1_hor_vnum_za32 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23406 /* svst1_hor_vnum_za64 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23426 /* svst1_hor_vnum_za8 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23445 /* svst1_hor_za128 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23475 /* svst1_hor_za16 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23490 /* svst1_hor_za32 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23505 /* svst1_hor_za64 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23520 /* svst1_hor_za8 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23534 /* svst1_ver_vnum_za128 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23555 /* svst1_ver_vnum_za16 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23575 /* svst1_ver_vnum_za32 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23595 /* svst1_ver_vnum_za64 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23615 /* svst1_ver_vnum_za8 */, 23350 /* vIUWiUiq16bv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23634 /* svst1_ver_za128 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23650 /* svst1_ver_za16 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23665 /* svst1_ver_za32 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23680 /* svst1_ver_za64 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23695 /* svst1_ver_za8 */, 23461 /* vIUWiUiq16bv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23709 /* svstr_vnum_za */, 23723 /* vUiv*Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23731 /* svstr_za */, 23740 /* vUiv* */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23746 /* svstr_zt */, 23755 /* vIUWiv* */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23763 /* svsub_write_single_za32_s32_vg1x2 */, 68 /* vUiq8iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23797 /* svsub_write_single_za32_s32_vg1x4 */, 121 /* vUiq16iq4i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23831 /* svsub_write_single_za32_u32_vg1x2 */, 166 /* vUiq8Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23865 /* svsub_write_single_za32_u32_vg1x4 */, 212 /* vUiq16Uiq4Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23899 /* svsub_write_single_za64_s64_vg1x2 */, 259 /* vUiq4Wiq2Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23933 /* svsub_write_single_za64_s64_vg1x4 */, 325 /* vUiq8Wiq2Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{23967 /* svsub_write_single_za64_u64_vg1x2 */, 371 /* vUiq4UWiq2UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24001 /* svsub_write_single_za64_u64_vg1x4 */, 419 /* vUiq8UWiq2UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24035 /* svsub_write_za32_s32_vg1x2 */, 460 /* vUiq8iq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24062 /* svsub_write_za32_s32_vg1x4 */, 497 /* vUiq16iq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24089 /* svsub_write_za32_u32_vg1x2 */, 536 /* vUiq8Uiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24116 /* svsub_write_za32_u32_vg1x4 */, 575 /* vUiq16Uiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24143 /* svsub_write_za64_s64_vg1x2 */, 616 /* vUiq4Wiq4Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24170 /* svsub_write_za64_s64_vg1x4 */, 655 /* vUiq8Wiq8Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24197 /* svsub_write_za64_u64_vg1x2 */, 694 /* vUiq4UWiq4UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24224 /* svsub_write_za64_u64_vg1x4 */, 735 /* vUiq8UWiq8UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24251 /* svsub_za16_bf16_vg1x2 */, 771 /* vUiq16y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24273 /* svsub_za16_bf16_vg1x4 */, 816 /* vUiq32y */, 1 /* n */, 779 /* sme,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24295 /* svsub_za16_f16_vg1x2 */, 845 /* vUiq16h */, 1 /* n */, 853 /* sme,(sme-f16f16|sme-f8f16) */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24316 /* svsub_za16_f16_vg1x4 */, 901 /* vUiq32h */, 1 /* n */, 853 /* sme,(sme-f16f16|sme-f8f16) */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24337 /* svsub_za32_f32_vg1x2 */, 930 /* vUiq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24358 /* svsub_za32_f32_vg1x4 */, 958 /* vUiq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24379 /* svsub_za32_s32_vg1x2 */, 987 /* vUiq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24400 /* svsub_za32_s32_vg1x4 */, 1015 /* vUiq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24421 /* svsub_za32_u32_vg1x2 */, 1044 /* vUiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24442 /* svsub_za32_u32_vg1x4 */, 1073 /* vUiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24463 /* svsub_za64_f64_vg1x2 */, 1103 /* vUiq4d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24484 /* svsub_za64_f64_vg1x4 */, 1151 /* vUiq8d */, 1 /* n */, 1110 /* sme,sme2,sme-f64f64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24505 /* svsub_za64_s64_vg1x2 */, 1179 /* vUiq4Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24526 /* svsub_za64_s64_vg1x4 */, 1208 /* vUiq8Wi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24547 /* svsub_za64_u64_vg1x2 */, 1237 /* vUiq4UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24568 /* svsub_za64_u64_vg1x4 */, 1267 /* vUiq8UWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24589 /* svsudot_lane_za32_s8_vg1x2 */, 24616 /* vUiq32Scq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24634 /* svsudot_lane_za32_s8_vg1x4 */, 24661 /* vUiq64Scq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24679 /* svsudot_single_za32_s8_vg1x2 */, 24708 /* vUiq32Scq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24722 /* svsudot_single_za32_s8_vg1x4 */, 24751 /* vUiq64Scq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24765 /* svsudot_za32_s8_vg1x2 */, 24787 /* vUiq32Scq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24801 /* svsudot_za32_s8_vg1x4 */, 24823 /* vUiq64Scq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24837 /* svsumla_lane_za32_s8_vg4x1 */, 24864 /* vUiq16Scq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24882 /* svsumla_lane_za32_s8_vg4x2 */, 24616 /* vUiq32Scq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24909 /* svsumla_lane_za32_s8_vg4x4 */, 24661 /* vUiq64Scq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24936 /* svsumla_single_za32_s8_vg4x2 */, 24708 /* vUiq32Scq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24965 /* svsumla_single_za32_s8_vg4x4 */, 24751 /* vUiq64Scq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{24994 /* svsumla_za32_s8_vg4x1 */, 25016 /* vUiq16Scq16Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25030 /* svsumla_za32_s8_vg4x2 */, 24787 /* vUiq32Scq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25052 /* svsumla_za32_s8_vg4x4 */, 24823 /* vUiq64Scq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25074 /* svsumopa_za32_s8_m */, 25093 /* vIUWiq16bq16bq16Scq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25117 /* svsumopa_za64_s16_m */, 25137 /* vIUWiq16bq16bq8sq8Us */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25158 /* svsumops_za32_s8_m */, 25093 /* vIUWiq16bq16bq16Scq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25177 /* svsumops_za64_s16_m */, 25137 /* vIUWiq16bq16bq8sq8Us */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25197 /* svsuvdot_lane_za32_s8_vg1x4 */, 2172 /* vUiq64Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25225 /* svtmopa_lane_za16_bf16_bf16 */, 25253 /* vIUWiq16yq8yq16UcIUWi */, 1 /* n */, 25275 /* sme,sme2,sme-tmop,sme-b16b16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25304 /* svtmopa_lane_za16_f16_f16 */, 25330 /* vIUWiq16hq8hq16UcIUWi */, 1 /* n */, 25352 /* sme,sme2,sme-tmop,sme-f16f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25381 /* svtmopa_lane_za16_mf8_mf8_fpm */, 25411 /* vIUWiq32mq16mq16UcIUWiUWi */, 1 /* n */, 25437 /* sme,sme2,sme-tmop,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25465 /* svtmopa_lane_za32_bf16_bf16 */, 25253 /* vIUWiq16yq8yq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25511 /* svtmopa_lane_za32_f16_f16 */, 25330 /* vIUWiq16hq8hq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25537 /* svtmopa_lane_za32_f32_f32 */, 25563 /* vIUWiq8fq4fq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25584 /* svtmopa_lane_za32_mf8_mf8_fpm */, 25411 /* vIUWiq32mq16mq16UcIUWiUWi */, 1 /* n */, 25614 /* sme,sme2,sme-tmop,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25642 /* svtmopa_lane_za32_s16_s16 */, 25668 /* vIUWiq16sq8sq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25690 /* svtmopa_lane_za32_s8_s8 */, 25714 /* vIUWiq32Scq16Scq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25739 /* svtmopa_lane_za32_s8_u8 */, 25763 /* vIUWiq32Scq16Ucq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25788 /* svtmopa_lane_za32_u16_u16 */, 25814 /* vIUWiq16Usq8Usq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25838 /* svtmopa_lane_za32_u8_s8 */, 25862 /* vIUWiq32Ucq16Scq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25887 /* svtmopa_lane_za32_u8_u8 */, 25911 /* vIUWiq32Ucq16Ucq16UcIUWi */, 1 /* n */, 25493 /* sme,sme2,sme-tmop */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25936 /* svusdot_lane_za32_u8_vg1x2 */, 25963 /* vUiq32Ucq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{25981 /* svusdot_lane_za32_u8_vg1x4 */, 26008 /* vUiq64Ucq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26026 /* svusdot_single_za32_u8_vg1x2 */, 26055 /* vUiq32Ucq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26069 /* svusdot_single_za32_u8_vg1x4 */, 26098 /* vUiq64Ucq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26112 /* svusdot_za32_u8_vg1x2 */, 26134 /* vUiq32Ucq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26148 /* svusdot_za32_u8_vg1x4 */, 26170 /* vUiq64Ucq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26184 /* svusmla_lane_za32_u8_vg4x1 */, 26211 /* vUiq16Ucq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26229 /* svusmla_lane_za32_u8_vg4x2 */, 25963 /* vUiq32Ucq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26256 /* svusmla_lane_za32_u8_vg4x4 */, 26008 /* vUiq64Ucq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26283 /* svusmla_single_za32_u8_vg4x2 */, 26055 /* vUiq32Ucq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26312 /* svusmla_single_za32_u8_vg4x4 */, 26098 /* vUiq64Ucq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26341 /* svusmla_za32_u8_vg4x1 */, 26363 /* vUiq16Ucq16Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26377 /* svusmla_za32_u8_vg4x2 */, 26134 /* vUiq32Ucq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26399 /* svusmla_za32_u8_vg4x4 */, 26170 /* vUiq64Ucq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26421 /* svusmopa_za32_u8_m */, 26440 /* vIUWiq16bq16bq16Ucq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26464 /* svusmopa_za64_u16_m */, 26484 /* vIUWiq16bq16bq8Usq8s */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26505 /* svusmops_za32_u8_m */, 26440 /* vIUWiq16bq16bq16Ucq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26524 /* svusmops_za64_u16_m */, 26484 /* vIUWiq16bq16bq8Usq8s */, 1 /* n */, 1386 /* sme,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26544 /* svusvdot_lane_za32_u8_vg1x4 */, 2344 /* vUiq64Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26572 /* svvdot_lane_za16_mf8_vg1x2_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1719 /* sme,sme-f8f16 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26603 /* svvdot_lane_za32_bf16_vg1x2 */, 1809 /* vUiq16yq8yIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26631 /* svvdot_lane_za32_f16_vg1x2 */, 1892 /* vUiq16hq8hIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26658 /* svvdot_lane_za32_s16_vg1x2 */, 2048 /* vUiq16sq8sIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26685 /* svvdot_lane_za32_s8_vg1x4 */, 2172 /* vUiq64Scq16ScIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26711 /* svvdot_lane_za32_u16_vg1x2 */, 2216 /* vUiq16Usq8UsIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26738 /* svvdot_lane_za32_u8_vg1x4 */, 2344 /* vUiq64Ucq16UcIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26764 /* svvdot_lane_za64_s16_vg1x4 */, 2089 /* vUiq32sq8sIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26791 /* svvdot_lane_za64_u16_vg1x4 */, 2259 /* vUiq32Usq8UsIUWi */, 1 /* n */, 271 /* sme,sme2,sme-i16i64 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26818 /* svvdotb_lane_za32_mf8_vg1x4_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26850 /* svvdott_lane_za32_mf8_vg1x4_fpm */, 1700 /* vUiq32mq16mIUWiUWi */, 1 /* n */, 1978 /* sme,sme-f8f32 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26882 /* svwrite_hor_za128_bf16_m */, 26907 /* vIUWiUiq16bq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26922 /* svwrite_hor_za128_f16_m */, 26946 /* vIUWiUiq16bq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{26961 /* svwrite_hor_za128_f32_m */, 26985 /* vIUWiUiq16bq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27000 /* svwrite_hor_za128_f64_m */, 27024 /* vIUWiUiq16bq2d */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27039 /* svwrite_hor_za128_mf8_m */, 27063 /* vIUWiUiq16bq16m */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27079 /* svwrite_hor_za128_s16_m */, 27103 /* vIUWiUiq16bq8s */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27118 /* svwrite_hor_za128_s32_m */, 27142 /* vIUWiUiq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27157 /* svwrite_hor_za128_s64_m */, 27181 /* vIUWiUiq16bq2Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27197 /* svwrite_hor_za128_s8_m */, 27220 /* vIUWiUiq16bq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27237 /* svwrite_hor_za128_u16_m */, 27261 /* vIUWiUiq16bq8Us */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27277 /* svwrite_hor_za128_u32_m */, 27301 /* vIUWiUiq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27317 /* svwrite_hor_za128_u64_m */, 27341 /* vIUWiUiq16bq2UWi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27358 /* svwrite_hor_za128_u8_m */, 27381 /* vIUWiUiq16bq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27398 /* svwrite_hor_za16_bf16_m */, 26907 /* vIUWiUiq16bq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27422 /* svwrite_hor_za16_bf16_vg2 */, 27448 /* vIUWiUiq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27460 /* svwrite_hor_za16_bf16_vg4 */, 27486 /* vIUWiUiq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27498 /* svwrite_hor_za16_f16_m */, 26946 /* vIUWiUiq16bq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27521 /* svwrite_hor_za16_f16_vg2 */, 27546 /* vIUWiUiq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27558 /* svwrite_hor_za16_f16_vg4 */, 27583 /* vIUWiUiq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27595 /* svwrite_hor_za16_s16_m */, 27103 /* vIUWiUiq16bq8s */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27618 /* svwrite_hor_za16_s16_vg2 */, 27643 /* vIUWiUiq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27655 /* svwrite_hor_za16_s16_vg4 */, 27680 /* vIUWiUiq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27692 /* svwrite_hor_za16_u16_m */, 27261 /* vIUWiUiq16bq8Us */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27715 /* svwrite_hor_za16_u16_vg2 */, 27740 /* vIUWiUiq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27753 /* svwrite_hor_za16_u16_vg4 */, 27778 /* vIUWiUiq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27791 /* svwrite_hor_za32_f32_m */, 26985 /* vIUWiUiq16bq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27814 /* svwrite_hor_za32_f32_vg2 */, 27839 /* vIUWiUiq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27850 /* svwrite_hor_za32_f32_vg4 */, 27875 /* vIUWiUiq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27887 /* svwrite_hor_za32_s32_m */, 27142 /* vIUWiUiq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27910 /* svwrite_hor_za32_s32_vg2 */, 27935 /* vIUWiUiq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27946 /* svwrite_hor_za32_s32_vg4 */, 27971 /* vIUWiUiq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{27983 /* svwrite_hor_za32_u32_m */, 27301 /* vIUWiUiq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28006 /* svwrite_hor_za32_u32_vg2 */, 28031 /* vIUWiUiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28043 /* svwrite_hor_za32_u32_vg4 */, 28068 /* vIUWiUiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28081 /* svwrite_hor_za64_f64_m */, 27024 /* vIUWiUiq16bq2d */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28104 /* svwrite_hor_za64_f64_vg2 */, 28129 /* vIUWiUiq4d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28140 /* svwrite_hor_za64_f64_vg4 */, 28165 /* vIUWiUiq8d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28176 /* svwrite_hor_za64_s64_m */, 27181 /* vIUWiUiq16bq2Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28199 /* svwrite_hor_za64_s64_vg2 */, 28224 /* vIUWiUiq4Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28236 /* svwrite_hor_za64_s64_vg4 */, 28261 /* vIUWiUiq8Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28273 /* svwrite_hor_za64_u64_m */, 27341 /* vIUWiUiq16bq2UWi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28296 /* svwrite_hor_za64_u64_vg2 */, 28321 /* vIUWiUiq4UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28334 /* svwrite_hor_za64_u64_vg4 */, 28359 /* vIUWiUiq8UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28372 /* svwrite_hor_za8_mf8_m */, 27063 /* vIUWiUiq16bq16m */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28394 /* svwrite_hor_za8_mf8_vg2 */, 28418 /* vIUWiUiq32m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28430 /* svwrite_hor_za8_mf8_vg4 */, 28454 /* vIUWiUiq64m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28466 /* svwrite_hor_za8_s8_m */, 27220 /* vIUWiUiq16bq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28487 /* svwrite_hor_za8_s8_vg2 */, 28510 /* vIUWiUiq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28523 /* svwrite_hor_za8_s8_vg4 */, 28546 /* vIUWiUiq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28559 /* svwrite_hor_za8_u8_m */, 27381 /* vIUWiUiq16bq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28580 /* svwrite_hor_za8_u8_vg2 */, 28603 /* vIUWiUiq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28616 /* svwrite_hor_za8_u8_vg4 */, 28639 /* vIUWiUiq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28652 /* svwrite_lane_zt_bf16 */, 28673 /* vIUWiq8yIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28686 /* svwrite_lane_zt_f16 */, 28706 /* vIUWiq8hIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28719 /* svwrite_lane_zt_f32 */, 28739 /* vIUWiq4fIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28752 /* svwrite_lane_zt_f64 */, 28772 /* vIUWiq2dIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28785 /* svwrite_lane_zt_s16 */, 28805 /* vIUWiq8sIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28818 /* svwrite_lane_zt_s32 */, 28838 /* vIUWiq4iIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28851 /* svwrite_lane_zt_s64 */, 28871 /* vIUWiq2WiIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28885 /* svwrite_lane_zt_s8 */, 28904 /* vIUWiq16ScIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28919 /* svwrite_lane_zt_u16 */, 28939 /* vIUWiq8UsIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28953 /* svwrite_lane_zt_u32 */, 28973 /* vIUWiq4UiIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{28987 /* svwrite_lane_zt_u64 */, 29007 /* vIUWiq2UWiIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29022 /* svwrite_lane_zt_u8 */, 29041 /* vIUWiq16UcIUWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29056 /* svwrite_ver_za128_bf16_m */, 26907 /* vIUWiUiq16bq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29081 /* svwrite_ver_za128_f16_m */, 26946 /* vIUWiUiq16bq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29105 /* svwrite_ver_za128_f32_m */, 26985 /* vIUWiUiq16bq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29129 /* svwrite_ver_za128_f64_m */, 27024 /* vIUWiUiq16bq2d */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29153 /* svwrite_ver_za128_mf8_m */, 27063 /* vIUWiUiq16bq16m */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29177 /* svwrite_ver_za128_s16_m */, 27103 /* vIUWiUiq16bq8s */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29201 /* svwrite_ver_za128_s32_m */, 27142 /* vIUWiUiq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29225 /* svwrite_ver_za128_s64_m */, 27181 /* vIUWiUiq16bq2Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29249 /* svwrite_ver_za128_s8_m */, 27220 /* vIUWiUiq16bq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29272 /* svwrite_ver_za128_u16_m */, 27261 /* vIUWiUiq16bq8Us */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29296 /* svwrite_ver_za128_u32_m */, 27301 /* vIUWiUiq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29320 /* svwrite_ver_za128_u64_m */, 27341 /* vIUWiUiq16bq2UWi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29344 /* svwrite_ver_za128_u8_m */, 27381 /* vIUWiUiq16bq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29367 /* svwrite_ver_za16_bf16_m */, 26907 /* vIUWiUiq16bq8y */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29391 /* svwrite_ver_za16_bf16_vg2 */, 27448 /* vIUWiUiq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29417 /* svwrite_ver_za16_bf16_vg4 */, 27486 /* vIUWiUiq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29443 /* svwrite_ver_za16_f16_m */, 26946 /* vIUWiUiq16bq8h */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29466 /* svwrite_ver_za16_f16_vg2 */, 27546 /* vIUWiUiq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29491 /* svwrite_ver_za16_f16_vg4 */, 27583 /* vIUWiUiq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29516 /* svwrite_ver_za16_s16_m */, 27103 /* vIUWiUiq16bq8s */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29539 /* svwrite_ver_za16_s16_vg2 */, 27643 /* vIUWiUiq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29564 /* svwrite_ver_za16_s16_vg4 */, 27680 /* vIUWiUiq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29589 /* svwrite_ver_za16_u16_m */, 27261 /* vIUWiUiq16bq8Us */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29612 /* svwrite_ver_za16_u16_vg2 */, 27740 /* vIUWiUiq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29637 /* svwrite_ver_za16_u16_vg4 */, 27778 /* vIUWiUiq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29662 /* svwrite_ver_za32_f32_m */, 26985 /* vIUWiUiq16bq4f */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29685 /* svwrite_ver_za32_f32_vg2 */, 27839 /* vIUWiUiq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29710 /* svwrite_ver_za32_f32_vg4 */, 27875 /* vIUWiUiq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29735 /* svwrite_ver_za32_s32_m */, 27142 /* vIUWiUiq16bq4i */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29758 /* svwrite_ver_za32_s32_vg2 */, 27935 /* vIUWiUiq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29783 /* svwrite_ver_za32_s32_vg4 */, 27971 /* vIUWiUiq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29808 /* svwrite_ver_za32_u32_m */, 27301 /* vIUWiUiq16bq4Ui */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29831 /* svwrite_ver_za32_u32_vg2 */, 28031 /* vIUWiUiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29856 /* svwrite_ver_za32_u32_vg4 */, 28068 /* vIUWiUiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29881 /* svwrite_ver_za64_f64_m */, 27024 /* vIUWiUiq16bq2d */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29904 /* svwrite_ver_za64_f64_vg2 */, 28129 /* vIUWiUiq4d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29929 /* svwrite_ver_za64_f64_vg4 */, 28165 /* vIUWiUiq8d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29954 /* svwrite_ver_za64_s64_m */, 27181 /* vIUWiUiq16bq2Wi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{29977 /* svwrite_ver_za64_s64_vg2 */, 28224 /* vIUWiUiq4Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30002 /* svwrite_ver_za64_s64_vg4 */, 28261 /* vIUWiUiq8Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30027 /* svwrite_ver_za64_u64_m */, 27341 /* vIUWiUiq16bq2UWi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30050 /* svwrite_ver_za64_u64_vg2 */, 28321 /* vIUWiUiq4UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30075 /* svwrite_ver_za64_u64_vg4 */, 28359 /* vIUWiUiq8UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30100 /* svwrite_ver_za8_mf8_m */, 27063 /* vIUWiUiq16bq16m */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30122 /* svwrite_ver_za8_mf8_vg2 */, 28418 /* vIUWiUiq32m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30146 /* svwrite_ver_za8_mf8_vg4 */, 28454 /* vIUWiUiq64m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30170 /* svwrite_ver_za8_s8_m */, 27220 /* vIUWiUiq16bq16Sc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30191 /* svwrite_ver_za8_s8_vg2 */, 28510 /* vIUWiUiq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30214 /* svwrite_ver_za8_s8_vg4 */, 28546 /* vIUWiUiq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30237 /* svwrite_ver_za8_u8_m */, 27381 /* vIUWiUiq16bq16Uc */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30258 /* svwrite_ver_za8_u8_vg2 */, 28603 /* vIUWiUiq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30281 /* svwrite_ver_za8_u8_vg4 */, 28639 /* vIUWiUiq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30304 /* svwrite_za16_bf16_vg1x2 */, 771 /* vUiq16y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30328 /* svwrite_za16_bf16_vg1x4 */, 816 /* vUiq32y */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30352 /* svwrite_za16_f16_vg1x2 */, 845 /* vUiq16h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30375 /* svwrite_za16_f16_vg1x4 */, 901 /* vUiq32h */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30398 /* svwrite_za16_s16_vg1x2 */, 30421 /* vUiq16s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30429 /* svwrite_za16_s16_vg1x4 */, 30452 /* vUiq32s */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30460 /* svwrite_za16_u16_vg1x2 */, 30483 /* vUiq16Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30492 /* svwrite_za16_u16_vg1x4 */, 30515 /* vUiq32Us */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30524 /* svwrite_za32_f32_vg1x2 */, 930 /* vUiq8f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30547 /* svwrite_za32_f32_vg1x4 */, 958 /* vUiq16f */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30570 /* svwrite_za32_s32_vg1x2 */, 987 /* vUiq8i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30593 /* svwrite_za32_s32_vg1x4 */, 1015 /* vUiq16i */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30616 /* svwrite_za32_u32_vg1x2 */, 1044 /* vUiq8Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30639 /* svwrite_za32_u32_vg1x4 */, 1073 /* vUiq16Ui */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30662 /* svwrite_za64_f64_vg1x2 */, 1103 /* vUiq4d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30685 /* svwrite_za64_f64_vg1x4 */, 1151 /* vUiq8d */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30708 /* svwrite_za64_s64_vg1x2 */, 1179 /* vUiq4Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30731 /* svwrite_za64_s64_vg1x4 */, 1208 /* vUiq8Wi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30754 /* svwrite_za64_u64_vg1x2 */, 1237 /* vUiq4UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30777 /* svwrite_za64_u64_vg1x4 */, 1267 /* vUiq8UWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30800 /* svwrite_za8_mf8_vg1x2 */, 30822 /* vUiq32m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30830 /* svwrite_za8_mf8_vg1x4 */, 30852 /* vUiq64m */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30860 /* svwrite_za8_s8_vg1x2 */, 30881 /* vUiq32Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30890 /* svwrite_za8_s8_vg1x4 */, 30911 /* vUiq64Sc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30920 /* svwrite_za8_u8_vg1x2 */, 30941 /* vUiq32Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30950 /* svwrite_za8_u8_vg1x4 */, 30971 /* vUiq64Uc */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{30980 /* svwrite_zt_bf16 */, 30996 /* vIUWiq8y */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31005 /* svwrite_zt_f16 */, 31020 /* vIUWiq8h */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31029 /* svwrite_zt_f32 */, 31044 /* vIUWiq4f */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31053 /* svwrite_zt_f64 */, 31068 /* vIUWiq2d */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31077 /* svwrite_zt_s16 */, 31092 /* vIUWiq8s */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31101 /* svwrite_zt_s32 */, 31116 /* vIUWiq4i */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31125 /* svwrite_zt_s64 */, 31140 /* vIUWiq2Wi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31150 /* svwrite_zt_s8 */, 31164 /* vIUWiq16Sc */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31175 /* svwrite_zt_u16 */, 31190 /* vIUWiq8Us */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31200 /* svwrite_zt_u32 */, 31215 /* vIUWiq4Ui */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31225 /* svwrite_zt_u64 */, 31240 /* vIUWiq2UWi */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31251 /* svwrite_zt_u8 */, 31265 /* vIUWiq16Uc */, 1 /* n */, 6098 /* sme,sme-lutv2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31276 /* svzero_mask_za */, 31291 /* vIUWi */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31297 /* svzero_za */, 31307 /* vv */, 1 /* n */, 30 /* sme */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31310 /* svzero_za64_vg1x2 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31332 /* svzero_za64_vg1x4 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31350 /* svzero_za64_vg2x1 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31368 /* svzero_za64_vg2x2 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31386 /* svzero_za64_vg2x4 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31404 /* svzero_za64_vg4x1 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31422 /* svzero_za64_vg4x2 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31440 /* svzero_za64_vg4x4 */, 31328 /* vUi */, 1 /* n */, 20229 /* sme,sme2p1 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+    Builtin::Info{Builtin::Info::StrOffsets{31458 /* svzero_zt */, 31291 /* vIUWi */, 1 /* n */, 78 /* sme,sme2 */}, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
+#endif // GET_SME_BUILTIN_INFOS
+

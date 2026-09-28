@@ -5,6 +5,12 @@
 # file must not change depending on which command ran last.
 version = 2
 
+[package."llvm.clang-dev"]
+namespace = "llvm"
+version = "23.1.0"
+source  = "index+llvm@23.1.0"
+hash    = "fnv1a:2784923e0739cb82"
+
 [package."openkal"]
 namespace = "mcpplibs"
 version = "0.14.0"
