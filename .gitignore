@@ -2,3 +2,6 @@ target/
 **/target/
 .deps/
 compile_commands.json
+
+# Forks (speak-agent/*) checked out here during development, each its own git repository.
+forks/

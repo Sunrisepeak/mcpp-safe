@@ -17,8 +17,22 @@ every fork, what it carries, and what it would take to merge back (a decision fo
 
 ## Local layout during development
 
-The fork's `mcpp.toml` depends on libmc++ by path (`../mcpp-safe/modules/{msa,backend,lsp}`), and
-libmc++ depends on `../../../llvm-clang-dev`. The three repositories are sibling checkouts. A
-package consumed from outside its own workspace must state its dependencies' versions, because
-mcpp resolves `x.workspace = true` only for members of the consumer's workspace. So libmc++'s
-members state `openkal-llvm-runtime` and `nlohmann.json` versions explicitly.
+Forks are checked out under `mcpp-safe/forks/`, each its own git repository, and `.gitignore`
+excludes the directory:
+
+```
+mcpp-safe/
+  modules/ ...                        libmc++
+  forks/
+    llvm-clang-dev/                   speak-agent/llvm-clang-dev
+    mcpp-language-server/             speak-agent/mcpp-language-server, branch mcxx-engine
+```
+
+The fork's `mcpp.toml` depends on libmc++ by path (`../../modules/{msa,backend,lsp}`).
+`modules/clang` depends on `../../forks/llvm-clang-dev`. A package consumed from outside its own
+workspace must state its dependencies' versions, because mcpp resolves `x.workspace = true` only
+for members of the consumer's workspace. So libmc++'s members state `openkal-llvm-runtime` and
+`nlohmann.json` versions explicitly.
+
+A fresh checkout: `git clone Sunrisepeak/mcpp-safe`, then clone the two forks into `forks/`, then
+`mcpp build` in `forks/mcpp-language-server`.

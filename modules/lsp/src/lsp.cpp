@@ -386,6 +386,7 @@ Json Service::capabilities() {
         { "typeDefinitionProvider", true },
         { "implementationProvider", true },
         { "referencesProvider", true },
+        { "callHierarchyProvider", true },
         { "hoverProvider", true },
         { "documentHighlightProvider", true },
         { "documentSymbolProvider", true },
@@ -488,6 +489,54 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
         return out;
     }
 
+    // The functions a function calls: every call in its body, grouped by callee (the body is the
+    // outline symbol whose name is the item's).
+    if (method == "callHierarchy/outgoingCalls") {
+        const Json item = params.value("item", Json::object());
+        auto from = this->unit(item.value("uri", std::string {}), true, cancel);
+        if (!from) return Json::array();
+        const std::string_view text { from->text() };
+        const msa::Position name { from_lsp(item.value("selectionRange", Json::object()).value("start", Json::object()), text) };
+        std::optional<msa::Range> body;
+        std::function<void(const std::vector<msa::Symbol>&)> visit = [&](const std::vector<msa::Symbol>& symbols) {
+            for (const auto& symbol : symbols) {
+                if (symbol.selection.contains(name)) body = symbol.range;
+                visit(symbol.children);
+            }
+        };
+        visit(from->symbols());
+        if (!body) return Json::array();
+        const std::string self { item.value("data", Json::object()).value("id", std::string {}) };
+        std::vector<std::string> order;
+        std::map<std::string, Json> ranges;
+        for (const auto& o : from->occurrences()) {
+            if (!(o.roles & msa::role::call) || o.entity == self || !body->contains(o.range.begin)) continue;
+            if (!ranges.contains(o.entity)) {
+                order.push_back(o.entity);
+                ranges[o.entity] = Json::array();
+            }
+            ranges[o.entity].push_back(to_lsp(o.range, text));
+        }
+        Json out = Json::array();
+        for (const auto& id : order) {
+            const auto callee = from->entity(id);
+            if (!callee) continue;
+            std::optional<msa::Location> at { callee->definition };
+            if (!at) {
+                const auto defined = s.workspace.definitions(id);
+                if (!defined.empty()) at = defined.front();
+            }
+            if (!at) at = callee->declaration;
+            if (!at) continue;
+            const Json where = s.location(*at);
+            out.push_back(Json { { "to", Json { { "name", callee->name }, { "kind", symbol_kind(callee->kind) }, { "detail", callee->container },
+                                                { "uri", where["uri"] }, { "range", where["range"] }, { "selectionRange", where["range"] },
+                                                { "data", Json { { "id", id } } } } },
+                                 { "fromRanges", ranges[id] } });
+        }
+        return out;
+    }
+
     auto unit = this->unit(uri, true, cancel);
     if (!unit) {
         if (cancel.stop_requested()) return std::unexpected(Error { -32800, "cancelled" });
@@ -501,6 +550,18 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
         for (const auto& l : list) out.push_back(s.location(l));
         return out;
     };
+
+    if (method == "textDocument/prepareCallHierarchy") {
+        const auto entity = unit->entity_at(at);
+        if (!entity || !msa::is_callable(entity->kind)) return Json::array();
+        std::optional<msa::Location> where { entity->definition };
+        if (!where) where = entity->declaration;
+        if (!where) return Json::array();
+        const Json location = s.location(*where);
+        return Json::array({ Json { { "name", entity->name }, { "kind", symbol_kind(entity->kind) }, { "detail", entity->container },
+                                    { "uri", location["uri"] }, { "range", location["range"] }, { "selectionRange", location["range"] },
+                                    { "data", Json { { "id", entity->id } } } } });
+    }
 
     // clangd's extension: what is at a position, by its stable id (the USR), with where it is declared and defined.
     if (method == "textDocument/symbolInfo") {
@@ -579,6 +640,7 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
             if (o.entity == entity->id) found.push_back({ unit->path(), o.range });
         if (!withDeclaration) {
             std::vector<msa::Location> declared { s.workspace.declarations(entity->id) };
+            for (auto& d : s.workspace.definitions(entity->id)) declared.push_back(std::move(d));
             for (const auto& o : unit->occurrences())
                 if (o.entity == entity->id && (o.roles & (msa::role::declaration | msa::role::definition)))
                     declared.push_back({ unit->path(), o.range });
