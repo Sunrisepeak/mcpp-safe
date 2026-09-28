@@ -1,0 +1,18 @@
+# The plugin SDK (MC4 v0): what a rule plugin writes against -- features, levels, findings, and the
+# registry a plugin adds its rules to. Depends on mcxx.msa only: a plugin sees MSA facts, never a
+# backend's types (plan P1, P5).
+[package]
+name        = "mcxx-plugin"
+version     = "0.1.0"
+description = "The MC++ plugin SDK: features, rules and their registry, over MSA facts"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugin]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-msa = { path = "../msa" }
+
+[lib]
+path = "src/plugin.cppm"

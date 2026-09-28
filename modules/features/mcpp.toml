@@ -1,0 +1,23 @@
+# The feature gates (MC1 v0): which level each feature has for a piece of code -- from a package's
+# [package.metadata.mcxx], its profile, and [[mcpp::allow]] on a declaration -- and the diagnostics
+# and audit records the rules' findings become. No backend: it reads MSA facts and plugin rules.
+[package]
+name        = "mcxx-features"
+version     = "0.1.0"
+description = "MC++ feature gates: configuration, scopes, levels, waivers and audit over plugin rules"
+license     = "Apache-2.0"
+
+[targets.mcxx-features]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-base   = { path = "../base" }
+mcxx-msa    = { path = "../msa" }
+mcxx-plugin = { path = "../plugin" }
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
+[lib]
+path = "src/features.cppm"

@@ -143,6 +143,11 @@ inline constexpr std::size_t NOTE_STACK { std::size_t { 64 } << 10 };
 
 inline thread_local bool on_clang_stack { false };
 
+// Set while this thread builds a module interface or indexes in the background: MC++'s feature
+// gates (:gate) do not run there. A gate's error is the file's own diagnostic; in an interface
+// built for the editor it would fail the BMI and every importer with it.
+inline thread_local bool gates_suppressed { false };
+
 void run_on_clang_stack(const std::function<void()>& body) {
     if constexpr (!STACK_SWITCH) {
         body();

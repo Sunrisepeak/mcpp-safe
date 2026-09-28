@@ -26,10 +26,14 @@ members = [
     "modules/base",
     "modules/msa",
     "modules/graph",
+    "modules/plugin",
+    "modules/features",
     "modules/clang",
     "modules/backend",
     "modules/lsp",
     "tools/probe",
+    "plugins/json",
+    "plugins/safe",
 ]
 
 # This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.
@@ -62,6 +66,9 @@ openkal-llvm-runtime = "0.15.2"
 mcxx-base    = { path = "modules/base" }
 mcxx-msa     = { path = "modules/msa" }
 mcxx-backend = { path = "modules/backend" }
+# The first-party rule plugins, statically composed (A0.6.1's composition comes later: mcxx compose).
+mcxx-rules-json = { path = "plugins/json" }
+mcxx-safe       = { path = "plugins/safe" }
 
 # clang-dev is named here too: llvm.codegen-dev reaches it by path inside its archive and mcxx.clang
 # by version, and the root settles which one the graph holds.

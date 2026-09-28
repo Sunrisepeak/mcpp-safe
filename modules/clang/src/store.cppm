@@ -294,6 +294,12 @@ private:
 
     void build_(const std::string& module) {
         base::trace::Span span { "modules", "build", module };
+        // An interface built for the editor: its own diagnostics (and the gates') are the file's, not
+        // a reason to fail every importer.
+        const struct Quiet {
+            Quiet() { gates_suppressed = true; }
+            ~Quiet() { gates_suppressed = false; }
+        } quiet;
         std::string file;
         msa::Command command;
         std::vector<std::pair<std::string, std::string>> dependencies;   // module, pcm (transitive)

@@ -70,6 +70,7 @@ module mcxx.clang:unit;
 import mcxx.msa;
 import mcxx.graph;
 import mcxx.base;
+import mcxx.plugin;
 import :support;
 
 namespace mcxx::clang_backend {
@@ -393,6 +394,18 @@ std::vector<msa::Diagnostic> diagnostics_of(cl::ASTUnit& ast) {
         diagnostic.severity = severity_of(d.getLevel());
         diagnostic.message = std::string { d.getMessage() };
         diagnostic.code = diagnostic_code(d.getID());
+        // MC++'s own diagnostics (feature gates) name their feature in brackets: that is their code.
+        if (diagnostic.code.empty()) {
+            for (std::size_t open { diagnostic.message.find('[') }; open != std::string::npos; open = diagnostic.message.find('[', open + 1)) {
+                const std::size_t close { diagnostic.message.find(']', open) };
+                if (close == std::string::npos) break;
+                const std::string_view id { std::string_view { diagnostic.message }.substr(open + 1, close - open - 1) };
+                if (plugin::find_feature(id) != nullptr) {
+                    diagnostic.code = std::string { id };
+                    break;
+                }
+            }
+        }
         diagnostic.category = cl::DiagnosticIDs::getCategoryNameFromID(cl::DiagnosticIDs::getCategoryNumberForDiag(d.getID())).str();
         if (where && where->path == path_of(sm, main)) {
             diagnostic.range = where->range;
@@ -545,6 +558,9 @@ public:
         return out;
     }
 
+    // MC3 v0 facts of the file's own code (defined in :facts).
+    const msa::fact::Facts& facts() const override;
+
     // For completion: the parse this snapshot came from, used exclusively.
     template <class F>
     auto with_ast(F&& f) const {
@@ -563,6 +579,7 @@ private:
     std::vector<msa::Diagnostic> diagnostics_;
     std::vector<msa::Occurrence> occurrences_;
     std::unordered_map<std::string, const cl::Decl*> decls_;
+    mutable std::optional<msa::fact::Facts> facts_;
 };
 
 struct ParseRequest {

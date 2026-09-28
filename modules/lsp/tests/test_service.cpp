@@ -44,8 +44,10 @@ public:
         return it == s_.entities.end() ? std::nullopt : std::optional { it->second };
     }
     std::vector<msa::Location> overriders(std::string_view) const override { return {}; }
+    const msa::fact::Facts& facts() const override { return facts_; }
 
 private:
+    msa::fact::Facts facts_;
     std::string path_;
     std::string text_;
     std::int64_t version_;

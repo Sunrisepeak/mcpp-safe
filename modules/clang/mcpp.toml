@@ -16,6 +16,8 @@ openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside thi
 mcxx-base  = { path = "../base" }
 mcxx-msa   = { path = "../msa" }
 mcxx-graph = { path = "../graph" }
+mcxx-plugin   = { path = "../plugin" }
+mcxx-features = { path = "../features" }
 
 [dependencies.llvm]
 clang-dev = "23.1.0.2"
@@ -24,4 +26,6 @@ clang-dev = "23.1.0.2"
 path = "src/clang.cppm"
 
 [dev-dependencies]
-mcxx-testing = { path = "../testing" }
+mcxx-testing    = { path = "../testing" }
+mcxx-rules-json = { path = "../../plugins/json" }
+mcxx-safe       = { path = "../../plugins/safe" }

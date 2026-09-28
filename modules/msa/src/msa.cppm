@@ -251,6 +251,111 @@ struct Status {
     std::vector<std::pair<std::string, std::int64_t>> counters;
 };
 
+// ---- Facts (MC3 v0) -----------------------------------------------------------------------------
+//
+// What the code of one file does, as values: the input of MC++'s feature gates and of every rule a
+// plugin adds. T1 is what the file declares; T2 is what its code does (initializations, casts,
+// allocations, pointer arithmetic, jumps, macros). A backend fills them for the file's own code only
+// -- never for what it includes or imports -- and says how sure it is.
+namespace fact {
+
+// Where a fact sits: its enclosing namespace, for namespace-scoped gates ("" = global).
+struct Place {
+    Range range;
+    std::string container;
+};
+
+struct Declaration : Place {
+    Range name;
+    std::string entity;               // id (Entity::id)
+    std::string qualified_name;
+    Kind kind { Kind::unknown };
+    std::string type;                 // variables, members, parameters, aliases: the declared type
+    // Every class template the declared type names, qualified without inline namespaces
+    // ("std::vector", "nlohmann::basic_json"): what library control (lib:std.vector) looks at.
+    std::vector<std::string> templates;
+    bool exported { false };          // inside `export`
+    bool c_array { false };           // of C array type
+    bool is_union { false };          // a union
+};
+
+enum class InitForm { default_init, copy, direct, direct_list, copy_list };
+
+struct Initialization : Place {
+    Range name;                       // the variable's or member's name
+    std::string entity;
+    std::string variable;             // its qualified name
+    std::string type;                 // the initialized object's type
+    std::string type_template;        // the class template the type specializes, or ""
+    InitForm form { InitForm::default_init };
+    std::string constructor;          // the constructor chosen, qualified with its parameters, or ""
+    bool initializer_list_constructor { false };   // that constructor takes a std::initializer_list first
+    std::uint32_t elements { 0 };     // a braced list's elements
+    bool element_braced { false };    // a one-element list whose element is itself a braced list
+    bool member_default { false };    // a default member initializer
+};
+
+enum class CastKind { static_cast_, dynamic_cast_, const_cast_, reinterpret_cast_, c_style, functional };
+std::string_view to_string(CastKind kind) {
+    switch (kind) {
+    case CastKind::static_cast_: return "static_cast";
+    case CastKind::dynamic_cast_: return "dynamic_cast";
+    case CastKind::const_cast_: return "const_cast";
+    case CastKind::reinterpret_cast_: return "reinterpret_cast";
+    case CastKind::c_style: return "C-style cast";
+    case CastKind::functional: return "functional cast";
+    }
+    return "cast";
+}
+
+struct Cast : Place {
+    CastKind kind { CastKind::static_cast_ };
+    std::string from;
+    std::string to;
+    bool reinterprets { false };      // what the cast does is a reinterpret_cast (also a C-style cast that does)
+};
+
+struct Allocation : Place {
+    bool is_delete { false };
+    bool array { false };
+    std::string type;
+};
+
+struct PointerArithmetic : Place {
+    std::string op;                   // "+", "-", "+=", "-=", "++", "--", "[]"
+    std::string type;                 // the pointer's type
+};
+
+struct Goto : Place {
+    std::string label;
+};
+
+struct MacroDefinition : Place {
+    std::string name;
+};
+
+// [[mcpp::allow("id", ...)]] on a declaration: the gates it waives, over the declaration's range.
+struct Suppression : Place {
+    std::vector<std::string> ids;
+    std::string entity;               // what it is attached to (its id)
+    std::string declaration;          // and its qualified name, for people reading an audit
+    std::string reason;               // an optional second form: [[mcpp::allow("id", "reason")]]
+};
+
+struct Facts {
+    Certainty certainty { Certainty::certain };
+    std::vector<Declaration> declarations;
+    std::vector<Initialization> initializations;
+    std::vector<Cast> casts;
+    std::vector<Allocation> allocations;
+    std::vector<PointerArithmetic> pointer_arithmetic;
+    std::vector<Goto> gotos;
+    std::vector<MacroDefinition> macros;
+    std::vector<Suppression> suppressions;
+};
+
+} // namespace fact
+
 // A parsed file: the snapshot one version of its text produced. Immutable once returned, so any
 // number of threads may read it.
 class Unit {
@@ -270,6 +375,8 @@ public:
     virtual std::optional<Entity> entity(std::string_view id) const = 0;
     // Methods overriding the given one, as far as this unit sees them.
     virtual std::vector<Location> overriders(std::string_view id) const = 0;
+    // What the file's own code declares and does (MC3 v0): computed once, on first use.
+    virtual const fact::Facts& facts() const = 0;
 };
 
 // Cooperative cancellation: a long operation polls it and returns early when set.

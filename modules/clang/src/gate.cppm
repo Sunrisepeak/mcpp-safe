@@ -1,0 +1,186 @@
+// mcxx.clang partition :gate: MC++ feature gates inside every Clang compilation of this program, and
+// [[mcpp::allow]].
+module;
+
+#include <clang/AST/ASTContext.h>
+#include <clang/AST/Attr.h>
+#include <clang/AST/DynamicRecursiveASTVisitor.h>
+#include <clang/AST/ExprCXX.h>
+#include <clang/AST/StmtCXX.h>
+#include <clang/Lex/MacroInfo.h>
+#include <clang/AST/Decl.h>
+#include <clang/AST/DeclCXX.h>
+#include <clang/AST/DeclTemplate.h>
+#include <clang/AST/Expr.h>
+#include <clang/AST/PrettyPrinter.h>
+#include <clang/AST/RawCommentList.h>
+#include <clang/AST/Type.h>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/Basic/AllDiagnostics.h>
+#include <clang/Basic/DiagnosticIDs.h>
+#include <clang/Basic/DiagnosticOptions.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Basic/Module.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/Basic/Stack.h>
+#include <clang/Driver/CreateASTUnitFromArgs.h>
+#include <clang/Driver/CreateInvocationFromArgs.h>
+#include <clang/Frontend/ASTUnit.h>
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/CompilerInvocation.h>
+#include <clang/Frontend/FrontendActions.h>
+#include <clang/Frontend/Utils.h>
+#include <clang/Frontend/FrontendPluginRegistry.h>
+#include <clang/Sema/ParsedAttr.h>
+#include <clang/Sema/Sema.h>
+#include <clang/Basic/ParsedAttrInfo.h>
+#include <clang/Index/IndexDataConsumer.h>
+#include <clang/Index/IndexSymbol.h>
+#include <clang/Index/IndexingAction.h>
+#include <clang/Index/IndexingOptions.h>
+#include <clang/Lex/Lexer.h>
+#include <clang/Lex/Preprocessor.h>
+#include <clang/Lex/PreprocessorOptions.h>
+#include <clang/Sema/CodeCompleteConsumer.h>
+#include <clang/Sema/Sema.h>
+#include <clang/UnifiedSymbolResolution/USRGeneration.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/VirtualFileSystem.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/thread.h>
+
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <deque>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <future>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <shared_mutex>
+#include <sstream>
+#include <stop_token>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+module mcxx.clang:gate;
+
+import mcxx.msa;
+import mcxx.graph;
+import mcxx.base;
+import mcxx.plugin;
+import mcxx.features;
+import :support;
+import :unit;
+import :facts;
+
+namespace mcxx::clang_backend {
+
+namespace cl = ::clang;
+namespace fs = std::filesystem;
+using msa::Position;
+using msa::Range;
+using msa::Location;
+
+namespace {
+
+// [[mcpp::allow("feature")]] and [[mcpp::allow("feature", "reason")]] (several features: "a, b"):
+// kept on the declaration as an annotation, which :facts turns into a Suppression.
+struct AllowAttrInfo final : public cl::ParsedAttrInfo {
+    AllowAttrInfo() {
+        NumArgs = 1;
+        OptArgs = 1;
+        // Clang 23's parser asks plugins about a scoped attribute by its name alone ("allow", not
+        // "mcpp::allow": clang::hasAttribute passes the unscoped name to hasSpelling), and skips
+        // the arguments of one no plugin claims; the attribute then arrives with none. So the bare
+        // name is a spelling too; the scoped one is what the documentation and the rules use.
+        static constexpr Spelling spellings[] { { cl::ParsedAttr::AS_CXX11, "mcpp::allow" }, { cl::ParsedAttr::AS_CXX11, "allow" } };
+        Spellings = spellings;
+    }
+
+    bool diagAppertainsToDecl(cl::Sema&, const cl::ParsedAttr&, const cl::Decl*) const override { return true; }
+
+    AttrHandling handleDeclAttribute(cl::Sema& sema, cl::Decl* d, const cl::ParsedAttr& attr) const override {
+        std::string parts[2];
+        for (unsigned i { 0 }; i < attr.getNumArgs() && i < 2; ++i) {
+            const auto* literal = llvm::dyn_cast_or_null<cl::StringLiteral>(attr.getArgAsExpr(i) ? attr.getArgAsExpr(i)->IgnoreParenCasts() : nullptr);
+            if (literal == nullptr) {
+                const unsigned id { sema.getDiagnostics().getCustomDiagID(cl::DiagnosticsEngine::Error,
+                                                                          "[[mcpp::allow]] takes a feature id and an optional reason, as string literals") };
+                sema.Diag(attr.getLoc(), id);
+                return AttributeNotApplied;
+            }
+            parts[i] = literal->getString().str();
+        }
+        d->addAttr(cl::AnnotateAttr::Create(sema.Context, "mcpp::allow|" + parts[0] + "|" + parts[1], nullptr, 0, attr.getRange()));
+        return AttributeApplied;
+    }
+};
+
+cl::ParsedAttrInfoRegistry::Add<AllowAttrInfo> allow_registration { "mcpp-allow", "[[mcpp::allow(\"feature\")]]: waives an MC++ feature gate" };
+
+// At the end of every compilation this program runs (mcxx's own, and libmc++'s parses for the
+// editor): the rules linked in, over the file's facts, at the levels its configuration gives.
+class GateConsumer final : public cl::ASTConsumer {
+public:
+    explicit GateConsumer(cl::CompilerInstance& ci) : ci_ { ci } {}
+
+    void HandleTranslationUnit(cl::ASTContext& ctx) override {
+        if (gates_suppressed || plugin::rules().empty() || ci_.getDiagnostics().hasFatalErrorOccurred()) return;
+        const auto& sm = ctx.getSourceManager();
+        const cl::FileID main { sm.getMainFileID() };
+        const std::string path { path_of(sm, main) };
+        if (path.empty()) return;
+        base::trace::Span span { "gates", "check", path, std::chrono::milliseconds { 500 } };
+        std::string module;
+        if (const cl::Module* m = ctx.getCurrentNamedModule()) module = m->getFullModuleName();
+        const msa::fact::Facts facts { facts_of(ctx, &ci_.getPreprocessor()) };
+        const features::Config config { features::config_for(path) };
+        const features::Result result { features::evaluate({ path, module, facts }, config) };
+        auto& diags = ci_.getDiagnostics();
+        for (const auto& d : result.diagnostics) {
+            const unsigned id { d.severity == msa::Severity::error ? diags.getCustomDiagID(cl::DiagnosticsEngine::Error, "%0")
+                                                                   : diags.getCustomDiagID(cl::DiagnosticsEngine::Warning, "%0") };
+            const bool placed { d.range.begin != Position {} || d.range.end != Position {} };
+            const cl::SourceLocation begin { placed ? sm.translateLineCol(main, d.range.begin.line + 1, d.range.begin.column + 1) : cl::SourceLocation {} };
+            auto report = diags.Report(begin, id);
+            report << d.message;
+            if (placed) report << cl::CharSourceRange::getCharRange(begin, sm.translateLineCol(main, d.range.end.line + 1, d.range.end.column + 1));
+        }
+        for (const auto& [unknown, where] : result.unknown) {
+            const unsigned id { diags.getCustomDiagID(cl::DiagnosticsEngine::Warning, "%0") };
+            diags.Report(sm.translateLineCol(main, where.begin.line + 1, where.begin.column + 1), id)
+                << std::format("[[mcpp::allow]] names `{}`, which no MC++ rule linked into this program declares", unknown);
+        }
+        span.note(std::format("{} findings, {} waived", result.diagnostics.size(), result.waived.size()));
+        if (const char* audit = std::getenv("MCXX_AUDIT"); audit != nullptr && *audit != '\0') features::append_audit(audit, result.waived);
+        base::trace::count("gates.waived", static_cast<std::int64_t>(result.waived.size()));
+    }
+
+private:
+    cl::CompilerInstance& ci_;
+};
+
+class GateAction final : public cl::PluginASTAction {
+protected:
+    std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override { return std::make_unique<GateConsumer>(ci); }
+    bool ParseArgs(const cl::CompilerInstance&, const std::vector<std::string>&) override { return true; }
+    ActionType getActionType() override { return AddAfterMainAction; }
+};
+
+cl::FrontendPluginRegistry::Add<GateAction> gate_registration { "mcxx-gates", "MC++ feature gates over the rules linked into this program" };
+
+} // namespace
+
+} // namespace mcxx::clang_backend

@@ -5,6 +5,8 @@ import std;
 import mcxx.testing;
 import mcxx.msa;
 import mcxx.clang;
+import mcxx.rules.json;
+import mcxx.safe;
 
 namespace msa = mcxx::msa;
 
@@ -22,6 +24,7 @@ struct Program {
         std::error_code ec;
         std::filesystem::remove_all(root, ec);
     }
+    void manifest(std::string_view text) { std::ofstream { root / "mcpp.toml" } << text; }
     std::string file(std::string_view relative, std::string_view text) {
         const auto path = root / relative;
         std::filesystem::create_directories(path.parent_path());
@@ -125,6 +128,98 @@ int main() {
         auto unit = w->parse(main, text, 1);
         expect(fatal(unit != nullptr && !unit->diagnostics().empty()));
         expect(unit->diagnostics()[0].code == "undeclared_var_use") << unit->diagnostics()[0].code;
+    };
+
+
+    // No standard library here: the smallest std::initializer_list Clang accepts, and a stand-in for
+    // nlohmann::basic_json with its ABI inline namespace and its initializer_list constructor.
+    static constexpr std::string_view JSON_PRELUDE {
+        "namespace std {\n"
+        "template <class E> class initializer_list {\n"
+        "    const E* b; unsigned long n;\n"
+        "    constexpr initializer_list(const E* b, unsigned long n) : b(b), n(n) {}\n"
+        "public:\n"
+        "    constexpr initializer_list() : b(nullptr), n(0) {}\n"
+        "    constexpr unsigned long size() const { return n; }\n"
+        "};\n"
+        "template <class T> struct vector { T* data; };\n"
+        "}\n"
+        "namespace nlohmann { inline namespace json_abi_v3_12_0 {\n"
+        "template <class T = int> class basic_json {\n"
+        "public:\n"
+        "    basic_json(decltype(nullptr) = nullptr) {}\n"
+        "    basic_json(int) {}\n"
+        "    basic_json(std::initializer_list<basic_json>) {}\n"
+        "    basic_json(const basic_json&) = default;\n"
+        "};\n"
+        "} using json = basic_json<>; }\n" };
+
+    "json-brace-init is caught when the file is parsed: one value in braces, and nothing else"_test = [] {
+        Program p { "json" };
+        const std::string text { std::string { JSON_PRELUDE } +
+                                 "namespace app {\n"
+                                 "nlohmann::json one { 1 };\n"                                        // the pitfall
+                                 "nlohmann::json copy = 1;\n"
+                                 "nlohmann::json literal { { 1, 2 } };\n"
+                                 "nlohmann::json two { 1, 2 };\n"
+                                 "struct S { nlohmann::json member { nullptr }; };\n"               // the pitfall, as a member
+                                 "[[mcpp::allow(\"json-brace-init\", \"an array is meant\")]] nlohmann::json waived { 3 };\n"
+                                 "}\n" };
+        const std::string file { p.file("src/app.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        std::vector<std::string> gates;
+        for (const auto& d : unit->diagnostics()) {
+            if (d.code == mcxx::rules::json::BRACE_INIT) gates.push_back(std::format("{}:{}", d.range.begin.line, d.severity == msa::Severity::error ? "error" : "?"));
+            else expect(d.severity != msa::Severity::error) << d.message;
+        }
+        const std::uint32_t base { static_cast<std::uint32_t>(std::ranges::count(JSON_PRELUDE, '\n')) };
+        expect(gates == std::vector<std::string> { std::format("{}:error", base + 1), std::format("{}:error", base + 5) }) << gates.size();
+        const auto& facts = unit->facts();
+        const auto one = std::ranges::find_if(facts.initializations, [](const auto& i) { return i.variable == "app::one"; });
+        expect(fatal(one != facts.initializations.end()));
+        expect(one->type_template == "nlohmann::basic_json" && one->initializer_list_constructor && one->elements == 1 && !one->element_braced);
+        expect(one->form == msa::fact::InitForm::direct_list && one->container == "app");
+        const auto literal = std::ranges::find_if(facts.initializations, [](const auto& i) { return i.variable == "app::literal"; });
+        expect(literal != facts.initializations.end() && literal->element_braced);
+        expect(facts.suppressions.size() == 1 && facts.suppressions[0].reason == "an array is meant");
+    };
+
+    "mc++.safe's facts, and its profile turning them into errors"_test = [] {
+        Program p { "safe" };
+        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx]\nprofile = \"safe\"\n");
+        const std::string text { std::string { JSON_PRELUDE } +
+                                 "#define LIMIT 4\n"
+                                 "union U { int i; float f; };\n"
+                                 "int sum(int* p, int n) {\n"
+                                 "    int arr[LIMIT] = {};\n"
+                                 "    std::vector<int> v;\n"
+                                 "    int* q = new int(1);\n"
+                                 "    long bits = reinterpret_cast<long>(q);\n"
+                                 "    void* untyped = q;\n"
+                                 "    int* back = static_cast<int*>(untyped);\n"
+                                 "    delete q;\n"
+                                 "    if (n == 0) goto done;\n"
+                                 "    return *(p + 1) + p[2] + arr[0] + (int)bits + *back;\n"
+                                 "done:\n"
+                                 "    return 0;\n"
+                                 "}\n" };
+        const std::string file { p.file("src/safe.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto& f = unit->facts();
+        expect(f.macros.size() == 1 && f.macros[0].name == "LIMIT");
+        expect(f.gotos.size() == 1 && f.gotos[0].label == "done");
+        expect(f.allocations.size() == 2) << f.allocations.size();
+        expect(f.pointer_arithmetic.size() == 2) << "p + 1 and p[2]; arr[0] is a C array's own";
+        expect(std::ranges::count_if(f.casts, [](const auto& c) { return c.reinterprets; }) == 1) << "static_cast from void* is not a reinterpretation";
+        std::vector<std::string> codes;
+        for (const auto& d : unit->diagnostics())
+            if (d.severity == msa::Severity::error) codes.push_back(d.code);
+        for (const auto* want : { "macros", "union", "c-array", "lib:std.vector", "new-delete", "reinterpret-cast", "goto", "raw-pointer-arithmetic" })
+            expect(std::ranges::find(codes, want) != codes.end()) << want;
     };
 
     return report();

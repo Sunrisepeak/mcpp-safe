@@ -3,6 +3,9 @@
 
     tools/checks/lint.py [ROOT...]        default: modules tools
 
+The compiler catches this itself now (plugins/json, in every mcxx compile and in the editor); this
+check stays for code not yet built by mcxx.
+
 json-brace-init
     `Json x { expr };` (and nlohmann::json, a member's `{ expr }` default) is list-initialization:
     nlohmann makes a ONE-ELEMENT ARRAY of expr, never a copy of it. `Json x { nullptr }` is `[null]`;
@@ -18,19 +21,22 @@ BRACE_INIT = re.compile(r"\b" + JSON + r"\s+[A-Za-z_][A-Za-z0-9_]*\s*\{(?!\s*[{}
 
 
 def strip_comment(line: str) -> str:
-    # Good enough for this rule: a `//` outside a string literal ends the code on the line.
+    # Good enough for this rule: a `//` outside a string literal ends the code on the line, and what
+    # a literal holds is not code (a test's source text) -- it is blanked.
     out, quote = [], None
     i = 0
     while i < len(line):
         c = line[i]
         if quote:
-            out.append(c)
             if c == "\\" and i + 1 < len(line):
-                out.append(line[i + 1])
+                out.append("  ")
                 i += 2
                 continue
             if c == quote:
                 quote = None
+                out.append(c)
+            else:
+                out.append(" ")
         elif c in "\"'":
             quote = c
             out.append(c)

@@ -75,6 +75,8 @@ import :store;
 import :unit;
 import :completion;
 import :index;
+import :facts;
+import :gate;
 
 namespace mcxx::clang_backend {
 
@@ -434,6 +436,10 @@ private:
                 ++indexRunning_;
             }
             base::trace::Span span { "index", "unit", file };
+            const struct Quiet {
+                Quiet() { gates_suppressed = true; }
+                ~Quiet() { gates_suppressed = false; }
+            } quiet;   // the index does not report; the gates run where a file is parsed for its diagnostics
             if (const auto text = read_file(file)) {
                 if (auto prepared = prepare_(file, *text, stop)) {
                     prepared->parse.remap = false;
