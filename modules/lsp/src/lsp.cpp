@@ -445,6 +445,7 @@ void Service::saved(const std::string& uri) {
     const std::string path { uri_to_path(uri) };
     state_->forget_text(path);
     state_->workspace.file_changed(path);
+    refresh();   // an interface saved changes what its importers see
 }
 
 void Service::refresh() {
@@ -457,6 +458,7 @@ void Service::changed_on_disk(const std::string& uri) {
     const std::string path { uri_to_path(uri) };
     state_->forget_text(path);
     state_->workspace.file_changed(path);
+    refresh();
 }
 
 std::shared_ptr<const msa::Unit> Service::unit(const std::string& uri, bool current, std::stop_token cancel) {
@@ -509,11 +511,30 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
         } else if (method == "textDocument/implementation") {
             found = unit->overriders(entity->id);
         } else {
-            if (entity->definition) found.push_back(*entity->definition);
-            if (found.empty()) found = s.workspace.definitions(entity->id);
+            std::vector<msa::Location> definitions;
+            if (entity->definition) definitions.push_back(*entity->definition);
+            for (const auto& d : s.workspace.definitions(entity->id))
+                if (std::ranges::find(definitions, d) == definitions.end()) definitions.push_back(d);
+            // Asked at the definition itself: the way on is back to the declaration.
+            const bool atDefinition { std::ranges::any_of(definitions, [&](const msa::Location& d) {
+                return d.path == unit->path() && d.range.contains(at);
+            }) };
+            if (atDefinition && entity->declaration && !(entity->declaration->path == unit->path() && entity->declaration->range.contains(at)))
+                found.push_back(*entity->declaration);
+            else found = definitions;
             if (found.empty() && entity->declaration) found.push_back(*entity->declaration);
         }
         return locations(found);
+    }
+
+    if (method == "textDocument/diagnostic") {
+        Json items = Json::array();
+        for (const auto& d : unit->diagnostics()) {
+            Json item { { "range", to_lsp(d.range, text) }, { "severity", static_cast<int>(d.severity) }, { "source", "mcxx" }, { "message", d.message } };
+            if (!d.code.empty()) item["code"] = d.code;
+            items.push_back(std::move(item));
+        }
+        return Json { { "kind", "full" }, { "items", std::move(items) } };
     }
 
     if (method == "textDocument/hover") {
