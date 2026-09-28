@@ -1679,6 +1679,11 @@ namespace mcxx::clang {
 
 std::string_view version() { return mcxx::clang_backend::CLANG_VERSION; }
 
+msa::BackendInfo info() {
+    return msa::BackendInfo { "mcxx.clang", std::format("0.1.0 (clang {})", mcxx::clang_backend::CLANG_VERSION),
+                              std::string { mcxx::clang_backend::CLANG_VERSION } };
+}
+
 std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) {
     return std::make_unique<mcxx::clang_backend::WorkspaceImpl>(std::move(options));
 }

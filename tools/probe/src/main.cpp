@@ -8,7 +8,7 @@
 import std;
 import nlohmann.json;
 import mcxx.msa;
-import mcxx.clang;
+import mcxx.backend;
 import mcxx.lsp;
 
 using Json = nlohmann::json;
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     options.resource_directory = resource;
     options.workers = std::max(1u, std::thread::hardware_concurrency() / 2);
     options.log = [&](std::string_view line) { std::println(std::cerr, "[{:7.2f}] {}", seconds_since(started), line); };
-    auto workspace = mcxx::clang::make_workspace(options);
+    auto workspace = mcxx::backend::make_workspace(options);
     workspace->set_commands(load(db));
     std::println(std::cerr, "[{:7.2f}] {} commands, {} modules", seconds_since(started), workspace->status().units, workspace->status().modules);
 

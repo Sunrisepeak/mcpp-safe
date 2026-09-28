@@ -13,7 +13,7 @@ main = "src/main.cpp"
 openkal-llvm-runtime.workspace = true
 mcxx-base  = { path = "../../modules/base" }
 mcxx-msa   = { path = "../../modules/msa" }
-mcxx-clang = { path = "../../modules/clang" }
+mcxx-backend = { path = "../../modules/backend" }
 mcxx-lsp   = { path = "../../modules/lsp" }
 
 [dependencies.nlohmann]

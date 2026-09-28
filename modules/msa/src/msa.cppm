@@ -200,6 +200,16 @@ struct Found {
     Location location;
 };
 
+// What a backend is, in terms its consumers can act on without knowing how it is built.
+struct BackendInfo {
+    std::string name;             // the backend's own name, for status and reports
+    std::string version;          // its version
+    // The standard library release whose headers the backend reads as its own: a semantic kit
+    // (prebuilt standard library sources for machines without a toolchain) must be this release.
+    // Empty: any.
+    std::string kit_stdlib_version;
+};
+
 // A compilation unit as its build describes it: the compile command of one source file.
 struct Command {
     std::string directory;

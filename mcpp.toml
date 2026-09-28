@@ -5,11 +5,12 @@
 #                                     Workspace / Unit interfaces every backend implements
 #   modules/graph     mcxx.graph      module declarations scanned lexically, and the module graph
 #   modules/clang     mcxx.clang      MSA over Clang 23.1 (llvm.clang-dev): the ONLY package with Clang
+#   modules/backend   mcxx.backend    the facade consumers use: make_workspace() and info(), naming no backend
 #   modules/lsp       mcxx.lsp        an LSP-shaped semantic service over MSA, transport-free
 #   tools/probe       mcxx-probe      a development driver for the service (not a product binary)
 #
-# A consumer imports the module for the core it needs (mcxx.lsp + mcxx.clang for an editor
-# engine; mcxx.msa alone for a rule; mcxx.graph alone for module facts).
+# A consumer imports the module for the core it needs (mcxx.lsp + mcxx.backend for an editor
+# engine; mcxx.msa alone for a rule; mcxx.graph alone for module facts) -- never a backend itself.
 [workspace]
 members = [
     "modules/arch/x86_64",
@@ -22,6 +23,7 @@ members = [
     "modules/msa",
     "modules/graph",
     "modules/clang",
+    "modules/backend",
     "modules/lsp",
     "tools/probe",
 ]

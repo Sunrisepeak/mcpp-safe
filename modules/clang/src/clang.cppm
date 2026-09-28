@@ -16,6 +16,10 @@ export namespace mcxx::clang {
 // The Clang release the backend is built on, e.g. "23.1.0".
 std::string_view version();
 
+// The backend as msa describes backends: "mcxx.clang", its version, and the libc++ release a
+// semantic kit must be (the one this Clang release reads).
+msa::BackendInfo info();
+
 std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options);
 
 } // namespace mcxx::clang
