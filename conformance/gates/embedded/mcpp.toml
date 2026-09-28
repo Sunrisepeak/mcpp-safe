@@ -1,0 +1,8 @@
+# A package without exceptions and RTTI: ISO features in no profile, set by the package.
+[package]
+name    = "gates-embedded"
+version = "0.1.0"
+
+[package.metadata.mcxx.features]
+exceptions = "deny"
+rtti = "deny"

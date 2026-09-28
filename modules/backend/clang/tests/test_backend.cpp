@@ -186,12 +186,17 @@ int main() {
         expect(facts.suppressions.size() == 1 && facts.suppressions[0].reason == "an array is meant");
     };
 
-    "mc++.safe's facts, and its profile turning them into errors"_test = [] {
-        Program p { "safe" };
-        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx]\nprofile = \"safe\"\n");
+    "mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"_test = [] {
+        Program p { "strict" };
+        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx]\nprofile = \"strict\"\n"
+                   "[package.metadata.mcxx.features]\n\"lib:std.vector\" = \"deny\"\nraw-pointers = \"warn\"\n");
+        std::ofstream { p.root / "src/local.h" } << "inline int local_value() { return 1; }\n";
         const std::string text { std::string { JSON_PRELUDE } +
+                                 "#include \"local.h\"\n"
                                  "#define LIMIT 4\n"
                                  "union U { int i; float f; };\n"
+                                 "struct P { int a; };\n"
+                                 "int trace(const char* format, ...);\n"
                                  "int sum(int* p, int n) {\n"
                                  "    int arr[LIMIT] = {};\n"
                                  "    std::vector<int> v;\n"
@@ -199,13 +204,20 @@ int main() {
                                  "    long bits = reinterpret_cast<long>(q);\n"
                                  "    void* untyped = q;\n"
                                  "    int* back = static_cast<int*>(untyped);\n"
+                                 "    const int* c = back;\n"
+                                 "    int* w = const_cast<int*>(c);\n"
+                                 "    int x;\n"
+                                 "    P pt;\n"
+                                 "    P zero {};\n"
+                                 "    static int counted;\n"
                                  "    delete q;\n"
                                  "    if (n == 0) goto done;\n"
-                                 "    return *(p + 1) + p[2] + arr[0] + (int)bits + *back;\n"
+                                 "    return *(p + 1) + p[2] + arr[0] + (int)bits + *back + *w + x + pt.a + zero.a + counted + local_value();\n"
                                  "done:\n"
+                                 "    asm volatile(\"nop\");\n"
                                  "    return 0;\n"
                                  "}\n" };
-        const std::string file { p.file("src/safe.cpp", text) };
+        const std::string file { p.file("src/strict.cpp", text) };
         auto w = workspace_for(p);
         auto unit = w->parse(file, text, 1);
         expect(fatal(unit != nullptr));
@@ -215,11 +227,20 @@ int main() {
         expect(f.allocations.size() == 2) << f.allocations.size();
         expect(f.pointer_arithmetic.size() == 2) << "p + 1 and p[2]; arr[0] is a C array's own";
         expect(std::ranges::count_if(f.casts, [](const auto& c) { return c.reinterprets; }) == 1) << "static_cast from void* is not a reinterpretation";
-        std::vector<std::string> codes;
-        for (const auto& d : unit->diagnostics())
-            if (d.severity == msa::Severity::error) codes.push_back(d.code);
-        for (const auto* want : { "macros", "union", "c-array", "lib:std.vector", "new-delete", "reinterpret-cast", "goto", "raw-pointer-arithmetic" })
-            expect(std::ranges::find(codes, want) != codes.end()) << want;
+        expect(f.includes.size() == 1 && f.includes[0].header == "\"local.h\"" && !f.includes[0].global_module_fragment);
+        std::vector<std::string> indeterminate;
+        for (const auto& i : f.initializations)
+            if (i.indeterminate) indeterminate.push_back(i.variable);
+        // The stand-in vector has a trivial constructor: `v` is as indeterminate as `pt`.
+        expect(indeterminate == std::vector<std::string> { "v", "x", "pt" }) << std::format("{}: `P zero {{}}` is value-initialized, a static is zero-initialized", indeterminate);
+        expect(std::ranges::count_if(f.declarations, [](const auto& d) { return d.c_variadic; }) == 1);
+        expect(std::ranges::count_if(f.uses, [](const auto& u) { return u.construct == "asm"; }) == 1);
+        std::vector<std::string> errors, warnings;
+        for (const auto& d : unit->diagnostics()) (d.severity == msa::Severity::error ? errors : warnings).push_back(d.code);
+        for (const auto* want : { "macros", "union", "c-array", "lib:std.vector", "new-delete", "reinterpret-cast", "goto", "raw-pointer-arithmetic",
+                                  "include", "const-cast", "c-style-cast", "uninitialized", "c-varargs", "asm" })
+            expect(std::ranges::find(errors, want) != errors.end()) << want;
+        expect(std::ranges::find(warnings, "raw-pointers") != warnings.end());
     };
 
 

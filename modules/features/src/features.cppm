@@ -1,10 +1,11 @@
-// MC++ feature gates (MC1 v0): a finding of a plugin's rule becomes an error, a warning, a waiver or
-// nothing, by the level its feature has where it was found.
+// MC++ feature gates (MC1 v0): a finding of a provider's rule -- MC++'s built-in ISO controls
+// (mc++.iso, mcxx.features.iso) or a plugin's -- becomes an error, a warning, a waiver or nothing, by
+// the level its feature has where it was found.
 //
 // Configuration, in the package's mcpp.toml (mcpp keeps [package.metadata.*] and does not read it):
 //
 //   [package.metadata.mcxx]
-//   profile = "safe"                                  # a named set of levels plugins declare
+//   profile = "safe"                                  # or several: ["safe", "modules"]
 //
 //   [package.metadata.mcxx.features]                  # the package
 //   "json-brace-init" = "deny"
@@ -17,14 +18,19 @@
 //   reinterpret-cast = "allow"
 //
 // A declaration waives with [[mcpp::allow("id")]] or [[mcpp::allow("id", "why")]]. Precedence, the
-// most specific first: declaration > namespace > module > package > profile > the feature's default.
-// Every waiver is recorded (audit); a feature that is not waivable stays what it is.
+// most specific first: declaration > namespace > module > package > profiles > the feature's
+// default. Every waiver is recorded (audit); a feature that is not waivable stays what it is.
+//
+// Cost: a configuration is resolved once against the catalog into a Plan (cached by manifest, its
+// modification time and the catalog); a file is then only walked for the facts its gated features
+// need, and not at all when nothing is gated.
 export module mcxx.features;
 
 import std;
 import mcxx.msa;
 import mcxx.plugin;
 import mcxx.base;
+export import mcxx.features.iso;
 
 export namespace mcxx::features {
 
@@ -33,7 +39,7 @@ using LevelMap = std::map<std::string, Level, std::less<>>;
 
 struct Config {
     std::string manifest;                  // the mcpp.toml it was read from ("" = none found)
-    std::string profile;                   // "" = none
+    std::vector<std::string> profiles;     // `profile = "safe"` or `profile = ["safe", "modules"]`
     LevelMap package;
     std::map<std::string, LevelMap, std::less<>> modules;
     std::map<std::string, LevelMap, std::less<>> namespaces;
@@ -44,11 +50,43 @@ struct Config {
 std::optional<std::string> find_manifest(std::string_view source_path);
 Config parse_config(std::string_view manifest_text, std::string manifest_path = {});
 Config read_config(std::string_view manifest_path);
-// The configuration that applies to a source file, cached by manifest and its modification time.
-Config config_for(std::string_view source_path);
 
-// The level of a feature for code in `module` and namespace `container`, before any waiver.
-Level level_of(const plugin::Feature& feature, const Config& config, std::string_view module, std::string_view container);
+// The level a feature has under the named profiles, if any of them says: the strictest.
+std::optional<Level> profile_level(const plugin::Catalog& catalog, const plugin::Feature& feature, std::span<const std::string> profiles);
+
+// A configuration resolved against the catalog.
+struct Plan {
+    struct Gate {
+        const plugin::Catalog::Entry* entry { nullptr };
+        Level base { Level::allow };   // profiles, then the package
+        bool maybe { false };          // not `allow` somewhere: base, a module or a namespace
+    };
+    Config config;
+    std::shared_ptr<const plugin::Catalog> catalog;
+    std::vector<Gate> gates;                               // parallel to catalog->features
+    std::vector<std::vector<std::string>> wanted;          // per catalog->rules: the features to ask it for
+    bool gated { false };                                  // some feature is not `allow` somewhere
+    msa::fact::Kinds needs { msa::fact::Kinds::none };     // the facts those features are decided from
+    std::vector<std::string> problems;                     // the config's, unknown ids and profiles, catalog conflicts
+
+    bool idle() const { return !gated && problems.empty(); }
+    const Gate* gate(std::string_view id) const;
+    // The level of a gated feature for code in `module` and namespace `container`, before any waiver.
+    Level level(const Gate& gate, std::string_view module, std::string_view container) const;
+};
+
+Plan make_plan(Config config);
+
+// What to ask of one file: the plan's wanted features less those whose Feature::requires_declaration
+// the file does not declare (`declared(name)`), and the facts the rest need.
+struct Selection {
+    std::vector<std::vector<std::string>> wanted;   // per catalog->rules
+    msa::fact::Kinds needs { msa::fact::Kinds::none };
+    bool gated { false };
+};
+Selection select(const Plan& plan, const std::function<bool(std::string_view)>& declared);
+// The plan for a source file's package, cached.
+std::shared_ptr<const Plan> plan_for(std::string_view source_path);
 
 struct Waiver {
     std::string feature;
@@ -61,9 +99,13 @@ struct Waiver {
 struct Result {
     std::vector<msa::Diagnostic> diagnostics;   // deny: error; warn: warning
     std::vector<Waiver> waived;
-    std::vector<std::pair<std::string, msa::Range>> unknown;   // [[mcpp::allow]] ids no linked rule declares, and where
+    std::vector<std::pair<std::string, msa::Range>> unknown;   // [[mcpp::allow]] ids no provider declares, and where
 };
 
+// The active rules over `context.facts`, plus findings a host already has (a source filter's), at
+// the plan's levels.
+Result evaluate(const plugin::Context& context, const Plan& plan, std::span<const plugin::Finding> prior = {});
+Result evaluate(const plugin::Context& context, const Plan& plan, const Selection& selection, std::span<const plugin::Finding> prior = {});
 Result evaluate(const plugin::Context& context, const Config& config);
 
 // Appends the waivers as JSON lines to `file` (MCXX_AUDIT): one record per waiver.

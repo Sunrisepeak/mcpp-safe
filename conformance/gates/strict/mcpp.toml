@@ -1,0 +1,7 @@
+# profile strict: safe and modules, and goto and macro definitions.
+[package]
+name    = "gates-strict"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "strict"

@@ -77,5 +77,18 @@ int main() {
         expect(bad.problems.size() == 1) << "an unknown level is reported, not guessed";
     };
 
+    "a file that does not declare nlohmann is not asked, nor walked"_test = [] {
+        const auto plan = mcxx::features::make_plan({});
+        expect(plan.gated) << "json-brace-init is deny by default";
+        const auto without = mcxx::features::select(plan, [](std::string_view) { return false; });
+        expect(!without.gated && without.needs == fact::Kinds::none);
+        const auto with = mcxx::features::select(plan, [](std::string_view name) { return name == "nlohmann"; });
+        expect(with.gated && fact::contains(with.needs, fact::Kinds::initializations));
+        fact::Facts facts;
+        facts.initializations.push_back(json_init(InitForm::direct_list, 1, false));
+        expect(mcxx::features::evaluate({ "/p/src/a.cpp", "", facts }, plan, without).diagnostics.empty());
+        expect(mcxx::features::evaluate({ "/p/src/a.cpp", "", facts }, plan, with).diagnostics.size() == 1);
+    };
+
     return report();
 }

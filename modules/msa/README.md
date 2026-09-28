@@ -5,7 +5,16 @@
 - **位置**：行从 0 开始，列是 UTF-8 字节；LSP 层负责换算成 UTF-16。
 - **程序**：`Workspace`（编译命令、模块、索引、`parse`、`complete`、`definitions`……）和 `Unit`（一个文件某个版本的解析快照，返回后不可变）。
 - **实体与出现位置**：`Entity`、`Occurrence`、`Symbol`、`Diagnostic`、`CompletionItem`、`SignatureHelp`。
-- **事实（`msa::fact`，MC3 v0）**：一个文件自己的代码"声明了什么、做了什么"，是门禁和插件规则的输入。T1 为 `Declaration`（包括声明类型用到的类模板，例如 `std::vector`）；T2 为 `Initialization`（形式、选中的构造函数、列表元素）、`Cast`、`Allocation`、`PointerArithmetic`、`Goto`、`MacroDefinition`；另外还有 `Suppression`（`[[mcpp::allow]]`）。每一份事实都带 `Certainty`。
+- **事实（`msa::fact`，MC3 v0）**：一个文件自己的代码"声明了什么、做了什么"，是门禁和插件规则的输入。事实分三组：
+  - T1：`Declaration`。包括声明类型用到的类模板（例如 `std::vector`）、是否含裸指针、是否 C 数组、联合体、C 可变参数。
+  - T2：
+    - `Initialization`：形式、选中的构造函数、列表元素，以及值是否不确定（`indeterminate`）；
+    - `Cast`、`Allocation`、`PointerArithmetic`、`Goto`、`MacroDefinition`；
+    - `Use`：`throw`、`try`、`typeid`、`asm`、`va_arg` 等语言构造的使用；
+    - `Include`：是否在全局模块片段里。
+  - 另外还有 `Suppression`（`[[mcpp::allow]]`）。
+
+  每一份事实都带 `Certainty`。`fact::Kinds` 是事实种类的集合：一个特性声明它依赖哪几种（`Feature::needs`），后端只收集被要求的那几种（`Facts::collected`）。声明的类型文本单独作为一种（`declaration_types`），因为它最花时间。
 - **后端信息**：`BackendInfo`（名字、版本、semantic kit 应当使用的 libc++ 版本）。
 
 只依赖 std。它是整个 libmc++ 的共同语言，改动要谨慎：`Unit` 和 `Workspace` 上的每个虚函数，后端和测试里的假实现都要实现。

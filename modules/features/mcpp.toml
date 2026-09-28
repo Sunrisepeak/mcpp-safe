@@ -1,6 +1,7 @@
 # The feature gates (MC1 v0): which level each feature has for a piece of code -- from a package's
-# [package.metadata.mcxx], its profile, and [[mcpp::allow]] on a declaration -- and the diagnostics
-# and audit records the rules' findings become. No backend: it reads MSA facts and plugin rules.
+# [package.metadata.mcxx], its profiles, and [[mcpp::allow]] on a declaration -- and the diagnostics
+# and audit records the rules' findings become; and mc++.iso (mcxx.features.iso), MC++'s built-in
+# provider of ISO C++ feature controls. No backend: it reads MSA facts and the catalog.
 [package]
 name        = "mcxx-features"
 version     = "0.1.0"

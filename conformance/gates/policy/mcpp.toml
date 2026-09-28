@@ -1,0 +1,7 @@
+# A package that uses no raw pointers: a plugin's policy (mc++.policy), set by the package.
+[package]
+name    = "gates-policy"
+version = "0.1.0"
+
+[package.metadata.mcxx.features]
+raw-pointers = "deny"

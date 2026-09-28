@@ -140,6 +140,41 @@ void collect_templates(const cl::ASTContext& ctx, cl::QualType type, std::vector
     }
 }
 
+// Whether a declared type holds a raw pointer anywhere: T*, an array of them, a template argument.
+bool holds_pointer(const cl::ASTContext& ctx, cl::QualType type, int depth = 0) {
+    if (type.isNull() || depth > 8) return false;
+    type = type.getNonReferenceType();
+    if (type->isPointerType()) return true;
+    if (const auto* array = ctx.getAsArrayType(type)) return holds_pointer(ctx, array->getElementType(), depth + 1);
+    if (const auto* spec = specialization_of(type)) {
+        for (const auto& arg : spec->getTemplateArgs().asArray())
+            if (arg.getKind() == cl::TemplateArgument::Type && holds_pointer(ctx, arg.getAsType(), depth + 1)) return true;
+        return false;
+    }
+    if (const auto* tst = type->getAs<cl::TemplateSpecializationType>())
+        for (const auto& arg : tst->template_arguments())
+            if (arg.getKind() == cl::TemplateArgument::Type && holds_pointer(ctx, arg.getAsType(), depth + 1)) return true;
+    return false;
+}
+
+// Whether default-initialization leaves an object of this type indeterminate ([dcl.init.general],
+// [basic.indet]): a scalar, or an array of them.
+bool indeterminate_type(const cl::ASTContext& ctx, cl::QualType type) {
+    if (type.isNull() || type->isDependentType()) return false;
+    if (const auto* array = ctx.getAsArrayType(type)) return indeterminate_type(ctx, array->getElementType());
+    return type->isScalarType();
+}
+
+// A class (or an array of one) default-initialized by a trivial default constructor: its members
+// are left indeterminate. An empty class has none.
+bool trivially_default_constructed(const cl::CXXConstructExpr* construct) {
+    if (construct == nullptr || construct->getNumArgs() != 0 || construct->isListInitialization() || construct->getParenOrBraceRange().isValid()) return false;
+    const cl::CXXConstructorDecl* ctor { construct->getConstructor() };
+    if (ctor == nullptr || !ctor->isTrivial()) return false;
+    const cl::CXXRecordDecl* record { ctor->getParent() };
+    return record != nullptr && !record->isEmpty();
+}
+
 bool is_initializer_list(cl::QualType type) {
     const auto* record = type.getNonReferenceType().getCanonicalType()->getAsCXXRecordDecl();
     return record != nullptr && record->getName() == "initializer_list" && record->isInStdNamespace();
@@ -147,7 +182,8 @@ bool is_initializer_list(cl::QualType type) {
 
 class Collector final : public cl::DynamicRecursiveASTVisitor {
 public:
-    Collector(cl::ASTContext& ctx, fact::Facts& facts) : ctx_ { ctx }, sm_ { ctx.getSourceManager() }, lo_ { ctx.getLangOpts() }, facts_ { facts } {
+    Collector(cl::ASTContext& ctx, fact::Facts& facts, fact::Kinds needs)
+        : ctx_ { ctx }, sm_ { ctx.getSourceManager() }, lo_ { ctx.getLangOpts() }, facts_ { facts }, needs_ { needs } {
         main_ = sm_.getMainFileID();
     }
 
@@ -165,6 +201,7 @@ public:
     }
 
     bool VisitDecl(cl::Decl* d) override {
+        if (!wants(fact::Kinds::suppressions)) return true;
         for (const auto* attr : d->specific_attrs<cl::AnnotateAttr>()) {
             const llvm::StringRef text { attr->getAnnotation() };
             if (!text.starts_with("mcpp::allow|")) continue;
@@ -184,6 +221,7 @@ public:
     }
 
     bool VisitNamedDecl(cl::NamedDecl* d) override {
+        if (!wants(fact::Kinds::declarations)) return true;
         if (!llvm::isa<cl::VarDecl, cl::FieldDecl, cl::FunctionDecl, cl::TypedefNameDecl, cl::RecordDecl, cl::EnumDecl, cl::NamespaceDecl>(d)) return true;
         if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d); record && !record->isThisDeclarationADefinition()) return true;
         fact::Declaration decl;
@@ -198,11 +236,21 @@ public:
         if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d)) type = parm->getOriginalType();
         else if (const auto* value = llvm::dyn_cast<cl::ValueDecl>(d)) type = value->getType();
         else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d)) type = alias->getUnderlyingType();
-        if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d)) collect_templates(ctx_, fn->getReturnType(), decl.templates);
-        else collect_templates(ctx_, type, decl.templates);
+        // Types as text only when asked for, or for a declaration a flag marks: the text is what
+        // costs (a gate over C arrays pays for the arrays' types, not for every variable's).
+        const bool types { wants(fact::Kinds::declaration_types) };
+        if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d)) {
+            if (types) collect_templates(ctx_, fn->getReturnType(), decl.templates);
+            decl.pointer = holds_pointer(ctx_, fn->getReturnType());
+            if (decl.pointer) decl.type = type_text(ctx_, fn->getReturnType());
+            decl.c_variadic = fn->isVariadic();
+        } else if (types) {
+            collect_templates(ctx_, type, decl.templates);
+        }
         if (!type.isNull() && !llvm::isa<cl::FunctionDecl>(d)) {
-            decl.type = type_text(ctx_, type);
             decl.c_array = type.getNonReferenceType()->isArrayType();
+            decl.pointer = holds_pointer(ctx_, type);
+            if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx_, type);
         }
         if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d)) decl.is_union = record->isUnion();
         facts_.declarations.push_back(std::move(decl));
@@ -210,7 +258,19 @@ public:
     }
 
     bool VisitVarDecl(cl::VarDecl* v) override {
-        if (llvm::isa<cl::ParmVarDecl>(v) || !v->hasInit()) return true;
+        if (!wants(fact::Kinds::initializations) || llvm::isa<cl::ParmVarDecl>(v)) return true;
+        if (!v->hasInit()) {
+            // `int x;`: a local left indeterminate (a static or a thread_local is zero-initialized).
+            if (v->hasLocalStorage() && !v->isExceptionVariable() && indeterminate_type(ctx_, v->getType()))
+                add_default_initialization(v);
+            return true;
+        }
+        if (const auto* construct = llvm::dyn_cast<cl::CXXConstructExpr>(v->getInit()->IgnoreImplicit());
+            construct != nullptr && construct->getNumArgs() == 0 && !construct->isListInitialization() && construct->getParenOrBraceRange().isInvalid()) {
+            // `T x;` of a class: default-initialization by its constructor (Clang's "callinit" with no parentheses).
+            if (v->hasLocalStorage() && trivially_default_constructed(construct)) add_default_initialization(v);
+            return true;
+        }
         fact::InitForm form { fact::InitForm::copy };
         switch (v->getInitStyle()) {
         case cl::VarDecl::CInit: form = fact::InitForm::copy; break;
@@ -223,14 +283,14 @@ public:
     }
 
     bool VisitFieldDecl(cl::FieldDecl* f) override {
-        if (!f->hasInClassInitializer() || f->getInClassInitializer() == nullptr) return true;
+        if (!wants(fact::Kinds::initializations) || !f->hasInClassInitializer() || f->getInClassInitializer() == nullptr) return true;
         const fact::InitForm form { f->getInClassInitStyle() == cl::ICIS_ListInit ? fact::InitForm::direct_list : fact::InitForm::copy };
         add_initialization(f, f->getType(), f->getInClassInitializer(), form, true);
         return true;
     }
 
     bool VisitExplicitCastExpr(cl::ExplicitCastExpr* e) override {
-        if (!in_main(e->getBeginLoc())) return true;
+        if (!wants(fact::Kinds::casts) || !in_main(e->getBeginLoc())) return true;
         fact::Cast cast;
         cast.range = range_of(e->getSourceRange()).value_or(Range {});
         cast.container = container();
@@ -244,26 +304,27 @@ public:
         else if (llvm::isa<cl::CXXFunctionalCastExpr>(e)) cast.kind = fact::CastKind::functional;
         else return true;   // __builtin_bit_cast and friends
         cast.reinterprets = cast.kind == fact::CastKind::reinterpret_cast_ || reinterprets(e);
+        cast.to_scalar = e->getType()->isScalarType();
         facts_.casts.push_back(std::move(cast));
         return true;
     }
 
     bool VisitCXXNewExpr(cl::CXXNewExpr* e) override {
-        if (!in_main(e->getBeginLoc())) return true;
+        if (!wants(fact::Kinds::allocations) || !in_main(e->getBeginLoc())) return true;
         facts_.allocations.push_back({ { range_of(e->getSourceRange()).value_or(Range {}), container() }, false, e->isArray(),
                                        type_text(ctx_, e->getAllocatedType()) });
         return true;
     }
 
     bool VisitCXXDeleteExpr(cl::CXXDeleteExpr* e) override {
-        if (!in_main(e->getBeginLoc())) return true;
+        if (!wants(fact::Kinds::allocations) || !in_main(e->getBeginLoc())) return true;
         facts_.allocations.push_back({ { range_of(e->getSourceRange()).value_or(Range {}), container() }, true, e->isArrayForm(),
                                        type_text(ctx_, e->getDestroyedType()) });
         return true;
     }
 
     bool VisitBinaryOperator(cl::BinaryOperator* e) override {
-        if (!in_main(e->getOperatorLoc())) return true;
+        if (!wants(fact::Kinds::pointer_arithmetic) || !in_main(e->getOperatorLoc())) return true;
         const auto op = e->getOpcode();
         if (op != cl::BO_Add && op != cl::BO_Sub && op != cl::BO_AddAssign && op != cl::BO_SubAssign) return true;
         const cl::Expr* pointer { e->getLHS()->getType()->isPointerType() ? e->getLHS() : e->getRHS()->getType()->isPointerType() ? e->getRHS() : nullptr };
@@ -274,14 +335,14 @@ public:
     }
 
     bool VisitUnaryOperator(cl::UnaryOperator* e) override {
-        if (!in_main(e->getOperatorLoc()) || !e->isIncrementDecrementOp() || !e->getSubExpr()->getType()->isPointerType()) return true;
+        if (!wants(fact::Kinds::pointer_arithmetic) || !in_main(e->getOperatorLoc()) || !e->isIncrementDecrementOp() || !e->getSubExpr()->getType()->isPointerType()) return true;
         facts_.pointer_arithmetic.push_back({ { range_of(e->getSourceRange()).value_or(Range {}), container() },
                                               e->isIncrementOp() ? "++" : "--", type_text(ctx_, e->getSubExpr()->getType()) });
         return true;
     }
 
     bool VisitArraySubscriptExpr(cl::ArraySubscriptExpr* e) override {
-        if (!in_main(e->getBeginLoc())) return true;
+        if (!wants(fact::Kinds::pointer_arithmetic) || !in_main(e->getBeginLoc())) return true;
         const cl::Expr* base { e->getBase()->IgnoreParenImpCasts() };
         if (!base->getType()->isPointerType()) return true;   // a C array's own subscript is the c-array feature's
         facts_.pointer_arithmetic.push_back({ { range_of(e->getSourceRange()).value_or(Range {}), container() }, "[]", type_text(ctx_, base->getType()) });
@@ -289,15 +350,26 @@ public:
     }
 
     bool VisitGotoStmt(cl::GotoStmt* s) override {
-        if (!in_main(s->getGotoLoc())) return true;
+        if (!wants(fact::Kinds::gotos) || !in_main(s->getGotoLoc())) return true;
         facts_.gotos.push_back({ { range_of(s->getSourceRange()).value_or(Range {}), container() }, s->getLabel()->getName().str() });
         return true;
     }
 
     bool VisitIndirectGotoStmt(cl::IndirectGotoStmt* s) override {
-        if (!in_main(s->getGotoLoc())) return true;
+        if (!wants(fact::Kinds::gotos) || !in_main(s->getGotoLoc())) return true;
         facts_.gotos.push_back({ { range_of(s->getSourceRange()).value_or(Range {}), container() }, "*" });
         return true;
+    }
+
+    // Uses of constructs a gate may subtract.
+    bool VisitCXXThrowExpr(cl::CXXThrowExpr* e) override { return use(e->getThrowLoc(), e->getSourceRange(), "throw"); }
+    bool VisitCXXTryStmt(cl::CXXTryStmt* s) override { return use(s->getTryLoc(), { s->getTryLoc(), s->getTryBlock()->getLBracLoc() }, "try"); }
+    bool VisitAsmStmt(cl::AsmStmt* s) override { return use(s->getAsmLoc(), s->getSourceRange(), "asm"); }
+    bool VisitFileScopeAsmDecl(cl::FileScopeAsmDecl* d) override { return use(d->getAsmLoc(), d->getSourceRange(), "asm"); }
+    bool VisitVAArgExpr(cl::VAArgExpr* e) override { return use(e->getBeginLoc(), e->getSourceRange(), "va_arg"); }
+    bool VisitCXXTypeidExpr(cl::CXXTypeidExpr* e) override {
+        const cl::QualType operand { e->isTypeOperand() ? e->getTypeOperand(ctx_) : e->getExprOperand()->getType() };
+        return use(e->getBeginLoc(), e->getSourceRange(), "typeid", type_text(ctx_, operand));
     }
 
 private:
@@ -305,15 +377,45 @@ private:
     const cl::SourceManager& sm_;
     const cl::LangOptions& lo_;
     fact::Facts& facts_;
+    fact::Kinds needs_;
     cl::FileID main_;
     const cl::Decl* current_ { nullptr };
+
+    bool wants(fact::Kinds kind) const { return fact::contains(needs_, kind); }
+
+    bool use(cl::SourceLocation at, cl::SourceRange range, std::string construct, std::string detail = {}) {
+        if (!wants(fact::Kinds::uses) || !in_main(at)) return true;
+        facts_.uses.push_back({ { range_of(range).value_or(Range {}), container() }, std::move(construct), std::move(detail) });
+        return true;
+    }
+
+    void add_default_initialization(const cl::VarDecl* v) {
+        if (!in_main(v->getLocation())) return;
+        fact::Initialization fact;
+        fact.range = range_of(v->getSourceRange()).value_or(Range {});
+        fact.name = range_of(v->getLocation()).value_or(fact.range);
+        fact.container = namespace_of(v->getDeclContext());
+        fact.entity = usr_of(v);
+        fact.variable = plain_name(v);
+        fact.type = type_text(ctx_, v->getType());
+        if (const auto* spec = specialization_of(v->getType())) fact.type_template = plain_name(spec->getSpecializedTemplate());
+        fact.form = fact::InitForm::default_init;
+        fact.indeterminate = true;
+        facts_.initializations.push_back(std::move(fact));
+    }
 
     bool in_main(cl::SourceLocation loc) const { return loc.isValid() && sm_.getFileID(sm_.getFileLoc(loc)) == main_; }
 
     std::optional<Range> range_of(cl::SourceRange range) const { return source_range(sm_, lo_, range, main_); }
+    // A name token in the main file: its position and length, without naming the file (a path
+    // per declaration is what made collecting declarations cost more than parsing them).
     std::optional<Range> range_of(cl::SourceLocation loc) const {
-        if (auto token = token_location(sm_, lo_, loc); token && token->path == path_of(sm_, main_)) return token->range;
-        return std::nullopt;
+        if (loc.isInvalid()) return std::nullopt;
+        const cl::SourceLocation file { sm_.getFileLoc(loc) };
+        if (sm_.getFileID(file) != main_) return std::nullopt;
+        const Position begin { position_of(sm_, file) };
+        const unsigned length { cl::Lexer::MeasureTokenLength(sm_.getSpellingLoc(loc), sm_, lo_) };
+        return Range { begin, { begin.line, begin.column + std::max(1u, length) } };
     }
 
     std::string container() const {
@@ -392,13 +494,52 @@ private:
     }
 };
 
+// The #include directives of the main file that were entered, from the source manager: each file
+// entered from the main file is one (a guarded header entered again is not). In the global module
+// fragment when it comes before the module declaration.
+void collect_includes(cl::ASTContext& ctx, fact::Facts& facts) {
+    const auto& sm = ctx.getSourceManager();
+    const cl::FileID main { sm.getMainFileID() };
+    cl::SourceLocation module_decl;
+    if (const cl::Module* m = ctx.getCurrentNamedModule()) module_decl = m->DefinitionLoc;
+    const llvm::StringRef buffer { sm.getBufferData(main) };
+    for (unsigned i { 0 }; i < sm.local_sloc_entry_size(); ++i) {
+        const auto& entry = sm.getLocalSLocEntry(i);
+        if (!entry.isFile()) continue;
+        const cl::SourceLocation at { entry.getFile().getIncludeLoc() };
+        if (at.isInvalid() || at.isMacroID() || sm.getFileID(at) != main) continue;
+        const unsigned offset { sm.getFileOffset(at) };
+        if (offset >= buffer.size()) continue;
+        const char open { buffer[offset] };
+        const char close { open == '<' ? '>' : open == '"' ? '"' : '\0' };
+        if (close == '\0') continue;
+        const std::size_t end { buffer.find(close, offset + 1) };
+        if (end == llvm::StringRef::npos) continue;
+        fact::Include include;
+        include.header = buffer.slice(offset, end + 1).str();
+        const unsigned line { sm.getLineNumber(main, offset) - 1 };
+        const std::size_t line_start { buffer.rfind('\n', offset) == llvm::StringRef::npos ? 0 : buffer.rfind('\n', offset) + 1 };
+        include.range = { { line, 0 }, { line, static_cast<std::uint32_t>(end + 1 - line_start) } };
+        include.global_module_fragment = module_decl.isValid() && sm.isBeforeInTranslationUnit(at, module_decl);
+        facts.includes.push_back(std::move(include));
+    }
+}
+
 } // namespace
 
-fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp) {
+// What the file's own code declares and does: the kinds in `needs` (a gate asks for what its
+// features are decided from; nothing from the AST, no walk).
+fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kinds needs = fact::Kinds::all) {
     fact::Facts facts;
-    Collector collector { ctx, facts };
-    collector.TraverseDecl(ctx.getTranslationUnitDecl());
-    if (pp != nullptr) {
+    facts.collected = needs;
+    constexpr fact::Kinds from_ast { fact::Kinds::declarations | fact::Kinds::initializations | fact::Kinds::casts | fact::Kinds::allocations |
+                                     fact::Kinds::pointer_arithmetic | fact::Kinds::gotos | fact::Kinds::uses | fact::Kinds::suppressions };
+    if ((std::to_underlying(needs) & std::to_underlying(from_ast)) != 0) {
+        Collector collector { ctx, facts, needs };
+        collector.TraverseDecl(ctx.getTranslationUnitDecl());
+    }
+    if (fact::contains(needs, fact::Kinds::includes)) collect_includes(ctx, facts);
+    if (pp != nullptr && fact::contains(needs, fact::Kinds::macros)) {
         const auto& sm = ctx.getSourceManager();
         const cl::FileID main { sm.getMainFileID() };
         for (const auto& [ii, state] : pp->macros(false)) {

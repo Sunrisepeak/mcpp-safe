@@ -4,7 +4,13 @@ MC++ 是一个以 C++ 模块为中心、特性可控、支持插件的 C++ 编�
 
 - **mcxx 驱动**（[`src/`](src/README.md)）：`mcxx c++ …` 就是进程内的 clang，同时在每次编译中运行 MC++ 的插件；`mcxx check …` 只做检查。
 - **libmc++**（[`modules/`](modules/README.md)）：MC++ 的可复用部分，每个组件是一个 mcpp 包。mcppls（speak-agent/mcpp-language-server 的 `mcxx-engine` 分支）在进程内使用它，已经不需要 clangd。
-- **插件**（[`plugins/`](plugins/README.md)）：mc++.safe v0、`[[mcpp::cfg(...)]]`、nlohmann::json 的 `json-brace-init`，和第三方插件走同一个 SDK。
+- **插件**（[`plugins/`](plugins/README.md)）：`mc++.policy`（例如能不能用裸指针）、`[[mcpp::cfg(...)]]`（扩展）、nlohmann::json 的 `json-brace-init`。它们和第三方插件走同一个 SDK。
+
+**MC++ 本身就是一个插件系统**（[`modules/plugin`](modules/plugin/README.md)）：
+- 内置的 ISO C++ 特性控制（`mc++.iso`：每一项都用标准的 stable name 标明，都是减法，去掉后仍然是 ISO C++）也是 SDK 上的一个 provider。
+- 插件可以控制、扩展，也可以覆盖内置的实现。
+- profile `safe` 针对编译器不检查的未定义行为来源，`modules` 要求所有依赖都通过 import，`portable` 禁止一切 MC++ 专有扩展。
+- `mcxx features` 列出程序里的全部 provider、特性和 profile。
 
 ## 目录
 
@@ -15,11 +21,11 @@ mcpp-safe/
 │   ├── base/ os/ arch/ testing/
 │   ├── msa/                   MC++ 语义 API 与事实（MC3）
 │   ├── graph/                 模块扫描与模块图
-│   ├── plugin/sdk/            插件 SDK（MC4）：规则、源码过滤器
-│   ├── features/              特性门禁（MC1）：配置、作用域、豁免、审计
+│   ├── plugin/sdk/            插件 SDK（MC4）：provider、规则、源码过滤器、profile、Catalog
+│   ├── features/              特性门禁（MC1），以及内置 provider mc++.iso（ISO 特性控制）
 │   ├── lsp/                   LSP 形态的语义服务（MC6）
 │   └── backend/               后端：semantic/、compiler/（两个门面），clang/、clang-compiler/（只有这两个包含 Clang）
-├── plugins/                   插件实现：std/（safe、cfg），libs/（json）
+├── plugins/                   插件实现：std/（policy、cfg），libs/（json）
 ├── tools/                     probe、checks（源码规则）
 ├── index/                     本仓库自建的 mcpp 包索引（llvm.*、microsoft.*）
 ├── forks/                     被 .gitignore 忽略：speak-agent 下各 fork 的检出（llvm-clang-dev、mcpp-language-server）

@@ -1,23 +1,27 @@
 # plugins/std：MC++ 标准插件（`mcxx-plugins-std`）
 
-## `mcxx.plugins.safe`：mc++.safe v0（M0.7）
+## `mcxx.plugins.policy`：mc++.policy
 
-MC++ 安全方言要门禁的特性。默认全部 `allow`；`profile = "safe"` 时全部为 `deny`；包、模块、命名空间可以各自覆盖（见 `modules/features/README.md`）。
+不对应某一项 ISO 特性的使用规定，以及一个库控制的样例。默认都是 `allow`，也不在任何内置 profile 里，由包自己决定。ISO 语言特性（goto、union、C 数组、指针算术……）由 MC++ 内置的 `mc++.iso` 控制，见 `modules/features/README.md`。
 
 | 特性 id | 类别 | 捕获什么（事实） |
 |---|---|---|
-| `raw-pointer-arithmetic` | language | 指针的 `+ - += -= ++ --`，以及对指针的 `[]`（C 数组自己的下标不算） |
-| `new-delete` | language | `new`、`delete`、`new[]`、`delete[]` |
-| `reinterpret-cast` | language | `reinterpret_cast`，以及实际做了重解释的 C 风格或函数式转换（经由 `void*` 的不算） |
-| `c-array` | language | 类型为 C 数组的变量、成员、参数 |
-| `goto` | language | `goto`、间接 `goto` |
-| `macros` | language | 本文件里的宏定义 |
-| `union` | language | 联合体的定义 |
-| `lib:std.vector` | library | 声明的类型里出现了 `std::vector`（库控制的样例） |
+| `raw-pointers` | policy | 声明的类型里有裸指针：变量、成员、参数、返回类型、别名，以及模板实参里的 `T*`。引用、`nullptr_t`、`sizeof(T*)` 不算 |
+| `lib:std.vector` | library | 声明的类型里出现了 `std::vector`（库控制的样例；需要 `declaration_types` 这类事实） |
+
+"能不能用指针"就是一个编译器功能配置的例子：
+
+```toml
+[package.metadata.mcxx.features]
+raw-pointers = "deny"
+
+[package.metadata.mcxx.namespaces."app::ffi"]     # 和 C 接口打交道的地方例外
+raw-pointers = "allow"
+```
 
 ## `mcxx.plugins.cfg`：`[[mcpp::cfg(...)]]`
 
-和 Rust 的 `#[cfg(...)]` 一样：一段声明只在某些目标上存在。
+和 Rust 的 `#[cfg(...)]` 一样：一段声明只在某些目标上存在。这是一个 **extension**，MC++ 专有：每一处使用都报告为特性 `ext:cfg` 的发现，默认 `allow`；`profile = "portable"`（只允许 ISO C++）时是错误。
 
 ```cpp
 [[mcpp::cfg(windows)]] void open_console() { AllocConsole(); }   // 在 Linux 上根本不会被编译

@@ -4,14 +4,14 @@
 #   modules/base, os, arch, testing   foundations (no dependency beyond openkal-llvm-runtime)
 #   modules/msa                       the MC++ semantic API and its facts (MC3)
 #   modules/graph                     module declarations scanned lexically, the module graph
-#   modules/plugin/sdk                the plugin SDK (MC4): rules, source filters, their registry
-#   modules/features                  the feature gates (MC1): configuration, scopes, waivers, audit
+#   modules/plugin/sdk                the plugin SDK (MC4): providers, rules, source filters, profiles, the catalog
+#   modules/features                  the feature gates (MC1) and MC++'s built-in provider mc++.iso
 #   modules/lsp                       an LSP-shaped semantic service over MSA (MC6)
 #   modules/backend/semantic          mcxx.backend: the semantic facade (what mcppls links)
 #   modules/backend/compiler          mcxx.backend.compiler: the compiling facade (what mcxx links)
 #   modules/backend/clang             MSA over Clang 23.1, facts, and MC++'s plugins inside Clang
 #   modules/backend/clang-compiler    clang itself in process: driver, cc1, code generation
-#   plugins/std, plugins/libs         plugin implementations: mc++.safe, [[mcpp::cfg]]; nlohmann::json
+#   plugins/std, plugins/libs         plugin implementations: mc++.policy, [[mcpp::cfg]]; nlohmann::json
 #   tools/probe, tools/checks         a development driver for the service; source rules
 #
 # Only modules/backend/clang and modules/backend/clang-compiler name Clang or depend on llvm.*
@@ -71,6 +71,8 @@ mcxx-base              = { path = "modules/base" }
 mcxx-msa               = { path = "modules/msa" }
 mcxx-backend           = { path = "modules/backend/semantic" }
 mcxx-backend-compiler  = { path = "modules/backend/compiler" }
+mcxx-plugin            = { path = "modules/plugin/sdk" }   # `mcxx features`: the catalog
+mcxx-features          = { path = "modules/features" }     # the built-in provider mc++.iso, the gates
 # The plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose` makes a
 # project's own set later (A0.6.1).
 mcxx-plugins-std  = { path = "plugins/std" }

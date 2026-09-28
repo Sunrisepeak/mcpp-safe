@@ -16,6 +16,9 @@
 // target satisfies it, only the attribute is blanked. Where it applies: declarations and
 // statements that end with `;` or a block; `export` before it goes with it. Not on `import`: a
 // build's dependency scan reads imports before any compiler plugin runs.
+//
+// Each use is reported as a finding of `ext:cfg` (category extension), gated like any feature:
+// allowed by default, denied under profile portable.
 export module mcxx.plugins.cfg;
 
 import std;
@@ -27,10 +30,24 @@ export namespace mcxx::plugins::cfg {
 // Whether the target satisfies a predicate (the text inside cfg(...)); an error says what is wrong.
 std::expected<bool, std::string> evaluate(std::string_view predicate, const plugin::Target& target);
 
+// Using it makes a program MC++'s, not ISO C++: an extension (profile portable denies it).
+inline constexpr std::string_view FEATURE { "ext:cfg" };
+
 class Filter final : public plugin::SourceFilter {
 public:
     std::string_view name() const override { return "mcxx.plugins.cfg"; }
+    std::span<const plugin::Feature> features() const override { return features_; }
     plugin::Filtered filter(const plugin::SourceContext& context, std::string_view text) const override;
+
+private:
+    std::vector<plugin::Feature> features_ { plugin::Feature {
+        .id = std::string { FEATURE },
+        .category = plugin::Category::extension,
+        .layer = "text",
+        .summary = "[[mcpp::cfg(...)]]: a declaration for some targets only",
+        .fix = "use a platform module selected by the build (mcpp's per-target sources) or if constexpr on mcxx.os constants",
+        .needs = msa::fact::Kinds::none,
+    } };
 };
 
 } // namespace mcxx::plugins::cfg
@@ -353,6 +370,7 @@ plugin::Filtered Filter::filter(const plugin::SourceContext& context, std::strin
         }
         const std::string_view predicate { text.substr(open.end, u.begin - open.end) };
         const msa::Range where { position_at(text, t.begin), position_at(text, close.end) };
+        result.findings.push_back({ std::string { FEATURE }, where, std::format("[[mcpp::cfg({})]] is an MC++ extension", predicate), {} });
         const auto value = evaluate(predicate, context.target);
         if (!value) {
             result.problems.push_back({ where, msa::Severity::error, std::format("[[mcpp::cfg({})]]: {}", predicate, value.error()), "mcpp-cfg", "MC++ cfg", {} });

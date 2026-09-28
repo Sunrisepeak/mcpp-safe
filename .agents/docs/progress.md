@@ -32,7 +32,9 @@
 | # | 状态 | 说明 |
 |---|---|---|
 | M0.5 驱动 | ⏳ | 根包 `mcxx`：`mcxx c++/cc`（也可以用 clang++、clang、c++、cc 这些名字调用）以及 `mcxx check`；V0.6 的工具链 payload 还在进行 |
-| M0.6/M0.7 规则 | ⏳ | 第一个测试用例：`json-brace-init`（`Json x { expr }` 得到的是 `[expr]`），在编译器里捕获 |
+| M0.3 门禁 | 🟡 | 以下各项已实现，并由 `modules/features/tests` 覆盖：<br>- 配置：`profile` 可以是一个或多个；包、模块、命名空间的级别；未知的 id 和 profile 报警告；<br>- 优先级；<br>- 豁免与审计（`MCXX_AUDIT`）。<br>A0.3.1 的 MC1 草案（schema）未做 |
+| M0.6 插件 | 🟡 | SDK v0 已实现：<br>- 扩展点：规则、源码过滤器、profile；<br>- 覆盖：特性、provider、profile；<br>- `mcxx features`。<br>`mcxx compose`（A0.6.1）、进程外协议（A0.6.2）和故障隔离（A0.6.3）未做 |
+| M0.7 mc++.safe | 🟡 | **A0.7.1**：`mc++.iso` 共 15 个 ISO 特性，都带 stable name；profile `safe` 覆盖 10 个未定义行为来源；插件样例 `raw-pointers`、`lib:std.vector`、`ext:cfg`。<br>**A0.7.2**：19 个特性、20 个程序、41 个文件，精确率和召回率都是 100%（`mcxx-conformance`）。<br>**A0.7.3**：跨模块用例。<br>**A0.7.4**：`test_override`。<br>**A0.7.5**：诊断带 id、改法和豁免方法。<br>还差 MC1 的示例文件 |
 
 M0.x、M1.x、M2.x、MS 各项按里程碑文档的编号逐项补到这里。
 

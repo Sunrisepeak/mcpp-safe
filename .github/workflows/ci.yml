@@ -64,7 +64,7 @@ jobs:
       - name: Unit tests
         run: |
           set -euo pipefail
-          for member in modules/base modules/graph modules/lsp plugins/std plugins/libs modules/backend/clang; do
+          for member in modules/base modules/graph modules/lsp modules/features plugins/std plugins/libs modules/backend/clang; do
             echo "::group::$member"
             mcpp test -p "$member"
             echo "::endgroup::"
@@ -78,5 +78,6 @@ jobs:
           "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json conformance/gates
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
           "$mcxx" version
+          "$mcxx" features
           printf 'extern "C" int puts(const char*);\n[[mcpp::cfg(unix)]] int main() { puts("unix"); }\n[[mcpp::cfg(windows)]] int main() { Win(); }\n' > cfg.cpp
           "$mcxx" check --target=x86_64-unknown-linux-gnu cfg.cpp

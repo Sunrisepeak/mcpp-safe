@@ -1,13 +1,13 @@
 # MC++'s standard plugins, one package with a module each (plugins/README.md):
 #
-#   mcxx.plugins.safe   mc++.safe v0: the safe dialect's gated features (rules)
-#   mcxx.plugins.cfg    [[mcpp::cfg(...)]]: target-conditional declarations (a source filter)
+#   mcxx.plugins.policy  mc++.policy: raw-pointers (policy), lib:std.vector (library)
+#   mcxx.plugins.cfg     [[mcpp::cfg(...)]]: target-conditional declarations (a source filter; ext:cfg)
 #
 # Written against the plugin SDK (mcxx.plugin) only, as any third-party plugin is.
 [package]
 name        = "mcxx-plugins-std"
 version     = "0.1.0"
-description = "MC++ standard plugins: mc++.safe v0 and [[mcpp::cfg]]"
+description = "MC++ standard plugins: mc++.policy and [[mcpp::cfg]]"
 license     = "Apache-2.0"
 
 [targets.mcxx-plugins-std]

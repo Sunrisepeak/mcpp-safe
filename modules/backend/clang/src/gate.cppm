@@ -133,23 +133,44 @@ struct AllowAttrInfo final : public cl::ParsedAttrInfo {
 cl::ParsedAttrInfoRegistry::Add<AllowAttrInfo> allow_registration { "mcpp-allow", "[[mcpp::allow(\"feature\")]]: waives an MC++ feature gate" };
 
 // At the end of every compilation this program runs (mcxx's own, and libmc++'s parses for the
-// editor): the rules linked in, over the file's facts, at the levels its configuration gives.
+// editor): the active rules -- MC++'s built-in ones and the plugins linked in -- over the file's
+// facts, at the levels its configuration gives. The configuration's plan says what to collect: a
+// file whose package gates nothing costs a manifest lookup (cached), no walk.
 class GateConsumer final : public cl::ASTConsumer {
 public:
-    explicit GateConsumer(cl::CompilerInstance& ci) : ci_ { ci } {}
+    GateConsumer(cl::CompilerInstance& ci, std::vector<plugin::Finding> filtered) : ci_ { ci }, filtered_ { std::move(filtered) } {}
 
     void HandleTranslationUnit(cl::ASTContext& ctx) override {
-        if (gates_suppressed || plugin::rules().empty() || ci_.getDiagnostics().hasFatalErrorOccurred()) return;
+        if (gates_suppressed || ci_.getDiagnostics().hasFatalErrorOccurred()) return;
         const auto& sm = ctx.getSourceManager();
         const cl::FileID main { sm.getMainFileID() };
         const std::string path { path_of(sm, main) };
         if (path.empty()) return;
+        const std::shared_ptr<const features::Plan> plan { features::plan_for(path) };
+        if (plan->idle()) {
+            base::trace::count("gates.idle");
+            return;
+        }
+        // A feature that needs a name the file does not declare or import (json-brace-init needs
+        // nlohmann) cannot occur here: it is not asked, and its facts are not collected.
+        const features::Selection selection { features::select(*plan, [&](std::string_view name) {
+            return !ctx.getTranslationUnitDecl()->lookup(cl::DeclarationName { &ctx.Idents.get(llvm::StringRef { name.data(), name.size() }) }).empty();
+        }) };
+        if (!selection.gated && filtered_.empty() && plan->problems.empty()) {
+            base::trace::count("gates.idle");
+            return;
+        }
         base::trace::Span span { "gates", "check", path, std::chrono::milliseconds { 500 } };
         std::string module;
         if (const cl::Module* m = ctx.getCurrentNamedModule()) module = m->getFullModuleName();
-        const msa::fact::Facts facts { facts_of(ctx, &ci_.getPreprocessor()) };
-        const features::Config config { features::config_for(path) };
-        const features::Result result { features::evaluate({ path, module, facts }, config) };
+        msa::fact::Facts facts;
+        if (selection.needs != msa::fact::Kinds::none) {
+            base::trace::Span collect { "gates", "facts", path };
+            facts = facts_of(ctx, &ci_.getPreprocessor(), selection.needs);
+        }
+        base::trace::Span rules { "gates", "rules", path };
+        const features::Result result { features::evaluate({ path, module, facts }, *plan, selection, filtered_) };
+        rules.note(std::format("{} rules", plan->catalog->rules.size()));
         auto& diags = ci_.getDiagnostics();
         for (const auto& d : result.diagnostics) {
             const unsigned id { d.severity == msa::Severity::error ? diags.getCustomDiagID(cl::DiagnosticsEngine::Error, "%0")
@@ -172,6 +193,7 @@ public:
 
 private:
     cl::CompilerInstance& ci_;
+    std::vector<plugin::Finding> filtered_;   // the source filters' findings (an extension's uses)
 };
 
 // The target, as a source filter reads it (plugin::Target).
@@ -205,16 +227,17 @@ plugin::Target target_of(const cl::CompilerInstance& ci) {
     return target;
 }
 
-// Before the main file is read: every linked source filter over its text ([[mcpp::cfg]] and the
-// like). The replacement has the text's length and line breaks, so every position stays.
-void filter_main_file(cl::CompilerInstance& ci) {
-    if (plugin::source_filters().empty()) return;
+// Before the main file is read: every active source filter over its text ([[mcpp::cfg]] and the
+// like). The replacement has the text's length and line breaks, so every position stays. Returns
+// the filters' findings, for the gates.
+std::vector<plugin::Finding> filter_main_file(cl::CompilerInstance& ci) {
+    if (plugin::catalog()->filters.empty()) return {};
     auto& sm = ci.getSourceManager();
     const cl::FileID main { sm.getMainFileID() };
-    if (main.isInvalid()) return;
+    if (main.isInvalid()) return {};
     const auto entry = sm.getFileEntryRefForID(main);
     const auto buffer = sm.getBufferOrNone(main);
-    if (!entry || !buffer) return;
+    if (!entry || !buffer) return {};
     const std::string path { path_of(sm, main) };
     const plugin::Target target { target_of(ci) };
     plugin::Filtered filtered { plugin::apply_source_filters({ path, target }, buffer->getBuffer()) };
@@ -227,20 +250,20 @@ void filter_main_file(cl::CompilerInstance& ci) {
         base::trace::count("filters.changed");
         sm.overrideFileContents(*entry, llvm::MemoryBuffer::getMemBufferCopy(*filtered.text, buffer->getBufferIdentifier()));
     }
+    return std::move(filtered.findings);
 }
 
 class GateAction final : public cl::PluginASTAction {
 protected:
     // Called once the main file is known and before it is read: the moment a source filter needs.
     std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override {
-        filter_main_file(ci);
-        return std::make_unique<GateConsumer>(ci);
+        return std::make_unique<GateConsumer>(ci, filter_main_file(ci));
     }
     bool ParseArgs(const cl::CompilerInstance&, const std::vector<std::string>&) override { return true; }
     ActionType getActionType() override { return AddAfterMainAction; }
 };
 
-cl::FrontendPluginRegistry::Add<GateAction> gate_registration { "mcxx-gates", "MC++ feature gates over the rules linked into this program" };
+cl::FrontendPluginRegistry::Add<GateAction> gate_registration { "mcxx-gates", "MC++ feature gates: the built-in ISO controls and the plugins linked in" };
 
 } // namespace
 

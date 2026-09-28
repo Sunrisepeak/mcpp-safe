@@ -1,0 +1,7 @@
+# ISO C++ only: every extension (a category of plugin feature) is denied.
+[package]
+name    = "gates-portable"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "portable"

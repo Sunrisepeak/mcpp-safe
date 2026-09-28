@@ -1,4 +1,4 @@
-# The programs below are compiled under mc++.safe: every gated feature is an error.
+# profile safe: the sources of undefined behavior a compiler does not check are errors.
 [package]
 name    = "gates-safe"
 version = "0.1.0"

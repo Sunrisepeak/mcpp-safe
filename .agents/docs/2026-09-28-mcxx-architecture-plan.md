@@ -61,6 +61,9 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 | P8 | 缺少的能力靠插件补充，而不是往核心里加特判 | 核心代码里不允许出现 `if (cuda)` 这种写法 |
 | P9 | 平台差异只通过 `modules/os/*` 中的常量表达，不使用 `#ifdef` | 沿用 mcppls 的做法；分层检查 |
 | P10 | **同一个单元无论从哪条路径进入，交给后端的参数都逐字节相同** | MC5；A0.5.2（吸取 mcpp-language-server#30 的教训） |
+| P11 | **MC++ 本身就是一个插件系统**（第五轮）：<br>- 内置功能也是 SDK 上的 provider（`mc++.iso`），不走特殊通道；<br>- 插件可以控制（任意类别的特性）、扩展（源码过滤器）、覆盖（替换一个特性、整个 provider 或一个 profile）；<br>- 同一个 id 有两个 provider 而都不声明替换时算冲突，要报告，不能悄悄换掉 | `modules/features/tests/test_override.cpp`；`mcxx features` 列出全部 provider、特性、profile 和冲突 |
+| P12 | **内置的是 ISO C++ 特性的明确控制，而且只做减法**（第五轮）：<br>- 每一项都用标准的 stable name 标明，去掉之后仍然是 ISO C++；<br>- MC++ 专有的东西只能来自插件，而且分类：policy、library、pitfall、extension；<br>- 只有 extension 会让代码离不开 MC++，profile `portable` 按类别整体禁止它们 | MC1 的类别；`Feature::standard` |
+| P13 | **可控、可扩展、可覆盖，但性能不能丢**（第五轮）：<br>- 注册解析一次（Catalog），配置解析一次（Plan，有缓存）；<br>- 规则只被问到不是 `allow` 的特性；<br>- 只收集被问到的特性需要的事实种类（`fact::Kinds`）；<br>- 文件里不可能出现的特性跳过（`requires_declaration`）；<br>- 什么都不用问时不遍历 AST | `MCXX_LOG=gates=debug` 给出每一段的耗时；实测记在 `development.md` |
 
 ## 4. 仓库和 workspace 结构（mcpp workspace，基于 openkal）
 
@@ -83,7 +86,7 @@ mcpp-safe/                              workspace 根；根包就是 mcxx 驱动
 │       ├── clang/           mcxx.backend.clang         基于 Clang 23.1 的 MSA、事实、Clang 内的插件机制
 │       └── clang-compiler/  mcxx.backend.clang.compiler  进程内的 clang（driver、cc1、代码生成）
 ├── plugins/                            插件实现，和插件核心分开；一个目录是一个包，可放多个插件模块
-│   ├── std/             mcxx.plugins.safe（mc++.safe）、mcxx.plugins.cfg（[[mcpp::cfg]]）
+│   ├── std/             mcxx.plugins.policy（mc++.policy：raw-pointers、lib:std.vector）、mcxx.plugins.cfg（[[mcpp::cfg]]，扩展 ext:cfg）
 │   └── libs/            mcxx.plugins.json（nlohmann::json 的 json-brace-init）
 ├── index/                              本仓库自建的 mcpp 包索引：llvm.*（clang-dev、codegen-dev、clang-driver）、microsoft.*（gsl、ifc-sdk）
 ├── xpkgs/                              （计划）本仓库自建的 xlings xpkg：mcxx 工具链包
@@ -98,6 +101,19 @@ mcpp-safe/                              workspace 根；根包就是 mcxx 驱动
 - **插件核心和实现分开**：核心在 `modules/plugin/`、`modules/features/`，实现在 `plugins/`；一个实现目录按主题放多个插件模块。
 - **Clang 边界靠工具强制**：`tools/checks/lint.py` 的 `clang-exposure` 规则，CI 中执行。
 - `platform/`、`core/` 暂时没有拆出：目前没有这部分需求，mcxx.base 已经够用。
+
+第五轮调整（2026-09-29，原则 P11–P13）：
+- **mc++.safe 不再是插件，而是内置的 profile。** 原先插件里的 7 个 ISO 特性移入核心（`modules/features/src/iso.cppm`，provider `mc++.iso`），并补齐到 15 个，每个都标明 stable name。
+- **profile `safe` 专门针对编译器不检查的未定义行为来源**，共 10 项：
+  - 指针运算、new/delete；
+  - `reinterpret_cast`、C 风格转换、`const_cast`；
+  - 联合体、C 数组、C 可变参数；
+  - 未初始化的局部变量、asm。
+
+  `goto` 和宏不是未定义行为来源，移到 `strict`。`modules` 要求所有依赖都通过 import。`portable` 禁止一切扩展。
+- **插件只提供 ISO 以外的东西。** `plugins/std` 的 `mc++.policy` 提供 `raw-pointers`（"能不能用指针"这一编译器配置的例子）和 `lib:std.vector`；`[[mcpp::cfg]]` 以 `ext:cfg` 的名义报告每一处使用。
+- **SDK 开放全部类别，并支持覆盖**：`Feature::replaces`、`Provider::replaces()`、`Profile::replaces`。
+- **性能相关的机制**：`Catalog`、`Plan`、`Context::wants`、`Feature::needs`（`fact::Kinds`，其中 `declaration_types` 单独一类）、`Feature::requires_declaration`。
 
 ### 4.1 包和依赖集合
 
@@ -136,10 +152,10 @@ ABI 不稳定的代价（已接受）：升级 Clang 版本 = 重新构建 `llvm
 
 | 规范 | 内容 | 首个版本出现在 |
 |---|---|---|
-| **MC1 特性注册表与 profile** | 特性 id 命名规则；类别（限制类 / 扩展类）；检查层（语法 / 声明 / 表达式 / 控制流）；级别（allow / warn / deny）；作用域（包 / 模块 / 命名空间 / 声明 / 区域）；profile 文件格式；配置写在 `mcpp.toml` 的 `[package.metadata.mcxx]` 中（不改 mcpp，第三轮已定）；逃生口 `[[mcpp::allow("id")]]` 与审计输出；库控制（`lib:<模块或包>.<符号>`） | M0 |
+| **MC1 特性注册表与 profile** | 特性 id 命名规则；类别（第五轮：`iso`（内置，带 ISO stable name，只做减法）/ `policy` / `library` / `pitfall` / `extension`，全部对插件开放）；内置 profile（`safe`：未定义行为来源；`modules`；`strict`；`portable`：禁止扩展），多个 profile 同时使用时取最严格的级别；检查层（语法 / 声明 / 表达式 / 控制流）；级别（allow / warn / deny）；作用域（包 / 模块 / 命名空间 / 声明 / 区域）；profile 文件格式；配置写在 `mcpp.toml` 的 `[package.metadata.mcxx]` 中（不改 mcpp，第三轮已定）；逃生口 `[[mcpp::allow("id")]]` 与审计输出；库控制（`lib:<模块或包>.<符号>`） | M0 |
 | **MC2 IFC 方言信息** | 锁定的 IFC 版本；`VendorExtension` 的编码约定（模块的特性集、profile、跨方言边界标注、GCC/Clang 特有构造的编码） | M1 |
 | **MC3 MSA** | 实体和句柄；查询集（按阶段逐步增加）；`certainty` 语义；版本化 | M0（只含声明层和表达式层的查询） |
-| **MC4 插件** | **静态组合**（mcpp 包、注册方式、按插件集合的哈希缓存）和**进程外协议**（消息格式、协议号、版本协商）；两种方式共用同一套扩展点语义；故障隔离 | M0（v0：规则和库控制两类扩展点）；M1 起加入属性和区域 |
+| **MC4 插件** | **静态组合**（mcpp 包、注册方式、按插件集合的哈希缓存）和**进程外协议**（消息格式、协议号、版本协商）；两种方式共用同一套扩展点语义；故障隔离 | M0（v0：规则、源码过滤器、profile 三类扩展点，以及对特性、provider、profile 的覆盖）；M1 起加入属性和区域 |
 | **MC5 驱动与工具链契约** | `mcxx` 命令行（兼容 clang 的一个参数子集）；mcpp 如何调用它；输出物（对象文件、`.ifc`、`.pcm`、facts、SARIF）；和 `mcpp emit build-database` 的衔接；**参数规范化**（P10） | M0 |
 | **MC6 服务协议** | `mcxx serve`：LSP 子集，加上事实和门禁查询的扩展；和 mcppls S3/S5 对齐 | M1 |
 
@@ -194,3 +210,12 @@ ABI 不稳定的代价（已接受）：升级 Clang 版本 = 重新构建 `llvm
 | 6 | 生态协作 | 第 8 节的规则 |
 
 待决事项：官方 mcppls 上已有的草稿 PR #29 和 issue #30 如何处理（见里程碑文档"附二"）。
+
+### 已定事项（第五轮，2026-09-29）
+
+| # | 事项 | 决定 |
+|---|---|---|
+| 7 | 内置和插件的边界 | 内置的是 ISO C++ 特性控制（只做减法，带 stable name）；MC++ 专有的只能来自插件，并按 policy、library、pitfall、extension 分类 |
+| 8 | 插件能力 | MC++ 本身就是插件系统：插件可以控制、扩展，也可以覆盖内置的实现；冲突要报告 |
+| 9 | safe 的含义 | profile `safe` 针对未定义行为来源；风格类（goto、宏）归入 `strict` |
+| 10 | 性能 | 默认配置下，门禁对不相关的代码没有开销（不遍历 AST）；开销和包要求检查的内容成正比 |

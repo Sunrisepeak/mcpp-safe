@@ -1,7 +1,7 @@
 # MC++ 里程碑与验收标准（v0，草案）
 
 日期：2026-09-28
-状态：待 review
+状态：待 review（2026-09-29 修订：M0.7 按架构方案第五轮的 P11–P13 调整，即内置的是 ISO 特性控制，MC++ 本身是插件系统）
 配套文档：[`2026-09-28-mcxx-architecture-plan.md`](2026-09-28-mcxx-architecture-plan.md)（架构、组件、规范）。本文只讲**做到什么程度算完成、怎么验证**。
 
 ## 0. 约定
@@ -92,7 +92,7 @@
 | **E-IDX-2** | 本仓库 `index/` | IFC SDK 包，锁定 tag | M0 | 同上 | A0.1.2、V0.3 |
 | **E-IDX-3** | 本仓库 `index/` | `llvm.clang-dev` 补齐其余平台 | MS 之前 | 各平台 CI 通过 | AS.3.x |
 | **E-IDX-4** | 本仓库 `index/` | libmc++ 各组件包（按依赖集合拆分）和插件 SDK | M1 | fork 中的 mcppls 能通过 `[indices]` 引入并构建 | A1.4.x、A1.5.1 |
-| **E-IDX-5** | 本仓库 `index/` | `mc++.safe` 插件包，以及 `mcpp-tools-safe` 规则包 | M1 | 同上 | A1.5.x |
+| **E-IDX-5** | 本仓库 `index/` | 插件包（`mcxx-plugins-std`、`mcxx-plugins-libs`），以及 `mcpp-tools-safe` 规则包 | M1 | 同上 | A1.5.x |
 | **E-IDX-6** | 本仓库 `index/` | GPU 区域插件原型包 | M3 | 同上 | A3.4 |
 | **E-XIM-1** | 本仓库 `xpkgs/` | `mcxx` 工具链的 xpkg 文件（先 linux-x64） | M0 | V0.7 通过；`xlings install mcxx` 能用 | A0.5.3、A1.5.x |
 | **E-XIM-2** | 本仓库 `xpkgs/` | （仅当 V0.1 走退路时）glibc 形式的 `llvm-dev@23.1` xpkg 文件 | M0（有条件） | 同上 | V0.1 的退路 |
@@ -126,7 +126,7 @@
 
 ## M0 基座：Clang 内核 + 特性门禁 + 工具链
 
-**目标**：`mcxx` v0 能作为 mcpp 的工具链编译 mcppls；`mc++.safe` v0 以插件形式在编译时强制执行。
+**目标**：`mcxx` v0 能作为 mcpp 的工具链编译 mcppls；`mc++.safe` v0（内置 profile `safe`）在编译时强制执行，MC++ 的内置控制和插件走同一个 SDK。
 
 ### 验证项（先做，决定 M0 的做法）
 
@@ -188,16 +188,16 @@
 | A0.6.1 | **静态组合**：插件是 mcpp 包，通过 `import mcxx.plugin;` 注册；`mcxx compose` 生成一个临时 workspace，由 mcpp 把项目声明的插件集合和 libmc++ 一起链接成本项目的 mcxx，并按插件集合的哈希缓存（依赖 **E-MCPP-2**；不改 mcpp） | 示例项目：插件集合不变时第二次构建不重新链接 |
 | A0.6.2 | **进程外协议**：用其他工具链（GCC 16 + libstdc++）构建的插件，通过进程外协议完成同样的规则检查，结果和静态组合方式相同 | 同一批 fixture，两种方式输出同一个诊断集合 |
 | A0.6.3 | 插件崩溃或超时不会拖垮编译：报告会写明是哪个插件、在哪个单元出的问题 | 故障注入 fixture |
-| A0.6.4 | MC4 v0 草案：两种方式共用同一套扩展点语义（v0 只有规则和库控制两类扩展点）、协议号、版本协商 | schema 校验 |
+| A0.6.4 | MC4 v0 草案：两种方式共用同一套扩展点语义（v0：规则、源码过滤器、profile，以及覆盖）、协议号、版本协商 | schema 校验 |
 
-### M0.7 `mc++.safe` v0
+### M0.7 `mc++.safe` v0（内置 profile `safe`）
 
 | # | 条件 | 验证方式 |
 |---|---|---|
-| A0.7.1 | 5–8 个限制类特性（候选：`raw-pointer-arithmetic`、`new-delete`、`reinterpret-cast`、`c-array`、`goto`、`macros`、`union`），加上库控制样例 `lib:std.vector` | 特性清单写进 MC1 的示例 |
+| A0.7.1 | 内置的 ISO 特性控制（`mc++.iso`），每项都带 stable name；profile `safe` 覆盖编译器不检查的未定义行为来源（至少包括指针运算、new/delete、`reinterpret_cast`、C 风格转换、`const_cast`、联合体、C 数组、C 可变参数、未初始化的局部变量、asm）；另有插件样例：policy `raw-pointers`、库控制 `lib:std.vector`、extension `ext:cfg` | `mcxx features --json`；特性清单写进 MC1 的示例 |
 | A0.7.2 | 每个特性至少各有 5 个正例和反例 fixture，**精确率和召回率都是 100%** | `conformance run --suite safe` |
 | A0.7.3 | 必须检出的用例：跨模块 `auto v = make()`，以及导出别名 `Buf`（和 GCC 插件探针的结果一致） | fixture `cross-module-deduction` |
-| A0.7.4 | `mc++.safe` 以插件形式实现，而不是内置在核心里 | 分层检查：核心中不出现 safe 的规则代码 |
+| A0.7.4 | 内置控制和插件走同一个 SDK：`mc++.iso` 只 import `mcxx.plugin` 和 `mcxx.msa`，不接触后端；插件能替换其中任何一个特性，或者替换整个 provider；冲突要报告 | `modules/features/tests/test_override.cpp`；`clang-exposure` 分层检查 |
 | A0.7.5 | 违规时编译失败，诊断包含特性 id、位置、豁免方法 | fixture |
 
 ### M0.8 工程基础设施

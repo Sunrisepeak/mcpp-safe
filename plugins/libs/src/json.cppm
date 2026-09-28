@@ -24,11 +24,13 @@ public:
 private:
     std::vector<plugin::Feature> features_ { plugin::Feature {
         .id = std::string { BRACE_INIT },
-        .category = "pitfall",
+        .category = plugin::Category::pitfall,
         .layer = "expr",
         .summary = "a nlohmann::json list-initialized from one value holds it in a one-element array",
         .fix = "write `Json x = value;` for a copy, or `Json::array({ value })` for an array",
         .default_level = plugin::Level::deny,
+        .needs = msa::fact::Kinds::initializations,
+        .requires_declaration = "nlohmann",   // a file without nlohmann is not walked for it
     } };
 };
 

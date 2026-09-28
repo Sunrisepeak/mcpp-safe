@@ -255,8 +255,9 @@ struct Status {
 //
 // What the code of one file does, as values: the input of MC++'s feature gates and of every rule a
 // plugin adds. T1 is what the file declares; T2 is what its code does (initializations, casts,
-// allocations, pointer arithmetic, jumps, macros). A backend fills them for the file's own code only
-// -- never for what it includes or imports -- and says how sure it is.
+// allocations, pointer arithmetic, jumps, macros, uses of constructs, includes). A backend fills
+// them for the file's own code only -- never for what it includes or imports -- and says how sure
+// it is.
 namespace fact {
 
 // Where a fact sits: its enclosing namespace, for namespace-scoped gates ("" = global).
@@ -270,13 +271,16 @@ struct Declaration : Place {
     std::string entity;               // id (Entity::id)
     std::string qualified_name;
     Kind kind { Kind::unknown };
-    std::string type;                 // variables, members, parameters, aliases: the declared type
+    std::string type;                 // variables, members, parameters, aliases: the declared type (Kinds::declaration_types)
     // Every class template the declared type names, qualified without inline namespaces
-    // ("std::vector", "nlohmann::basic_json"): what library control (lib:std.vector) looks at.
+    // ("std::vector", "nlohmann::basic_json"): what library control (lib:std.vector) looks at
+    // (Kinds::declaration_types).
     std::vector<std::string> templates;
     bool exported { false };          // inside `export`
     bool c_array { false };           // of C array type
+    bool pointer { false };           // the declared type holds a raw pointer (T*), anywhere in it
     bool is_union { false };          // a union
+    bool c_variadic { false };        // a function with a C `...` parameter
 };
 
 enum class InitForm { default_init, copy, direct, direct_list, copy_list };
@@ -293,6 +297,10 @@ struct Initialization : Place {
     std::uint32_t elements { 0 };     // a braced list's elements
     bool element_braced { false };    // a one-element list whose element is itself a braced list
     bool member_default { false };    // a default member initializer
+    // No initializer, and default-initialization leaves the value indeterminate ([dcl.init]):
+    // a local of scalar type, or of a class or array whose default-initialization does not
+    // initialize it. Reading it before writing is undefined behavior.
+    bool indeterminate { false };
 };
 
 enum class CastKind { static_cast_, dynamic_cast_, const_cast_, reinterpret_cast_, c_style, functional };
@@ -313,6 +321,7 @@ struct Cast : Place {
     std::string from;
     std::string to;
     bool reinterprets { false };      // what the cast does is a reinterpret_cast (also a C-style cast that does)
+    bool to_scalar { false };         // to a scalar type: a functional cast `T(x)` to one is a C-style cast ([expr.type.conv])
 };
 
 struct Allocation : Place {
@@ -334,6 +343,18 @@ struct MacroDefinition : Place {
     std::string name;
 };
 
+// A language construct the code uses, by its name: "throw", "try", "typeid", "asm", "va_arg".
+struct Use : Place {
+    std::string construct;
+    std::string detail;
+};
+
+// An #include in the file's own text.
+struct Include : Place {
+    std::string header;               // as written, with its brackets or quotes
+    bool global_module_fragment { false };   // before the module declaration of a module unit (`module;` ... `module m;`)
+};
+
 // [[mcpp::allow("id", ...)]] on a declaration: the gates it waives, over the declaration's range.
 struct Suppression : Place {
     std::vector<std::string> ids;
@@ -342,8 +363,33 @@ struct Suppression : Place {
     std::string reason;               // an optional second form: [[mcpp::allow("id", "reason")]]
 };
 
+// The kinds of facts, as a set: what a feature is decided from (plugin::Feature::needs), and so
+// what a host asks a backend to collect. A file whose gates need none of them is not walked.
+enum class Kinds : std::uint32_t {
+    none = 0,
+    declarations = 1u << 0,
+    initializations = 1u << 1,
+    casts = 1u << 2,
+    allocations = 1u << 3,
+    pointer_arithmetic = 1u << 4,
+    gotos = 1u << 5,
+    macros = 1u << 6,
+    uses = 1u << 7,
+    includes = 1u << 8,
+    suppressions = 1u << 9,
+    // Every declaration's type text and the templates it names: costs more than the declarations
+    // themselves, so asked for on its own. Without it, `type` is filled only for a declaration a
+    // flag marks (c_array, pointer) and `templates` is empty.
+    declaration_types = 1u << 10,
+    all = (1u << 11) - 1,
+};
+constexpr Kinds operator|(Kinds a, Kinds b) { return static_cast<Kinds>(std::to_underlying(a) | std::to_underlying(b)); }
+constexpr Kinds& operator|=(Kinds& a, Kinds b) { return a = a | b; }
+constexpr bool contains(Kinds set, Kinds kind) { return (std::to_underlying(set) & std::to_underlying(kind)) != 0; }
+
 struct Facts {
     Certainty certainty { Certainty::certain };
+    Kinds collected { Kinds::all };   // what was looked for: a kind outside it is empty because nobody asked
     std::vector<Declaration> declarations;
     std::vector<Initialization> initializations;
     std::vector<Cast> casts;
@@ -351,6 +397,8 @@ struct Facts {
     std::vector<PointerArithmetic> pointer_arithmetic;
     std::vector<Goto> gotos;
     std::vector<MacroDefinition> macros;
+    std::vector<Use> uses;
+    std::vector<Include> includes;
     std::vector<Suppression> suppressions;
 };
 

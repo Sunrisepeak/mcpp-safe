@@ -1,0 +1,7 @@
+# Library control: the package names what it may use (lib:std.vector, mc++.policy's sample).
+[package]
+name    = "gates-library"
+version = "0.1.0"
+
+[package.metadata.mcxx.features]
+"lib:std.vector" = "deny"
