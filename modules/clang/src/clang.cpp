@@ -19,6 +19,7 @@ module;
 #include <clang/AST/RawCommentList.h>
 #include <clang/AST/Type.h>
 #include <clang/Basic/Diagnostic.h>
+#include <clang/Basic/AllDiagnostics.h>
 #include <clang/Basic/DiagnosticIDs.h>
 #include <clang/Basic/DiagnosticOptions.h>
 #include <clang/Basic/FileManager.h>
@@ -38,6 +39,7 @@ module;
 #include <clang/Index/IndexingOptions.h>
 #include <clang/Lex/Lexer.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/Lex/PreprocessorOptions.h>
 #include <clang/Sema/CodeCompleteConsumer.h>
 #include <clang/Sema/Sema.h>
 #include <clang/UnifiedSymbolResolution/USRGeneration.h>
@@ -393,6 +395,34 @@ public:
         }
     }
 
+    // The editor's text of an open file, read in place of the disk's; nullopt: the disk's again. An
+    // interface whose text changed is stale, and so is every interface that imports it.
+    void set_buffer(const std::string& path, std::optional<std::string> text) {
+        std::lock_guard lock { mutex_ };
+        const auto it = buffers_.find(path);
+        if (text) {
+            if (it != buffers_.end() && it->second == *text) return;
+            buffers_.insert_or_assign(path, std::move(*text));
+        } else {
+            if (it == buffers_.end()) return;
+            buffers_.erase(it);
+        }
+        std::vector<std::string> changed;
+        for (const auto& module : graph_.modules())
+            if (graph_.provider(module) == path) changed.push_back(module);
+        if (changed.empty()) return;
+        for (auto& [module, e] : entries_) {
+            bool hit { std::ranges::find(changed, module) != changed.end() };
+            if (!hit) {
+                for (const auto& dependency : graph_.closure(graph_.requires_of(module)))
+                    if (std::ranges::find(changed, dependency) != changed.end()) hit = true;
+            }
+            if (!hit) continue;
+            if (e.state == State::ready || e.state == State::failed) e.state = State::stale;
+            else if (e.state == State::building) e.again = true;
+        }
+    }
+
     void file_changed(const std::string& path) {
         std::lock_guard lock { mutex_ };
         for (auto& [module, entry] : entries_) {
@@ -439,7 +469,11 @@ public:
             if (e.state == State::ready) ++s.modules_ready;
             if (e.state == State::failed) {
                 ++s.modules_failed;
-                s.failures.emplace_back(module, e.error);
+                s.failures.push_back({ module, e.error, e.cause.empty() ? module : e.cause, e.command });
+                if (e.command) {
+                    ++s.commands_rejected;
+                    if (s.rejected.size() < 5) s.rejected.push_back({ e.source, e.error });
+                }
             }
             if (e.state == State::queued || e.state == State::building) s.busy = true;
         }
@@ -459,6 +493,9 @@ private:
         std::string pcm;
         std::string key;
         std::string error;
+        std::string cause;                 // failed: the module whose own build failed
+        bool command { false };            // failed: the compile command was rejected
+        bool again { false };              // building: its input changed meanwhile, build it again
         std::string source;
         std::vector<std::string> inputs;   // files the last build read
     };
@@ -472,6 +509,7 @@ private:
     mcxx::graph::Graph graph_;
     std::map<std::string, msa::Command, std::less<>> commands_;
     std::map<std::string, Entry, std::less<>> entries_;
+    std::map<std::string, std::string, std::less<>> buffers_;   // path -> the editor's text
     std::deque<std::string> ready_;   // scheduled modules whose dependencies are all done
     std::vector<std::string> waiting_;
     bool stopping_ { false };
@@ -538,9 +576,11 @@ private:
         std::string dependencyKeys;
         bool dependencyFailed { false };
         std::string failedDependency;
+        std::optional<std::string> buffer;
         {
             std::lock_guard lock { mutex_ };
             file = graph_.provider(module);
+            if (const auto it = buffers_.find(file); it != buffers_.end()) buffer = it->second;
             const auto it = commands_.find(file);
             if (it != commands_.end()) command = it->second;
             const std::vector<std::string> roots { graph_.requires_of(module) };
@@ -555,6 +595,7 @@ private:
                 }
             }
         }
+        bool rejected { false };
         auto finish = [&](bool ok, std::string pcm, std::string key, std::string error, std::vector<std::string> inputs) {
             std::lock_guard lock { mutex_ };
             auto& e = entries_[module];
@@ -562,8 +603,19 @@ private:
             e.pcm = std::move(pcm);
             e.key = std::move(key);
             e.error = std::move(error);
+            e.cause.clear();
+            e.command = rejected;
+            if (!ok) {
+                const auto d = dependencyFailed ? entries_.find(failedDependency) : entries_.end();
+                e.cause = d == entries_.end() ? module : (d->second.cause.empty() ? failedDependency : d->second.cause);
+            }
             e.source = file;
             e.inputs = std::move(inputs);
+            if (e.again) {
+                e.again = false;
+                e.state = State::queued;
+                waiting_.push_back(module);
+            }
         };
         if (dependencyFailed) {
             finish(false, {}, {}, "depends on " + failedDependency + ", which failed", {});
@@ -574,7 +626,7 @@ private:
             finish(false, {}, {}, "no compile command for " + file, {});
             return;
         }
-        const auto source = read_file(file);
+        const auto source = buffer ? buffer : read_file(file);
         if (!source) {
             finish(false, {}, {}, "cannot read " + file, {});
             return;
@@ -615,11 +667,14 @@ private:
         options.VFS = vfs;
         std::shared_ptr<cl::CompilerInvocation> invocation { cl::createInvocation(argv, options) };
         if (!invocation) {
-            finish(false, {}, key, "the command could not be understood: " + (consumer.errors.empty() ? std::string {} : consumer.errors.front()), {});
-            log_(std::format("Failed to build module {}; due to Failed to compile {}", module, file));
+            rejected = true;
+            const std::string reason { consumer.errors.empty() ? std::string { "the driver gave no reason" } : consumer.errors.front() };
+            finish(false, {}, key, reason, {});
+            log_(std::format("Failed to build module {}; the compile command of {} was rejected: {}", module, file, reason));
             return;
         }
         invocation->getFrontendOpts().OutputFile = tmp;
+        if (buffer) invocation->getPreprocessorOpts().addRemappedFile(file, llvm::MemoryBuffer::getMemBufferCopy(*buffer, file).release());
         cl::CompilerInstance instance { invocation };
         instance.setVirtualFileSystem(vfs);
         instance.createDiagnostics(&consumer, false);
@@ -875,6 +930,14 @@ msa::Entity build_entity(const cl::Decl* d) {
         c->getInitVal().toString(digits, 10);
         e.value = std::string { digits.str() };
     }
+    // A constant's value, as the unit evaluates it (a -D the command gives shows here).
+    const auto* declared = llvm::dyn_cast<cl::VarDecl>(subject);
+    if (const auto* v = declared ? declared->getInitializingDeclaration() : nullptr;
+        v && !v->getType()->isDependentType() && !v->isTemplated() && (v->isConstexpr() || v->getType().isConstQualified())) {
+        if (const auto* value = v->evaluateValue(); value && (value->isInt() || value->isFloat())) {
+            e.value = value->getAsString(ctx, v->getType());
+        }
+    }
     if (const auto* comment = ctx.getRawCommentForAnyRedecl(d)) e.documentation = comment->getFormattedText(sm, ctx.getDiagnostics());
     if (const auto* m = d->getOwningModule(); m && m->isNamedModule()) e.module = m->getPrimaryModuleInterfaceName().str();
     for (const cl::DeclContext* dc { d->getDeclContext() }; dc; dc = dc->getParent()) {
@@ -936,12 +999,32 @@ msa::Severity severity_of(cl::DiagnosticsEngine::Level level) {
     }
 }
 
+// A diagnostic's stable name, as clangd gives it: Clang's own name less its kind ("err_", "warn_",
+// "ext_"), e.g. "expected_semi_after_module_or_import".
+std::string diagnostic_code(unsigned id) {
+    std::string_view name;
+    switch (id) {
+#define DIAG(ENUM, CLASS, DEFAULT_SEVERITY, DESC, GROUP, SFINAE, NOWERROR, SHOWINSYSHEADER, SHOWINSYSMACRO, DEFERRABLE, CATEGORY, STABLE_ID, \
+             LEGACY_STABLE_IDS)                                                                                                     \
+    case ::clang::diag::ENUM: name = #ENUM; break;
+#include <clang/Basic/AllDiagnosticKinds.inc>
+#undef DIAG
+    default: break;
+    }
+    for (const std::string_view kind : { "err_", "warn_", "ext_" }) {
+        if (name.starts_with(kind)) {
+            name.remove_prefix(kind.size());
+            break;
+        }
+    }
+    return std::string { name };
+}
+
 std::vector<msa::Diagnostic> diagnostics_of(cl::ASTUnit& ast) {
     std::vector<msa::Diagnostic> out;
     const auto& sm = ast.getSourceManager();
     const auto& lo = ast.getLangOpts();
     const cl::FileID main { sm.getMainFileID() };
-    auto& ids = *ast.getDiagnostics().getDiagnosticIDs();
     for (auto it = ast.stored_diag_begin(); it != ast.stored_diag_end(); ++it) {
         const cl::StoredDiagnostic& d { *it };
         if (d.getLevel() == cl::DiagnosticsEngine::Ignored) continue;
@@ -966,7 +1049,7 @@ std::vector<msa::Diagnostic> diagnostics_of(cl::ASTUnit& ast) {
         msa::Diagnostic diagnostic;
         diagnostic.severity = severity_of(d.getLevel());
         diagnostic.message = std::string { d.getMessage() };
-        diagnostic.code = ids.getWarningOptionForDiag(d.getID()).str();
+        diagnostic.code = diagnostic_code(d.getID());
         diagnostic.category = cl::DiagnosticIDs::getCategoryNameFromID(cl::DiagnosticIDs::getCategoryNumberForDiag(d.getID())).str();
         if (where && where->path == path_of(sm, main)) {
             diagnostic.range = where->range;
@@ -1025,7 +1108,13 @@ public:
           module_ { std::move(module) } {
         diagnostics_ = std::move(extra);
         if (!ast_) return;
-        for (auto& d : diagnostics_of(*ast_)) diagnostics_.push_back(std::move(d));
+        const std::size_t failed { diagnostics_.size() };
+        for (auto& d : diagnostics_of(*ast_)) {
+            // "module 'm' not found" where m failed to build says less than the failure already told.
+            const bool told { d.code == "module_not_found" &&
+                              std::ranges::any_of(std::span { diagnostics_ }.first(failed), [&](const msa::Diagnostic& f) { return f.range.begin == d.range.begin; }) };
+            if (!told) diagnostics_.push_back(std::move(d));
+        }
         auto& sm = ast_->getSourceManager();
         const auto& lo = ast_->getLangOpts();
         const cl::FileID main { sm.getMainFileID() };
@@ -1143,7 +1232,23 @@ struct ParseRequest {
     std::string resource_directory;
 };
 
-std::unique_ptr<cl::ASTUnit> parse_ast(const ParseRequest& request) {
+// Why the driver rejects a command line, in its own words; empty when it accepts it.
+std::string command_rejection(const std::vector<std::string>& args) {
+    std::vector<const char*> argv;
+    for (const auto& a : args) argv.push_back(a.c_str());
+    auto vfs = llvm::vfs::getRealFileSystem();
+    cl::DiagnosticOptions diagOptions;
+    CollectingConsumer consumer;
+    auto diags = cl::CompilerInstance::createDiagnostics(*vfs, diagOptions, &consumer, false);
+    cl::CreateInvocationOptions options;
+    options.Diags = diags;
+    options.VFS = vfs;
+    if (cl::createInvocation(argv, options) && consumer.errors.empty()) return {};
+    return consumer.errors.empty() ? std::string { "the driver gave no reason" } : consumer.errors.front();
+}
+
+// `rejected`, when the parse could not start: why the driver rejected the command.
+std::unique_ptr<cl::ASTUnit> parse_ast(const ParseRequest& request, std::string* rejected = nullptr) {
     std::vector<std::string> args { normalize(request.command) };
     for (const auto& extra : backend_arguments(request.resource_directory)) args.push_back(extra);
     for (const auto& [name, pcm] : request.modules) args.push_back("-fmodule-file=" + name + "=" + pcm);
@@ -1156,9 +1261,11 @@ std::unique_ptr<cl::ASTUnit> parse_ast(const ParseRequest& request) {
     auto diags = cl::CompilerInstance::createDiagnostics(*vfs, *options);
     std::vector<cl::ASTUnit::RemappedFile> remapped;
     if (request.remap) remapped.emplace_back(request.path, llvm::MemoryBuffer::getMemBufferCopy(request.text, request.path).release());
-    return cl::CreateASTUnitFromCommandLine(argv.data(), argv.data() + argv.size(), std::make_shared<cl::PCHContainerOperations>(), options, diags,
-                                            request.resource_directory, false, {}, false, cl::CaptureDiagsKind::All, remapped, true, 0,
-                                            cl::TU_Complete, false, true, false, cl::SkipFunctionBodiesScope::None, false, true);
+    auto ast = cl::CreateASTUnitFromCommandLine(argv.data(), argv.data() + argv.size(), std::make_shared<cl::PCHContainerOperations>(), options, diags,
+                                                request.resource_directory, false, {}, false, cl::CaptureDiagsKind::All, remapped, true, 0,
+                                                cl::TU_Complete, false, true, false, cl::SkipFunctionBodiesScope::None, false, true);
+    if (!ast && rejected != nullptr) *rejected = command_rejection(args);
+    return ast;
 }
 
 // ============================================================================================
@@ -1313,17 +1420,33 @@ public:
         return out;
     }
 
+    // Entities whose name contains the query's last component (any case); a query with a scope,
+    // "ns::name" or "::name", keeps those whose container ends with that scope. Exact names first.
     std::vector<msa::Found> find(std::string_view query, std::size_t limit) const {
+        auto lower = [](std::string_view text) {
+            std::string out { text };
+            std::ranges::transform(out, out.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            return out;
+        };
+        std::string scope;
+        std::string needle { lower(query) };
+        bool global { false };
+        if (const auto split = needle.rfind("::"); split != std::string::npos) {
+            scope = needle.substr(0, split);
+            needle = needle.substr(split + 2);
+            if (scope.starts_with("::")) scope.erase(0, 2);
+            global = scope.empty();
+        }
         std::shared_lock lock { mutex_ };
-        std::vector<msa::Found> out;
-        std::string needle { query };
-        std::ranges::transform(needle, needle.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::vector<std::pair<int, msa::Found>> ranked;
         for (const auto& [id, info] : entities_) {
-            if (out.size() >= limit) break;
             if (info.kind == msa::Kind::parameter || info.kind == msa::Kind::template_parameter || info.kind == msa::Kind::unknown) continue;
-            std::string name { info.name };
-            std::ranges::transform(name, name.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            const std::string name { lower(info.name) };
             if (!needle.empty() && name.find(needle) == std::string::npos) continue;
+            if (!scope.empty() || global) {
+                const std::string container { lower(info.container) };
+                if (global ? !container.empty() : !(container == scope || container.ends_with("::" + scope))) continue;
+            }
             const auto defs = byEntity_.find(id);
             if (defs == byEntity_.end() || defs->second.empty()) continue;
             const IndexedOccurrence* at { nullptr };
@@ -1333,7 +1456,17 @@ public:
                     if (o->roles & msa::role::definition) break;
                 }
             if (!at) continue;
-            out.push_back({ id, info.name, info.container, info.kind, at->location });
+            ranked.emplace_back(name == needle ? 0 : name.starts_with(needle) ? 1 : 2, msa::Found { id, info.name, info.container, info.kind, at->location });
+        }
+        std::ranges::sort(ranked, [](const auto& a, const auto& b) {
+            if (a.first != b.first) return a.first < b.first;
+            if (a.second.name.size() != b.second.name.size()) return a.second.name.size() < b.second.name.size();
+            return a.second.name < b.second.name;
+        });
+        std::vector<msa::Found> out;
+        for (auto& [rank, found] : ranked) {
+            if (out.size() >= limit) break;
+            out.push_back(std::move(found));
         }
         return out;
     }
@@ -1428,6 +1561,9 @@ public:
         }
         {
             std::lock_guard lock { mutex_ };
+            // New commands: whatever was rejected may be accepted now; what is not says so again.
+            rejectedCount_ = 0;
+            rejected_.clear();
             commands_ = byFile;
             graph_ = graph;
         }
@@ -1454,6 +1590,9 @@ public:
     msa::Status status() const override {
         msa::Status s { modules_->status() };
         std::lock_guard lock { mutex_ };
+        s.commands_rejected += rejectedCount_;
+        for (const auto& r : rejected_)
+            if (s.rejected.size() < 5) s.rejected.push_back(r);
         s.units = commands_.size();
         s.indexed = indexDone_;
         if (!indexQueue_.empty() || indexRunning_ > 0) s.busy = true;
@@ -1474,12 +1613,18 @@ public:
 
     std::shared_ptr<const msa::Unit> parse_(const std::string& file, std::string text, std::int64_t version, msa::Cancel cancel) {
         const std::string path { normalize_path(file) };
+        modules_->set_buffer(path, text);
         auto request = prepare_(path, text, cancel);
         if (!request) return nullptr;
         request->parse.remap = true;
         std::vector<msa::Diagnostic> extra { std::move(request->failures) };
-        auto ast = parse_ast(request->parse);
+        std::string rejected;
+        auto ast = parse_ast(request->parse, &rejected);
         if (cancel.stop_requested()) return nullptr;
+        if (!ast && !rejected.empty()) {
+            extra.push_back({ {}, msa::Severity::error, "the compile command was rejected: " + rejected, "command-rejected", "Command", {} });
+            note_rejected_(path, rejected);
+        }
         auto unit = std::make_shared<UnitImpl>(std::move(ast), path, std::move(request->parse.text), version, request->module, std::move(extra),
                                                foreground_.get());
         {
@@ -1550,6 +1695,13 @@ public:
     }
     std::vector<msa::Found> find(std::string_view query, std::size_t limit) const override { return index_.find(query, limit); }
 
+    void close(const std::string& file) override {
+        const std::string path { normalize_path(file) };
+        modules_->set_buffer(path, std::nullopt);
+        std::lock_guard lock { mutex_ };
+        latest_.erase(path);
+    }
+
     void file_changed(const std::string& file) override {
         const std::string path { normalize_path(file) };
         modules_->file_changed(path);
@@ -1589,6 +1741,8 @@ private:
     std::map<std::string, msa::Command, std::less<>> commands_;
     mcxx::graph::Graph graph_;
     std::map<std::string, std::shared_ptr<UnitImpl>> latest_;
+    std::size_t rejectedCount_ { 0 };
+    std::vector<msa::RejectedCommand> rejected_;   // the first few
     std::deque<std::string> indexQueue_;
     std::size_t indexTotal_ { 0 };
     std::size_t indexDone_ { 0 };
@@ -1598,6 +1752,16 @@ private:
     std::stop_source stop_;
     std::vector<std::unique_ptr<llvm::thread>> indexers_;
     std::unique_ptr<ClangPool> foreground_;
+
+    void note_rejected_(const std::string& path, const std::string& reason) {
+        {
+            std::lock_guard lock { mutex_ };
+            ++rejectedCount_;
+            if (rejected_.size() < 5 && std::ranges::none_of(rejected_, [&](const msa::RejectedCommand& r) { return r.file == path; }))
+                rejected_.push_back({ path, reason });
+        }
+        if (options_.changed) options_.changed();
+    }
 
     // The command, the module interfaces and the flags one parse of `path` needs.
     std::optional<Prepared> prepare_(const std::string& path, const std::string& text, msa::Cancel cancel) {
@@ -1622,12 +1786,40 @@ private:
         prepared.parse.modules = result.pcms;
         prepared.parse.resource_directory = options_.resource_directory;
         const auto status = modules_->status();
+        auto position_of = [&](std::size_t offset) {
+            Position p;
+            for (std::size_t i { 0 }; i < offset && i < text.size(); ++i) {
+                if (text[i] == '\n') {
+                    ++p.line;
+                    p.column = 0;
+                } else {
+                    ++p.column;
+                }
+            }
+            return p;
+        };
         for (const auto& module : result.failed) {
-            std::string why;
-            for (const auto& [m, reason] : status.failures)
-                if (m == module) why = reason;
-            if (std::ranges::find(roots, module) == roots.end()) continue;
-            prepared.failures.push_back({ {}, msa::Severity::error, std::format("module '{}' could not be built: {}", module, why), "module-build-failed",
+            const auto root = std::ranges::find(roots, module);
+            if (root == roots.end()) continue;
+            const msa::ModuleFailure* failure { nullptr };
+            const msa::ModuleFailure* cause { nullptr };
+            for (const auto& f : status.failures) {
+                if (f.module == module) failure = &f;
+            }
+            if (failure != nullptr) {
+                for (const auto& f : status.failures) {
+                    if (f.module == failure->cause) cause = &f;
+                }
+            }
+            // One diagnostic on the import (or on the declaration, for an implementation unit's own
+            // module), naming the module whose build failed.
+            std::pair<std::size_t, std::size_t> span { scan.module_span };
+            if (const auto at = static_cast<std::size_t>(root - roots.begin()); at < scan.import_spans.size()) span = scan.import_spans[at];
+            std::string message;
+            if (failure == nullptr) message = std::format("module {} could not be built", module);
+            else if (cause == nullptr || failure->cause == module) message = std::format("module {} did not compile: {}", module, failure->reason);
+            else message = std::format("module {} cannot be built because {} did not compile: {}", module, cause->module, cause->reason);
+            prepared.failures.push_back({ { position_of(span.first), position_of(span.second) }, msa::Severity::error, std::move(message), "module-failed",
                                           "Modules", {} });
         }
         return prepared;
@@ -1660,7 +1852,9 @@ private:
             if (const auto text = read_file(file)) {
                 if (auto prepared = prepare_(file, *text, stop)) {
                     prepared->parse.remap = false;
-                    if (auto ast = parse_ast(prepared->parse)) index_unit(*ast, file, index_);
+                    std::string rejected;
+                    if (auto ast = parse_ast(prepared->parse, &rejected)) index_unit(*ast, file, index_);
+                    else if (!rejected.empty()) note_rejected_(file, rejected);
                 }
             }
             {

@@ -217,6 +217,21 @@ struct Command {
     std::vector<std::string> arguments;   // arguments[0] is the driver
 };
 
+// A module whose interface could not be built.
+struct ModuleFailure {
+    std::string module;
+    std::string reason;   // why, in the backend's words
+    std::string cause;    // the module whose own build failed: `module` itself, or one it depends on
+    bool command { false };   // the backend rejected the compile command itself, before reading the code
+};
+
+// A compile command the backend rejected outright (an option it does not accept): a problem of the
+// build environment, not of the code.
+struct RejectedCommand {
+    std::string file;
+    std::string reason;   // the driver's own words
+};
+
 // Progress a workspace reports while it prepares modules and indexes.
 struct Status {
     std::size_t units { 0 };            // compile commands known
@@ -225,7 +240,9 @@ struct Status {
     std::size_t modules_failed { 0 };
     std::size_t indexed { 0 };          // units in the program index
     bool busy { false };
-    std::vector<std::pair<std::string, std::string>> failures;   // module, why
+    std::vector<ModuleFailure> failures;
+    std::size_t commands_rejected { 0 };    // every rejection seen, by module builds and parses
+    std::vector<RejectedCommand> rejected;  // the first few
 };
 
 // A parsed file: the snapshot one version of its text produced. Immutable once returned, so any
@@ -273,7 +290,9 @@ public:
     virtual Status status() const = 0;
 
     // Parse one file at one version of its text, building the module interfaces it imports first.
-    // Blocks; returns null only when cancelled or when no command at all can be found for the file.
+    // The text is the file's from then on, for every unit that reads it (an interface edited in the
+    // editor is what its importers see), until close(). Blocks; returns null only when cancelled or
+    // when no command at all can be found for the file.
     virtual std::shared_ptr<const Unit> parse(const std::string& path, std::string text, std::int64_t version,
                                               Cancel cancel = {}) = 0;
     virtual std::vector<CompletionItem> complete(const std::string& path, const std::string& text, Position at,
@@ -289,6 +308,8 @@ public:
 
     // A file the editor changed on disk (not an open buffer): its unit and dependents are stale.
     virtual void file_changed(const std::string& path) = 0;
+    // The editor closed the file: its text is the disk's again.
+    virtual void close(const std::string& path) = 0;
 };
 
 } // namespace mcxx::msa

@@ -437,8 +437,11 @@ void Service::change(const std::string& uri, const Json& changes, std::int64_t v
 }
 
 void Service::close(const std::string& uri) {
-    std::lock_guard lock { state_->mutex };
-    state_->documents.erase(uri);
+    {
+        std::lock_guard lock { state_->mutex };
+        state_->documents.erase(uri);
+    }
+    state_->workspace.close(uri_to_path(uri));
 }
 
 void Service::saved(const std::string& uri) {
@@ -498,6 +501,22 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
         for (const auto& l : list) out.push_back(s.location(l));
         return out;
     };
+
+    // clangd's extension: what is at a position, by its stable id (the USR), with where it is declared and defined.
+    if (method == "textDocument/symbolInfo") {
+        const auto entity = unit->entity_at(at);
+        if (!entity) return Json::array();
+        Json details { { "name", entity->name }, { "containerName", entity->container.empty() ? std::string {} : entity->container + "::" },
+                       { "usr", entity->id } };
+        if (entity->declaration) details["declarationRange"] = s.location(*entity->declaration);
+        std::optional<msa::Location> definition { entity->definition };
+        if (!definition) {
+            const auto elsewhere = s.workspace.definitions(entity->id);
+            if (!elsewhere.empty()) definition = elsewhere.front();
+        }
+        if (definition) details["definitionRange"] = s.location(*definition);
+        return Json::array({ std::move(details) });
+    }
 
     if (method == "textDocument/definition" || method == "textDocument/declaration" || method == "textDocument/typeDefinition" ||
         method == "textDocument/implementation") {

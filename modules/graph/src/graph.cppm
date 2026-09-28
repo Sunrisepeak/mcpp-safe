@@ -16,6 +16,9 @@ struct Scan {
     bool global_fragment { false };     // begins with `module;`
     std::vector<std::string> imports;   // fully qualified: `import :p;` in module m is "m:p"
     std::vector<std::string> exported_imports;
+    // Where each import names its module: byte offsets [begin, end) into the text, parallel to `imports`.
+    std::vector<std::pair<std::size_t, std::size_t>> import_spans;
+    std::pair<std::size_t, std::size_t> module_span { 0, 0 };   // the declaration's module name
 
     bool is_module_unit() const { return !module.empty(); }
     bool is_partition() const { return module.find(':') != std::string::npos; }
@@ -159,10 +162,11 @@ private:
 };
 
 // Reads `a.b.c` (and `:p.q` when `partition`) from the lexer; empty on anything else.
-std::string read_name(Lexer& lexer, Token& token) {
+std::string read_name(Lexer& lexer, Token& token, const char*& end) {
     std::string name;
     while (token.kind == Token::Kind::ident) {
         name += token.text;
+        end = token.text.data() + token.text.size();
         token = lexer.next();
         if (token.kind == Token::Kind::punct && token.text == ".") {
             name += '.';
@@ -213,15 +217,18 @@ Scan scan(std::string_view text) {
                 token = lexer.next();
                 continue;
             }
-            std::string name { read_name(lexer, token) };
+            const char* begin { token.text.data() };
+            const char* end { begin };
+            std::string name { read_name(lexer, token, end) };
             if (!name.empty() && token.kind == Token::Kind::punct && token.text == ":") {
                 token = lexer.next();
-                const std::string partition { read_name(lexer, token) };
+                const std::string partition { read_name(lexer, token, end) };
                 if (!partition.empty()) name += ":" + partition;
             }
             if (!name.empty() && result.module.empty()) {
                 result.module = name;
                 result.exported = exported;
+                result.module_span = { static_cast<std::size_t>(begin - text.data()), static_cast<std::size_t>(end - text.data()) };
             }
             first = false;
             continue;
@@ -229,19 +236,24 @@ Scan scan(std::string_view text) {
         if (token.text == "import") {
             token = lexer.next();
             std::string name;
+            const char* begin { token.text.data() };
+            const char* end { begin };
             if (token.kind == Token::Kind::punct && token.text == ":") {
                 token = lexer.next();
-                const std::string partition { read_name(lexer, token) };
+                const std::string partition { read_name(lexer, token, end) };
                 if (!partition.empty()) name = result.module.substr(0, result.module.find(':')) + ":" + partition;
             } else if (token.kind == Token::Kind::ident) {
-                name = read_name(lexer, token);
+                name = read_name(lexer, token, end);
             } else {
                 // `import <h>` / `import "h"`: a header unit, not a named module.
                 token = lexer.next();
                 continue;
             }
             if (!name.empty() && token.kind == Token::Kind::punct && token.text == ";") {
-                if (std::ranges::find(result.imports, name) == result.imports.end()) result.imports.push_back(name);
+                if (std::ranges::find(result.imports, name) == result.imports.end()) {
+                    result.imports.push_back(name);
+                    result.import_spans.emplace_back(static_cast<std::size_t>(begin - text.data()), static_cast<std::size_t>(end - text.data()));
+                }
                 if (exported && std::ranges::find(result.exported_imports, name) == result.exported_imports.end())
                     result.exported_imports.push_back(name);
             }

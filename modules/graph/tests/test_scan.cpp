@@ -32,6 +32,15 @@ int main() {
         expect(bom.module == "bom");
     };
 
+    "where names are"_test = [] {
+        const std::string text { "export module m.x;\nimport  a.b ;\nexport import :p;\n" };
+        const auto s = scan(text);
+        expect(text.substr(s.module_span.first, s.module_span.second - s.module_span.first) == "m.x");
+        expect(s.import_spans.size() == 2);
+        expect(text.substr(s.import_spans[0].first, s.import_spans[0].second - s.import_spans[0].first) == "a.b");
+        expect(text.substr(s.import_spans[1].first, s.import_spans[1].second - s.import_spans[1].first) == ":p") << "a partition from its colon";
+    };
+
     "graph"_test = [] {
         mcxx::graph::Graph g;
         g.set("/a.cppm", scan("export module a;\nimport b;\nimport c;\n"));

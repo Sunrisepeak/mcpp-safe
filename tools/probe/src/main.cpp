@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         const auto s = workspace->status();
         std::println(std::cerr, "[{:7.2f}] index: {} of {} units; modules ready {} failed {}", seconds_since(started), s.indexed, s.units, s.modules_ready,
                      s.modules_failed);
-        for (const auto& [m, why] : s.failures) std::println(std::cerr, "    failed {}: {}", m, why.substr(0, 300));
+        for (const auto& f : s.failures) std::println(std::cerr, "    failed {} ({}): {}", f.module, f.cause, f.reason.substr(0, 300));
     }
     for (const auto& [where, method] : asks) {
         const auto colon = where.find(':');

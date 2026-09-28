@@ -11,7 +11,7 @@ license     = "Apache-2.0"
 kind = "lib"
 
 [dependencies]
-openkal-llvm-runtime.workspace = true
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
 mcxx-msa   = { path = "../msa" }
 mcxx-clang = { path = "../clang" }
 

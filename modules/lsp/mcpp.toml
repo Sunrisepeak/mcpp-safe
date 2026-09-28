@@ -9,12 +9,12 @@ license     = "Apache-2.0"
 kind = "lib"
 
 [dependencies]
-openkal-llvm-runtime.workspace = true
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
 mcxx-base = { path = "../base" }
 mcxx-msa  = { path = "../msa" }
 
 [dependencies.nlohmann]
-json.workspace = true
+json = "3.12.0"
 
 [lib]
 path = "src/lsp.cppm"
