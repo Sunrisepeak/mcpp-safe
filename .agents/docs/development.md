@@ -27,7 +27,9 @@
 | 真实工程 | `tools/probe`：`mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...` | 秒级到分钟级 | 真实编译数据库上的完整流程 |
 | 编辑器（fork） | `forks/mcpp-language-server`：`mcpp test`，以及 conformance fixture（`--core-engine mcxx`） | 分钟级 | 58 个 linux fixture |
 
-修一个缺陷时，先在对应层写一个会失败的测试，再修。CI（本仓库 `ci.yml`、fork 的 `mcxx.yml`、llvm-clang-dev 的 `ci.yml`）是复核，不是主要的验证手段。
+修一个缺陷时，先在对应层写一个会失败的测试，再修。
+
+fixture 的工作目录（`--workspace-dir`、`--cache-dir`）要放在 mcpp-safe 目录树之外，例如 `~/.cache/mcxx-fixtures`：xlings 会沿用上层目录的 `.xlings.json`（mcpp-safe 的只声明了 mcpp），fixture 里调用的宿主 `c++` 就会解析不到。CI（本仓库 `ci.yml`、fork 的 `mcxx.yml`、llvm-clang-dev 的 `ci.yml`）是复核，不是主要的验证手段。
 
 ## 3. 可观测性：`mcxx.base.trace`
 

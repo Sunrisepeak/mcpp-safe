@@ -245,5 +245,32 @@ int main() {
         expect(console->definition && console->definition->range.begin.line == 2) << "the non-Windows one, where it is written";
     };
 
+
+    "new commands while an interface is being built: the build is redone, never taken as ready"_test = [] {
+        // The shape of mcppls's plan changing under a build: a provisional plan (-std=c++26), then the
+        // build tool's (-std=c++23). An interface built for the first must not reach the second's importers.
+        for (int round { 0 }; round < 3; ++round) {
+            Program p { "replan" };
+            std::string body;
+            for (int i { 0 }; i < 400; ++i) body += std::format("export constexpr int v{} = {};\n", i, i);
+            const std::string lib { p.file("src/lib.cppm", "export module lib;\n" + body) };
+            const std::string text { "import lib;\nint main() { return v1; }\n" };
+            const std::string main { p.file("src/main.cpp", text) };
+            auto first = p.commands;
+            for (auto& c : first) c.arguments[1] = "-std=c++26";
+            msa::Workspace::Options options;
+            options.cache_directory = (p.root / ".cache").generic_string();
+            options.workers = 2;
+            options.background_index = true;   // the index starts building lib under the first plan
+            auto w = mcxx::backend::clang::make_workspace(std::move(options));
+            w->set_commands(first);
+            std::this_thread::sleep_for(std::chrono::milliseconds { 5 * round });
+            w->set_commands(p.commands);
+            auto unit = w->parse(main, text, 1);
+            expect(fatal(unit != nullptr));
+            expect(unit->diagnostics().empty()) << (unit->diagnostics().empty() ? std::string {} : unit->diagnostics().front().message);
+        }
+    };
+
     return report();
 }

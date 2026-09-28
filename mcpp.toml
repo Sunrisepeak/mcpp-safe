@@ -37,6 +37,7 @@ members = [
     "plugins/std",
     "plugins/libs",
     "tools/probe",
+    "tools/conformance",
 ]
 
 # This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.

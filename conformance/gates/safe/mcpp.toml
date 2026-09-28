@@ -1,0 +1,7 @@
+# The programs below are compiled under mc++.safe: every gated feature is an error.
+[package]
+name    = "gates-safe"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "safe"

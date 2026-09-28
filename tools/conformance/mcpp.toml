@@ -1,0 +1,20 @@
+# mcxx-conformance: the gate fixtures (conformance/gates) through libmc++, with precision and recall
+# per feature (M0.7 A0.7.2) and a JSON report (M0.8 A0.8.2).
+[package]
+name        = "mcxx-conformance"
+version     = "0.1.0"
+description = "Runs MC++'s gate fixtures and reports precision and recall per feature"
+license     = "Apache-2.0"
+
+[targets.mcxx-conformance]
+kind = "bin"
+main = "src/main.cpp"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-base         = { path = "../../modules/base" }
+mcxx-msa          = { path = "../../modules/msa" }
+mcxx-plugin       = { path = "../../modules/plugin/sdk" }
+mcxx-backend      = { path = "../../modules/backend/semantic" }
+mcxx-plugins-std  = { path = "../../plugins/std" }
+mcxx-plugins-libs = { path = "../../plugins/libs" }

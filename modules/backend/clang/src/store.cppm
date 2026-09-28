@@ -116,6 +116,9 @@ public:
         commands_ = commands;
         for (auto& [module, entry] : entries_) {
             if (entry.state == State::ready || entry.state == State::failed) entry.state = State::stale;
+            // One being built now reads the program as it was: built again once it is done, never
+            // taken as ready (a std built for the old commands' -std would reach the new importers).
+            else if (entry.state == State::building) entry.again = true;
         }
     }
 
@@ -150,8 +153,9 @@ public:
     void file_changed(const std::string& path) {
         std::lock_guard lock { mutex_ };
         for (auto& [module, entry] : entries_) {
-            if (entry.state != State::ready && entry.state != State::failed) continue;
-            if (entry.source == path || std::ranges::find(entry.inputs, path) != entry.inputs.end()) entry.state = State::stale;
+            if (entry.source != path && std::ranges::find(entry.inputs, path) == entry.inputs.end()) continue;
+            if (entry.state == State::ready || entry.state == State::failed) entry.state = State::stale;
+            else if (entry.state == State::building) entry.again = true;   // it may have read the file before it changed
         }
     }
 

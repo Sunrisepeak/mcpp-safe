@@ -74,6 +74,8 @@ jobs:
           set -euo pipefail
           mcpp build
           mcpp build -p tools/probe
+          mcpp build -p tools/conformance
+          "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json conformance/gates
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
           "$mcxx" version
           printf 'extern "C" int puts(const char*);\n[[mcpp::cfg(unix)]] int main() { puts("unix"); }\n[[mcpp::cfg(windows)]] int main() { Win(); }\n' > cfg.cpp

@@ -1,0 +1,4 @@
+# nlohmann::json's rules at their defaults (json-brace-init: deny).
+[package]
+name    = "gates-libs"
+version = "0.1.0"
