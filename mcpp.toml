@@ -21,6 +21,9 @@ members = [
     "modules/base",
     "modules/msa",
     "modules/graph",
+    "modules/clang",
+    "modules/lsp",
+    "tools/probe",
 ]
 
 [workspace.dependencies]

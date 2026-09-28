@@ -1,0 +1,20 @@
+# An LSP-shaped semantic service over MSA (spec MC6), transport-free.
+[package]
+name        = "mcxx-lsp"
+version     = "0.1.0"
+description = "LSP-shaped semantic service over the MC++ semantic API: documents, requests, diagnostics, as JSON"
+license     = "Apache-2.0"
+
+[targets.mcxx-lsp]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+mcxx-base = { path = "../base" }
+mcxx-msa  = { path = "../msa" }
+
+[dependencies.nlohmann]
+json.workspace = true
+
+[lib]
+path = "src/lsp.cppm"

@@ -1,0 +1,20 @@
+# A development driver for libmc++: load a compile database, open a file, ask the service.
+[package]
+name    = "mcxx-probe"
+version = "0.1.0"
+description = "Development driver for mcxx.lsp over mcxx.clang (not a product binary)"
+license = "Apache-2.0"
+
+[targets.mcxx-probe]
+kind = "bin"
+main = "src/main.cpp"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+mcxx-base  = { path = "../../modules/base" }
+mcxx-msa   = { path = "../../modules/msa" }
+mcxx-clang = { path = "../../modules/clang" }
+mcxx-lsp   = { path = "../../modules/lsp" }
+
+[dependencies.nlohmann]
+json.workspace = true
