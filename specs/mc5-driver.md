@@ -62,4 +62,6 @@ libmc++'s semantic services (the backend behind mcppls) derive, from a unit's bu
 
 ## 7. The toolchain contract
 
-A build system uses `mcxx` as it uses the LLVM toolchain of the compiler's version (V0.6, E-XIM-1): an `llvm`-shaped payload whose `bin/clang++` and `bin/clang` are `mcxx` (§2 selects the mode by name), next to `bin/ld.lld`, the compiler's resource directory and the C++ standard library with its module sources. A build system MUST NOT need to know that the compiler is `mcxx` to build with it; it MAY ask `mcxx version --json` to find out. <a id="MC5-7-1"></a><sup>MC5-7-1</sup>
+A build system uses `mcxx` as it uses an LLVM toolchain (V0.6, E-XIM-1): an `llvm`-shaped payload whose `bin/clang++` and `bin/clang` are `mcxx` (§2 selects the mode by name), next to `bin/ld.lld`, the compiler's resource directory (`lib/clang/23`) and the C++ standard library with its module sources. A build system MUST NOT need to know that the compiler is `mcxx` to build with it; it MAY ask `mcxx version --json` to find out. <a id="MC5-7-1"></a><sup>MC5-7-1</sup> With no `--target` and no configuration file, `mcxx` compiles for x86_64-unknown-linux-gnu on x86-64 Linux, whatever C library it itself runs on, as xim's LLVM does; a build tool that passes `--no-default-config` for a native build relies on it. <a id="MC5-7-2"></a><sup>MC5-7-2</sup>
+
+For mcpp, the payload is the xpkg `mcxx:mcxx` of this repository (`xpkgs/pkgs/m/mcxx.lua`), used as `mcpp build --toolchain llvm@23.1.0-mcxx`; mcpp is not changed.

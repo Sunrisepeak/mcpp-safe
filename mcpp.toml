@@ -84,4 +84,4 @@ mcxx-plugins-libs = { path = "plugins/libs" }
 # root to say which one the graph holds. (The one llvm.* name outside modules/backend; the
 # clang-exposure rule allows exactly this table here.)
 [dependencies.llvm]
-clang-dev = "23.1.0.2"
+clang-dev = "23.1.0.3"

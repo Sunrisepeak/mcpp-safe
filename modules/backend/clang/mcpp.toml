@@ -23,7 +23,7 @@ mcxx-plugin-host = { path = "../../plugin/host" }   # out-of-process plugins, th
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).
 [dependencies.llvm]
-clang-dev = "23.1.0.2"
+clang-dev = "23.1.0.3"
 
 [lib]
 path = "src/clang.cppm"

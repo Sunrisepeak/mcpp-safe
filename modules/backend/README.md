@@ -14,7 +14,7 @@ libmc++ 里所有和具体编译器前端相关的代码都在这个目录下。
 - **只有 `clang/` 和 `clang-compiler/` 可以包含 Clang/LLVM 头文件、依赖 `llvm.*` 包。** `tools/checks/lint.py` 的 `clang-exposure` 规则检查整个仓库，CI 中强制执行。
 - **门面只转发，不暴露后端类型。** `mcxx.backend` 的接口只有 `msa::` 类型；`mcxx.backend.compiler` 的接口只有命令行和退出码。
 - **语义和编译分成两个包**：mcpp 会把一个包的全部目标文件链接进使用方。mcppls 只需要语义，不应该带上代码生成器（`llvm.codegen-dev`、`llvm.clang-driver`）。实测 release 版 mcppls 为 53 MB，mcxx 驱动（dev）为 154 MB。
-- **Clang 库按版本从本仓库的 `index/llvm` 取**（`llvm.clang-dev`、`codegen-dev`、`clang-driver`，版本 23.1.0.2，来自 speak-agent/llvm-clang-dev），由 mcpp 的全局缓存复用。
+- **Clang 库按版本从本仓库的 `index/llvm` 取**（`llvm.clang-dev`、`codegen-dev`、`clang-driver`，版本 23.1.0.3，来自 speak-agent/llvm-clang-dev），由 mcpp 的全局缓存复用。
 
 ## 以后
 

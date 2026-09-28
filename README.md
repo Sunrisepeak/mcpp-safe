@@ -30,6 +30,7 @@ mcpp-safe/
 ├── conformance/               门禁 fixture（gates/），规范条目的可追溯性（traceability.json）
 ├── tools/                     probe、conformance（fixture runner）、checks（源码规则、规范检查）
 ├── index/                     本仓库自建的 mcpp 包索引（llvm.*、microsoft.*）
+├── xpkgs/                     本仓库自建的 xlings 包：mcxx 作为 llvm 族工具链（mcpp 用 `--toolchain llvm@23.1.0-mcxx` 使用）
 ├── forks/                     被 .gitignore 忽略：speak-agent 下各 fork 的检出（llvm-clang-dev、mcpp-language-server）
 └── .agents/docs/              方案、里程碑、进度、开发方式、检查点
 ```

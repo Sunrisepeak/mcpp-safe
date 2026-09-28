@@ -9,9 +9,9 @@ llvm = { path = "index/llvm" }
 
 | 命名空间 | 包 | 版本 | 来源 |
 |---|---|---|---|
-| `llvm` | `clang-dev` | 23.1.0、23.1.0.1、23.1.0.2 | speak-agent/llvm-clang-dev：Clang/LLVM 23.1 的前端库，由 mcpp 在 openkal 上构建 |
-| `llvm` | `codegen-dev` | 23.1.0.1、23.1.0.2 | 同上，`codegen/`：CodeGen、优化器、x86-64 与 AArch64 后端 |
-| `llvm` | `clang-driver` | 23.1.0.2 | 同上，`driver/`：clang 本身（driver、cc1、cc1as） |
+| `llvm` | `clang-dev` | 23.1.0、23.1.0.1、23.1.0.2、23.1.0.3 | speak-agent/llvm-clang-dev：Clang/LLVM 23.1 的前端库，由 mcpp 在 openkal 上构建 |
+| `llvm` | `codegen-dev` | 23.1.0.1、23.1.0.2、23.1.0.3 | 同上，`codegen/`：CodeGen、优化器、x86-64 与 AArch64 后端 |
+| `llvm` | `clang-driver` | 23.1.0.2、23.1.0.3 | 同上，`driver/`：clang 本身（driver、cc1、cc1as） |
 | `microsoft` | `gsl` | 4.2.0 | microsoft/GSL（纯头文件） |
 | `microsoft` | `ifc-sdk` | 0.43.5 | microsoft/ifc：IFC 的读取器、DOM 和 `ifc-printer`（V0.3） |
 

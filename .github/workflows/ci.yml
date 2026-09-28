@@ -85,6 +85,16 @@ jobs:
           "$mcxx" features
           python3 -c "import jsonschema" 2>/dev/null || sudo apt-get install -y python3-jsonschema
           python3 tools/checks/specs.py --mcxx "$mcxx"
+      - name: mcxx as mcpp's toolchain (V0.6), and C-mcppls built with it passes its tests (A0.5.3)
+        run: |
+          set -euo pipefail
+          export XLINGS_HOME="$HOME/.mcpp/registry"
+          mcxx=$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")
+          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.3/*/llvm/clang/lib/Headers | head -1)
+          "$XLINGS_HOME/bin/xlings" config --add-xpkg "$PWD/xpkgs/pkgs/m/mcxx.lua"
+          MCXX_BINARY="$mcxx" MCXX_CLANG_HEADERS="$headers" "$XLINGS_HOME/bin/xlings" install mcxx:mcxx@0.1.0 -y
+          python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
+          python3 tools/checks/selfhost.py --work "$HOME/c-mcppls"
       - name: mcxx compose, end to end; the same plugin built with GCC 16 out of process
         run: |
           set -euo pipefail

@@ -2,8 +2,7 @@
  "$comment": "Rule identifiers of MC1, MC3, MC4 and MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
  "$pending": {
   "MC5-3-1": "the corpus check on C-mcppls against clang 23.1 -fsyntax-only (A0.5.1)",
-  "MC5-6-2": "the argument-normalization fixture (A0.5.2)",
-  "MC5-7-1": "mcxx as an mcpp toolchain payload (V0.6, E-XIM-1)"
+  "MC5-6-2": "the argument-normalization fixture (A0.5.2)"
  },
  "MC1-2-1": [
   {
@@ -729,6 +728,26 @@
   {
    "script": "tools/checks/compose.py",
    "contains": "the plugin out of process gives the static composition's diagnostics, exactly (MC4-6.3-3)"
+  }
+ ],
+ "MC5-7-1": [
+  {
+   "script": "tools/checks/toolchain.py",
+   "contains": "its code was compiled by clang 23.1 (mcxx)"
+  },
+  {
+   "script": "xpkgs/pkgs/m/mcxx.lua",
+   "contains": "io.writefile(path.join(dir, \".mcpp_ok\")"
+  }
+ ],
+ "MC5-7-2": [
+  {
+   "script": "index/llvm/pkgs/c/clang-dev.lua",
+   "contains": "the default target is x86_64-unknown-linux-gnu"
+  },
+  {
+   "script": "tools/checks/toolchain.py",
+   "contains": "mcpp build --toolchain"
   }
  ]
 }
