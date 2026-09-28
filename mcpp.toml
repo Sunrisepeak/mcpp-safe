@@ -1,4 +1,5 @@
-# MC++: a collection of module packages (libmc++), split by dependency set.
+# MC++: the mcxx driver (the root package, src/) and a collection of module packages (libmc++),
+# split by dependency set.
 #
 #   modules/base      mcxx.base       errors, paths, text, URIs, sha256, logging (from mcppls-base)
 #   modules/msa       mcxx.msa        the MC++ semantic API: positions, diagnostics, entities, and the
@@ -8,6 +9,9 @@
 #   modules/backend   mcxx.backend    the facade consumers use: make_workspace() and info(), naming no backend
 #   modules/lsp       mcxx.lsp        an LSP-shaped semantic service over MSA, transport-free
 #   tools/probe       mcxx-probe      a development driver for the service (not a product binary)
+#
+# The root package is the mcxx driver (MC5): clang itself in process (llvm.clang-driver), with MC++'s
+# checks, and the subcommands MC++ adds (check, serve, ...).
 #
 # A consumer imports the module for the core it needs (mcxx.lsp + mcxx.backend for an editor
 # engine; mcxx.msa alone for a rule; mcxx.graph alone for module facts) -- never a backend itself.
@@ -37,3 +41,30 @@ openkal-llvm-runtime = "0.15.2"
 
 [workspace.dependencies.nlohmann]
 json = "3.12.0"
+
+[package]
+name        = "mcxx"
+version     = "0.1.0"
+description = "The MC++ compiler driver: clang 23.1 in process, with MC++'s feature gates and module services"
+license     = "Apache-2.0"
+authors     = ["speak-agent"]
+
+[targets.mcxx]
+kind = "bin"
+main = "src/main.cpp"
+
+[build]
+sources = ["src/**/*.cppm", "src/**/*.cpp"]
+ldflags = ["-Wl,--error-limit=0"]
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-base    = { path = "modules/base" }
+mcxx-msa     = { path = "modules/msa" }
+mcxx-backend = { path = "modules/backend" }
+
+# clang-dev is named here too: llvm.codegen-dev reaches it by path inside its archive and mcxx.clang
+# by version, and the root settles which one the graph holds.
+[dependencies.llvm]
+clang-dev    = "23.1.0.2"
+clang-driver = "23.1.0.2"

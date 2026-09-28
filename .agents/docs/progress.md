@@ -8,9 +8,9 @@
 | # | 状态 | 结论与证据 |
 |---|---|---|
 | V0.1 | ✅ | Clang/LLVM 23.1 的前端库由 mcpp 在 openkal 上构建（speak-agent/llvm-clang-dev，tag 23.1.0），smoke 程序在本机和 CI 上都能运行 |
-| V0.2 | ⬜ | 等 V0.4 完成后测量 |
+| V0.2 | 🟡 | mcxx（dev 构建，内含 Clang、CodeGen、x86-64 和 AArch64 后端）154 MB；改动驱动后重新编译加链接 5.25 s（本机 32 核，门槛 ≤ 60 s）。4 核 CI 上的数字和 release 体积待补 |
 | V0.3 | ✅ | IFC SDK 0.43.5 加上 GSL 4.2.0 放在 `index/microsoft`，在 openkal 上用 mcpp 构建通过；`ifc-printer` 能运行（用真实 `.ifc` 文件的验证在 M1.1） |
-| V0.4 | ⬜ | |
+| V0.4 | ✅ | `llvm.codegen-dev`（Clang CodeGen、LLVM 优化器和后端，x86-64 与 AArch64）和 `llvm.clang-driver`（clang 本身：driver、cc1、cc1as 在进程内）。mcxx 驱动预编译模块接口、生成目标文件，外部 `ld.lld` 链接，hello-modules 运行输出 `answer=42`；AArch64 目标文件也能生成 |
 | V0.5 | ✅ | 不能。openkal 的静态进程调用 `dlopen` 返回 "Dynamic loading not supported"。MC4 只采用静态组合和进程外协议两种方式 |
 | V0.6 | ⬜ | |
 | V0.7 | 🟡 | mcpp 这一半已达成：`[indices] llvm = { path = "index/llvm" }` 能解析并构建 `llvm.clang-dev`，mcpp-safe 和 fork 都通过它构建。xlings 这一半（`xpkgs/`）还没做 |
@@ -23,10 +23,16 @@
 | E-OK-2 | ✅ | 见 V0.5 |
 | E-IDX-1 | ✅ | `index/llvm/pkgs/c/clang-dev.lua` |
 | E-IDX-2 | ✅ | `index/microsoft/pkgs/{g/gsl,i/ifc-sdk}.lua` |
+| （新增） | ✅ | `index/llvm` 中的 `llvm.codegen-dev`、`llvm.clang-driver`，版本 23.1.0.2 |
 | E-LS-2 | ✅ | fork 的 PR #1 |
 | E-LS-5 | 🟡 | linux 达成（见检查点 1） |
 
 ## 里程碑
+
+| # | 状态 | 说明 |
+|---|---|---|
+| M0.5 驱动 | ⏳ | 根包 `mcxx`：`mcxx c++/cc`（也可以用 clang++、clang、c++、cc 这些名字调用）以及 `mcxx check`；V0.6 的工具链 payload 还在进行 |
+| M0.6/M0.7 规则 | ⏳ | 第一个测试用例：`json-brace-init`（`Json x { expr }` 得到的是 `[expr]`），在编译器里捕获 |
 
 M0.x、M1.x、M2.x、MS 各项按里程碑文档的编号逐项补到这里。
 
