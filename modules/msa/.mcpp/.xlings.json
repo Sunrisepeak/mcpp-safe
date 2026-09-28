@@ -1,7 +1,0 @@
-{
-  "index_repos": [
-    { "name": "llvm", "url": "/home/speak/workspace/github/mcpp-safe/index/llvm" }
-  ],
-  "lang": "en",
-  "mirror": "auto"
-}
