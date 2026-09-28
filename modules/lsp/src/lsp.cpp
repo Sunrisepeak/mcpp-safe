@@ -294,7 +294,7 @@ struct Service::State {
             }
             diagnostics.push_back(std::move(item));
         }
-        notify("textDocument/publishDiagnostics", Json { { "uri", doc.uri }, { "version", unit.version() }, { "diagnostics", std::move(diagnostics) } });
+        if (notify) notify("textDocument/publishDiagnostics", Json { { "uri", doc.uri }, { "version", unit.version() }, { "diagnostics", std::move(diagnostics) } });
     }
 
     void schedule(const std::shared_ptr<Document>& doc) {
@@ -478,6 +478,8 @@ std::shared_ptr<const msa::Unit> Service::unit(const std::string& uri, bool curr
 
 Result Service::request(std::string_view method, const Json& params, std::stop_token cancel) {
     auto& s = *state_;
+    base::trace::Span span { "lsp", method, params.contains("textDocument") ? params["textDocument"].value("uri", std::string {}) : std::string {},
+                             std::chrono::milliseconds { 1000 } };
     const std::string uri { params.contains("textDocument") ? params["textDocument"].value("uri", std::string {}) : std::string {} };
 
     if (method == "workspace/symbol") {

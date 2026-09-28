@@ -12,6 +12,16 @@ package = {
 
     xpm = {
         linux = {
+            ["23.1.0.2"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.2.tar.gz",
+                sha256 = "40c364282f5f3d3f65130b8eb000c8c480c9eb467870bc95e91b6d418a6b7f88",
+            },
+            -- 23.1.0.1: the same upstream 23.1.0; the repository also carries llvm.codegen-dev, and
+            -- the frontend's stand-ins for code-generation facilities are weak.
+            ["23.1.0.1"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.1.tar.gz",
+                sha256 = "5fed04c4b8814305f9f58258d0a445daaaf577c1c0a51c52c6e9ed411e01c500",
+            },
             ["23.1.0"] = {
                 url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.tar.gz",
                 sha256 = "11612b4a7785f7245ce2509ec32a63a9de602eeedfbfb49897fc2ecf82c3f946",

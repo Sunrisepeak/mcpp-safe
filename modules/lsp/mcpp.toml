@@ -13,6 +13,9 @@ openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside thi
 mcxx-base = { path = "../base" }
 mcxx-msa  = { path = "../msa" }
 
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
 [dependencies.nlohmann]
 json = "3.12.0"
 

@@ -5,3 +5,7 @@ compile_commands.json
 
 # Forks (speak-agent/*) checked out here during development, each its own git repository.
 forks/
+# mcpp 2026.9.28+ keeps a package store per member
+.mcpp/
+**/.mcpp/
+mcpp.lock

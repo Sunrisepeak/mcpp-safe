@@ -18,7 +18,10 @@ mcxx-msa   = { path = "../msa" }
 mcxx-graph = { path = "../graph" }
 
 [dependencies.llvm]
-clang-dev = "23.1.0"
+clang-dev = "23.1.0.2"
 
 [lib]
 path = "src/clang.cppm"
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }

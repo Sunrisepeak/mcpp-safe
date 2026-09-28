@@ -1,0 +1,73 @@
+name: CI
+
+# libmc++: source rules, unit tests (the backend's against a small modules program), and the probe.
+# The forks (speak-agent/llvm-clang-dev, speak-agent/mcpp-language-server) have CI of their own.
+#
+# Local first: every step here is what `tools/checks/lint.py` and `mcpp test -p <member>` do on a
+# developer's machine; this is the second opinion, on a clean runner.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XLINGS_NON_INTERACTIVE: '1'
+  XLINGS_VERSION: v2026.8.17.2
+  MCPP_VERSION: 2026.9.28.2
+  LLVM_VERSION: 22.1.8
+
+jobs:
+  lint:
+    name: source rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/checks/lint.py modules tools
+
+  test:
+    name: unit tests and the probe (linux-x64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: xlings
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 \
+            https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+      # The package store and mcpp's own build cache: Clang's objects (llvm.clang-dev) are built once
+      # for a version and flags, then reused by every run.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.mcpp/registry/data/xpkgs
+            ~/.mcpp/build-cache
+          key: mcxx-${{ runner.os }}-${{ env.MCPP_VERSION }}-${{ hashFiles('index/**', '**/mcpp.toml') }}
+          restore-keys: mcxx-${{ runner.os }}-${{ env.MCPP_VERSION }}-
+      - name: mcpp and LLVM
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do xlings install "mcpp@$MCPP_VERSION" -y -g && break; sleep 20; done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+          mcpp toolchain install llvm "$LLVM_VERSION"
+          mcpp toolchain default "llvm@$LLVM_VERSION"
+      - name: Unit tests
+        run: |
+          set -euo pipefail
+          for member in modules/base modules/graph modules/lsp modules/clang; do
+            echo "::group::$member"
+            mcpp test -p "$member"
+            echo "::endgroup::"
+          done
+      - name: The probe
+        run: mcpp build -p tools/probe

@@ -6,4 +6,5 @@ export import mcxx.base.log;
 export import mcxx.base.path;
 export import mcxx.base.sha256;
 export import mcxx.base.text;
+export import mcxx.base.trace;
 export import mcxx.base.uri;

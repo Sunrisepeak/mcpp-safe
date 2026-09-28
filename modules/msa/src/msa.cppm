@@ -232,6 +232,9 @@ struct RejectedCommand {
     std::string reason;   // the driver's own words
 };
 
+// How much a backend's log line matters.
+enum class LogLevel { debug, info, warning, error };
+
 // Progress a workspace reports while it prepares modules and indexes.
 struct Status {
     std::size_t units { 0 };            // compile commands known
@@ -243,6 +246,9 @@ struct Status {
     std::vector<ModuleFailure> failures;
     std::size_t commands_rejected { 0 };    // every rejection seen, by module builds and parses
     std::vector<RejectedCommand> rejected;  // the first few
+    // What the backend counted since it started ("modules.build", "parse.parse", ...): for reports
+    // and for finding out where time and work went.
+    std::vector<std::pair<std::string, std::int64_t>> counters;
 };
 
 // A parsed file: the snapshot one version of its text produced. Immutable once returned, so any
@@ -277,8 +283,10 @@ public:
         std::string resource_directory;   // the backend's builtin headers (Clang: lib/clang/<v>)
         unsigned workers { 0 };           // 0: a quarter of the hardware threads, at least 1
         bool background_index { true };
-        // Where the backend's own log lines go (never standard output).
-        std::function<void(std::string_view line)> log;
+        // Where the backend's own log lines go (never standard output): each with its level and
+        // category ("modules", "parse", "index", "complete", "workspace"). Which ones are produced is
+        // MCXX_LOG's to say (mcxx.base.trace); failures always are.
+        std::function<void(LogLevel level, std::string_view category, std::string_view message)> log;
         // Called, from any thread, whenever status() changed.
         std::function<void()> changed;
     };

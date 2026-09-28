@@ -71,7 +71,9 @@ int main(int argc, char** argv) {
     options.cache_directory = cache.empty() ? std::string { "/tmp/mcxx-probe-cache" } : cache;
     options.resource_directory = resource;
     options.workers = std::max(1u, std::thread::hardware_concurrency() / 2);
-    options.log = [&](std::string_view line) { std::println(std::cerr, "[{:7.2f}] {}", seconds_since(started), line); };
+    options.log = [&](mcxx::msa::LogLevel, std::string_view category, std::string_view line) {
+        std::println(std::cerr, "[{:7.2f}] {}: {}", seconds_since(started), category, line);
+    };
     auto workspace = mcxx::backend::make_workspace(options);
     workspace->set_commands(load(db));
     std::println(std::cerr, "[{:7.2f}] {} commands, {} modules", seconds_since(started), workspace->status().units, workspace->status().modules);
@@ -100,6 +102,7 @@ int main(int argc, char** argv) {
         std::println(std::cerr, "[{:7.2f}] index: {} of {} units; modules ready {} failed {}", seconds_since(started), s.indexed, s.units, s.modules_ready,
                      s.modules_failed);
         for (const auto& f : s.failures) std::println(std::cerr, "    failed {} ({}): {}", f.module, f.cause, f.reason.substr(0, 300));
+        for (const auto& [name, value] : s.counters) std::println(std::cerr, "    count {} = {}", name, value);
     }
     for (const auto& [where, method] : asks) {
         const auto colon = where.find(':');
