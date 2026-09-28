@@ -147,6 +147,8 @@ constexpr std::size_t CLANG_STACK { std::size_t { 16 } << 20 };
 constexpr std::size_t NOTE_DISTANCE { std::size_t { 9 } << 20 };
 constexpr std::size_t NOTE_STACK { std::size_t { 64 } << 10 };
 
+thread_local bool on_clang_stack { false };
+
 void run_on_clang_stack(const std::function<void()>& body) {
     if constexpr (!STACK_SWITCH) {
         body();
@@ -161,6 +163,7 @@ void run_on_clang_stack(const std::function<void()>& body) {
     mcxx_call_on_stack(reinterpret_cast<void*>(top),
                        [](void* p) {
                            // Nothing unwinds across the switch: an exception ends here.
+                           on_clang_stack = true;
                            try {
                                (*static_cast<const std::function<void()>*>(p))();
                            } catch (...) {
@@ -188,8 +191,11 @@ public:
         cv_.notify_all();
         for (auto& t : threads_) t->join();
     }
+    // Runs `f` on one of the pool's threads and waits; inline when the caller already runs on a
+    // Clang stack (so a pool thread never waits on its own pool).
     template <class F>
     auto run(F&& f) -> decltype(f()) {
+        if (on_clang_stack) return f();
         using R = decltype(f());
         std::packaged_task<R()> task { std::forward<F>(f) };
         auto result = task.get_future();
@@ -1014,8 +1020,9 @@ void collect_symbols(const cl::DeclContext* dc, const cl::SourceManager& sm, con
 class UnitImpl final : public msa::Unit {
 public:
     UnitImpl(std::unique_ptr<cl::ASTUnit> ast, std::string path, std::string text, std::int64_t version, std::string module,
-             std::vector<msa::Diagnostic> extra)
-        : ast_ { std::move(ast) }, path_ { std::move(path) }, text_ { std::move(text) }, version_ { version }, module_ { std::move(module) } {
+             std::vector<msa::Diagnostic> extra, ClangPool* pool)
+        : pool_ { pool }, ast_ { std::move(ast) }, path_ { std::move(path) }, text_ { std::move(text) }, version_ { version },
+          module_ { std::move(module) } {
         diagnostics_ = std::move(extra);
         if (!ast_) return;
         for (auto& d : diagnostics_of(*ast_)) diagnostics_.push_back(std::move(d));
@@ -1049,6 +1056,10 @@ public:
     std::span<const msa::Occurrence> occurrences() const override { return occurrences_; }
 
     std::vector<msa::Symbol> symbols() const override {
+        return pool_->run([&] { return symbols_(); });
+    }
+
+    std::vector<msa::Symbol> symbols_() const {
         std::lock_guard lock { mutex_ };
         std::vector<msa::Symbol> out;
         if (!ast_) return out;
@@ -1069,6 +1080,10 @@ public:
     }
 
     std::optional<msa::Entity> entity(std::string_view id) const override {
+        return pool_->run([&] { return entity_(id); });
+    }
+
+    std::optional<msa::Entity> entity_(std::string_view id) const {
         std::lock_guard lock { mutex_ };
         const auto it = decls_.find(std::string { id });
         if (it == decls_.end()) return std::nullopt;
@@ -1076,6 +1091,10 @@ public:
     }
 
     std::vector<Location> overriders(std::string_view id) const override {
+        return pool_->run([&] { return overriders_(id); });
+    }
+
+    std::vector<Location> overriders_(std::string_view id) const {
         std::lock_guard lock { mutex_ };
         std::vector<Location> out;
         const auto it = decls_.find(std::string { id });
@@ -1102,6 +1121,7 @@ public:
     }
 
 private:
+    ClangPool* pool_;            // the Workspace's: AST access runs on a Clang stack
     mutable std::mutex mutex_;   // the AST loads declarations from interfaces lazily; one reader at a time
     std::unique_ptr<cl::ASTUnit> ast_;
     std::string path_;
@@ -1460,7 +1480,8 @@ public:
         std::vector<msa::Diagnostic> extra { std::move(request->failures) };
         auto ast = parse_ast(request->parse);
         if (cancel.stop_requested()) return nullptr;
-        auto unit = std::make_shared<UnitImpl>(std::move(ast), path, std::move(request->parse.text), version, request->module, std::move(extra));
+        auto unit = std::make_shared<UnitImpl>(std::move(ast), path, std::move(request->parse.text), version, request->module, std::move(extra),
+                                               foreground_.get());
         {
             std::lock_guard lock { mutex_ };
             latest_[path] = unit;
