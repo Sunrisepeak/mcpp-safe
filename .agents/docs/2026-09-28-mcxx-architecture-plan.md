@@ -77,7 +77,8 @@ mcpp-safe/                              workspace 根；根包就是 mcxx 驱动
 │   ├── testing/         mcxx.testing         最小的具名模块测试框架
 │   ├── msa/             mcxx.msa             MC++ 语义 API 与事实（MC3）
 │   ├── graph/           mcxx.graph           模块声明的词法扫描、模块图（方案里原名 modules/）
-│   ├── plugin/          插件核心：sdk/（mcxx.plugin，MC4）；以后还有 host/（mcxx compose、进程外宿主）、remote/
+│   ├── plugin/          插件核心：sdk/（mcxx.plugin，MC4）、wire/（MC3/MC4 的 JSON）、remote/（进程外插件一侧）、host/（进程外宿主、故障隔离）
+│   ├── driver/          mcxx.driver：驱动的全部命令（MC5），包括 mcxx compose；根包 src/ 只链接插件
 │   ├── features/        mcxx.features        特性门禁（MC1）：配置、作用域、级别、豁免、审计
 │   ├── lsp/             mcxx.lsp             面向编辑器的 LSP 形态服务（MC6；方案里原名 service/）
 │   └── backend/         后端。**Clang 只能出现在这里的两个 clang* 包里**

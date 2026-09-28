@@ -1,0 +1,24 @@
+# The JSON forms MC++'s plugins speak: MC3 facts (specs/mc3-facts.md §4.11) and the MC4 protocol's
+# messages (specs/mc4-plugins.md §6). Both sides use it: the host (mcxx.plugin.host) and a plugin
+# process (mcxx.plugin.remote). No backend.
+[package]
+name        = "mcxx-plugin-wire"
+version     = "0.1.0"
+description = "MC++ plugin wire formats: MC3 facts and MC4 protocol messages as JSON"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugin-wire]
+kind = "lib"
+
+[dependencies]
+mcxx-msa    = { path = "../../msa" }
+mcxx-plugin = { path = "../sdk" }
+
+[dependencies.nlohmann]
+json = "3.12.0"
+
+[dev-dependencies]
+mcxx-testing = { path = "../../testing" }
+
+[lib]
+path = "src/wire.cppm"

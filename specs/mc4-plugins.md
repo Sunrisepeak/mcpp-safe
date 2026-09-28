@@ -56,10 +56,10 @@ acme-rules = { path = "tools/acme-rules" }               # static: an mcpp packa
 gcc-lint   = { command = ["tools/gcc-lint/bin/gcc-lint"], timeout-ms = 5000 }   # out of process
 ```
 
-- An entry with `path` or `version` is static; one with `command` is out of process; an entry with both or neither is an error. <a id="MC4-3-2"></a><sup>MC4-3-2</sup>
+- An entry with `path` or `version` is static; one with `command` is out of process; an entry with both or neither is an error. <a id="MC4-3-2"></a><sup>MC4-3-2</sup> The entry's name is how the package calls the plugin; a `version` entry's name is the plugin's package name, and a `path` entry's package is whatever the manifest at the path names.
 - **`mcxx compose`** builds the package's compiler: a temporary mcpp workspace holding a program that links the MC++ driver, its standard plugins and the package's static plugins, cached under a hash of that set; it MUST NOT relink when the set and the plugins' sources are unchanged. <a id="MC4-3-3"></a><sup>MC4-3-3</sup>
 - A compiler invoked for a file whose package declares static plugins it does not have MUST run the composed compiler for that package when there is one, and otherwise MUST fail and say to run `mcxx compose`; it MUST NOT compile without them. <a id="MC4-3-4"></a><sup>MC4-3-4</sup>
-- Out-of-process plugins are started by the host that needs them; a relative `command[0]` is relative to the manifest's directory. <a id="MC4-3-5"></a><sup>MC4-3-5</sup>
+- Out-of-process plugins are started by the host that needs them, in the directory of the manifest that declares them; a relative `command[0]` is relative to that directory. <a id="MC4-3-5"></a><sup>MC4-3-5</sup>
 
 ## 4. Resolution and overriding
 
@@ -75,7 +75,7 @@ A host resolves every provider it has into one **catalog** before it gates anyth
 
 ## 5. Failures
 
-A plugin that crashes, exits, does not answer within its time limit, or answers what this specification does not allow MUST NOT make the compilation crash or hang. <a id="MC4-5-1"></a><sup>MC4-5-1</sup> The host reports, at the file, which plugin failed, on which file, and why; the features that plugin was asked for are then not checked for that file. <a id="MC4-5-2"></a><sup>MC4-5-2</sup> The report is an error when one of those features is at `deny` for the file (a gate that could not be checked does not pass), and a warning otherwise. <a id="MC4-5-3"></a><sup>MC4-5-3</sup> The diagnostic's code is `mcxx-plugin`. <a id="MC4-5-4"></a><sup>MC4-5-4</sup>
+A plugin that crashes, exits, does not answer within its time limit, or answers what this specification does not allow MUST NOT make the compilation crash or hang. <a id="MC4-5-1"></a><sup>MC4-5-1</sup> The host reports, at the file, which plugin failed, on which file, and why; the features that plugin was asked for are then not checked for that file. <a id="MC4-5-2"></a><sup>MC4-5-2</sup> The report is an error when one of those features is at `deny` for the file (a gate that could not be checked does not pass), and a warning otherwise. <a id="MC4-5-3"></a><sup>MC4-5-3</sup> The diagnostic's code is `mcxx-plugin`. <a id="MC4-5-4"></a><sup>MC4-5-4</sup> A plugin a package declares that cannot be started or does not complete its handshake, or a static plugin the compiler was not composed with, gates what is unknown: every file of the package gets an error in a compilation (an editor, which cannot compose, MAY make it a warning). <a id="MC4-5-5"></a><sup>MC4-5-5</sup>
 
 ## 6. The out-of-process protocol (version 1)
 

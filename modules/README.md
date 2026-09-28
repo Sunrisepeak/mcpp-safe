@@ -24,6 +24,8 @@ libmc++ 是 MC++ 的可复用部分。每个目录都是一个独立的 mcpp 包
 | 语义 API | `msa` | 只有 std |
 | 模块事实 | `graph` | std |
 | 插件核心 | `plugin/sdk` | `msa` |
+| 插件的进程外格式与两端 | `plugin/wire`、`plugin/remote`、`plugin/host` | `msa`、`plugin/sdk`、nlohmann.json；`host` 另外依赖 `features`、`base` |
+| 驱动 | `driver` | 上面各层和两个门面（不含 Clang 头文件） |
 | 门禁与内置 provider | `features`（门禁、`mc++.iso`） | `base`、`msa`、`plugin/sdk` |
 | 服务 | `lsp` | `base`、`msa`、nlohmann.json |
 | 门面 | `backend/semantic`、`backend/compiler` | 各自的后端实现（不含 Clang 头文件） |
@@ -44,7 +46,8 @@ libmc++ 是 MC++ 的可复用部分。每个目录都是一个独立的 mcpp 包
 | [`testing`](testing/README.md) | `mcxx.testing` | 测试框架 | — |
 | [`msa`](msa/README.md) | `mcxx.msa` | MC++ 语义 API：位置、诊断、实体、Unit/Workspace 接口、事实（MC3） | M0.4 |
 | [`graph`](graph/README.md) | `mcxx.graph` | 按词法扫描模块声明，建立模块图 | — |
-| [`plugin`](plugin/README.md) | `mcxx.plugin` | 插件 SDK（MC4）：规则、源码过滤器、注册表 | M0.6 |
+| [`plugin`](plugin/README.md) | `mcxx.plugin`、`.wire`、`.remote`、`.host` | 插件 SDK（MC4）与进程外插件：provider、Catalog、协议 1、故障隔离 | M0.6 |
+| [`driver`](driver/README.md) | `mcxx.driver` | mcxx 驱动（MC5）：命令、`mcxx features`、`mcxx compose` | M0.5、M0.6 |
 | [`features`](features/README.md) | `mcxx.features`、`mcxx.features.iso` | 特性门禁（MC1）：配置、profile、作用域、级别、豁免、审计、Plan；内置 provider `mc++.iso`（ISO 特性控制） | M0.3、M0.7 |
 | [`lsp`](lsp/README.md) | `mcxx.lsp` | 基于 MSA 的 LSP 形态服务（MC6），不含传输层 | M1.3 |
 | [`backend`](backend/README.md) | `mcxx.backend*` | 后端：两个门面，以及基于 Clang 23.1 的两个实现 | M0.4、M0.5 |

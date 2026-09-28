@@ -32,9 +32,9 @@
 | # | 状态 | 说明 |
 |---|---|---|
 | M0.5 驱动 | ⏳ | 根包 `mcxx`：`mcxx c++/cc`（也可以用 clang++、clang、c++、cc 这些名字调用）以及 `mcxx check`；V0.6 的工具链 payload 还在进行 |
-| M0.8 规范 | 🟡 | A0.8.1：`specs/` 下 MC1、MC3、MC4、MC5 都有正文、schema、示例和要求 id。`tools/checks/specs.py` 通过：316 项检查，99 条要求中 77 条有证据，其余 22 条列在 `$pending` 里，等待 M0.6 协议、A0.5.1、A0.5.2 和 V0.6。已经进入 CI。<br>这项检查发现并修复了一个缺陷：先 `--precompile`、再用 `-c` 编译 `.pcm` 时，门禁会报告两次。A0.8.2、A0.8.3 还有部分未完成 |
+| M0.8 规范 | 🟡 | A0.8.1：`specs/` 下 MC1、MC3、MC4、MC5 都有正文、schema、示例和要求 id。`tools/checks/specs.py` 通过：316 项检查，100 条要求中 97 条有证据，其余 3 条列在 `$pending` 里，等待 A0.5.1、A0.5.2 和 V0.6。已经进入 CI。<br>这项检查发现并修复了一个缺陷：先 `--precompile`、再用 `-c` 编译 `.pcm` 时，门禁会报告两次。A0.8.2、A0.8.3 还有部分未完成 |
 | M0.3 门禁 | 🟡 | 以下各项已实现，并由 `modules/features/tests` 覆盖：<br>- 配置：`profile` 可以是一个或多个；包、模块、命名空间的级别；未知的 id 和 profile 报警告；<br>- 优先级；<br>- 豁免与审计（`MCXX_AUDIT`）。<br>A0.3.1（MC1 草案，schema 与示例校验）✅；A0.3.2（`test_spec`：`mcpp.toml` 示例逐项等于规范的 JSON）✅ |
-| M0.6 插件 | 🟡 | SDK v0 已实现：<br>- 扩展点：规则、源码过滤器、profile；<br>- 覆盖：特性、provider、profile；<br>- `mcxx features`。<br>`mcxx compose`（A0.6.1）、进程外协议（A0.6.2）和故障隔离（A0.6.3）未做 |
+| M0.6 插件 | 🟡 | **A0.6.1** ✅ `mcxx compose`（`modules/driver`）：<br>- 第一次组合约 5 分钟，不变时约 6 s 且不重新链接；<br>- 编译时自动交给组合好的编译器；<br>- 缺少组合时报错；<br>- 端到端检查：`tools/checks/compose.py`，已进入 CI。<br>**A0.6.2** ✅ 进程外协议 1：`modules/plugin/{wire,remote,host}`。示例插件 `plugins/examples/naming-remote` 用 GCC 16 + libstdc++ 构建，经由进程外协议对同一个文件给出的诊断，和把 `plugins/examples/naming` 静态组合进来的 mcxx 完全相同（`tools/checks/compose.py --remote`，已进入 CI）。为此，只依赖 std 的包（`msa`、`plugin/{sdk,wire,remote}`）不再声明 openkal-llvm-runtime，因为这个运行时只允许 LLVM 编译器，由最终的程序来声明。<br>**A0.6.3** ✅ 崩溃、超时、乱码、协议不符都报告为 `mcxx-plugin`，编译器不崩溃、不卡住（`test_host` 故障注入）。<br>**A0.6.4** ✅ MC4 0.1.0 |
 | M0.7 mc++.safe | 🟡 | **A0.7.1**：`mc++.iso` 共 15 个 ISO 特性，都带 stable name；profile `safe` 覆盖 10 个未定义行为来源；插件样例 `raw-pointers`、`lib:std.vector`、`ext:cfg`。<br>**A0.7.2**：19 个特性、20 个程序、41 个文件，精确率和召回率都是 100%（`mcxx-conformance`）。<br>**A0.7.3**：跨模块用例。<br>**A0.7.4**：`test_override`。<br>**A0.7.5**：诊断带 id、改法和豁免方法。<br>还差 MC1 的示例文件 |
 
 M0.x、M1.x、M2.x、MS 各项按里程碑文档的编号逐项补到这里。

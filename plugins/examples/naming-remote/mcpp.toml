@@ -1,0 +1,17 @@
+# example.naming as its own program, served over MC4 protocol 1 (../naming is the rule). Builds with
+# any toolchain: CI builds it with GCC 16 and libstdc++ (A0.6.2). A package declares it as
+#   [package.metadata.mcxx.plugins]
+#   naming = { command = ["<path to>/mcxx-example-naming-remote"] }
+[package]
+name        = "mcxx-example-naming-remote"
+version     = "0.1.0"
+description = "The example MC++ plugin example.naming, run out of process"
+license     = "Apache-2.0"
+
+[targets.mcxx-example-naming-remote]
+kind = "bin"
+main = "src/main.cpp"
+
+[dependencies]
+mcxx-example-naming = { path = "../naming" }
+mcxx-plugin-remote  = { path = "../../../modules/plugin/remote" }

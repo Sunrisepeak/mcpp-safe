@@ -45,6 +45,17 @@ int main() {
         expect(c.problems.empty() && c.profiles == std::vector<std::string> { "safe" });
     };
 
+    "a plugin entry is static or out of process, exactly one; the specification's example reads"_test = [&] {
+        const auto example = features::read_config((repository() / "specs/examples/mc4-plugins.toml").generic_string());
+        expect(example.problems.empty() && example.plugins.size() == 3) << (example.problems.empty() ? "" : example.problems.front());
+        const auto lint = std::ranges::find(example.plugins, "gcc-lint", &features::PluginEntry::name);
+        expect(lint != example.plugins.end() && !lint->is_static() && lint->timeout == std::chrono::milliseconds { 5000 });
+        const auto both = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx.plugins]\nx = { path = \"a\", command = [\"b\"] }\n");
+        const auto neither = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx.plugins]\nx = { timeout-ms = 5 }\n");
+        expect(both.plugins.empty() && both.problems.size() == 1 && both.problems[0].contains("MC4-3-2"));
+        expect(neither.plugins.empty() && neither.problems.size() == 1);
+    };
+
     "the example's precedence: partition over module over profiles; a namespace over the package"_test = [&] {
         const auto plan = features::make_plan(features::read_config(manifest.generic_string()));
         const auto* array = plan.gate("c-array");

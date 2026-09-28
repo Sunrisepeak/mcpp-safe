@@ -1,0 +1,17 @@
+# An example plugin: snake_case names (policy). The same package is composed statically into a
+# package's compiler (`mcxx compose`) or served out of process (../naming-remote): MC4 §3.
+[package]
+name        = "mcxx-example-naming"
+version     = "0.1.0"
+description = "An example MC++ plugin: declared names are snake_case"
+license     = "Apache-2.0"
+
+[targets.mcxx-example-naming]
+kind = "lib"
+
+[dependencies]
+mcxx-msa    = { path = "../../../modules/msa" }
+mcxx-plugin = { path = "../../../modules/plugin/sdk" }
+
+[lib]
+path = "src/naming.cppm"

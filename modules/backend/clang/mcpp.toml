@@ -18,6 +18,7 @@ mcxx-msa      = { path = "../../msa" }
 mcxx-graph    = { path = "../../graph" }
 mcxx-plugin   = { path = "../../plugin/sdk" }
 mcxx-features = { path = "../../features" }
+mcxx-plugin-host = { path = "../../plugin/host" }   # out-of-process plugins, the composed set
 
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).

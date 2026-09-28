@@ -1,28 +1,9 @@
 {
  "$comment": "Rule identifiers of MC1, MC3, MC4 and MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
  "$pending": {
-  "MC3-4.11-2": "the JSON reader and writer of facts come with the out-of-process protocol (task #5, mcxx.plugin.wire)",
-  "MC4-3-2": "[package.metadata.mcxx.plugins] is read with mcxx compose (task #5)",
-  "MC4-3-3": "mcxx compose (task #5, A0.6.1)",
-  "MC4-3-4": "mcxx compose (task #5, A0.6.1)",
-  "MC4-3-5": "the out-of-process host (task #5, A0.6.2)",
-  "MC4-5-1": "fault isolation of out-of-process plugins (task #5, A0.6.3)",
-  "MC4-5-2": "fault isolation (task #5, A0.6.3)",
-  "MC4-5-3": "fault isolation (task #5, A0.6.3)",
-  "MC4-5-4": "fault isolation (task #5, A0.6.3)",
-  "MC4-6.1-1": "the out-of-process protocol (task #5, A0.6.2)",
-  "MC4-6.1-2": "the out-of-process protocol (task #5)",
-  "MC4-6.1-3": "the out-of-process protocol (task #5)",
-  "MC4-6.2-1": "the out-of-process protocol (task #5)",
-  "MC4-6.2-2": "the out-of-process protocol (task #5)",
-  "MC4-6.2-3": "the out-of-process protocol (task #5)",
-  "MC4-6.3-1": "the out-of-process protocol (task #5)",
-  "MC4-6.3-2": "the out-of-process protocol (task #5)",
-  "MC4-6.3-3": "the same fixtures in process and out of process (task #5, A0.6.2)",
   "MC5-3-1": "the corpus check on C-mcppls against clang 23.1 -fsyntax-only (A0.5.1)",
   "MC5-6-2": "the argument-normalization fixture (A0.5.2)",
-  "MC5-7-1": "mcxx as an mcpp toolchain payload (V0.6, E-XIM-1)",
-  "MC4-6.1-4": "the out-of-process protocol (task #5); the examples validate today (specs.py)"
+  "MC5-7-1": "mcxx as an mcpp toolchain payload (V0.6, E-XIM-1)"
  },
  "MC1-2-1": [
   {
@@ -318,7 +299,7 @@
    "validate": "mcxx features exits 0 without conflicts"
   },
   {
-   "script": "src/main.cpp",
+   "script": "modules/driver/src/commands.cpp",
    "contains": "return catalog->problems.empty() ? 0 : 1;"
   }
  ],
@@ -527,7 +508,7 @@
  ],
  "MC5-2-1": [
   {
-   "script": "src/main.cpp",
+   "script": "modules/driver/src/commands.cpp",
    "contains": "compiler::run_as(command == \"c++\" ? \"c++\" : \"c\", argv[0], std::move(rest))"
   }
  ],
@@ -539,13 +520,13 @@
  ],
  "MC5-2-3": [
   {
-   "script": "src/main.cpp",
+   "script": "modules/driver/src/commands.cpp",
    "contains": "std::string_view { argv[1] }.starts_with(\"-cc1\")"
   }
  ],
  "MC5-2-4": [
   {
-   "script": "src/main.cpp",
+   "script": "modules/driver/src/commands.cpp",
    "contains": "rest.push_back(\"-fsyntax-only\")"
   }
  ],
@@ -596,6 +577,158 @@
   {
    "script": "modules/backend/clang/src/support.cppm",
    "contains": "What remains describes the program and is what a cached interface is keyed on"
+  }
+ ],
+ "MC3-4.11-2": [
+  {
+   "test": "modules/plugin/wire/tests/test_wire.cpp: the specification's example facts are read, and written again unchanged"
+  },
+  {
+   "test": "modules/plugin/wire/tests/test_wire.cpp: every kind of fact survives a round trip"
+  }
+ ],
+ "MC4-3-2": [
+  {
+   "test": "modules/features/tests/test_spec.cpp: a plugin entry is static or out of process, exactly one; the specification's example reads"
+  }
+ ],
+ "MC4-3-3": [
+  {
+   "script": "modules/driver/src/commands.cpp",
+   "contains": "(MC4-3-3)"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "not relinked (MC4-3-3)"
+  }
+ ],
+ "MC4-3-4": [
+  {
+   "script": "modules/driver/src/commands.cpp",
+   "contains": "(MC4-3-4)"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: a package's out-of-process plugin gates its files; a static plugin not composed in is said"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "the same check is handed to the composed compiler"
+  }
+ ],
+ "MC4-3-5": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: a package's out-of-process plugin gates its files; a static plugin not composed in is said"
+  },
+  {
+   "script": "modules/plugin/host/src/host.cppm",
+   "contains": "(MC4-3-5)"
+  }
+ ],
+ "MC4-5-1": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that crashes on a request is reported at the file, an error where its feature is denied"
+  },
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that does not answer in time is killed and reported; a warn feature's failure is a warning"
+  }
+ ],
+ "MC4-5-2": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that crashes on a request is reported at the file, an error where its feature is denied"
+  }
+ ],
+ "MC4-5-3": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that crashes on a request is reported at the file, an error where its feature is denied"
+  },
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that does not answer in time is killed and reported; a warn feature's failure is a warning"
+  }
+ ],
+ "MC4-5-4": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that crashes on a request is reported at the file, an error where its feature is denied"
+  }
+ ],
+ "MC4-5-5": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: a package's out-of-process plugin gates its files; a static plugin not composed in is said"
+  }
+ ],
+ "MC4-6.1-1": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin out of process finds what the same rule finds in process"
+  },
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: check and filter are answered with their ids; shutdown ends the session"
+  }
+ ],
+ "MC4-6.1-2": [
+  {
+   "script": "modules/plugin/remote/src/remote.cppm",
+   "contains": "Nothing but messages goes to the output"
+  },
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"
+  }
+ ],
+ "MC4-6.1-3": [
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: check and filter are answered with their ids; shutdown ends the session"
+  }
+ ],
+ "MC4-6.1-4": [
+  {
+   "validate": "MC4 example validates: mc4-session.jsonl"
+  },
+  {
+   "test": "modules/plugin/wire/tests/test_wire.cpp: a message is one line, and only an object with a type is one"
+  }
+ ],
+ "MC4-6.2-1": [
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: hello: the plugin chooses protocol 1 and describes its providers"
+  },
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"
+  }
+ ],
+ "MC4-6.2-2": [
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: a host that speaks no protocol this side does gets an error, and the plugin exits"
+  },
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"
+  }
+ ],
+ "MC4-6.2-3": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin out of process finds what the same rule finds in process"
+  }
+ ],
+ "MC4-6.3-1": [
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: what cannot be served is an error with the request's id, and the session goes on"
+  }
+ ],
+ "MC4-6.3-2": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin out of process finds what the same rule finds in process"
+  },
+  {
+   "test": "modules/plugin/remote/tests/test_remote.cpp: check and filter are answered with their ids; shutdown ends the session"
+  }
+ ],
+ "MC4-6.3-3": [
+  {
+   "test": "modules/plugin/host/tests/test_host.cpp: a plugin out of process finds what the same rule finds in process"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "the plugin out of process gives the static composition's diagnostics, exactly (MC4-6.3-3)"
   }
  ]
 }

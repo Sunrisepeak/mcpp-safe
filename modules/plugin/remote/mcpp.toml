@@ -1,0 +1,25 @@
+# The plugin side of MC4's out-of-process protocol: a program that links plugin packages and calls
+# mcxx::plugin::remote::serve() serves their providers -- the same registrations a static
+# composition uses -- to a host over standard input and output (specs/mc4-plugins.md §6).
+[package]
+name        = "mcxx-plugin-remote"
+version     = "0.1.0"
+description = "MC++ plugins out of process: serves the providers linked into a program over MC4 protocol 1"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugin-remote]
+kind = "lib"
+
+[dependencies]
+mcxx-msa         = { path = "../../msa" }
+mcxx-plugin      = { path = "../sdk" }
+mcxx-plugin-wire = { path = "../wire" }
+
+[dependencies.nlohmann]
+json = "3.12.0"
+
+[dev-dependencies]
+mcxx-testing = { path = "../../testing" }
+
+[lib]
+path = "src/remote.cppm"

@@ -23,6 +23,8 @@
 | 纯逻辑单元测试 | `mcpp test -p modules/base`、`-p modules/graph` | 几秒 | trace、扫描器、模块图 |
 | LSP 层 | `mcpp test -p modules/lsp` | 约 3 s | 假后端（`FakeWorkspace`）：UTF-16 位置换算、诊断推送、跳转、悬停、引用、symbolInfo、调用层级 |
 | 门禁和内置 provider | `mcpp test -p modules/features` | 几秒 | 只用事实：`mc++.iso` 的 15 个特性、profile（safe、modules、strict，多个同时使用）、Plan、作用域、豁免、未知的 id；插件覆盖内置特性、冲突、重新定义 profile、取代整个 provider |
+| 插件的进程外格式与两端 | `mcpp test -p modules/plugin/wire`、`-p modules/plugin/remote`、`-p modules/plugin/host` | 各几秒 | JSON 往返；插件一侧的协议；宿主：进程内外结果一致，崩溃、超时、乱码、协议不符（shell 脚本注入） |
+| 静态组合 | `python3 tools/checks/compose.py --mcxx <mcxx>` | 第一次约 5 分钟，之后几秒 | 端到端：拒绝、组合、交给组合好的编译器、不重新链接 |
 | 插件（规则、过滤器） | `mcpp test -p plugins/std`、`-p plugins/libs` | 几秒 | 只用事实和文本：`raw-pointers`、`lib:std.vector`、`[[mcpp::cfg]]` 和 `ext:cfg`（profile portable）、json-brace-init（包括没有 nlohmann 时不问它） |
 | 规范 | `python3 tools/checks/specs.py [--mcxx 路径]` | 约 1 s | 规范的 schema、示例、反例、要求 id 与可追溯性；带 `--mcxx` 时加上真实的驱动输出 |
 | 门禁 fixture | `mcpp build -p tools/conformance`，然后运行 `mcxx-conformance conformance/gates` | 约 10 s | 19 个特性，每个至少 5 正 5 反，精确率和召回率都要 100% |

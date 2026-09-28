@@ -267,6 +267,38 @@ int main() {
     };
 
 
+    "a package's out-of-process plugin gates its files; a static plugin not composed in is said"_test = [] {
+        Program p { "plugins" };
+        // A plugin in shell (MC4 protocol 1): it welcomes, then answers each check with one finding.
+        std::ofstream { p.root / "lint.sh" }
+            << "#!/bin/sh\nread l\n"
+               "echo '{\"type\":\"welcome\",\"id\":0,\"protocol\":1,\"providers\":[{\"name\":\"acme.lint\",\"extension-points\":[\"rule\"],"
+               "\"features\":[{\"id\":\"acme-lint\",\"category\":\"policy\",\"summary\":\"s\",\"default\":\"deny\",\"waivable\":true,"
+               "\"needs\":[\"declarations\"]}],\"profiles\":[],\"replaces\":[]}]}'\n"
+               "n=1\nwhile read l; do echo \"{\\\"type\\\":\\\"findings\\\",\\\"id\\\":$n,\\\"findings\\\":[{\\\"feature\\\":\\\"acme-lint\\\","
+               "\\\"range\\\":{\\\"begin\\\":{\\\"line\\\":0,\\\"column\\\":4},\\\"end\\\":{\\\"line\\\":0,\\\"column\\\":9}},"
+               "\\\"message\\\":\\\"linted\\\",\\\"container\\\":\\\"\\\"}]}\"; n=$((n+1)); done\n";
+        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx.plugins]\n"
+                   "lint = { command = [\"/bin/sh\", \"lint.sh\"] }\nacme-rules = { path = \"tools/acme-rules\" }\n");
+        const std::string text { "int value = 1;\n" };
+        const std::string file { p.file("src/a.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        const msa::Diagnostic* lint { nullptr };
+        const msa::Diagnostic* composed { nullptr };
+        for (const auto& d : unit->diagnostics()) {
+            if (d.code == "acme-lint") lint = &d;
+            if (d.code == "mcxx-plugin" && d.message.contains("acme-rules")) composed = &d;
+        }
+        std::string all;
+        for (const auto& d : unit->diagnostics()) all += std::format("[{}] {}\n", d.code, d.message);
+        expect(lint != nullptr && lint->severity == msa::Severity::error && lint->range.begin.column == 4) << "the plugin's finding, at its level: " << all;
+        expect(composed != nullptr && composed->severity == msa::Severity::warning && composed->message.contains("mcxx compose"))
+            << "the editor cannot compose: a warning";
+    };
+
+
     "new commands while an interface is being built: the build is redone, never taken as ready"_test = [] {
         // The shape of mcppls's plan changing under a build: a provisional plan (-std=c++26), then the
         // build tool's (-std=c++23). An interface built for the first must not reach the second's importers.

@@ -90,6 +90,15 @@ struct Finding {
     std::string container;      // the enclosing namespace, for namespace-scoped levels
 };
 
+// A provider that could not do what it was asked for a file -- a plugin process that crashed, did
+// not answer in time, or answered what MC4 does not allow (MC4 §5). The host reports it at the
+// file; the features were not checked there.
+struct Failure {
+    std::string provider;
+    std::string reason;
+    std::vector<std::string> features;
+};
+
 struct Context {
     std::string_view path;
     std::string_view module;    // "m", "m:p", or "" for a non-module unit
@@ -97,8 +106,14 @@ struct Context {
     // The features this rule is asked for: those it provides that are not `allow` anywhere in the
     // file. Null: all of them (a test, a listing).
     const std::vector<std::string>* wanted { nullptr };
+    std::vector<Failure>* failures { nullptr };
 
     bool wants(std::string_view id) const { return wanted == nullptr || std::ranges::find(*wanted, id) != wanted->end(); }
+    // Says that the rule could not check the features it was asked for here.
+    void fail(std::string provider, std::string reason) const {
+        if (failures == nullptr) return;
+        failures->push_back({ std::move(provider), std::move(reason), wanted != nullptr ? *wanted : std::vector<std::string> {} });
+    }
 };
 
 // What every plugin is: a name, what it can gate, the profiles it defines, and whom it stands in for.

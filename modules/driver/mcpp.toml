@@ -1,0 +1,25 @@
+# The MC++ compiler driver (MC5) as a library: `mcxx` (the root package) is its run() with MC++'s
+# standard plugins linked in, and `mcxx compose` generates a program that is its run() with a
+# package's static plugins linked in too (MC4 §3). No Clang here: the compiler is behind
+# mcxx.backend.compiler, and mcxx.backend links the gates into every compilation.
+[package]
+name        = "mcxx-driver"
+version     = "0.1.0"
+description = "The MC++ compiler driver: commands, the catalog listing, composition of static plugins"
+license     = "Apache-2.0"
+
+[targets.mcxx-driver]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-base             = { path = "../base" }
+mcxx-msa              = { path = "../msa" }
+mcxx-plugin           = { path = "../plugin/sdk" }
+mcxx-plugin-host      = { path = "../plugin/host" }
+mcxx-features         = { path = "../features" }
+mcxx-backend          = { path = "../backend/semantic" }   # links the gates (backend/clang :gate) into every compilation
+mcxx-backend-compiler = { path = "../backend/compiler" }
+
+[lib]
+path = "src/driver.cppm"

@@ -75,6 +75,37 @@ Config parse_config(std::string_view manifest_text, std::string manifest_path) {
             config.problems.push_back(where + ": profile is not a name or a list of names");
         }
     }
+    if (const auto it = mcxx->find("plugins"); it != mcxx->end()) {
+        if (!it->second.is_table()) config.problems.push_back(where + ": plugins is not a table");
+        else
+            for (const auto& [name, value] : it->second.as_table()) {
+                const std::string at { std::format("{}.plugins.{}", where, name) };
+                if (!value.is_table()) {
+                    config.problems.push_back(at + " is not a table");
+                    continue;
+                }
+                const auto& t = value.as_table();
+                PluginEntry entry { .name = name };
+                for (const auto& [key, v] : t) {
+                    if (key == "path" && v.is_string()) entry.path = v.as_string();
+                    else if (key == "version" && v.is_string()) entry.version = v.as_string();
+                    else if (key == "timeout-ms" && v.is_int() && v.as_int() > 0) entry.timeout = std::chrono::milliseconds { v.as_int() };
+                    else if (key == "command" && v.is_array()) {
+                        for (const auto& part : v.as_array())
+                            if (part.is_string()) entry.command.push_back(part.as_string());
+                        if (entry.command.size() != v.as_array().size() || entry.command.empty())
+                            config.problems.push_back(at + ": command is not a list of strings");
+                    } else config.problems.push_back(std::format("{}: {} is not something a plugin entry has", at, key));
+                }
+                // Exactly one way to reach it (MC4-3-2).
+                const int ways { !entry.path.empty() + !entry.version.empty() + !entry.command.empty() };
+                if (ways != 1) {
+                    config.problems.push_back(std::format("{}: a plugin is static (path or version) or out of process (command), exactly one of them (MC4-3-2)", at));
+                    continue;
+                }
+                config.plugins.push_back(std::move(entry));
+            }
+    }
     if (const auto it = mcxx->find("features"); it != mcxx->end() && it->second.is_table())
         read_levels(it->second.as_table(), config.package, where + ".features", config.problems);
     for (const auto& [key, into] : { std::pair { std::string_view { "modules" }, &config.modules },
@@ -259,15 +290,33 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
     const auto& catalog = *plan.catalog;
     std::vector<plugin::Finding> findings { prior.begin(), prior.end() };
     std::vector<plugin::Finding> one;
+    std::vector<plugin::Failure> failures;
     for (std::size_t i { 0 }; i < catalog.rules.size(); ++i) {
         const auto& wanted = selection.wanted[i];
         if (wanted.empty()) continue;
-        plugin::Context scoped { context.path, context.module, context.facts, &wanted };
+        plugin::Context scoped { context.path, context.module, context.facts, &wanted, &failures };
         one.clear();
         catalog.rules[i]->check(scoped, one);
         // A rule speaks for the features it was asked for, not for another provider's (MC4-2-2).
         for (auto& f : one)
             if (std::ranges::find(wanted, f.feature) != wanted.end()) findings.push_back(std::move(f));
+    }
+    // A provider that could not check (MC4 §5): an error when a feature it was asked for is denied
+    // here -- a gate that could not be checked does not pass -- and a warning otherwise.
+    for (const auto& f : failures) {
+        bool denied { false };
+        for (const auto& id : f.features) {
+            const Plan::Gate* g { plan.gate(id) };
+            if (g == nullptr) continue;
+            denied = denied || plan.level(*g, context.module, "") == Level::deny;
+            for (const auto& [name, levels] : plan.config.namespaces)
+                if (const auto it = levels.find(id); it != levels.end() && it->second == Level::deny) denied = true;
+        }
+        std::string ids;
+        for (const auto& id : f.features) ids += std::format("{}{}", ids.empty() ? "" : ", ", id);
+        result.diagnostics.push_back({ {}, denied ? msa::Severity::error : msa::Severity::warning,
+                                       std::format("plugin {} failed on this file: {}; not checked here: {}", f.provider, f.reason, ids.empty() ? "-" : ids),
+                                       "mcxx-plugin", "MC++ plugin", {} });
     }
     for (const auto& s : context.facts.suppressions)
         for (const auto& id : s.ids)

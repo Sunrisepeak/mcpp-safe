@@ -400,7 +400,7 @@ std::vector<msa::Diagnostic> diagnostics_of(cl::ASTUnit& ast) {
                 const std::size_t close { diagnostic.message.find(']', open) };
                 if (close == std::string::npos) break;
                 const std::string_view id { std::string_view { diagnostic.message }.substr(open + 1, close - open - 1) };
-                if (plugin::find_feature(id) != nullptr) {
+                if (plugin::find_feature(id) != nullptr || id == "mcxx-config" || id == "mcxx-plugin" || id == "mcxx-filter") {
                     diagnostic.code = std::string { id };
                     break;
                 }

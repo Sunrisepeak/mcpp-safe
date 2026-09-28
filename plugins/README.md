@@ -14,6 +14,8 @@ MC++ 第一方插件的实现。插件机制本身在 [`modules/plugin`](../modu
 | | | `mcxx.plugins.cfg`（`[[mcpp::cfg(...)]]`） | 源码过滤器 | `ext:cfg`（extension） |
 | [`libs`](libs/README.md) | `mcxx-plugins-libs` | `mcxx.plugins.json`（nlohmann::json） | 规则 | `json-brace-init`（pitfall） |
 
+[`examples/`](examples/README.md) 是同一个插件包的两种用法：静态组合（`naming`）和进程外（`naming-remote`，可以用 GCC 构建）。
+
 以后还会有：`mcpp-tools-safe`（对非 mcxx 工具链以 blocking check 运行 `mcxx check`，M1.5）和 `gpu`（GPU 区域插件，M3），各自一个目录。
 
 新增一个插件：放进主题相近的目录（新建一个模块单元，并在该包的 lib 根里 `export import` 它），或者新建一个目录。然后在 `tests/` 里只用事实做测试（不依赖 Clang，秒级），再在 `modules/backend/clang/tests` 里加一个经过 Clang 的用例、在 `conformance/gates` 里加正例和反例。

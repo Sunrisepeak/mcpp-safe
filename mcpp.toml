@@ -5,7 +5,9 @@
 #   modules/msa                       the MC++ semantic API and its facts (MC3)
 #   modules/graph                     module declarations scanned lexically, the module graph
 #   modules/plugin/sdk                the plugin SDK (MC4): providers, rules, source filters, profiles, the catalog
+#   modules/plugin/wire, remote, host MC4's JSON forms; a plugin process's side; the host's (processes, isolation)
 #   modules/features                  the feature gates (MC1) and MC++'s built-in provider mc++.iso
+#   modules/driver                    the mcxx driver (MC5): commands, the catalog listing, mcxx compose
 #   modules/lsp                       an LSP-shaped semantic service over MSA (MC6)
 #   modules/backend/semantic          mcxx.backend: the semantic facade (what mcppls links)
 #   modules/backend/compiler          mcxx.backend.compiler: the compiling facade (what mcxx links)
@@ -28,7 +30,11 @@ members = [
     "modules/msa",
     "modules/graph",
     "modules/plugin/sdk",
+    "modules/plugin/wire",
+    "modules/plugin/remote",
+    "modules/plugin/host",
     "modules/features",
+    "modules/driver",
     "modules/lsp",
     "modules/backend/semantic",
     "modules/backend/compiler",
@@ -67,14 +73,9 @@ ldflags = ["-Wl,--error-limit=0"]
 
 [dependencies]
 openkal-llvm-runtime = "0.15.2"
-mcxx-base              = { path = "modules/base" }
-mcxx-msa               = { path = "modules/msa" }
-mcxx-backend           = { path = "modules/backend/semantic" }
-mcxx-backend-compiler  = { path = "modules/backend/compiler" }
-mcxx-plugin            = { path = "modules/plugin/sdk" }   # `mcxx features`: the catalog
-mcxx-features          = { path = "modules/features" }     # the built-in provider mc++.iso, the gates
-# The plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose` makes a
-# project's own set later (A0.6.1).
+mcxx-driver            = { path = "modules/driver" }       # everything the driver does; this package only links plugins into it
+# MC++'s standard plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose`
+# builds a package's compiler with its own static plugins added (MC4 §3, A0.6.1).
 mcxx-plugins-std  = { path = "plugins/std" }
 mcxx-plugins-libs = { path = "plugins/libs" }
 

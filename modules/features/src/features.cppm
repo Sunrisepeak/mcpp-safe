@@ -37,8 +37,21 @@ export namespace mcxx::features {
 using plugin::Level;
 using LevelMap = std::map<std::string, Level, std::less<>>;
 
+// A plugin a package's code is compiled with (MC4 §3): static (`path` or `version`: an mcpp package
+// linked into the package's compiler by `mcxx compose`) or out of process (`command`).
+struct PluginEntry {
+    std::string name;
+    std::string path;                      // as written: relative to the manifest's directory
+    std::string version;
+    std::vector<std::string> command;
+    std::chrono::milliseconds timeout { 10000 };
+
+    bool is_static() const { return command.empty(); }
+};
+
 struct Config {
     std::string manifest;                  // the mcpp.toml it was read from ("" = none found)
+    std::vector<PluginEntry> plugins;
     std::vector<std::string> profiles;     // `profile = "safe"` or `profile = ["safe", "modules"]`
     LevelMap package;
     std::map<std::string, LevelMap, std::less<>> modules;

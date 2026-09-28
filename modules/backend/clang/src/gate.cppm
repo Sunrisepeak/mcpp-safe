@@ -83,6 +83,7 @@ import mcxx.graph;
 import mcxx.base;
 import mcxx.plugin;
 import mcxx.features;
+import mcxx.plugin.host;
 import :support;
 import :unit;
 import :facts;
@@ -149,7 +150,19 @@ public:
         // Absolute, as audit records and configuration lookup name files (MC1 §8), whatever the
         // command line spelled.
         if (std::error_code ec; fs::path { path }.is_relative()) path = normalize_path(fs::absolute(path, ec).generic_string());
-        const std::shared_ptr<const features::Plan> plan { features::plan_for(path) };
+        std::shared_ptr<const features::Plan> plan { features::plan_for(path) };
+        // The package's plugins (MC4 §3): out-of-process ones are started and join the catalog (the
+        // plan is then made again); static ones must be composed into this compiler.
+        std::vector<std::string> plugin_problems;
+        if (!plan->config.plugins.empty()) {
+            plugin_problems = plugin::host::load(plan->config);
+            for (const auto& entry : plan->config.plugins)
+                if (entry.is_static() && std::ranges::find(plugin::host::composed(), entry.name) == plugin::host::composed().end())
+                    plugin_problems.push_back(std::format("static plugin {} is not composed into this compiler: run `mcxx compose` in {} (MC4-3-4)",
+                                                          entry.name, fs::path { plan->config.manifest }.parent_path().generic_string()));
+            plan = features::plan_for(path);
+        }
+        report_plugin_problems(ctx, plugin_problems);
         if (plan->idle()) {
             base::trace::count("gates.idle");
             return;
@@ -181,7 +194,8 @@ public:
             const bool placed { d.range.begin != Position {} || d.range.end != Position {} };
             const cl::SourceLocation begin { placed ? sm.translateLineCol(main, d.range.begin.line + 1, d.range.begin.column + 1) : cl::SourceLocation {} };
             auto report = diags.Report(begin, id);
-            report << d.message;
+            // MC++'s own codes travel in the message, as a feature's id does (MC1-9-3).
+            report << (d.code.starts_with("mcxx-") && !d.message.contains("[" + d.code + "]") ? std::format("{} [{}]", d.message, d.code) : d.message);
             if (placed) report << cl::CharSourceRange::getCharRange(begin, sm.translateLineCol(main, d.range.end.line + 1, d.range.end.column + 1));
         }
         for (const auto& [unknown, where] : result.unknown) {
@@ -197,6 +211,17 @@ public:
 private:
     cl::CompilerInstance& ci_;
     std::vector<plugin::Finding> filtered_;   // the source filters' findings (an extension's uses)
+
+    // A plugin the package declares that is not there: what it gates is unknown, so a compilation
+    // fails (MC4-5-5); the editor's parse says so as a warning, since it cannot compose.
+    void report_plugin_problems(cl::ASTContext& ctx, const std::vector<std::string>& problems) {
+        if (problems.empty()) return;
+        auto& diags = ci_.getDiagnostics();
+        const auto& sm = ctx.getSourceManager();
+        const cl::SourceLocation top { sm.getLocForStartOfFile(sm.getMainFileID()) };
+        const unsigned id { diags.getCustomDiagID(on_clang_stack ? cl::DiagnosticsEngine::Warning : cl::DiagnosticsEngine::Error, "%0 [mcxx-plugin]") };
+        for (const auto& p : problems) diags.Report(top, id) << p;
+    }
 };
 
 // The target, as a source filter reads it (plugin::Target).
