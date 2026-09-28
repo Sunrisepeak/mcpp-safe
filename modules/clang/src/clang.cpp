@@ -87,7 +87,7 @@ using msa::Location;
 
 constexpr std::string_view CLANG_VERSION { "23.1.0" };
 // Bumped whenever what a cached interface depends on changes in this backend.
-constexpr std::string_view CACHE_EPOCH { "mcxx.clang/1" };
+constexpr std::string_view CACHE_EPOCH { "mcxx.clang/2" };   // 2: reduced interfaces
 
 // Every thread that runs Clang does so on a stack of its own of 16 MiB.
 //
@@ -138,12 +138,28 @@ constexpr bool STACK_SWITCH { false };
 
 constexpr std::size_t CLANG_STACK { std::size_t { 16 } << 20 };
 
+// Clang measures its stack from the bottom a thread noted, and past DesiredStackSize (8 MiB) minus
+// 256 KiB moves the rest of the work to a new thread "of 8 MiB" -- which openkal makes 256 KiB,
+// where the work overflows. A distance larger than DesiredStackSize reads to Clang as a stack it
+// does not understand, and it then never moves. So the bottom is noted once, from a small stack
+// placed 9 MiB above the real one, before any Clang code runs on the thread; Clang's own later
+// notes (FrontendAction, CompilerInstance) do not overwrite a bottom already noted.
+constexpr std::size_t NOTE_DISTANCE { std::size_t { 9 } << 20 };
+constexpr std::size_t NOTE_STACK { std::size_t { 64 } << 10 };
+
 void run_on_clang_stack(const std::function<void()>& body) {
-    std::unique_ptr<std::byte[]> memory { STACK_SWITCH ? new std::byte[CLANG_STACK] : nullptr };
-    const std::uintptr_t top { STACK_SWITCH ? (reinterpret_cast<std::uintptr_t>(memory.get()) + CLANG_STACK) & ~std::uintptr_t { 15 } : 0 };
+    if constexpr (!STACK_SWITCH) {
+        body();
+        return;
+    }
+    const std::size_t total { CLANG_STACK + NOTE_DISTANCE + NOTE_STACK };
+    std::unique_ptr<std::byte[]> memory { new std::byte[total] };
+    const auto base = reinterpret_cast<std::uintptr_t>(memory.get());
+    const std::uintptr_t top { (base + CLANG_STACK) & ~std::uintptr_t { 15 } };
+    const std::uintptr_t noteTop { (base + total) & ~std::uintptr_t { 15 } };
+    mcxx_call_on_stack(reinterpret_cast<void*>(noteTop), [](void*) { cl::noteBottomOfStack(true); }, nullptr);
     mcxx_call_on_stack(reinterpret_cast<void*>(top),
                        [](void* p) {
-                           cl::noteBottomOfStack(true);
                            // Nothing unwinds across the switch: an exception ends here.
                            try {
                                (*static_cast<const std::function<void()>*>(p))();
@@ -603,7 +619,7 @@ private:
         instance.createDiagnostics(&consumer, false);
         auto collector = std::make_shared<cl::DependencyCollector>();
         instance.addDependencyCollector(collector);
-        cl::GenerateModuleInterfaceAction action;
+        cl::GenerateReducedModuleInterfaceAction action;
         const auto started = std::chrono::steady_clock::now();
         const bool ok { instance.ExecuteAction(action) && !instance.getDiagnostics().hasErrorOccurred() };
         const auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
@@ -1618,6 +1634,8 @@ private:
                 indexQueue_.pop_front();
                 ++indexRunning_;
             }
+            static const bool trace { std::getenv("MCXX_TRACE_INDEX") != nullptr };
+            if (trace) options_.log(std::format("indexing {}", file));
             if (const auto text = read_file(file)) {
                 if (auto prepared = prepare_(file, *text, stop)) {
                     prepared->parse.remap = false;
