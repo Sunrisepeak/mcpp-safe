@@ -52,6 +52,8 @@ public:
     void saved(const std::string& uri);
     // A file changed on disk that is not open (workspace/didChangeWatchedFiles).
     void changed_on_disk(const std::string& uri);
+    // Parses every open document again: the program was described again (its commands changed).
+    void refresh();
 
     // Answers one request; blocks until it has an answer or `cancel` is requested.
     Result request(std::string_view method, const Json& params, std::stop_token cancel = {});

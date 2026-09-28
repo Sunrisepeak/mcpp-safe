@@ -338,7 +338,17 @@ struct Service::State {
                 }
             }
             auto unit = workspace.parse(doc->path, std::move(text), version, stop);
-            if (!unit) continue;
+            if (!unit) {
+                // No command for the file yet (the program is still being described): try again shortly.
+                if (stop.stop_requested()) return;
+                std::lock_guard lock { mutex };
+                if (doc->open && !doc->queued) {
+                    doc->due = std::chrono::steady_clock::now() + std::chrono::milliseconds { 500 };
+                    doc->queued = true;
+                    queue.push_back(doc->uri);
+                }
+                continue;
+            }
             {
                 std::lock_guard lock { mutex };
                 if (!doc->unit || doc->unit->version() <= unit->version()) doc->unit = unit;
@@ -435,6 +445,12 @@ void Service::saved(const std::string& uri) {
     const std::string path { uri_to_path(uri) };
     state_->forget_text(path);
     state_->workspace.file_changed(path);
+}
+
+void Service::refresh() {
+    std::lock_guard lock { state_->mutex };
+    for (auto& [uri, doc] : state_->documents)
+        if (doc->open) state_->schedule(doc);
 }
 
 void Service::changed_on_disk(const std::string& uri) {
