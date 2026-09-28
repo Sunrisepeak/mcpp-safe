@@ -1,7 +1,8 @@
-# MC++ 架构方案与验收标准（v0，草案）
+# MC++ 架构方案（v0，草案）
 
 日期：2026-09-28
-状态：待 review
+状态：待 review（第三轮：记录已定事项；初期生态协作规则；本仓库自建 `index/` 和 `xpkgs/`；`mcpp-tools-safe` 作为本仓库中的独立包）
+里程碑与验收标准：[`2026-09-28-mcxx-milestones-acceptance.md`](2026-09-28-mcxx-milestones-acceptance.md)（包括生态适配项 E-… 与依赖关系）
 依据：同目录下的三份文档：
 [`mcpp-safe-feasibility`](2026-09-28-mcpp-safe-feasibility.md)、
 [`universal-bmi-analysis`](2026-09-28-universal-bmi-analysis.md)（含 CI 实测）、
@@ -22,10 +23,10 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 |---|---|---|
 | **MC++** | 项目，以及它定义的方言集合 | 对外名称 |
 | `mcxx` | 编译器驱动程序 | 模块名里不能用 `+`，所以一律用 `mcxx` |
-| **libmc++** | 可复用组件的总称，以 mcpp 包的形式发布 | 包名暂定为 `mcxx`，按 feature 选择要用的组件（仿照 `mcpp:plugins` 的做法） |
+| **libmc++** | 可复用组件的总称 | 由 `modules/` 下的多个 mcpp 包组成，**按依赖集合拆分**（见 4.1 节），发布到 mcpp-index |
 | `mcxx.*` | C++ 模块名前缀 | 例如 `mcxx.core`、`mcxx.msa` |
 | `mc++.<name>` | profile 名 | 例如 `mc++.safe`、`gpu.device` |
-| 仓库 | `Sunrisepeak/mcpp-safe`（私有） | 以后是否更名为 `mcxx`，见第 10 节 |
+| 仓库 | `Sunrisepeak/mcpp-safe`（私有） | 名字保持不变（第三轮已定） |
 
 ## 2. 目标与非目标
 
@@ -34,9 +35,9 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 1. **Modules**：只接受模块代码。`import` 通过模块图和 IFC 解析。
 2. **特性和库的细粒度控制**：用特性注册表加 profile，可以作用到包、模块、命名空间、声明和区域。
 3. **Safe 机制**：限制类特性，加上扩展类语义（生命周期注解、分析），在编译时强制执行。
-4. **组件化**：每个组件都是 mcpp 包里的一个模块，可以单独复用，组合起来就是 libmc++。
+4. **组件化**：每个组件都是 `modules/` 下的一个 mcpp 包，可以单独复用，组合起来就是 libmc++。
 5. **插件化**：编译器本身就是一个插件系统，提供规则、库控制、属性、区域/方言、分析、后端、输出七类扩展点。GPU 等能力以插件形式接入，不和核心耦合。
-6. **全部走 mcpp 体系**：构建、依赖（包括 LLVM/Clang 开发库）、分发（插件就是 mcpp 包）都用 mcpp。
+6. **全部走 mcpp 体系，基于 openkal 开发**：构建、依赖（包括 LLVM/Clang 开发库）、分发（插件就是 mcpp 包）都用 mcpp；运行基座是 openkal（和 mcppls 一样，从一台 Linux 主机交叉构建 4 个平台）。
 
 **非目标（当前阶段）**
 
@@ -45,172 +46,150 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 - 自研代码生成：M4 之前由 Clang CodeGen 负责。
 - MSVC ABI：Windows 先支持 `x86_64-windows-gnu`，和 mcppls 一致。
 
+
 ## 3. 架构原则
 
 | # | 原则 | 如何保证 |
 |---|---|---|
-| P1 | **只有 `mcxx.backend.clang` 会 import Clang/LLVM**，其余组件只能看到 MSA | 分层检查（仿照 `mcppls-devtools check layers`），CI 强制 |
-| P2 | 依赖严格自上而下：`base → core → {features, msa, modules} → {backend.clang, frontend} → {analysis, plugin, service} → driver` | 同上 |
-| P3 | **会跨越边界的数据都要写成规范**：特性注册表、IFC 方言信息、MSA、插件 ABI、驱动契约、服务协议 | 第 5 节 MC1–MC6，规则带 id，并有可追溯的一致性测试 |
+| P1 | **只有 `mcxx-backend-clang` 依赖 Clang/LLVM，只有 `mcxx-platform` import openkal**，其余组件只能看到 MSA 和 base、core 提供的接口 | 分层检查 `mcxx-devtools check layers`（仿照 mcppls），在 CI 中强制执行 |
+| P2 | **按依赖集合拆包**（沿用 mcppls 的做法："Split by DEPENDENCY SET, not by taste"）。不需要 Clang 的使用方，不会链接进任何 Clang 的代码 | 用 `nm` 检查示例程序（A0.2.3） |
+| P3 | **会跨越边界的数据都要写成规范**：特性注册表、IFC 方言信息、MSA、插件协议、驱动契约、服务协议 | 第 5 节的 MC1–MC6，规则带 id，并有可追溯的一致性测试 |
 | P4 | **强制执行由真实编译完成**；辅助答案只有三种：违规、通过、不确定。"不确定"转给 Clang 后端处理 | MSA 的查询结果带 `certainty` 字段 |
-| P5 | 插件边界是 **C ABI + 不透明句柄 + 版本化协议**；内部的 C++ 接口可以自由演进 | MC4；验收时要求插件用和 mcxx 不同的工具链构建 |
-| P6 | **差分测试是常规手段**：自研前端和进程内的 Clang 后端对比同一批事实 | `devtools diff`；各阶段的一致率门槛 |
+| P5 | **插件有两种方式，但扩展点的语义只有一套**：①**静态组合**（主路径）：插件是 mcpp 包，和 libmc++ 用同一个 openkal 工具链链接成本项目的 mcxx（由 `mcxx compose` 生成临时 workspace 交给 mcpp 构建，不改 mcpp），直接使用 C++ 模块 API；②**进程外协议**：其他工具链或其他语言写的插件，通过版本化协议在子进程中运行。**不依赖 `dlopen`**，因为 openkal 构建的是静态可执行文件（mcppls 实测是 "statically linked"），能否 `dlopen` 由 V0.5 确认 | MC4；A0.6.1–A0.6.2 |
+| P6 | **差分测试是常规手段**：自研前端和进程内的 Clang 后端对比同一批事实 | `mcxx-devtools diff`；各阶段的一致率门槛 |
 | P7 | 编译器和服务进程**不访问网络** | 沿用 mcppls 的原则 |
 | P8 | 缺少的能力靠插件补充，而不是往核心里加特判 | 核心代码里不允许出现 `if (cuda)` 这种写法 |
+| P9 | 平台差异只通过 `modules/os/*` 中的常量表达，不使用 `#ifdef` | 沿用 mcppls 的做法；分层检查 |
+| P10 | **同一个单元无论从哪条路径进入，交给后端的参数都逐字节相同** | MC5；A0.5.2（吸取 mcpp-language-server#30 的教训） |
 
-## 4. 仓库和 workspace 结构（mcpp workspace）
+## 4. 仓库和 workspace 结构（mcpp workspace，基于 openkal）
 
 ```
-mcpp-safe/                         mcpp workspace 根（虚拟 workspace：只有 [workspace]）
-├── mcpp.toml                      [workspace] members；[workspace.package] 统一标准为 c++23 及以上；统一依赖版本
-├── libs/                          ── libmc++ ──（一个包 `mcxx`，按 feature 选组件；或者每个组件一个包，见第 10 节）
-│   ├── base/        mcxx.base          错误、文本、路径、arena、sha256；无依赖
-│   ├── core/        mcxx.core          会话、选项、诊断（含 SARIF 输出）、源码管理
-│   ├── features/    mcxx.features      特性注册表、profile、门禁引擎、作用域、配置解析（MC1）
-│   ├── msa/         mcxx.msa           MC++ 语义 API：接口和值类型（MC3）
-│   ├── modules/     mcxx.modules       模块图、IFC 读写（依赖 ifc-sdk）、方言信息（MC2）
-│   ├── backend-clang/ mcxx.backend.clang  基于 Clang 23.1 实现 MSA；**唯一** import Clang 的地方
-│   ├── frontend/    mcxx.frontend      自研前端：lex / parse（M1）→ decl（M2）→ expr（M3）
-│   ├── analysis/    mcxx.analysis.*    CFG 和数据流分析（生命周期等）
-│   ├── plugin/      mcxx.plugin        插件宿主和加载器（MC4）
-│   └── service/     mcxx.service       面向编辑器和 Agent 的查询与诊断服务（MC6）
-├── sdk/plugin/      mcxx.plugin.sdk    插件作者使用的 `import mcxx.plugin;` 封装（只依赖 C ABI 头层）
-├── apps/mcxx/       mcxx               驱动：compile / check / emit-ifc / serve（MC5）
-├── plugins/                        第一方插件（每个都是独立的 mcpp 包，走和第三方一样的路径）
-│   ├── safe/        mc++.safe          首个 profile 和规则集
-│   └── gpu/         gpu.*              M3 之后的原型
-├── specs/                          MC1–MC6，各自独立版本化；schema、示例、可追溯性
-├── conformance/                    一致性测试 fixture 和 runner（仿照 mcppls 的 conformance）
-├── tools/devtools/                 分层检查、规范校验、差分测试 runner、语料统计
-└── .agents/docs/                   设计记录（本目录）
+mcpp-safe/                              workspace 根；根包就是 mcxx 驱动（和 mcppls 的根包就是服务器同理）
+├── mcpp.toml                           [workspace] members；[workspace.dependencies] 统一锁定
+│                                       openkal-llvm-runtime / llvm.clang-dev / IFC SDK / nlohmann.json / cmdline
+├── src/                                mcxx 驱动：compile / check / emit-ifc / serve（MC5）
+├── modules/                            ── libmc++：每个目录都是一个独立的 mcpp 包，按依赖集合拆分 ──
+│   ├── base/            mcxx.base            错误、文本、路径、arena、sha256。无任何依赖
+│   ├── os/{linux,macos,windows}              平台常量包，通过 [target.'cfg(...)'.dependencies] 选择
+│   ├── platform/        mcxx.platform        进程、文件系统、环境变量。**唯一 import openkal 的地方**
+│   ├── core/            mcxx.core            会话、选项、诊断（含 SARIF）、源码管理
+│   ├── features/        mcxx.features        特性注册表、profile、门禁引擎、作用域、配置（MC1）
+│   ├── msa/             mcxx.msa             MC++ 语义 API：接口和值类型（MC3）
+│   ├── modules/         mcxx.modules         模块图、IFC 读写、方言信息（MC2）。依赖 IFC SDK
+│   ├── backend-clang/   mcxx.backend.clang   基于 Clang 23.1 实现 MSA。**唯一依赖 llvm.clang-dev 的包**
+│   ├── frontend/        mcxx.frontend        自研前端：lex / parse（M1）→ decl（M2）→ expr（M3）。不依赖 Clang
+│   ├── analysis/        mcxx.analysis.*      基于 MSA 的 CFG 和数据流分析
+│   ├── plugin-host/     mcxx.plugin.host     静态组合的注册表，以及进程外协议的宿主端（MC4）
+│   ├── plugin-sdk/      mcxx.plugin          插件作者使用：`import mcxx.plugin;`。只依赖 base 和 msa 的接口
+│   ├── plugin-remote/   mcxx.plugin.remote   进程外插件那一侧的协议库。**不依赖 openkal**，任何工具链都能构建
+│   ├── service/         mcxx.service         面向编辑器和 Agent 的服务（MC6）
+│   └── testing/         mcxx.testing         最小的具名模块测试框架（仿照 mcppls.testing）
+├── plugins/                            第一方插件和规则包，每个都是独立的 mcpp 包，和第三方插件走同一条路径
+│   ├── safe/            mc++.safe            MC++ 编译器插件
+│   ├── mcpp-tools-safe/ mcpp 构建规则包：对非 mcxx 工具链以 blocking check 运行 `mcxx check`（独立包，第三轮已定）
+│   └── gpu/             gpu.*（M3 之后）
+├── index/                              **本仓库自建的 mcpp 包索引**（mcpp index 格式：`index.toml`、`pkgs/<首字母>/<名字>.lua`）
+│                                       llvm.clang-dev、IFC SDK、libmc++ 各包、插件包；通过 `[indices] mcxx-local = { path = "index" }` 接入
+├── xpkgs/                              **本仓库自建的 xlings xpkg 文件**（xim 格式）：mcxx 工具链包，以及退路用的 llvm-dev；以本地索引仓库的方式接入
+├── specs/                              MC1–MC6：schema、示例、可追溯性
+├── conformance/                        一致性测试的 fixture 和 runner
+├── tools/devtools/                     mcxx-devtools：分层检查、规范检查、差分测试、语料统计、计时
+└── .agents/docs/
 ```
 
-### 4.1 外部依赖（全部通过 mcpp 引入）
+### 4.1 包和依赖集合
 
-| 依赖 | 版本 | 现状（本机实测） | 方案 |
+| 包 | 依赖 | 谁会用到 |
+|---|---|---|
+| `mcxx-base`、`mcxx-os-*` | 无 | 所有组件 |
+| `mcxx-platform` | openkal-llvm-runtime | 需要和操作系统打交道的组件 |
+| `mcxx-core`、`mcxx-features`、`mcxx-msa` | base、platform | mcppls（轻量接入）、插件、驱动 |
+| `mcxx-modules` | 上一行的包 + IFC SDK | 驱动、服务、自研前端 |
+| **`mcxx-backend-clang`** | 上面这些 + **`llvm.clang-dev`**（体积大） | 只有驱动和服务会用到。**mcppls 通过 `mcxx serve` 子进程使用它，自己的二进制里不链接 Clang** |
+| `mcxx-frontend`、`mcxx-analysis` | core、msa、modules | 驱动、服务、mcppls（进程内使用语法层） |
+| `mcxx-plugin`（SDK） | base、msa 的接口 | 插件作者 |
+| `mcxx-plugin-remote` | base（不含 openkal） | 进程外插件（任何工具链） |
+
+### 4.2 外部依赖（全部通过 mcpp 引入，基于 openkal）
+
+| 依赖 | 版本 | 现状（本机实测） | 方案（生态适配项见里程碑文档第 1 节） |
 |---|---|---|---|
-| **LLVM/Clang 开发库**（头文件，以及 clangAST、Sema、Frontend、Serialization、Analysis、Tooling、CodeGen 和 LLVM Support/Core 等库） | **23.1.x**，与 mcppls 的 clangd 23.1.0 对齐 | **缺失**：xlings/mcpp 的 `xim-x-llvm` 22.1.8 只有二进制、libc++ 头文件和 resource dir；`xim-x-libllvm` 20.1.7 只有 `libLLVM.so`，没有头文件，也没有 Clang 库 | 在 mcpp index 中新增包，例如 `llvm-x-clang-dev@23.1.x`：**用 openkal 工具链（clang + libc++）构建**，这样才能和 mcxx 的 C++ ABI 一致（上游预编译包链接的是 libstdc++，不能用），覆盖 4 个平台。过渡方案：用 `mcpp.deps.cmake` 把 llvm-project 作为 prepare action 从源码构建，并缓存结果 |
-| IFC SDK（`microsoft/ifc`） | 锁定一个 tag | 不在 index 中 | 打包为 mcpp 包 `ifc-sdk`（Apache-2.0 WITH LLVM-exception，C++20） |
-| nlohmann.json、cmdline | 与 mcppls 相同 | 已在 index 中 | 直接使用 |
+| openkal-llvm-runtime | 与 mcppls 相同的版本线（当前 0.15.x） | 已在官方 mcpp-index 中 | 直接使用（只使用，不改动） |
+| **LLVM/Clang 开发库** | **23.1.x**（与 mcppls 的 clangd 23.1.0 对齐） | **缺失**：mcpp-index 只有 `llvm.libcxx` 和 `llvm.compiler-rt-builtins`；xim-pkgindex 的 `llvm` 22.1.8 只有工具链；`libllvm` 20.1.7 只有 `libLLVM.so`；`llvm-dev` 20.1.7.1 是用 gcc/glibc 构建、给 mesa 用的，ABI 不适用 | **E-IDX-1**：在**本仓库 `index/`** 中新增 `llvm.clang-dev@23.1.x`，**用 openkal 工具链构建**。过渡方案：E-PLG-2（用官方 `deps-cmake` 从源码构建）或 E-XIM-2（本仓库 `xpkgs/` 中的 glibc 形式，仅 linux-x64） |
+| IFC SDK（`microsoft/ifc`） | 锁定一个 tag | 不在任何索引中 | **E-IDX-2**（本仓库 `index/`） |
+| nlohmann.json、cmdline | 与 mcppls 相同 | 已在 mcpp-index 中 | 直接使用 |
 
-ABI 不稳定的代价（第二轮 review 已接受）：升级 Clang 版本 = 重新构建开发库 + 只修改 `backend.clang`。P1 保证影响不会扩散。
+ABI 不稳定的代价（已接受）：升级 Clang 版本 = 重新构建 `llvm.clang-dev` + 只修改 `mcxx-backend-clang`。
 
-### 4.2 libmc++ 的复用方式
+### 4.3 libmc++ 的复用方式
 
 | 使用方 | 用哪些组件 | 方式 |
 |---|---|---|
-| mcpp（构建） | `mcxx` 驱动 | 作为工具链（`[toolchain]` 选择 mcxx）；对其他工具链（GCC 等），使用 `mcxx check` 作为 blocking check action（通过插件 `mcpp.tools.safe`） |
-| mcppls | `core`、`features`、`msa`、`modules`、`service`，加上 `backend.clang` 或 `frontend` | **两种方式都支持**：进程内链接 libmc++，或者像 clangd 一样起一个 `mcxx serve` 子进程。先做子进程方式（隔离性好，崩溃不会拖垮 mcppls，和 mcppls 现有的引擎抽象一致） |
-| 第三方工具 | 按需选择 | mcpp 包依赖，按 feature 选择组件 |
-| 插件作者 | 只用 `mcxx.plugin.sdk` | 以 `[build-dependencies]` + `host-module = true` 的方式分发 |
+| mcpp（构建） | `mcxx` 驱动 | 作为工具链（E-MCPP-1，先验证不改 mcpp 能否做到：V0.6）；对 GCC 等其他工具链，由本仓库的规则包 `mcpp-tools-safe` 以 blocking check 的方式运行 `mcxx check`（E-PLG-1） |
+| mcppls | 进程内：`core`、`features`、`msa`、`modules`、`frontend`（语法层和声明层）；子进程：`mcxx serve`（Clang 后端） | 轻量部分放在进程内，快速响应；重量部分放在子进程里隔离，和 mcppls 现有的引擎抽象一致 |
+| 第三方工具 | 按依赖集合选择包 | 初期从本仓库的 `index/` 引入 |
+| 插件作者 | `mcxx-plugin` 或 `mcxx-plugin-remote` | 以 mcpp 包的形式分发 |
 
 ## 5. 规范（MC1–MC6，仿照 mcppls 的 S1–S5：独立版本号、规则 id、可追溯性）
 
 | 规范 | 内容 | 首个版本出现在 |
 |---|---|---|
-| **MC1 特性注册表与 profile** | 特性 id 命名规则；类别（限制类 / 扩展类）；检查层（语法 / 声明 / 表达式 / 控制流）；级别（allow / warn / deny）；作用域（包 / 模块 / 命名空间 / 声明 / 区域）；profile 文件格式；在 `mcpp.toml` 中如何配置；逃生口 `[[mcpp::allow("id")]]` 与审计输出；库控制（`lib:<模块或包>.<符号>`） | M0 |
+| **MC1 特性注册表与 profile** | 特性 id 命名规则；类别（限制类 / 扩展类）；检查层（语法 / 声明 / 表达式 / 控制流）；级别（allow / warn / deny）；作用域（包 / 模块 / 命名空间 / 声明 / 区域）；profile 文件格式；配置写在 `mcpp.toml` 的 `[package.metadata.mcxx]` 中（不改 mcpp，第三轮已定）；逃生口 `[[mcpp::allow("id")]]` 与审计输出；库控制（`lib:<模块或包>.<符号>`） | M0 |
 | **MC2 IFC 方言信息** | 锁定的 IFC 版本；`VendorExtension` 的编码约定（模块的特性集、profile、跨方言边界标注、GCC/Clang 特有构造的编码） | M1 |
-| **MC3 MSA** | 实体（声明、类型、表达式、区域、位置）和句柄；查询集（按阶段逐步增加）；`certainty` 语义；版本化 | M0（只含声明层和表达式层的查询） |
-| **MC4 插件 ABI** | C ABI 入口与生命周期；不透明句柄；协议号；七类扩展点的回调契约；插件作为 mcpp 包分发和加载的方式；插件失败时的隔离 | M0（v1：规则和库控制两类扩展点）；M1 起加入属性和区域 |
-| **MC5 驱动与工具链契约** | `mcxx` 的命令行（兼容 clang 的一个参数子集，用规范列出）；mcpp 如何调用它（toolchain-model）；输出物（对象文件、`.ifc`、`.pcm`、facts、SARIF）；和 `mcpp emit build-database`（mcppls 的 S1）的衔接；**参数规范化**（吸取 8.7 节参数漂移的教训：同一个单元无论经过哪条路径，参数都逐字节相同） | M0 |
-| **MC6 服务协议** | `mcxx serve` 面向 mcppls 的协议：LSP 子集，加上事实和门禁查询的扩展；和 mcppls S3/S5 对齐 | M1 |
+| **MC3 MSA** | 实体和句柄；查询集（按阶段逐步增加）；`certainty` 语义；版本化 | M0（只含声明层和表达式层的查询） |
+| **MC4 插件** | **静态组合**（mcpp 包、注册方式、按插件集合的哈希缓存）和**进程外协议**（消息格式、协议号、版本协商）；两种方式共用同一套扩展点语义；故障隔离 | M0（v0：规则和库控制两类扩展点）；M1 起加入属性和区域 |
+| **MC5 驱动与工具链契约** | `mcxx` 命令行（兼容 clang 的一个参数子集）；mcpp 如何调用它；输出物（对象文件、`.ifc`、`.pcm`、facts、SARIF）；和 `mcpp emit build-database` 的衔接；**参数规范化**（P10） | M0 |
+| **MC6 服务协议** | `mcxx serve`：LSP 子集，加上事实和门禁查询的扩展；和 mcppls S3/S5 对齐 | M1 |
 
 ## 6. 里程碑与验收标准
 
-每个里程碑都有**可以机器检查的验收项**（A 编号）。没有全部通过，就不进入下一阶段。测量环境默认是 GitHub `ubuntu-24.04` 4 核（和 8.6、8.7 节实测相同）；其他平台单独列出。
+已拆成独立文档：**[`2026-09-28-mcxx-milestones-acceptance.md`](2026-09-28-mcxx-milestones-acceptance.md)**，内容包括：
 
-### M0 基座：Clang 内核 + 门禁 + 工具链
+- 验证项 V0.1–V0.5（openkal 上构建 Clang 开发库、静态链接的体积和耗时、IFC SDK、CodeGen 产物的链接、`dlopen`）；
+- M0（8 个子阶段）、M1（9 个）、M2（3 个）、**★ MS：mcppls 完全基于 MC++**（4 个）、M3、M4，每个验收项都有编号、通过条件和验证方式；
+- **生态适配项 E-…**：openkal、mcpp-index、xim-pkgindex、xlings、mcpp、mcpp-plugins、mcppls 在每个阶段要完成的事，以及它们和验收项之间的依赖关系。
 
-| # | 验收项 |
-|---|---|
-| A0.1 | workspace 在 linux-x64 上可以用 `mcpp build` 构建，`llvm-x-clang-dev@23.1` 由 mcpp 解析；CI 缓存命中时的构建时间有预算 |
-| A0.2 | 分层检查通过：除 `backend.clang` 外，任何组件都不 import Clang/LLVM（P1、P2） |
-| A0.3 | `mcxx check --syntax-only` 在 **mcppls 语料**（249 个文件，纯模块）上零错误，诊断和 clang 23.1 的 `-fsyntax-only` 一致 |
-| A0.4 | `mc++.safe` v0：5–8 个限制类特性，加上 `lib:std.vector`。每个特性至少各有 5 个正例和反例 fixture。**跨模块 `auto v = make()`、别名 `Buf` 这两个用例必须检出**（与 GCC 插件探针的结果一致） |
-| A0.5 | 用 `mcxx` 作为 mcpp 工具链构建 **mcppls**（代码生成由 Clang CodeGen 负责），产物通过 mcppls 自己的单元测试 |
-| A0.6 | `mc++.safe` 以**插件**形式实现（不是内置），并且用**和 mcxx 不同的工具链**（GCC 16 + libstdc++）构建后仍能加载运行（证明 P5 成立） |
-| A0.7 | MC1、MC3（第一版子集）、MC4 v1、MC5 v0 发布为草案，schema 校验和规则 id 可追溯性通过 |
-
-### M1 libmc++ 的首批使用方
-
-| # | 验收项 |
-|---|---|
-| A1.1 | **编辑器和构建看到的门禁结果相同**：mcppls（通过 `mcxx serve`）和 `mcxx check` 对同一批 fixture 给出**完全相同**的门禁诊断集合 |
-| A1.2 | 用 GCC 构建的工程（mcpp 仓库），通过 `mcpp.tools.safe` 的 blocking check 执行 `mcxx check`：违规时构建失败，改正后构建通过 |
-| A1.3 | 生成 IFC（T1 层）并附带方言信息（MC2 v1）：mcppls 语料的每个接口都产出 `.ifc`；`ifc-printer` 全部能读；把 IFC 读回 MSA 后，得到的 T1 事实和写出前**逐项相等** |
-| A1.4 | 自研前端语法层（F1）：mcppls 和 mcpp 两套语料**零解析失败**；声明范围和 Clang 的差分一致率 ≥ 99.9% |
-| A1.5 | mcppls 的 native 引擎（纯词法）换成 `mcxx.frontend` 的语法层之后，mcppls 现有的 conformance fixture 全部照旧通过 |
-| A1.6 | 插件 ABI 扩展到属性和区域两类扩展点；一个示例属性插件通过测试 |
-
-### M2 语义服务不再依赖 BMI 重建
-
-| # | 验收项 |
-|---|---|
-| A2.1 | 自研前端声明层（F2）+ IFC import：T1 事实和 Clang 后端的差分一致率 ≥ 99% |
-| A2.2 | **self-mcpp 冷启动首次跳转 ≤ 10 s**（实测基线：clangd 路径 88–126 s，要构建 174 个 BMI）。跳转、悬停、补全的声明部分由 libmc++ 回答，**不构建任何 BMI** |
-| A2.3 | 热启动不会重建任何东西：日志中 `Built`/`rebuilt` 类事件数为 0（吸取 8.7 节的教训，作为回归检查） |
-| A2.4 | 转给 Clang 的"不确定"查询在 mcppls 语料上的比例被统计出来，并公布 |
-
-### ★ 里程碑 MS：mcppls 完全基于 MC++
-
-- 定义：mcppls **不再附带、也不再启动 clangd**，C++ 语义全部来自 libmc++。
-- mcppls **自身由 `mcxx` 构建**。
-
-| # | 验收项 |
-|---|---|
-| AS.1 | mcppls 的引擎配置里没有 clangd；payload 中不包含 clangd |
-| AS.2 | mcppls 全部 conformance fixture 通过（包括 `self-mcpp`、`real-xlings`、`self-mcppls` 这几个真实工程） |
-| AS.3 | 满足 mcppls 现有的发布门槛：冷启动首次跳转中位数 < 12 s，热启动 < 5 s，这两项在三个平台上都要满足；并且 self-mcpp 冷启动首次跳转 ≤ 10 s（A2.2） |
-| AS.4 | mcppls 的 CI 和发布构建使用 `mcxx` 工具链（自举） |
-| AS.5 | payload 体积不大于当前（当前主要由 clangd 23.1 和 kit 构成） |
-
-MS 可以在 M2 之后达成，**不依赖 M3**：这时 C++ 语义可以由进程内的 Clang 后端提供，自研前端负责模块和声明部分。
-
-### M3 自研前端覆盖 `mc++.safe`
-
-| # | 验收项 |
-|---|---|
-| A3.1 | 表达式层（F3）：`mc++.safe` 允许的特性全部由自研前端实现；在 mcppls 语料上，"不确定"的比例 ≤ 5% |
-| A3.2 | 门禁优先在自研前端上运行，和 Clang 后端的结果差分一致率 ≥ 99.5% |
-| A3.3 | 生命周期分析 v0（过程内分析 + `lifetimebound` 类注解）在 fixture 上的精确率和召回率被公布 |
-| A3.4 | GPU 区域插件原型：`[[gpu::kernel]]` 所在区域套用 `gpu.device` profile，抽取出内核后交给 `rules-cuda` 或 `rules-sycl` 编译，并运行通过 |
-
-### M4 独立编译器（届时再细化）
-
-- MC++ 方言的模块由自研前端生成代码（LLVM IR 或 bitcode，不链接 libLLVM），classic 模块仍交给 Clang，两者混合构建。
-- 届时依据库控制插件的**实测数据**（MC++ 代码实际用到了 `std` 的哪些部分），决定 `std` 与 `std2` 的取舍。
-
-## 7. mcppls 这一侧的前置工作（不在本仓库，但影响 MS）
-
-1. **修复参数漂移**（8.7 节）：模型缓存和 producer 两条路径必须给出逐字节相同的参数，并加入"热启动 `Built module` 数为 0"的回归检查。这件事能立刻省下 55–78 s，而且是 A2.3 的前提。
-2. 引擎抽象里新增 `mcxx` 引擎（和 clangd 并列），为 MS 过渡做准备。
-3. 临时 PR #29（计时插桩）保留，作为 A2.2 和 AS.3 的测量工具原型。
-
-## 8. 风险与对策
+## 7. 风险与对策
 
 | 风险 | 对策 |
 |---|---|
-| 为 4 个平台构建 Clang 开发库很耗时（LLVM 完整构建约 1 小时以上） | 做成预编译的 mcpp 包，CI 只拉取不构建；只在升级版本时重新构建 |
-| Clang API 随版本变化 | P1 把影响限制在 `backend.clang`；固定版本；升级有单独的检查清单 |
-| MSA 设计过度膨胀 | **按需扩展**：只有当某个使用方（mcppls、mcpp-safe、插件）真正需要时才增加查询，并且先写进 MC3 |
-| 插件 C ABI 的性能开销 | 批量查询、按区域回调、句柄缓存；在基准测试中给出预算 |
+| openkal 上构建 Clang 开发库存在缺口（V0.1） | E-OK-1 由 openkal 补齐；过渡方案是 E-PLG-2 或 E-XIM-2 |
+| 为 4 个平台构建 Clang 开发库很耗时 | 做成预编译的 mcpp-index 包（E-IDX-1、E-IDX-3），CI 只拉取；只在升级版本时重新构建 |
+| 静态组合插件时，每个项目都要重新链接 mcxx，链接耗时长（V0.2） | 按插件集合的哈希缓存；必要时预链接出单体的 libmcxx 对象，或者把进程外协议作为主路径 |
+| Clang API 随版本变化 | P1 把影响限制在 `mcxx-backend-clang`；固定版本；升级有单独的检查清单 |
+| MSA 设计过度膨胀 | 按需扩展：只有当某个使用方真正需要时才增加查询，并且先写进 MC3 |
 | IFC 规范是草案 | 锁定版本；MC2 独立版本化 |
-| 自研前端迟迟追不上（轨 1 太好用，轨 2 就没人推） | 每个里程碑都有差分门槛；A2.2、AS 这类**只有自研前端才能达到的指标**作为推动力 |
-| Windows MSVC ABI | 当前不做；先支持 `x86_64-windows-gnu` |
+| 自研前端迟迟追不上 | 每个里程碑都有差分门槛；A2.3.2、MS 这类只有自研前端才能达到的指标作为推动力 |
+| 生态项目的节奏对不上 | 适配项有编号，并被验收项引用；关键路径（E-OK-1 → E-IDX-1）最先启动 |
 
-## 9. 近期的具体行动（M0 起步）
+## 8. 初期的生态协作规则（第三轮决定）
 
-1. 仓库：`Sunrisepeak/mcpp-safe`（私有）已创建并与本地关联。
-2. 调研并落实 `llvm-x-clang-dev@23.1`：在 openkal 上构建 Clang 库的配方，先在 linux-x64 上完成。
-3. 搭建 workspace 骨架（第 4 节的目录）和 devtools 的分层检查。
-4. 起草 MC1、MC3 子集、MC4 v1、MC5 v0 规范。
-5. `mc++.safe` v0 的特性清单和 fixture（复用 GCC 插件探针中的用例）。
+详见里程碑文档 1.0 节，要点如下：
 
-## 10. 需要 review 决定的问题
+1. **不对任何工具的官方仓库**（openkal、mcpp、mcpp-index、xim-pkgindex、xlings、mcpp-plugins、mcpp-language-server）提 issue、提 PR 或做任何改动。
+2. 包优先放在本仓库：mcpp 包放在 `index/`，xlings 包放在 `xpkgs/`。
+3. 必须修改某个工具时，在 **speak-agent** 下 fork，在分支上联调，用 fork 的 CI 验证；fork 及其改动登记在 `.agents/docs/forks.md`。
+4. 是否合回上游、什么时候合，初期结束后（最早在 MS 之后）再统一决定。
+5. 日常操作使用 speak-agent 账号；只有你明确要求时，才对单条命令使用 Sunrisepeak 的凭据。
 
-1. **命名**：MC++ / `mcxx` / libmc++ / 模块前缀 `mcxx.` / 仓库名暂用 `mcpp-safe`（将来是否改为 `mcxx`）。
-2. **libmc++ 的包粒度**：一个 `mcxx` 包按 feature 选组件（和 `mcpp:plugins` 相同的做法），还是每个组件一个包？
-3. **配置写在哪里**：先写在 `mcpp.toml` 的 `[package.metadata.mcxx]` 下（不需要改 mcpp），还是推动 mcpp 支持一级的 `[language]` 或 `[features]` 表？
-4. **mcppls 的接入方式**：先用 `mcxx serve` 子进程方式（本方案的建议），还是直接进程内链接？
-5. **平台顺序**：先 linux-x64，然后是 macOS arm64、linux arm64、windows-gnu？
-6. **里程碑 MS 的验收项**（AS.1–AS.5）是否符合你对"mcppls 完全基于 MC++"的定义？
+## 9. 近期的具体行动
+
+1. **验证接入方式**：V0.7（本仓库 `index/` 通过 `[indices]` 接入；`xpkgs/` 以本地索引仓库的方式接入）、V0.6（不改 mcpp 能否把 mcxx 当作工具链）。
+2. **关键路径**：E-OK-1 → E-IDX-1（在 openkal 上构建 `llvm.clang-dev@23.1`，放进本仓库的 `index/`）；E-IDX-2（IFC SDK）。
+3. **本仓库**：搭建 workspace 骨架（第 4 节，包括 `index/`、`xpkgs/`、`plugins/`）和分层检查；起草 MC1、MC3 子集、MC4 v0、MC5 v0。
+4. 做 V0.1–V0.5 的实测，结论写进 `.agents/docs/`。
+5. 进入 M1 之前：把 mcpp-language-server fork 到 speak-agent（E-LS-*），并建立 `.agents/docs/forks.md`。
+
+## 10. 已定事项（第三轮）
+
+| # | 事项 | 决定 |
+|---|---|---|
+| 1 | 命名 | MC++ / `mcxx` / libmc++ / 模块前缀 `mcxx.`；仓库名保持 `mcpp-safe` |
+| 2 | 配置位置 | 先写在 `[package.metadata.mcxx]` 下，**不改 mcpp** |
+| 3 | `tools-safe` 放在哪里 | 作为独立包 `plugins/mcpp-tools-safe` 放在本仓库 |
+| 4 | 平台顺序 | linux-x64 → darwin-arm64 → linux-arm64 → windows-gnu |
+| 5 | MS 的定义 | 按里程碑文档 AS.1–AS.4（初期在 speak-agent 的 mcppls fork 上达成） |
+| 6 | 生态协作 | 第 8 节的规则 |
+
+待决事项：官方 mcppls 上已有的草稿 PR #29 和 issue #30 如何处理（见里程碑文档"附二"）。

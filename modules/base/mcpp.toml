@@ -1,0 +1,29 @@
+# Foundations every libmc++ package shares: errors, paths, text (with the UTF-16 position
+# arithmetic LSP requires), file: URIs, SHA-256 and logging. Copied from mcpp-language-server's
+# mcppls-base (the same author, Apache-2.0), renamed to mcxx.
+[package]
+name        = "mcxx-base"
+version     = "0.1.0"
+description = "libmc++ foundations: errors, paths, text, URIs, sha256, logging"
+license     = "Apache-2.0"
+
+[targets.mcxx-base]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
+[target.'cfg(os = "linux")'.dependencies]
+mcxx-os-linux = { path = "../os/linux" }
+
+[target.'cfg(os = "macos")'.dependencies]
+mcxx-os-macos = { path = "../os/macos" }
+
+[target.'cfg(windows)'.dependencies]
+mcxx-os-windows = { path = "../os/windows" }
+
+[lib]
+path = "src/base.cppm"

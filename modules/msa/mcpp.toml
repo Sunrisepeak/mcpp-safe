@@ -1,0 +1,15 @@
+# The MC++ semantic API (spec MC3): values and interfaces only, no backend.
+[package]
+name        = "mcxx-msa"
+version     = "0.1.0"
+description = "MC++ semantic API: positions, diagnostics, entities, occurrences, and the Workspace/Unit interfaces"
+license     = "Apache-2.0"
+
+[targets.mcxx-msa]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+
+[lib]
+path = "src/msa.cppm"

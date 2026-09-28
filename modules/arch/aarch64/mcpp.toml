@@ -1,0 +1,8 @@
+[package]
+name        = "mcxx-arch-aarch64"
+version     = "0.1.0"
+description = "The aarch64 architecture for libmc++, exported as module mcxx.arch"
+license     = "Apache-2.0"
+
+[targets.mcxx-arch-aarch64]
+kind = "lib"

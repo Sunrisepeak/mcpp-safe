@@ -1,0 +1,30 @@
+# MC++: a collection of module packages (libmc++), split by dependency set.
+#
+#   modules/base      mcxx.base       errors, paths, text, URIs, sha256, logging (from mcppls-base)
+#   modules/msa       mcxx.msa        the MC++ semantic API: positions, diagnostics, entities, and the
+#                                     Workspace / Unit interfaces every backend implements
+#   modules/graph     mcxx.graph      module declarations scanned lexically, and the module graph
+#   modules/clang     mcxx.clang      MSA over Clang 23.1 (llvm.clang-dev): the ONLY package with Clang
+#   modules/lsp       mcxx.lsp        an LSP-shaped semantic service over MSA, transport-free
+#   tools/probe       mcxx-probe      a development driver for the service (not a product binary)
+#
+# A consumer imports the module for the core it needs (mcxx.lsp + mcxx.clang for an editor
+# engine; mcxx.msa alone for a rule; mcxx.graph alone for module facts).
+[workspace]
+members = [
+    "modules/arch/x86_64",
+    "modules/arch/aarch64",
+    "modules/os/linux",
+    "modules/os/macos",
+    "modules/os/windows",
+    "modules/testing",
+    "modules/base",
+    "modules/msa",
+    "modules/graph",
+]
+
+[workspace.dependencies]
+openkal-llvm-runtime = "0.15.2"
+
+[workspace.dependencies.nlohmann]
+json = "3.12.0"

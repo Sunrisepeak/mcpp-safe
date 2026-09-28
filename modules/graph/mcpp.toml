@@ -1,0 +1,18 @@
+# Module facts without a compiler: lexical scan of module declarations and the module graph.
+[package]
+name        = "mcxx-graph"
+version     = "0.1.0"
+description = "What a C++ source provides and imports, read lexically, and the program's module graph"
+license     = "Apache-2.0"
+
+[targets.mcxx-graph]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
+[lib]
+path = "src/graph.cppm"

@@ -1,0 +1,16 @@
+[package]
+name        = "mcxx-os-linux"
+version     = "0.1.0"
+description = "Platform facts of linux for libmc++, exported as module mcxx.os"
+license     = "Apache-2.0"
+
+[targets.mcxx-os-linux]
+kind = "lib"
+
+# PLATFORM names the architecture too, so the architecture is chosen the same way as the OS: by
+# the target, one package of two.
+[target.'cfg(arch = "x86_64")'.dependencies]
+mcxx-arch-x86_64 = { path = "../../arch/x86_64" }
+
+[target.'cfg(arch = "aarch64")'.dependencies]
+mcxx-arch-aarch64 = { path = "../../arch/aarch64" }
