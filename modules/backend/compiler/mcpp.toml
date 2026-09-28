@@ -1,0 +1,17 @@
+# mcxx.backend.compiler: the compiling facade. What the mcxx driver depends on to compile: a command
+# line in, an exit status out, whichever compiler implements it (today clang in process).
+[package]
+name        = "mcxx-backend-compiler"
+version     = "0.1.0"
+description = "The MC++ compiling facade: run a compile command line in process, whichever compiler implements it"
+license     = "Apache-2.0"
+
+[targets.mcxx-backend-compiler]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-backend-clang-compiler = { path = "../clang-compiler" }
+
+[lib]
+path = "src/compiler.cppm"

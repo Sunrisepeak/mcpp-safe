@@ -1,4 +1,4 @@
-// mcxx-probe: drive mcxx.lsp over mcxx.clang from the command line.
+// mcxx-probe: drive mcxx.lsp over libmc++'s backend from the command line.
 //
 //   mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...
 //

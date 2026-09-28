@@ -1,0 +1,19 @@
+# mcxx.backend: the semantic facade. What a consumer of MSA (mcppls, a service, a tool) depends on:
+# a Workspace and what the backend is, never which backend. Today it forwards to
+# mcxx.backend.clang; MC++'s own front end takes its place here, and no consumer changes.
+[package]
+name        = "mcxx-backend"
+version     = "0.1.0"
+description = "The MC++ semantic facade: a msa::Workspace and what the backend is, whichever backend implements it"
+license     = "Apache-2.0"
+
+[targets.mcxx-backend]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-msa           = { path = "../../msa" }
+mcxx-backend-clang = { path = "../clang" }
+
+[lib]
+path = "src/backend.cppm"

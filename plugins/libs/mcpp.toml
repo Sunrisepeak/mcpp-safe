@@ -1,0 +1,23 @@
+# Plugins for libraries, one package with a module each (plugins/README.md):
+#
+#   mcxx.plugins.json   nlohmann::json: json-brace-init (`Json x { expr }` is [expr], not a copy)
+[package]
+name        = "mcxx-plugins-libs"
+version     = "0.1.0"
+description = "MC++ plugins for libraries: nlohmann::json (json-brace-init)"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugins-libs]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-msa    = { path = "../../modules/msa" }
+mcxx-plugin = { path = "../../modules/plugin/sdk" }
+
+[dev-dependencies]
+mcxx-testing  = { path = "../../modules/testing" }
+mcxx-features = { path = "../../modules/features" }
+
+[lib]
+path = "src/libs.cppm"

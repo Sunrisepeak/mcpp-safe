@@ -1,0 +1,26 @@
+# MC++'s standard plugins, one package with a module each (plugins/README.md):
+#
+#   mcxx.plugins.safe   mc++.safe v0: the safe dialect's gated features (rules)
+#   mcxx.plugins.cfg    [[mcpp::cfg(...)]]: target-conditional declarations (a source filter)
+#
+# Written against the plugin SDK (mcxx.plugin) only, as any third-party plugin is.
+[package]
+name        = "mcxx-plugins-std"
+version     = "0.1.0"
+description = "MC++ standard plugins: mc++.safe v0 and [[mcpp::cfg]]"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugins-std]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-msa    = { path = "../../modules/msa" }
+mcxx-plugin = { path = "../../modules/plugin/sdk" }
+
+[dev-dependencies]
+mcxx-testing  = { path = "../../modules/testing" }
+mcxx-features = { path = "../../modules/features" }
+
+[lib]
+path = "src/std.cppm"

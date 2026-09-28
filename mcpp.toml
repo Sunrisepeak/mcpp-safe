@@ -1,20 +1,21 @@
-# MC++: the mcxx driver (the root package, src/) and a collection of module packages (libmc++),
-# split by dependency set.
+# MC++: the mcxx driver (the root package, src/), libmc++ (modules/) and MC++'s plugins (plugins/).
+# README.md has the map; every directory under modules/ and plugins/ has its own README.md.
 #
-#   modules/base      mcxx.base       errors, paths, text, URIs, sha256, logging (from mcppls-base)
-#   modules/msa       mcxx.msa        the MC++ semantic API: positions, diagnostics, entities, and the
-#                                     Workspace / Unit interfaces every backend implements
-#   modules/graph     mcxx.graph      module declarations scanned lexically, and the module graph
-#   modules/clang     mcxx.clang      MSA over Clang 23.1 (llvm.clang-dev): the ONLY package with Clang
-#   modules/backend   mcxx.backend    the facade consumers use: make_workspace() and info(), naming no backend
-#   modules/lsp       mcxx.lsp        an LSP-shaped semantic service over MSA, transport-free
-#   tools/probe       mcxx-probe      a development driver for the service (not a product binary)
+#   modules/base, os, arch, testing   foundations (no dependency beyond openkal-llvm-runtime)
+#   modules/msa                       the MC++ semantic API and its facts (MC3)
+#   modules/graph                     module declarations scanned lexically, the module graph
+#   modules/plugin/sdk                the plugin SDK (MC4): rules, source filters, their registry
+#   modules/features                  the feature gates (MC1): configuration, scopes, waivers, audit
+#   modules/lsp                       an LSP-shaped semantic service over MSA (MC6)
+#   modules/backend/semantic          mcxx.backend: the semantic facade (what mcppls links)
+#   modules/backend/compiler          mcxx.backend.compiler: the compiling facade (what mcxx links)
+#   modules/backend/clang             MSA over Clang 23.1, facts, and MC++'s plugins inside Clang
+#   modules/backend/clang-compiler    clang itself in process: driver, cc1, code generation
+#   plugins/std, plugins/libs         plugin implementations: mc++.safe, [[mcpp::cfg]]; nlohmann::json
+#   tools/probe, tools/checks         a development driver for the service; source rules
 #
-# The root package is the mcxx driver (MC5): clang itself in process (llvm.clang-driver), with MC++'s
-# checks, and the subcommands MC++ adds (check, serve, ...).
-#
-# A consumer imports the module for the core it needs (mcxx.lsp + mcxx.backend for an editor
-# engine; mcxx.msa alone for a rule; mcxx.graph alone for module facts) -- never a backend itself.
+# Only modules/backend/clang and modules/backend/clang-compiler name Clang or depend on llvm.*
+# (tools/checks/lint.py, rule clang-exposure): everything else sees MSA, facts and the facades.
 [workspace]
 members = [
     "modules/arch/x86_64",
@@ -26,15 +27,16 @@ members = [
     "modules/base",
     "modules/msa",
     "modules/graph",
-    "modules/plugin",
+    "modules/plugin/sdk",
     "modules/features",
-    "modules/clang",
-    "modules/backend",
     "modules/lsp",
+    "modules/backend/semantic",
+    "modules/backend/compiler",
+    "modules/backend/clang",
+    "modules/backend/clang-compiler",
+    "plugins/std",
+    "plugins/libs",
     "tools/probe",
-    "plugins/json",
-    "plugins/safe",
-    "plugins/cfg",
 ]
 
 # This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.
@@ -64,16 +66,18 @@ ldflags = ["-Wl,--error-limit=0"]
 
 [dependencies]
 openkal-llvm-runtime = "0.15.2"
-mcxx-base    = { path = "modules/base" }
-mcxx-msa     = { path = "modules/msa" }
-mcxx-backend = { path = "modules/backend" }
-# The first-party rule plugins, statically composed (A0.6.1's composition comes later: mcxx compose).
-mcxx-rules-json = { path = "plugins/json" }
-mcxx-safe       = { path = "plugins/safe" }
-mcxx-cfg        = { path = "plugins/cfg" }
+mcxx-base              = { path = "modules/base" }
+mcxx-msa               = { path = "modules/msa" }
+mcxx-backend           = { path = "modules/backend/semantic" }
+mcxx-backend-compiler  = { path = "modules/backend/compiler" }
+# The plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose` makes a
+# project's own set later (A0.6.1).
+mcxx-plugins-std  = { path = "plugins/std" }
+mcxx-plugins-libs = { path = "plugins/libs" }
 
-# clang-dev is named here too: llvm.codegen-dev reaches it by path inside its archive and mcxx.clang
-# by version, and the root settles which one the graph holds.
+# Version settlement only, not a dependency of the driver's own code: llvm.codegen-dev reaches
+# llvm.clang-dev by path inside its archive and mcxx.backend.clang by version, and mcpp asks the
+# root to say which one the graph holds. (The one llvm.* name outside modules/backend; the
+# clang-exposure rule allows exactly this table here.)
 [dependencies.llvm]
-clang-dev    = "23.1.0.2"
-clang-driver = "23.1.0.2"
+clang-dev = "23.1.0.2"

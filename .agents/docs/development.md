@@ -7,7 +7,7 @@
 | 层 | 怎么复用 | 实测 |
 |---|---|---|
 | Clang/LLVM（`llvm.clang-dev`、`codegen-dev`、`clang-driver`） | **始终按版本**从本仓库的 `index/llvm` 使用。mcpp 按（版本 + 编译标志）把目标文件放进全局缓存 `~/.mcpp/build-cache`，不同项目、不同 workspace 之间共用 | 第一个使用方编译用 154 s，第二个项目只用 13.5 s |
-| libmc++ 的后端（`modules/clang`） | 拆成分区：`:support`、`:store`、`:unit`、`:completion`、`:index`，外加 `workspace.cpp`。改一个文件只重编它自己和依赖它的部分 | 改 `workspace.cpp` 后重建约 22 s；此前整个 `clang.cpp` 重编，还要加上 mcpp 的额外开销 |
+| libmc++ 的后端（`modules/backend/clang`） | 拆成分区：`:support`、`:store`、`:unit`、`:completion`、`:index`，外加 `workspace.cpp`。改一个文件只重编它自己和依赖它的部分 | 改 `workspace.cpp` 后重建约 22 s；此前整个 `clang.cpp` 重编，还要加上 mcpp 的额外开销 |
 | mcpp 本身 | 在 `.xlings.json` 中固定为 2026.9.28.2（`forks/` 下的仓库也继承）。2026.9.28.3 对每个 workspace 成员都单独走一遍解析和校验，空跑要 79 s；2026.9.28.2 只要 6 s | CI 也固定在同一个版本 |
 
 规则：
@@ -19,10 +19,11 @@
 
 | 层 | 命令 | 耗时 | 覆盖内容 |
 |---|---|---|---|
-| 源码规则 | `python3 tools/checks/lint.py [根目录...]` | < 1 s | `json-brace-init`：`Json x { expr }` 会得到 `[expr]`，一律写成 `=` |
+| 源码规则 | `python3 tools/checks/lint.py [根目录...]` | < 1 s | `clang-exposure`：Clang 只能出现在 `modules/backend/clang*`；`json-brace-init`：`Json x { expr }` 会得到 `[expr]`（编译器本身也能捕获） |
 | 纯逻辑单元测试 | `mcpp test -p modules/base`、`-p modules/graph` | 几秒 | trace、扫描器、模块图 |
 | LSP 层 | `mcpp test -p modules/lsp` | 约 3 s | 假后端（`FakeWorkspace`）：UTF-16 位置换算、诊断推送、跳转、悬停、引用、symbolInfo、调用层级 |
-| 后端 | `mcpp test -p modules/clang` | 构建约 15 s，运行 0.3 s | 在临时目录中生成不用标准库的模块程序：解析、实体、跨模块跳转、失败根因、缓冲区覆盖、诊断 code |
+| 插件（规则、过滤器） | `mcpp test -p plugins/std`、`-p plugins/libs` | 几秒 | 只用事实和文本：mc++.safe、`[[mcpp::cfg]]`、json-brace-init，以及门禁的配置和豁免 |
+| 后端 | `mcpp test -p modules/backend/clang` | 构建约 15 s，运行 0.3 s | 在临时目录中生成不用标准库的模块程序：解析、实体、跨模块跳转、失败根因、缓冲区覆盖、诊断 code |
 | 真实工程 | `tools/probe`：`mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...` | 秒级到分钟级 | 真实编译数据库上的完整流程 |
 | 编辑器（fork） | `forks/mcpp-language-server`：`mcpp test`，以及 conformance fixture（`--core-engine mcxx`） | 分钟级 | 58 个 linux fixture |
 

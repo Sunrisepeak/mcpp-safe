@@ -1,0 +1,23 @@
+# mcxx.backend.clang.compiler: clang itself in this process -- the driver, cc1 and cc1as
+# (llvm.clang-driver, with llvm.codegen-dev's x86-64 and AArch64 back ends) -- for the mcxx driver.
+# The other package that may name Clang (modules/backend/README.md). Separate from
+# mcxx.backend.clang because mcpp links every object of a package into its consumers: mcppls needs
+# the semantics, not a code generator.
+[package]
+name        = "mcxx-backend-clang-compiler"
+version     = "0.1.0"
+description = "clang 23.1 in process (driver, cc1, cc1as, code generation) for the mcxx driver"
+license     = "Apache-2.0"
+
+[targets.mcxx-backend-clang-compiler]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+
+[dependencies.llvm]
+clang-dev    = "23.1.0.2"
+clang-driver = "23.1.0.2"
+
+[lib]
+path = "src/compiler.cppm"

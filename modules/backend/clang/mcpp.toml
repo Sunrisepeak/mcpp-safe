@@ -1,0 +1,33 @@
+# mcxx.backend.clang: MSA over Clang 23.1 -- module interfaces, parsing, facts, index, completion --
+# and the Clang side of MC++'s plugins (the gate plugin, [[mcpp::allow]], source filters). One of the
+# two packages that may name Clang (modules/backend/README.md); consumers reach it only through
+# mcxx.backend (../semantic).
+[package]
+name        = "mcxx-backend-clang"
+version     = "0.1.0"
+description = "The MC++ semantic API over Clang 23.1, and MC++'s plugins inside Clang"
+license     = "Apache-2.0"
+
+[targets.mcxx-backend-clang]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-base     = { path = "../../base" }
+mcxx-msa      = { path = "../../msa" }
+mcxx-graph    = { path = "../../graph" }
+mcxx-plugin   = { path = "../../plugin/sdk" }
+mcxx-features = { path = "../../features" }
+
+# Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
+# repository's own index (index/llvm).
+[dependencies.llvm]
+clang-dev = "23.1.0.2"
+
+[lib]
+path = "src/clang.cppm"
+
+[dev-dependencies]
+mcxx-testing      = { path = "../../testing" }
+mcxx-plugins-std  = { path = "../../../plugins/std" }
+mcxx-plugins-libs = { path = "../../../plugins/libs" }

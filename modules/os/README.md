@@ -1,20 +1,7 @@
-# os
+# os：平台常量（`mcxx.os`）
 
-Three packages, `linux`, `macos` and `windows`, each exporting the same module,
-`mcxx.os`, with the same shape: `Family`, `FAMILY`, `FAMILY_NAME`,
-`EXECUTABLE_SUFFIX`, `PATH_LIST_SEPARATOR`, `PLATFORM`,
-`CASE_INSENSITIVE_PATHS`. Only one of the three is ever in a build's dependency
-graph — `mcpp.toml`'s `[target.'cfg(os = "...")'.dependencies]` picks it by the
-build target, so it is a compile-time choice, not a runtime one.
+`linux`、`macos`、`windows` 三个包导出同一个模块 `mcxx.os`，形状完全相同：`Family`、`FAMILY`、`FAMILY_NAME`、`EXECUTABLE_SUFFIX`、`PATH_LIST_SEPARATOR`、`PLATFORM`、`CASE_INSENSITIVE_PATHS`。一次构建的依赖图里只会有其中一个：`mcpp.toml` 的 `[target.'cfg(os = "...")'.dependencies]` 按构建目标选中它，这是编译期的选择。
 
-The one thing to get right: because exactly one package is present, code
-consumes these as compile-time constants with `if constexpr (mcxx::os::FAMILY
-== ...)`, never with `#ifdef` — there is no preprocessor macro to branch on, and
-no need for one, since the platform never varies within a single build. The
-value differences live entirely in `<platform>/src/os.cppm`; everything else
-about each package (`mcpp.toml`) is identical.
+所以代码用 `if constexpr (mcxx::os::FAMILY == ...)` 读取这些常量，不写 `#ifdef`：既没有宏可以判断，也不需要。三个包之间的差异只在 `<平台>/src/os.cppm` 里。`PLATFORM`（`linux-x64`、`linux-arm64` ……）还取决于架构，来自 [`../arch`](../arch/README.md)。
 
-`PLATFORM` is the one constant that also depends on the architecture: `linux-x64` or
-`linux-arm64`, the name VS Code gives the target and the key of a payload, a VSIX and
-`packaging/payload.lock.json`'s platforms. Each package takes the architecture from
-[`modules/arch`](../arch/README.md), which the target picks the same way it picks the OS.
+复制自 mcppls（同一作者），改名为 mcxx。

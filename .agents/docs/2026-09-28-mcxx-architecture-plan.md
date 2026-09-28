@@ -65,38 +65,39 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 ## 4. 仓库和 workspace 结构（mcpp workspace，基于 openkal）
 
 ```
-mcpp-safe/                              workspace 根；根包就是 mcxx 驱动（和 mcppls 的根包就是服务器同理）
-├── mcpp.toml                           [workspace] members；[workspace.dependencies] 统一锁定
-│                                       openkal-llvm-runtime / llvm.clang-dev / IFC SDK / nlohmann.json / cmdline
-├── src/                                mcxx 驱动：compile / check / emit-ifc / serve（MC5）
+mcpp-safe/                              workspace 根；根包就是 mcxx 驱动
+├── mcpp.toml                           [workspace] members；[indices]（本仓库 index/）
+├── src/                                mcxx 驱动（MC5）：只做命令分发，不包含 Clang 头文件
 ├── modules/                            ── libmc++：每个目录都是一个独立的 mcpp 包，按依赖集合拆分 ──
-│   ├── base/            mcxx.base            错误、文本、路径、arena、sha256。无任何依赖
-│   ├── os/{linux,macos,windows}              平台常量包，通过 [target.'cfg(...)'.dependencies] 选择
-│   ├── platform/        mcxx.platform        进程、文件系统、环境变量。**唯一 import openkal 的地方**
-│   ├── core/            mcxx.core            会话、选项、诊断（含 SARIF）、源码管理
-│   ├── features/        mcxx.features        特性注册表、profile、门禁引擎、作用域、配置（MC1）
-│   ├── msa/             mcxx.msa             MC++ 语义 API：接口和值类型（MC3）
-│   ├── modules/         mcxx.modules         模块图、IFC 读写、方言信息（MC2）。依赖 IFC SDK
-│   ├── backend-clang/   mcxx.backend.clang   基于 Clang 23.1 实现 MSA。**唯一依赖 llvm.clang-dev 的包**
-│   ├── frontend/        mcxx.frontend        自研前端：lex / parse（M1）→ decl（M2）→ expr（M3）。不依赖 Clang
-│   ├── analysis/        mcxx.analysis.*      基于 MSA 的 CFG 和数据流分析
-│   ├── plugin-host/     mcxx.plugin.host     静态组合的注册表，以及进程外协议的宿主端（MC4）
-│   ├── plugin-sdk/      mcxx.plugin          插件作者使用：`import mcxx.plugin;`。只依赖 base 和 msa 的接口
-│   ├── plugin-remote/   mcxx.plugin.remote   进程外插件那一侧的协议库。**不依赖 openkal**，任何工具链都能构建
-│   ├── service/         mcxx.service         面向编辑器和 Agent 的服务（MC6）
-│   └── testing/         mcxx.testing         最小的具名模块测试框架（仿照 mcppls.testing）
-├── plugins/                            第一方插件和规则包，每个都是独立的 mcpp 包，和第三方插件走同一条路径
-│   ├── safe/            mc++.safe            MC++ 编译器插件
-│   ├── mcpp-tools-safe/ mcpp 构建规则包：对非 mcxx 工具链以 blocking check 运行 `mcxx check`（独立包，第三轮已定）
-│   └── gpu/             gpu.*（M3 之后）
-├── index/                              **本仓库自建的 mcpp 包索引**（mcpp index 格式：`index.toml`、`pkgs/<首字母>/<名字>.lua`）
-│                                       llvm.clang-dev、IFC SDK、libmc++ 各包、插件包；通过 `[indices] mcxx-local = { path = "index" }` 接入
-├── xpkgs/                              **本仓库自建的 xlings xpkg 文件**（xim 格式）：mcxx 工具链包，以及退路用的 llvm-dev；以本地索引仓库的方式接入
-├── specs/                              MC1–MC6：schema、示例、可追溯性
-├── conformance/                        一致性测试的 fixture 和 runner
-├── tools/devtools/                     mcxx-devtools：分层检查、规范检查、差分测试、语料统计、计时
+│   ├── base/            mcxx.base            错误、文本、路径、sha256、日志、trace、TOML
+│   ├── os/{linux,macos,windows}, arch/{x86_64,aarch64}   平台常量包，通过 [target.'cfg(...)'.dependencies] 选择
+│   ├── testing/         mcxx.testing         最小的具名模块测试框架
+│   ├── msa/             mcxx.msa             MC++ 语义 API 与事实（MC3）
+│   ├── graph/           mcxx.graph           模块声明的词法扫描、模块图（方案里原名 modules/）
+│   ├── plugin/          插件核心：sdk/（mcxx.plugin，MC4）；以后还有 host/（mcxx compose、进程外宿主）、remote/
+│   ├── features/        mcxx.features        特性门禁（MC1）：配置、作用域、级别、豁免、审计
+│   ├── lsp/             mcxx.lsp             面向编辑器的 LSP 形态服务（MC6；方案里原名 service/）
+│   └── backend/         后端。**Clang 只能出现在这里的两个 clang* 包里**
+│       ├── semantic/        mcxx.backend               语义门面（mcppls 链接它）
+│       ├── compiler/        mcxx.backend.compiler      编译门面（mcxx 驱动链接它）
+│       ├── clang/           mcxx.backend.clang         基于 Clang 23.1 的 MSA、事实、Clang 内的插件机制
+│       └── clang-compiler/  mcxx.backend.clang.compiler  进程内的 clang（driver、cc1、代码生成）
+├── plugins/                            插件实现，和插件核心分开；一个目录是一个包，可放多个插件模块
+│   ├── std/             mcxx.plugins.safe（mc++.safe）、mcxx.plugins.cfg（[[mcpp::cfg]]）
+│   └── libs/            mcxx.plugins.json（nlohmann::json 的 json-brace-init）
+├── index/                              本仓库自建的 mcpp 包索引：llvm.*（clang-dev、codegen-dev、clang-driver）、microsoft.*（gsl、ifc-sdk）
+├── xpkgs/                              （计划）本仓库自建的 xlings xpkg：mcxx 工具链包
+├── specs/、conformance/                （计划）MC1–MC6 的 schema 与示例，一致性 fixture
+├── tools/               probe/（服务的开发驱动）、checks/lint.py（clang-exposure、json-brace-init）；以后还有 devtools/
+├── forks/                              被忽略：speak-agent 下各 fork 的本地检出
 └── .agents/docs/
 ```
+
+和第一版方案相比的调整（第四轮，按实现情况）：
+- **后端集中到 `modules/backend/`**：两个门面加两个 Clang 实现。语义和编译分成两个包，因为 mcpp 会把一个包的全部目标文件链接进使用方，mcppls 不应该带上代码生成器。mcppls 在进程内链接语义门面，不再通过 `mcxx serve` 子进程；那是早期的设想，实测进程内更简单也更快。
+- **插件核心和实现分开**：核心在 `modules/plugin/`、`modules/features/`，实现在 `plugins/`；一个实现目录按主题放多个插件模块。
+- **Clang 边界靠工具强制**：`tools/checks/lint.py` 的 `clang-exposure` 规则，CI 中执行。
+- `platform/`、`core/` 暂时没有拆出：目前没有这部分需求，mcxx.base 已经够用。
 
 ### 4.1 包和依赖集合
 

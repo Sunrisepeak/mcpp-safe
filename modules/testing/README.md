@@ -1,22 +1,15 @@
-# testing
+# testing：测试框架（`mcxx.testing`）
 
-`mcxx-testing`, a minimal named-module test harness (`import mcxx.testing;`),
-the sole dev-dependency of `tests/` (`mcpp.toml`'s `[dev-dependencies]`).
+一个最小的具名模块测试框架，是各包 `tests/` 唯一的 dev 依赖。
 
 ```cpp
 import mcxx.testing;
 using namespace mcxx::testing;
 int main() {
     "adds"_test = [] { expect(1 + 1 == 2) << "arithmetic"; };
+    "stops at a fatal"_test = [] { expect(fatal(true)); };
     return report();
 }
 ```
 
-It provides `"name"_test = []{...}` to register and run a named case, `expect(cond)`
-for a non-fatal check and `expect(fatal(cond))` for one that aborts the current case
-on failure, both returning an `Expectation` that `<<` can append a message to on
-failure, and `report()`, which prints a summary and returns the process exit code.
-
-It exists in place of a third-party framework because boost.ut 2.3.1 does not
-compile with clang 22.1.8 on a Windows host — a frontend crash in code generation,
-in both the dev and release profiles (design doc issue log, K5).
+复制自 mcppls 的 mcppls-testing（同一作者），改名为 mcxx。

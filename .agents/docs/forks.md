@@ -28,11 +28,12 @@ mcpp-safe/
     mcpp-language-server/             speak-agent/mcpp-language-server, branch mcxx-engine
 ```
 
-The fork's `mcpp.toml` depends on libmc++ by path (`../../modules/{msa,backend,lsp}`).
-`modules/clang` depends on `../../forks/llvm-clang-dev`. A package consumed from outside its own
-workspace must state its dependencies' versions, because mcpp resolves `x.workspace = true` only
-for members of the consumer's workspace. So libmc++'s members state `openkal-llvm-runtime` and
-`nlohmann.json` versions explicitly.
+The fork's `mcpp.toml` depends on libmc++ by path (`../../modules/{msa,backend/semantic,lsp}`, and
+`../../plugins/{std,libs}` so the editor applies the same plugins a compile does).
+`modules/backend/clang` takes Clang's libraries by version from this repository's own index
+(`index/llvm`, tags of speak-agent/llvm-clang-dev), so building needs no checkout of the fork. A
+package consumed from outside its own workspace must state its dependencies' versions, because
+mcpp resolves `x.workspace = true` only for members of the consumer's workspace.
 
 A fresh checkout: `git clone Sunrisepeak/mcpp-safe`, then clone the two forks into `forks/`, then
 `mcpp build` in `forks/mcpp-language-server`.
