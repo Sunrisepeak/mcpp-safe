@@ -26,7 +26,9 @@ mcpp-safe/
 │   ├── lsp/                   LSP 形态的语义服务（MC6）
 │   └── backend/               后端：semantic/、compiler/（两个门面），clang/、clang-compiler/（只有这两个包含 Clang）
 ├── plugins/                   插件实现：std/（policy、cfg），libs/（json）
-├── tools/                     probe、checks（源码规则）
+├── specs/                     规范 MC1、MC3、MC4、MC5：正文、JSON Schema、示例
+├── conformance/               门禁 fixture（gates/），规范条目的可追溯性（traceability.json）
+├── tools/                     probe、conformance（fixture runner）、checks（源码规则、规范检查）
 ├── index/                     本仓库自建的 mcpp 包索引（llvm.*、microsoft.*）
 ├── forks/                     被 .gitignore 忽略：speak-agent 下各 fork 的检出（llvm-clang-dev、mcpp-language-server）
 └── .agents/docs/              方案、里程碑、进度、开发方式、检查点
@@ -40,6 +42,8 @@ mcpp-safe/
 mcpp build                                   # mcxx 驱动（首次会下载并构建 Clang 库，之后走全局缓存）
 mcpp test -p modules/lsp                     # 各包分别测试；分层说明见 .agents/docs/development.md
 python3 tools/checks/lint.py                 # 源码规则
+python3 tools/checks/specs.py --mcxx <mcxx>  # 规范：schema、示例、要求 id 与可追溯性
+<mcxx> features                              # 这个 mcxx 能门禁什么：provider、特性、profile
 MCXX_LOG=info MCXX_TRACE=/tmp/t.json …       # 日志与时间线
 ```
 

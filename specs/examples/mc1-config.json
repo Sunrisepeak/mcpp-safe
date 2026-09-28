@@ -1,0 +1,28 @@
+{
+  "profile": [
+    "safe",
+    "modules"
+  ],
+  "features": {
+    "json-brace-init": "deny",
+    "exceptions": "deny",
+    "rtti": "warn",
+    "raw-pointers": "warn",
+    "lib:std.vector": "allow"
+  },
+  "modules": {
+    "app.legacy": {
+      "goto": "allow",
+      "c-array": "warn"
+    },
+    "app.legacy:io": {
+      "c-array": "allow"
+    }
+  },
+  "namespaces": {
+    "app::ffi": {
+      "raw-pointers": "allow",
+      "c-varargs": "allow"
+    }
+  }
+}

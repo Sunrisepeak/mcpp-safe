@@ -14,6 +14,7 @@
 import std;
 import mcxx.backend.compiler;
 import mcxx.base;
+import mcxx.msa;
 import mcxx.plugin;
 import mcxx.features;
 
@@ -37,6 +38,10 @@ std::string json_string(std::string_view text) {
     std::string out { "\"" };
     for (const char c : text) {
         if (c == '"' || c == '\\') out += '\\';
+        if (static_cast<unsigned char>(c) < 0x20) {
+            out += std::format("\\u{:04x}", static_cast<unsigned char>(c));
+            continue;
+        }
         out += c;
     }
     return out + "\"";
@@ -60,34 +65,39 @@ int list_features(bool json) {
         return std::ranges::find(catalog->filters, p) != catalog->filters.end() ? "source filter" : "rule";
     };
     if (json) {
-        std::string out { "{\"providers\":[" };
+        // MC1 §10 (specs/schema/mc1-catalog.schema.json).
+        auto strings = [](const auto& items) {
+            std::string out;
+            for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
+            return "[" + out + "]";
+        };
+        std::string out { "{\"mc1-version\":\"0.1.0\",\"providers\":[" };
         for (std::size_t i { 0 }; i < catalog->providers.size(); ++i) {
             const auto* p = catalog->providers[i].provider;
             out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));
         }
-        out += "],\"features\":[";
+        out += "],\"replaced\":" + strings(catalog->replaced) + ",\"features\":[";
         for (std::size_t i { 0 }; i < catalog->features.size(); ++i) {
             const auto& e = catalog->features[i];
             const auto& f = *e.feature;
             std::string profiles;
-            for (const auto& [name, level] : f.profiles) profiles += std::format("{}{{\"profile\":{},\"level\":\"{}\"}}", profiles.empty() ? "" : ",", json_string(name), plugin::to_string(level));
-            out += std::format("{}{{\"id\":{},\"category\":\"{}\",\"standard\":{},\"provider\":{},\"default\":\"{}\",\"waivable\":{},"
-                               "\"summary\":{},\"fix\":{},\"profiles\":[{}]}}",
-                               i ? "," : "", json_string(f.id), plugin::to_string(f.category), json_string(f.standard), json_string(e.provider->name()),
-                               plugin::to_string(f.default_level), f.waivable, json_string(f.summary), json_string(f.fix), profiles);
+            for (const auto& [name, level] : f.profiles)
+                profiles += std::format("{}{{\"profile\":{},\"level\":\"{}\"}}", profiles.empty() ? "" : ",", json_string(name), plugin::to_string(level));
+            out += std::format("{}{{\"id\":{},\"category\":\"{}\",\"standard\":{},\"layer\":{},\"provider\":{},\"default\":\"{}\",\"waivable\":{},"
+                               "\"summary\":{},\"fix\":{},\"profiles\":[{}],\"needs\":{},\"requires-declaration\":{},\"replaces\":{},\"shadowed\":{}}}",
+                               i ? "," : "", json_string(f.id), plugin::to_string(f.category), json_string(f.standard), json_string(f.layer),
+                               json_string(e.provider->name()), plugin::to_string(f.default_level), f.waivable, json_string(f.summary), json_string(f.fix),
+                               profiles, strings(mcxx::msa::fact::names(f.needs)), json_string(f.requires_declaration), f.replaces, strings(e.shadowed));
         }
         out += "],\"profiles\":[";
         for (std::size_t i { 0 }; i < catalog->profiles.size(); ++i) {
             const auto& p = *catalog->profiles[i].profile;
-            std::string ids;
-            for (const auto& id : members(*catalog, p.name)) ids += (ids.empty() ? "" : ",") + json_string(id);
-            out += std::format("{}{{\"name\":{},\"provider\":{},\"summary\":{},\"features\":[{}]}}", i ? "," : "", json_string(p.name),
-                               json_string(catalog->profiles[i].provider->name()), json_string(p.summary), ids);
+            out += std::format("{}{{\"name\":{},\"provider\":{},\"summary\":{},\"includes\":{},\"features\":{}}}", i ? "," : "", json_string(p.name),
+                               json_string(catalog->profiles[i].provider->name()), json_string(p.summary), strings(p.includes),
+                               strings(members(*catalog, p.name)));
         }
-        out += "],\"problems\":[";
-        for (std::size_t i { 0 }; i < catalog->problems.size(); ++i) out += (i ? "," : "") + json_string(catalog->problems[i]);
-        std::println("{}]}}", out);
-        return 0;
+        std::println("{}],\"problems\":{}}}", out, strings(catalog->problems));
+        return catalog->problems.empty() ? 0 : 1;
     }
     std::println("providers");
     for (const auto& [p, o] : catalog->providers) {
@@ -141,6 +151,18 @@ int main(int argc, char** argv) {
     }
     if (command == "features") return list_features(std::ranges::find(rest, "--json") != rest.end());
     if (command == "version" || command == "--version") {
+        if (std::ranges::find(rest, "--json") != rest.end()) {
+            // MC5 §5 (specs/schema/mc5-version.schema.json).
+            std::string providers;
+            for (const auto& p : mcxx::plugin::catalog()->providers) providers += (providers.empty() ? "" : ",") + json_string(p.provider->name());
+            const std::string full { compiler::version() };   // "clang 23.1.0"
+            std::string_view clang { full };
+            if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
+            std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.1.0\","
+                         "\"mc3\":\"0.1.0\",\"mc4\":\"0.1.0\",\"mc4-protocols\":[1],\"mc5\":\"0.1.0\"}},\"providers\":[{}]}}",
+                         VERSION, json_string(clang), providers);
+            return 0;
+        }
         std::println("mcxx {} ({})", VERSION, compiler::version());
         return 0;
     }

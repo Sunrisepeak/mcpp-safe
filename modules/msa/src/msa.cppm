@@ -387,6 +387,27 @@ constexpr Kinds operator|(Kinds a, Kinds b) { return static_cast<Kinds>(std::to_
 constexpr Kinds& operator|=(Kinds& a, Kinds b) { return a = a | b; }
 constexpr bool contains(Kinds set, Kinds kind) { return (std::to_underlying(set) & std::to_underlying(kind)) != 0; }
 
+// Each kind by its MC3 name ("pointer-arithmetic"), in order.
+inline constexpr std::pair<Kinds, std::string_view> KIND_NAMES[] {
+    { Kinds::declarations, "declarations" },   { Kinds::initializations, "initializations" },
+    { Kinds::casts, "casts" },                 { Kinds::allocations, "allocations" },
+    { Kinds::pointer_arithmetic, "pointer-arithmetic" }, { Kinds::gotos, "gotos" },
+    { Kinds::macros, "macros" },               { Kinds::uses, "uses" },
+    { Kinds::includes, "includes" },           { Kinds::suppressions, "suppressions" },
+    { Kinds::declaration_types, "declaration-types" },
+};
+std::vector<std::string_view> names(Kinds set) {
+    std::vector<std::string_view> out;
+    for (const auto& [kind, name] : KIND_NAMES)
+        if (contains(set, kind)) out.push_back(name);
+    return out;
+}
+std::optional<Kinds> parse_kind(std::string_view name) {
+    for (const auto& [kind, n] : KIND_NAMES)
+        if (n == name) return kind;
+    return std::nullopt;
+}
+
 struct Facts {
     Certainty certainty { Certainty::certain };
     Kinds collected { Kinds::all };   // what was looked for: a kind outside it is empty because nobody asked

@@ -1,0 +1,1 @@
+{"mcxx":"0.1.0","compiler":{"name":"clang","version":"23.1.0"},"specifications":{"mc1":"0.1.0","mc3":"0.1.0","mc4":"0.1.0","mc4-protocols":[1],"mc5":"0.1.0"},"providers":["mc++.iso","mc++.policy","mcxx.plugins.cfg","mcxx.plugins.json"]}

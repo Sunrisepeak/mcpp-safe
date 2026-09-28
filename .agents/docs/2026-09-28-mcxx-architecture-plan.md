@@ -90,7 +90,8 @@ mcpp-safe/                              workspace 根；根包就是 mcxx 驱动
 │   └── libs/            mcxx.plugins.json（nlohmann::json 的 json-brace-init）
 ├── index/                              本仓库自建的 mcpp 包索引：llvm.*（clang-dev、codegen-dev、clang-driver）、microsoft.*（gsl、ifc-sdk）
 ├── xpkgs/                              （计划）本仓库自建的 xlings xpkg：mcxx 工具链包
-├── specs/、conformance/                （计划）MC1–MC6 的 schema 与示例，一致性 fixture
+├── specs/                              MC1、MC3、MC4、MC5 的正文、schema、示例（MC2、MC6 在 M1）
+├── conformance/                        门禁 fixture（gates/）与规范条目的可追溯性（traceability.json）
 ├── tools/               probe/（服务的开发驱动）、checks/lint.py（clang-exposure、json-brace-init）；以后还有 devtools/
 ├── forks/                              被忽略：speak-agent 下各 fork 的本地检出
 └── .agents/docs/

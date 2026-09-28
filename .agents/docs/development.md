@@ -24,6 +24,7 @@
 | LSP 层 | `mcpp test -p modules/lsp` | 约 3 s | 假后端（`FakeWorkspace`）：UTF-16 位置换算、诊断推送、跳转、悬停、引用、symbolInfo、调用层级 |
 | 门禁和内置 provider | `mcpp test -p modules/features` | 几秒 | 只用事实：`mc++.iso` 的 15 个特性、profile（safe、modules、strict，多个同时使用）、Plan、作用域、豁免、未知的 id；插件覆盖内置特性、冲突、重新定义 profile、取代整个 provider |
 | 插件（规则、过滤器） | `mcpp test -p plugins/std`、`-p plugins/libs` | 几秒 | 只用事实和文本：`raw-pointers`、`lib:std.vector`、`[[mcpp::cfg]]` 和 `ext:cfg`（profile portable）、json-brace-init（包括没有 nlohmann 时不问它） |
+| 规范 | `python3 tools/checks/specs.py [--mcxx 路径]` | 约 1 s | 规范的 schema、示例、反例、要求 id 与可追溯性；带 `--mcxx` 时加上真实的驱动输出 |
 | 门禁 fixture | `mcpp build -p tools/conformance`，然后运行 `mcxx-conformance conformance/gates` | 约 10 s | 19 个特性，每个至少 5 正 5 反，精确率和召回率都要 100% |
 | 后端 | `mcpp test -p modules/backend/clang` | 构建约 15 s，运行 0.3 s | 在临时目录中生成不用标准库的模块程序：解析、实体、跨模块跳转、失败根因、缓冲区覆盖、诊断 code |
 | 真实工程 | `tools/probe`：`mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...` | 秒级到分钟级 | 真实编译数据库上的完整流程 |

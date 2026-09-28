@@ -1,0 +1,549 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc3-facts.schema.json",
+  "title": "MC3 0.1.0: the facts of one file, in JSON",
+  "type": "object",
+  "required": [
+    "mc3-version",
+    "path",
+    "module",
+    "certainty",
+    "collected",
+    "declarations",
+    "initializations",
+    "casts",
+    "allocations",
+    "pointer-arithmetic",
+    "gotos",
+    "macros",
+    "uses",
+    "includes",
+    "suppressions"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "begin",
+        "end"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "begin": {
+          "$ref": "#/$defs/position"
+        },
+        "end": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "kind": {
+      "enum": [
+        "declarations",
+        "initializations",
+        "casts",
+        "allocations",
+        "pointer-arithmetic",
+        "gotos",
+        "macros",
+        "uses",
+        "includes",
+        "suppressions",
+        "declaration-types"
+      ]
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "name",
+        "entity",
+        "qualified-name",
+        "kind",
+        "type",
+        "templates",
+        "exported",
+        "c-array",
+        "pointer",
+        "union",
+        "c-variadic"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/range"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "qualified-name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "unknown",
+            "module",
+            "namespace",
+            "namespace-alias",
+            "class",
+            "struct",
+            "union",
+            "enum",
+            "enumerator",
+            "type-alias",
+            "concept",
+            "function",
+            "method",
+            "constructor",
+            "destructor",
+            "conversion",
+            "field",
+            "variable",
+            "parameter",
+            "template-parameter",
+            "macro",
+            "label"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exported": {
+          "type": "boolean"
+        },
+        "c-array": {
+          "type": "boolean"
+        },
+        "pointer": {
+          "type": "boolean"
+        },
+        "union": {
+          "type": "boolean"
+        },
+        "c-variadic": {
+          "type": "boolean"
+        }
+      }
+    },
+    "initialization": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "name",
+        "entity",
+        "variable",
+        "type",
+        "type-template",
+        "form",
+        "constructor",
+        "initializer-list-constructor",
+        "elements",
+        "element-braced",
+        "member-default",
+        "indeterminate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/range"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "variable": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "type-template": {
+          "type": "string"
+        },
+        "form": {
+          "enum": [
+            "default",
+            "copy",
+            "direct",
+            "direct-list",
+            "copy-list"
+          ]
+        },
+        "constructor": {
+          "type": "string"
+        },
+        "initializer-list-constructor": {
+          "type": "boolean"
+        },
+        "elements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "element-braced": {
+          "type": "boolean"
+        },
+        "member-default": {
+          "type": "boolean"
+        },
+        "indeterminate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cast": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "kind",
+        "from",
+        "to",
+        "reinterprets",
+        "to-scalar"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "static_cast",
+            "dynamic_cast",
+            "const_cast",
+            "reinterpret_cast",
+            "c-style",
+            "functional"
+          ]
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "reinterprets": {
+          "type": "boolean"
+        },
+        "to-scalar": {
+          "type": "boolean"
+        }
+      }
+    },
+    "allocation": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "delete",
+        "array",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "delete": {
+          "type": "boolean"
+        },
+        "array": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "pointer-arithmetic": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "op",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "+",
+            "-",
+            "+=",
+            "-=",
+            "++",
+            "--",
+            "[]"
+          ]
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "goto": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "macro": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "use": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "construct",
+        "detail"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "construct": {
+          "enum": [
+            "throw",
+            "try",
+            "typeid",
+            "asm",
+            "va_arg"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "include": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "header",
+        "global-module-fragment"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "header": {
+          "type": "string",
+          "pattern": "^[<\"].*[>\"]$"
+        },
+        "global-module-fragment": {
+          "type": "boolean"
+        }
+      }
+    },
+    "suppression": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "ids",
+        "entity",
+        "declaration",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "entity": {
+          "type": "string"
+        },
+        "declaration": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "mc3-version": {
+      "const": "0.1.0"
+    },
+    "path": {
+      "type": "string"
+    },
+    "module": {
+      "type": "string"
+    },
+    "certainty": {
+      "enum": [
+        "certain",
+        "unknown"
+      ]
+    },
+    "collected": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/kind"
+      },
+      "uniqueItems": true
+    },
+    "declarations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/declaration"
+      }
+    },
+    "initializations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/initialization"
+      }
+    },
+    "casts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cast"
+      }
+    },
+    "allocations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/allocation"
+      }
+    },
+    "pointer-arithmetic": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pointer-arithmetic"
+      }
+    },
+    "gotos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/goto"
+      }
+    },
+    "macros": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/macro"
+      }
+    },
+    "uses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/use"
+      }
+    },
+    "includes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/include"
+      }
+    },
+    "suppressions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/suppression"
+      }
+    }
+  }
+}

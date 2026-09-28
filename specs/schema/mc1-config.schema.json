@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc1-config.schema.json",
+  "title": "MC1 0.1.0: [package.metadata.mcxx], read as JSON",
+  "type": "object",
+  "$defs": {
+    "level": {
+      "enum": [
+        "allow",
+        "warn",
+        "deny",
+        "off",
+        "warning",
+        "error"
+      ]
+    },
+    "feature-id": {
+      "type": "string",
+      "pattern": "^(lib:|ext:)?[a-z0-9]+([-.][a-z0-9]+)*$"
+    },
+    "levels": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/feature-id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/level"
+      }
+    }
+  },
+  "properties": {
+    "profile": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      ]
+    },
+    "features": {
+      "$ref": "#/$defs/levels"
+    },
+    "modules": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*(:[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*)?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/levels"
+      }
+    },
+    "namespaces": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/levels"
+      }
+    },
+    "plugins": {
+      "$comment": "MC4 \u00a73",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "timeout-ms": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "path"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "version"
+                  ]
+                },
+                {
+                  "required": [
+                    "command"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "version"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "command"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "command"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "version"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

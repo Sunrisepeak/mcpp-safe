@@ -1,0 +1,499 @@
+{
+    "mc1-version": "0.1.0",
+    "providers": [
+        {
+            "name": "mc++.iso",
+            "origin": "built-in",
+            "kind": "rule"
+        },
+        {
+            "name": "mc++.policy",
+            "origin": "plugin",
+            "kind": "rule"
+        },
+        {
+            "name": "mcxx.plugins.cfg",
+            "origin": "plugin",
+            "kind": "source filter"
+        },
+        {
+            "name": "mcxx.plugins.json",
+            "origin": "plugin",
+            "kind": "rule"
+        }
+    ],
+    "replaced": [],
+    "features": [
+        {
+            "id": "asm",
+            "category": "iso",
+            "standard": "[dcl.asm]",
+            "layer": "decl",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "an asm declaration: outside the abstract machine",
+            "fix": "use an intrinsic, std::atomic or a function written in the toolchain's own files",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "uses"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "c-array",
+            "category": "iso",
+            "standard": "[dcl.array]",
+            "layer": "decl",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a C array: unchecked bounds, and it decays to a pointer",
+            "fix": "use std::array or std::vector",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "declarations"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "c-style-cast",
+            "category": "iso",
+            "standard": "[expr.cast] [expr.type.conv]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a C-style cast (or `T(x)` to a scalar T): it may be a const_cast or a reinterpret_cast without saying so",
+            "fix": "use static_cast (or the named cast it has to be)",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "casts"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "c-varargs",
+            "category": "iso",
+            "standard": "[dcl.fct] [cstdarg.syn]",
+            "layer": "decl",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a C variadic function (`...`) or va_arg: a wrong type read is undefined",
+            "fix": "use a variadic template, std::initializer_list or std::span",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "declarations",
+                "uses"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "const-cast",
+            "category": "iso",
+            "standard": "[expr.const.cast]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a const_cast: writing to a const object through it is undefined",
+            "fix": "make the object mutable where it is declared, or copy it",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "casts"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "exceptions",
+            "category": "iso",
+            "standard": "[except.throw] [except.pre]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a throw expression or a try block",
+            "fix": "return std::expected or an error code",
+            "profiles": [],
+            "needs": [
+                "uses"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "ext:cfg",
+            "category": "extension",
+            "standard": "",
+            "layer": "text",
+            "provider": "mcxx.plugins.cfg",
+            "default": "allow",
+            "waivable": true,
+            "summary": "[[mcpp::cfg(...)]]: a declaration for some targets only",
+            "fix": "use a platform module selected by the build (mcpp's per-target sources) or if constexpr on mcxx.os constants",
+            "profiles": [],
+            "needs": [],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "goto",
+            "category": "iso",
+            "standard": "[stmt.goto]",
+            "layer": "syntax",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a goto",
+            "fix": "use structured control flow",
+            "profiles": [
+                {
+                    "profile": "strict",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "gotos"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "include",
+            "category": "iso",
+            "standard": "[cpp.include] [module.global.frag]",
+            "layer": "text",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "an #include outside a global module fragment: a textual dependency, not a module",
+            "fix": "import the module (or the header unit); keep #include in the global module fragment",
+            "profiles": [
+                {
+                    "profile": "modules",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "includes"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "json-brace-init",
+            "category": "pitfall",
+            "standard": "",
+            "layer": "expr",
+            "provider": "mcxx.plugins.json",
+            "default": "deny",
+            "waivable": true,
+            "summary": "a nlohmann::json list-initialized from one value holds it in a one-element array",
+            "fix": "write `Json x = value;` for a copy, or `Json::array({ value })` for an array",
+            "profiles": [],
+            "needs": [
+                "initializations"
+            ],
+            "requires-declaration": "nlohmann",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "lib:std.vector",
+            "category": "library",
+            "standard": "",
+            "layer": "decl",
+            "provider": "mc++.policy",
+            "default": "allow",
+            "waivable": true,
+            "summary": "std::vector (a library-control sample)",
+            "fix": "use the container the configuration names",
+            "profiles": [],
+            "needs": [
+                "declarations",
+                "declaration-types"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "macros",
+            "category": "iso",
+            "standard": "[cpp.replace]",
+            "layer": "syntax",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a macro definition",
+            "fix": "use constexpr, a template or an inline function",
+            "profiles": [
+                {
+                    "profile": "strict",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "macros"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "new-delete",
+            "category": "iso",
+            "standard": "[expr.new] [expr.delete]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a new or delete expression: a leak, a double or mismatched delete, a use after it",
+            "fix": "use std::make_unique, std::make_shared or a container",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "allocations"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "raw-pointer-arithmetic",
+            "category": "iso",
+            "standard": "[expr.add] [expr.sub] [expr.pre.incr]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "arithmetic on (or a subscript of) a raw pointer: out of its array is undefined",
+            "fix": "use std::span, an iterator or an index into a container",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "pointer-arithmetic"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "raw-pointers",
+            "category": "policy",
+            "standard": "",
+            "layer": "decl",
+            "provider": "mc++.policy",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a declaration whose type holds a raw pointer",
+            "fix": "use a reference, std::unique_ptr, std::shared_ptr, std::span or an index",
+            "profiles": [],
+            "needs": [
+                "declarations"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "reinterpret-cast",
+            "category": "iso",
+            "standard": "[expr.reinterpret.cast]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a reinterpret_cast (or a cast that is one): an access through the wrong type is undefined",
+            "fix": "use std::bit_cast, std::start_lifetime_as or a typed API",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "casts"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "rtti",
+            "category": "iso",
+            "standard": "[expr.typeid] [expr.dynamic.cast]",
+            "layer": "expr",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "typeid or dynamic_cast",
+            "fix": "use a virtual function or std::variant",
+            "profiles": [],
+            "needs": [
+                "casts",
+                "uses"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "uninitialized",
+            "category": "iso",
+            "standard": "[dcl.init.general] [basic.indet]",
+            "layer": "decl",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a local whose default-initialization leaves its value indeterminate: reading it is undefined",
+            "fix": "give it an initializer (`T x {};` for zero)",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "initializations"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        },
+        {
+            "id": "union",
+            "category": "iso",
+            "standard": "[class.union]",
+            "layer": "decl",
+            "provider": "mc++.iso",
+            "default": "allow",
+            "waivable": true,
+            "summary": "a union: reading a member that is not the active one is undefined",
+            "fix": "use std::variant",
+            "profiles": [
+                {
+                    "profile": "safe",
+                    "level": "deny"
+                }
+            ],
+            "needs": [
+                "declarations"
+            ],
+            "requires-declaration": "",
+            "replaces": false,
+            "shadowed": []
+        }
+    ],
+    "profiles": [
+        {
+            "name": "modules",
+            "provider": "mc++.iso",
+            "summary": "every dependency by import: #include only in a global module fragment",
+            "includes": [],
+            "features": [
+                "include"
+            ]
+        },
+        {
+            "name": "portable",
+            "provider": "mc++.iso",
+            "summary": "ISO C++ only: every extension is denied",
+            "includes": [],
+            "features": [
+                "ext:cfg"
+            ]
+        },
+        {
+            "name": "safe",
+            "provider": "mc++.iso",
+            "summary": "the sources of undefined behavior a compiler does not check",
+            "includes": [],
+            "features": [
+                "asm",
+                "c-array",
+                "c-style-cast",
+                "c-varargs",
+                "const-cast",
+                "new-delete",
+                "raw-pointer-arithmetic",
+                "reinterpret-cast",
+                "uninitialized",
+                "union"
+            ]
+        },
+        {
+            "name": "strict",
+            "provider": "mc++.iso",
+            "summary": "safe and modules, and goto and macro definitions",
+            "includes": [
+                "safe",
+                "modules"
+            ],
+            "features": [
+                "asm",
+                "c-array",
+                "c-style-cast",
+                "c-varargs",
+                "const-cast",
+                "goto",
+                "include",
+                "macros",
+                "new-delete",
+                "raw-pointer-arithmetic",
+                "reinterpret-cast",
+                "uninitialized",
+                "union"
+            ]
+        }
+    ],
+    "problems": []
+}

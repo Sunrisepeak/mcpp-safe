@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc1-catalog.schema.json",
+  "title": "MC1 0.1.0: the catalog, as `mcxx features --json` prints it",
+  "type": "object",
+  "required": ["mc1-version", "providers", "replaced", "features", "profiles", "problems"],
+  "additionalProperties": false,
+  "$defs": {
+    "level": { "enum": ["allow", "warn", "deny"] },
+    "kind": { "enum": ["declarations", "initializations", "casts", "allocations", "pointer-arithmetic", "gotos", "macros", "uses", "includes", "suppressions", "declaration-types"] }
+  },
+  "properties": {
+    "mc1-version": { "const": "0.1.0" },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "origin", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "origin": { "enum": ["built-in", "plugin"] },
+          "kind": { "enum": ["rule", "source filter"] }
+        }
+      }
+    },
+    "replaced": { "type": "array", "items": { "type": "string" } },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "standard", "layer", "provider", "default", "waivable", "summary", "fix", "profiles", "needs", "requires-declaration", "replaces", "shadowed"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^(lib:|ext:)?[a-z0-9]+([-.][a-z0-9]+)*$" },
+          "category": { "enum": ["iso", "policy", "library", "pitfall", "extension"] },
+          "standard": { "type": "string", "pattern": "^(\\[[a-z0-9.]+\\]( \\[[a-z0-9.]+\\])*)?$" },
+          "layer": { "enum": ["", "syntax", "decl", "expr", "text", "flow"] },
+          "provider": { "type": "string", "minLength": 1 },
+          "default": { "$ref": "#/$defs/level" },
+          "waivable": { "type": "boolean" },
+          "summary": { "type": "string", "minLength": 1 },
+          "fix": { "type": "string" },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["profile", "level"],
+              "additionalProperties": false,
+              "properties": { "profile": { "type": "string" }, "level": { "$ref": "#/$defs/level" } }
+            }
+          },
+          "needs": { "type": "array", "items": { "$ref": "#/$defs/kind" }, "uniqueItems": true },
+          "requires-declaration": { "type": "string" },
+          "replaces": { "type": "boolean" },
+          "shadowed": { "type": "array", "items": { "type": "string" } }
+        },
+        "if": { "properties": { "category": { "const": "iso" } } },
+        "then": { "properties": { "standard": { "minLength": 3 } } }
+      }
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "provider", "summary", "includes", "features"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "provider": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string" },
+          "includes": { "type": "array", "items": { "type": "string" } },
+          "features": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "problems": { "type": "array", "items": { "type": "string" } }
+  }
+}

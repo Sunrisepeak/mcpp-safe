@@ -1,0 +1,601 @@
+{
+ "$comment": "Rule identifiers of MC1, MC3, MC4 and MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
+ "$pending": {
+  "MC3-4.11-2": "the JSON reader and writer of facts come with the out-of-process protocol (task #5, mcxx.plugin.wire)",
+  "MC4-3-2": "[package.metadata.mcxx.plugins] is read with mcxx compose (task #5)",
+  "MC4-3-3": "mcxx compose (task #5, A0.6.1)",
+  "MC4-3-4": "mcxx compose (task #5, A0.6.1)",
+  "MC4-3-5": "the out-of-process host (task #5, A0.6.2)",
+  "MC4-5-1": "fault isolation of out-of-process plugins (task #5, A0.6.3)",
+  "MC4-5-2": "fault isolation (task #5, A0.6.3)",
+  "MC4-5-3": "fault isolation (task #5, A0.6.3)",
+  "MC4-5-4": "fault isolation (task #5, A0.6.3)",
+  "MC4-6.1-1": "the out-of-process protocol (task #5, A0.6.2)",
+  "MC4-6.1-2": "the out-of-process protocol (task #5)",
+  "MC4-6.1-3": "the out-of-process protocol (task #5)",
+  "MC4-6.2-1": "the out-of-process protocol (task #5)",
+  "MC4-6.2-2": "the out-of-process protocol (task #5)",
+  "MC4-6.2-3": "the out-of-process protocol (task #5)",
+  "MC4-6.3-1": "the out-of-process protocol (task #5)",
+  "MC4-6.3-2": "the out-of-process protocol (task #5)",
+  "MC4-6.3-3": "the same fixtures in process and out of process (task #5, A0.6.2)",
+  "MC5-3-1": "the corpus check on C-mcppls against clang 23.1 -fsyntax-only (A0.5.1)",
+  "MC5-6-2": "the argument-normalization fixture (A0.5.2)",
+  "MC5-7-1": "mcxx as an mcpp toolchain payload (V0.6, E-XIM-1)",
+  "MC4-6.1-4": "the out-of-process protocol (task #5); the examples validate today (specs.py)"
+ },
+ "MC1-2-1": [
+  {
+   "validate": "MC1 schema rejects a malformed feature id"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC1-2-1)"
+  }
+ ],
+ "MC1-2-2": [
+  {
+   "validate": "MC1 example validates: mc1-catalog.json"
+  },
+  {
+   "test": "plugins/std/tests/test_policy.cpp: the catalog: categories, providers, the cfg filter's extension feature"
+  }
+ ],
+ "MC1-2-3": [
+  {
+   "validate": "MC1 schema rejects an iso feature without stable names"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: every built-in feature is iso, with its stable names"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC1-2-3)"
+  }
+ ],
+ "MC1-2-4": [
+  {
+   "validate": "MC1 example validates: mc1-catalog.json"
+  }
+ ],
+ "MC1-2-5": [
+  {
+   "validate": "MC1 example validates: mc1-catalog.json"
+  }
+ ],
+ "MC1-2-6": [
+  {
+   "validate": "MC1 example validates: mc1-catalog.json"
+  }
+ ],
+ "MC1-2-7": [
+  {
+   "validate": "MC1 example catalog: MC1 section 3 categories, stable names and defaults"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: ISO C++ by default: nothing is gated, nothing is asked for"
+  }
+ ],
+ "MC1-2-8": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a feature that is not waivable stays what it is; a waiver of an unknown id is reported; a rule speaks only for its own features"
+  }
+ ],
+ "MC1-2.1-1": [
+  {
+   "test": "modules/features/tests/test_override.cpp: an ISO feature a plugin adds without replacing one, and two providers of one name, are problems"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC1-2.1-1)"
+  }
+ ],
+ "MC1-2.1-2": [
+  {
+   "validate": "MC1 example catalog: library ids start with lib:"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC1-2.1-2)"
+  }
+ ],
+ "MC1-2.1-3": [
+  {
+   "validate": "MC1 example catalog: library ids start with lib:, extension ids with ext:"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC1-2.1-3)"
+  }
+ ],
+ "MC1-2.1-4": [
+  {
+   "manual": "a gate only reports: no rule changes the code a compiler compiles, and the only text a filter changes is an extension's (MC4 section 2); the negative fixtures of conformance/gates are plain ISO C++"
+  }
+ ],
+ "MC1-2.2-1": [
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "if (name == \"allow\" || name == \"off\") return Level::allow;"
+  },
+  {
+   "test": "plugins/libs/tests/test_json.cpp: the package's configuration decides the level"
+  }
+ ],
+ "MC1-3-1": [
+  {
+   "validate": "MC1 example catalog: every MC1 section 3 feature is there"
+  },
+  {
+   "validate": "mcxx features --json: every MC1 section 3 feature is there"
+  }
+ ],
+ "MC1-3-2": [
+  {
+   "validate": "MC1 example catalog: MC1 section 3 categories, stable names and defaults"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: ISO C++ by default: nothing is gated, nothing is asked for"
+  }
+ ],
+ "MC1-3-3": [
+  {
+   "fixture": "conformance/gates/safe"
+  },
+  {
+   "fixture": "conformance/gates/strict"
+  },
+  {
+   "fixture": "conformance/gates/embedded"
+  },
+  {
+   "script": "tools/conformance/src/main.cpp",
+   "contains": "precision"
+  }
+ ],
+ "MC1-4-1": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: strict is safe and modules, and goto and macros; an include in a global module fragment is fine"
+  },
+  {
+   "test": "plugins/std/tests/test_policy.cpp: profile portable denies the extension's uses, which a filter reports"
+  }
+ ],
+ "MC1-4-2": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: strict is safe and modules, and goto and macros; an include in a global module fragment is fine"
+  },
+  {
+   "test": "modules/features/tests/test_override.cpp: a profile redefined: the plugin's definition is used; a feature that joins it by name still does"
+  }
+ ],
+ "MC1-4-3": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: several profiles at once, the strictest level wins; the package's own levels come after"
+  }
+ ],
+ "MC1-4-4": [
+  {
+   "validate": "MC1 example catalog: profile safe is MC1 section 4's"
+  },
+  {
+   "validate": "MC1 example catalog: profile modules is MC1 section 4's"
+  },
+  {
+   "validate": "MC1 example catalog: profile strict is safe, modules, goto and macros"
+  },
+  {
+   "validate": "MC1 example catalog: profile portable is every extension"
+  }
+ ],
+ "MC1-5-1": [
+  {
+   "script": "modules/features/src/features.cpp",
+   "contains": "doc->get_table(\"package\") != nullptr"
+  },
+  {
+   "fixture": "conformance/gates/policy/mcpp.toml"
+  }
+ ],
+ "MC1-5-2": [
+  {
+   "test": "modules/features/tests/test_spec.cpp: the example's precedence: partition over module over profiles; a namespace over the package"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: a module's level, a namespace's, and a waiver"
+  }
+ ],
+ "MC1-5-3": [
+  {
+   "test": "modules/features/tests/test_spec.cpp: the example's precedence: partition over module over profiles; a namespace over the package"
+  },
+  {
+   "test": "plugins/std/tests/test_policy.cpp: raw-pointers = deny: every declaration holding a pointer, a reference is not one; a namespace may allow it"
+  }
+ ],
+ "MC1-5-4": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: what a configuration names and nobody provides is reported"
+  },
+  {
+   "test": "plugins/libs/tests/test_json.cpp: the package's configuration decides the level"
+  }
+ ],
+ "MC1-5-5": [
+  {
+   "test": "modules/features/tests/test_spec.cpp: keys this version does not define are ignored, not errors"
+  }
+ ],
+ "MC1-6-1": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: a module's level, a namespace's, and a waiver"
+  },
+  {
+   "test": "modules/features/tests/test_spec.cpp: the example's precedence: partition over module over profiles; a namespace over the package"
+  }
+ ],
+ "MC1-7-1": [
+  {
+   "script": "modules/backend/clang/src/gate.cppm",
+   "contains": "takes a feature id and an optional reason, as string literals"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "ids.split(parts, ','"
+  }
+ ],
+ "MC1-7-2": [
+  {
+   "script": "modules/features/src/features.cpp",
+   "contains": "The innermost declaration waiving it"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: a module's level, a namespace's, and a waiver"
+  }
+ ],
+ "MC1-7-3": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a feature that is not waivable stays what it is; a waiver of an unknown id is reported; a rule speaks only for its own features"
+  }
+ ],
+ "MC1-7-4": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a feature that is not waivable stays what it is; a waiver of an unknown id is reported; a rule speaks only for its own features"
+  },
+  {
+   "script": "modules/backend/clang/src/gate.cppm",
+   "contains": "which no MC++ rule linked into this program declares"
+  }
+ ],
+ "MC1-7-5": [
+  {
+   "test": "plugins/libs/tests/test_json.cpp: a waiver on the declaration is recorded, not silent"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: a module's level, a namespace's, and a waiver"
+  }
+ ],
+ "MC1-8-1": [
+  {
+   "validate": "MC1 example validates: mc1-audit.jsonl"
+  },
+  {
+   "validate": "MC1 audit schema rejects a 0-based line"
+  },
+  {
+   "script": "modules/backend/clang/src/gate.cppm",
+   "contains": "features::append_audit(audit, result.waived)"
+  }
+ ],
+ "MC1-9-1": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"
+  }
+ ],
+ "MC1-9-2": [
+  {
+   "test": "plugins/libs/tests/test_json.cpp: one value in braces is the pitfall; an object literal and a copy are not"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: json-brace-init is caught when the file is parsed: one value in braces, and nothing else"
+  }
+ ],
+ "MC1-9-3": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: what a configuration names and nobody provides is reported"
+  }
+ ],
+ "MC1-10-1": [
+  {
+   "validate": "MC1 example validates: mc1-catalog.json"
+  },
+  {
+   "validate": "mcxx features --json validates"
+  }
+ ],
+ "MC1-10-2": [
+  {
+   "validate": "mcxx features exits 0 without conflicts"
+  },
+  {
+   "script": "src/main.cpp",
+   "contains": "return catalog->problems.empty() ? 0 : 1;"
+  }
+ ],
+ "MC3-2-1": [
+  {
+   "script": "modules/msa/src/msa.cppm",
+   "contains": "Positions: 0-based lines, columns in UTF-8 bytes"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: [[mcpp::cfg]]: the editor sees the target's declarations only, at their own positions"
+  }
+ ],
+ "MC3-2-2": [
+  {
+   "script": "modules/backend/clang/src/unit.cppm",
+   "contains": "end.column + cl::Lexer::MeasureTokenLength(e, sm, lo)"
+  }
+ ],
+ "MC3-3-1": [
+  {
+   "script": "modules/msa/src/msa.cppm",
+   "contains": "means \"ask someone else\", never \"no\""
+  }
+ ],
+ "MC3-3-2": [
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "(MC3-3-2)"
+  }
+ ],
+ "MC3-4-1": [
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "Only the file's own code"
+  },
+  {
+   "fixture": "conformance/gates/strict/include/one.h"
+  }
+ ],
+ "MC3-4-2": [
+  {
+   "test": "plugins/std/tests/test_policy.cpp: raw-pointers = deny: every declaration holding a pointer, a reference is not one; a namespace may allow it"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "std::string namespace_of(const cl::DeclContext* dc)"
+  }
+ ],
+ "MC3-4-3": [
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "SuppressInlineNamespaceMode::All"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: json-brace-init is caught when the file is parsed: one value in braces, and nothing else"
+  }
+ ],
+ "MC3-4.1-1": [
+  {
+   "test": "modules/features/tests/test_iso.cpp: a plan asks only the features that are gated, for only the facts they need"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "facts.collected = needs"
+  }
+ ],
+ "MC3-4.2-1": [
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "d->isImplicit()"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"
+  }
+ ],
+ "MC3-4.2-2": [
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx_, type);"
+  }
+ ],
+ "MC3-4.2-3": [
+  {
+   "fixture": "conformance/gates/policy/raw-pointers/pos.cpp"
+  }
+ ],
+ "MC3-4.3-1": [
+  {
+   "fixture": "conformance/gates/safe/uninitialized/pos.cpp"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"
+  }
+ ],
+ "MC3-4.4-1": [
+  {
+   "fixture": "conformance/gates/safe/c-style-cast/pos.cpp"
+  },
+  {
+   "fixture": "conformance/gates/safe/reinterpret-cast/neg.cpp"
+  }
+ ],
+ "MC3-4.8-1": [
+  {
+   "fixture": "conformance/gates/embedded/exceptions/pos.cpp"
+  },
+  {
+   "fixture": "conformance/gates/embedded/rtti/pos.cpp"
+  },
+  {
+   "fixture": "conformance/gates/safe/asm/pos.cpp"
+  }
+ ],
+ "MC3-4.9-1": [
+  {
+   "fixture": "conformance/gates/strict/include/purview.cppm"
+  },
+  {
+   "fixture": "conformance/gates/strict/include/neg.cppm"
+  }
+ ],
+ "MC3-4.11-1": [
+  {
+   "validate": "MC3 example validates: mc3-facts.json"
+  },
+  {
+   "validate": "MC4 example: a check's facts are MC3 facts"
+  }
+ ],
+ "MC4-2-1": [
+  {
+   "test": "modules/features/tests/test_override.cpp: an ISO feature a plugin adds without replacing one, and two providers of one name, are problems"
+  },
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "(MC4-2-1)"
+  }
+ ],
+ "MC4-2-2": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a feature that is not waivable stays what it is; a waiver of an unknown id is reported; a rule speaks only for its own features"
+  },
+  {
+   "script": "modules/features/src/features.cpp",
+   "contains": "(MC4-2-2)"
+  }
+ ],
+ "MC4-2-3": [
+  {
+   "manual": "the SDK gives a rule no way to set a level: plugin::Finding has a feature, a range, a message and a container, and levels are computed by mcxx.features only"
+  }
+ ],
+ "MC4-2-4": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a source filter that changes the text's length is refused and reported"
+  },
+  {
+   "test": "plugins/std/tests/test_cfg.cpp: a declaration the target does not have is blanked, with its export; the rest stays in place"
+  }
+ ],
+ "MC4-2-5": [
+  {
+   "test": "plugins/libs/tests/test_json.cpp: a file that does not declare nlohmann is not asked, nor walked"
+  },
+  {
+   "test": "modules/features/tests/test_iso.cpp: a plan asks only the features that are gated, for only the facts they need"
+  }
+ ],
+ "MC4-3-1": [
+  {
+   "manual": "openkal builds static programs, whose dlopen fails with \"Dynamic loading not supported\" (V0.5, .agents/docs/progress.md); the SDK registers plugins at static initialization only"
+  }
+ ],
+ "MC4-4-1": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a provider that stands in for another removes it, and a catalog is rebuilt after a registration"
+  }
+ ],
+ "MC4-4-2": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a plugin's `replaces` takes a built-in feature over; the built-in one is not asked"
+  },
+  {
+   "test": "modules/features/tests/test_override.cpp: a second provider that does not replace is a conflict: reported, the built-in one used"
+  }
+ ],
+ "MC4-4-3": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a profile redefined: the plugin's definition is used; a feature that joins it by name still does"
+  }
+ ],
+ "MC4-4-4": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a plugin's `replaces` takes a built-in feature over; the built-in one is not asked"
+  }
+ ],
+ "MC4-4-5": [
+  {
+   "test": "modules/features/tests/test_override.cpp: a second provider that does not replace is a conflict: reported, the built-in one used"
+  }
+ ],
+ "MC4-4-6": [
+  {
+   "test": "modules/features/tests/test_override.cpp: an ISO feature a plugin adds without replacing one, and two providers of one name, are problems"
+  }
+ ],
+ "MC5-2-1": [
+  {
+   "script": "src/main.cpp",
+   "contains": "compiler::run_as(command == \"c++\" ? \"c++\" : \"c\", argv[0], std::move(rest))"
+  }
+ ],
+ "MC5-2-2": [
+  {
+   "script": "modules/backend/clang-compiler/src/compiler.cpp",
+   "contains": "if (name == \"clang++\" || name == \"c++\" || name == \"g++\""
+  }
+ ],
+ "MC5-2-3": [
+  {
+   "script": "src/main.cpp",
+   "contains": "std::string_view { argv[1] }.starts_with(\"-cc1\")"
+  }
+ ],
+ "MC5-2-4": [
+  {
+   "script": "src/main.cpp",
+   "contains": "rest.push_back(\"-fsyntax-only\")"
+  }
+ ],
+ "MC5-2-5": [
+  {
+   "validate": "mcxx with an unknown command exits 2 with its usage"
+  }
+ ],
+ "MC5-3-2": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"
+  },
+  {
+   "script": "modules/backend/clang/src/gate.cppm",
+   "contains": "filter_main_file(ci)"
+  }
+ ],
+ "MC5-3-3": [
+  {
+   "validate": "mcxx: a finding is reported once across --precompile and -c of the interface"
+  }
+ ],
+ "MC5-4-1": [
+  {
+   "test": "modules/base/tests/test_trace.cpp: a spec names a default level and per-category ones"
+  }
+ ],
+ "MC5-4-2": [
+  {
+   "validate": "mcxx check of a clean file prints nothing"
+  }
+ ],
+ "MC5-5-1": [
+  {
+   "validate": "MC5 example validates: mc5-version.json"
+  },
+  {
+   "validate": "mcxx version --json validates"
+  }
+ ],
+ "MC5-6-1": [
+  {
+   "script": "modules/backend/clang/src/support.cppm",
+   "contains": "What remains describes the program and is what a cached interface is keyed on"
+  }
+ ],
+ "MC5-6-3": [
+  {
+   "script": "modules/backend/clang/src/support.cppm",
+   "contains": "What remains describes the program and is what a cached interface is keyed on"
+  }
+ ]
+}

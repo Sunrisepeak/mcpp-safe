@@ -1,5 +1,8 @@
 # conformance：一致性测试
 
+- `gates/`：门禁 fixture（下文）。
+- `traceability.json`：`specs/` 中每条规范要求（`MC<n>-<节>-<序号>`）对应的证据，由 `tools/checks/specs.py` 检查（见 `specs/README.md`）。
+
 ## gates：门禁 fixture（M0.7 A0.7.2、A0.7.3）
 
 `gates/` 下每个含源文件的目录是一个程序（其中的文件一起编译，模块接口按需构建），使用离它最近的 `mcpp.toml` 里的 `[package.metadata.mcxx]`：

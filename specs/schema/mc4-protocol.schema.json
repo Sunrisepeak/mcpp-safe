@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc4-protocol.schema.json",
+  "title": "MC4 protocol version 1: one message",
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "begin",
+        "end"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "begin": {
+          "$ref": "#/$defs/position"
+        },
+        "end": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "required": [
+        "id",
+        "category",
+        "summary",
+        "default",
+        "waivable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(lib:|ext:)?[a-z0-9]+([-.][a-z0-9]+)*$"
+        },
+        "category": {
+          "enum": [
+            "iso",
+            "policy",
+            "library",
+            "pitfall",
+            "extension"
+          ]
+        },
+        "standard": {
+          "type": "string"
+        },
+        "layer": {
+          "enum": [
+            "",
+            "syntax",
+            "decl",
+            "expr",
+            "text",
+            "flow"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fix": {
+          "type": "string"
+        },
+        "default": {
+          "enum": [
+            "allow",
+            "warn",
+            "deny"
+          ]
+        },
+        "waivable": {
+          "type": "boolean"
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "profile",
+              "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "profile": {
+                "type": "string"
+              },
+              "level": {
+                "enum": [
+                  "allow",
+                  "warn",
+                  "deny"
+                ]
+              }
+            }
+          }
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "declarations",
+              "initializations",
+              "casts",
+              "allocations",
+              "pointer-arithmetic",
+              "gotos",
+              "macros",
+              "uses",
+              "includes",
+              "suppressions",
+              "declaration-types"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "requires-declaration": {
+          "type": "string"
+        },
+        "replaces": {
+          "type": "boolean"
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "includes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "category",
+              "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "enum": [
+                  "iso",
+                  "policy",
+                  "library",
+                  "pitfall",
+                  "extension"
+                ]
+              },
+              "level": {
+                "enum": [
+                  "allow",
+                  "warn",
+                  "deny"
+                ]
+              }
+            }
+          }
+        },
+        "replaces": {
+          "type": "boolean"
+        }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "required": [
+        "name",
+        "extension-points",
+        "features",
+        "profiles",
+        "replaces"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extension-points": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "rule",
+              "source-filter"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/feature"
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/profile"
+          }
+        },
+        "replaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "feature",
+        "range",
+        "message",
+        "container"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "feature": {
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "message": {
+          "type": "string"
+        },
+        "container": {
+          "type": "string"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "triple",
+        "os",
+        "family",
+        "arch",
+        "env",
+        "pointer-width",
+        "endian",
+        "features",
+        "debug-assertions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "triple": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "family": {
+          "enum": [
+            "unix",
+            "windows",
+            ""
+          ]
+        },
+        "arch": {
+          "type": "string"
+        },
+        "env": {
+          "type": "string"
+        },
+        "pointer-width": {
+          "enum": [
+            16,
+            32,
+            64
+          ]
+        },
+        "endian": {
+          "enum": [
+            "little",
+            "big"
+          ]
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "debug-assertions": {
+          "type": "boolean"
+        }
+      }
+    },
+    "facts": {
+      "$comment": "MC3 \u00a74.11: specs/schema/mc3-facts.schema.json; tools/checks/specs.py validates it there",
+      "type": "object",
+      "required": [
+        "mc3-version"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "host",
+        "protocols"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "hello"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "host": {
+          "type": "string"
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "protocol",
+        "providers"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "welcome"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "protocol": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/provider"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "provider",
+        "path",
+        "module",
+        "wanted",
+        "facts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "check"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "wanted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "facts": {
+          "$ref": "#/$defs/facts"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "findings"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "findings"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "provider",
+        "path",
+        "target",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "filter"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "text",
+        "problems",
+        "findings"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "filtered"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "range",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "range": {
+                "$ref": "#/$defs/range"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id",
+        "code",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "error"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "code": {
+          "enum": [
+            "protocol",
+            "request",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "shutdown"
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  ]
+}

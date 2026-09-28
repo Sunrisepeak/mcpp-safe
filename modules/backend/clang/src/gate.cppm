@@ -144,8 +144,11 @@ public:
         if (gates_suppressed || ci_.getDiagnostics().hasFatalErrorOccurred()) return;
         const auto& sm = ctx.getSourceManager();
         const cl::FileID main { sm.getMainFileID() };
-        const std::string path { path_of(sm, main) };
+        std::string path { path_of(sm, main) };
         if (path.empty()) return;
+        // Absolute, as audit records and configuration lookup name files (MC1 §8), whatever the
+        // command line spelled.
+        if (std::error_code ec; fs::path { path }.is_relative()) path = normalize_path(fs::absolute(path, ec).generic_string());
         const std::shared_ptr<const features::Plan> plan { features::plan_for(path) };
         if (plan->idle()) {
             base::trace::count("gates.idle");
@@ -257,6 +260,10 @@ class GateAction final : public cl::PluginASTAction {
 protected:
     // Called once the main file is known and before it is read: the moment a source filter needs.
     std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override {
+        // Compiling a precompiled interface (a .pcm) to an object: its source was parsed, and gated,
+        // when it was precompiled. Gating the AST read back would report every finding twice (MC5-3-3).
+        for (const auto& input : ci.getFrontendOpts().Inputs)
+            if (input.getKind().getFormat() == cl::InputKind::Precompiled) return std::make_unique<cl::ASTConsumer>();
         return std::make_unique<GateConsumer>(ci, filter_main_file(ci));
     }
     bool ParseArgs(const cl::CompilerInstance&, const std::vector<std::string>&) override { return true; }

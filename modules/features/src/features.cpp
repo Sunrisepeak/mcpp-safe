@@ -258,10 +258,16 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
     if (!selection.gated && prior.empty()) return result;
     const auto& catalog = *plan.catalog;
     std::vector<plugin::Finding> findings { prior.begin(), prior.end() };
+    std::vector<plugin::Finding> one;
     for (std::size_t i { 0 }; i < catalog.rules.size(); ++i) {
-        if (selection.wanted[i].empty()) continue;
-        plugin::Context scoped { context.path, context.module, context.facts, &selection.wanted[i] };
-        catalog.rules[i]->check(scoped, findings);
+        const auto& wanted = selection.wanted[i];
+        if (wanted.empty()) continue;
+        plugin::Context scoped { context.path, context.module, context.facts, &wanted };
+        one.clear();
+        catalog.rules[i]->check(scoped, one);
+        // A rule speaks for the features it was asked for, not for another provider's (MC4-2-2).
+        for (auto& f : one)
+            if (std::ranges::find(wanted, f.feature) != wanted.end()) findings.push_back(std::move(f));
     }
     for (const auto& s : context.facts.suppressions)
         for (const auto& id : s.ids)

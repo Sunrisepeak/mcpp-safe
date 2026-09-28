@@ -1,0 +1,26 @@
+# MC1 §5: a package's gates. specs/examples/mc1-config.json is [package.metadata.mcxx] of this file,
+# read as JSON; modules/features/tests/test_spec.cpp reads this file and checks every setting.
+[package]
+name    = "app"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = ["safe", "modules"]
+
+[package.metadata.mcxx.features]
+"json-brace-init" = "deny"
+exceptions = "deny"
+rtti = "warn"
+raw-pointers = "warn"
+"lib:std.vector" = "allow"
+
+[package.metadata.mcxx.modules."app.legacy"]
+goto = "allow"
+c-array = "warn"
+
+[package.metadata.mcxx.modules."app.legacy:io"]
+c-array = "allow"
+
+[package.metadata.mcxx.namespaces."app::ffi"]
+raw-pointers = "allow"
+c-varargs = "allow"

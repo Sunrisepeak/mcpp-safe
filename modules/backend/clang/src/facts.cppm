@@ -564,6 +564,7 @@ const msa::fact::Facts& UnitImpl::facts() const {
         if (!facts_) {
             facts_.emplace();
             if (ast_) *facts_ = facts_of(ast_->getASTContext(), &ast_->getPreprocessor());
+            else facts_->certainty = msa::Certainty::unknown;   // no AST: nothing is known, which is not "none" (MC3-3-2)
         }
         return &*facts_;
     });

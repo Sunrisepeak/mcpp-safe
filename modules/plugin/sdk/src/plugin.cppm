@@ -310,6 +310,33 @@ std::size_t choose(const std::vector<std::pair<const T*, const Registered*>>& ca
     return chosen;
 }
 
+// MC1 §2: an id's shape, and what its category asks of it.
+void check_feature(const Catalog::Entry& e, std::vector<std::string>& problems) {
+    const Feature& f { *e.feature };
+    std::string_view rest { f.id };
+    if (rest.starts_with("lib:") || rest.starts_with("ext:")) rest.remove_prefix(4);
+    bool well_formed { !rest.empty() };
+    char previous { '-' };
+    for (const char c : rest) {
+        const bool word { (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') };
+        if (!word && (c != '-' && c != '.')) well_formed = false;
+        if (!word && previous == '-') well_formed = false;   // a separator after a separator, or first
+        previous = word ? 'a' : '-';
+    }
+    if (previous == '-') well_formed = false;
+    if (!well_formed) problems.push_back(std::format("feature id `{}` (of {}) is not lower-case words joined by - or . (MC1-2-1)", f.id, e.provider->name()));
+    if (f.category == Category::library && !f.id.starts_with("lib:"))
+        problems.push_back(std::format("library feature `{}` (of {}) does not start with lib: (MC1-2.1-2)", f.id, e.provider->name()));
+    if (f.category == Category::extension && !f.id.starts_with("ext:"))
+        problems.push_back(std::format("extension feature `{}` (of {}) does not start with ext: (MC1-2.1-3)", f.id, e.provider->name()));
+    if (f.category == Category::iso && f.standard.empty())
+        problems.push_back(std::format("ISO feature `{}` (of {}) names no stable name (MC1-2-3)", f.id, e.provider->name()));
+    // An ISO feature is MC++'s to define; a plugin may only provide one instead of it.
+    if (f.category == Category::iso && e.origin != Origin::builtin && e.shadowed.empty())
+        problems.push_back(std::format("`{}` is category iso, but only MC++ defines ISO features; {} may replace one of them (MC1-2.1-1)", f.id,
+                                       e.provider->name()));
+}
+
 std::shared_ptr<const Catalog> build(const std::vector<Registered>& providers, std::uint64_t generation) {
     auto c = std::make_shared<Catalog>();
     c->generation = generation;
@@ -322,6 +349,11 @@ std::shared_ptr<const Catalog> build(const std::vector<Registered>& providers, s
         for (const auto& p : providers)
             if (p.origin == origin && !replaced.contains(p.provider->name())) active.push_back(&p);
     c->replaced.assign(replaced.begin(), replaced.end());
+    // A provider's name is how configuration, replacement and reports name it: unique (MC4-2-1).
+    std::set<std::string_view> names;
+    for (const auto* p : active)
+        if (!names.insert(p->provider->name()).second)
+            c->problems.push_back(std::format("two providers are named {}; name each provider uniquely (MC4-2-1)", p->provider->name()));
 
     std::map<std::string, std::vector<std::pair<const Feature*, const Registered*>>, std::less<>> by_id;
     std::map<std::string, std::vector<std::pair<const Profile*, const Registered*>>, std::less<>> by_profile;
@@ -337,6 +369,7 @@ std::shared_ptr<const Catalog> build(const std::vector<Registered>& providers, s
         Catalog::Entry entry { candidates[i].first, candidates[i].second->provider.get(), candidates[i].second->origin, {} };
         for (std::size_t j { 0 }; j < candidates.size(); ++j)
             if (j != i) entry.shadowed.emplace_back(candidates[j].second->provider->name());
+        check_feature(entry, c->problems);
         c->features.push_back(std::move(entry));
     }
     for (const auto& [name, candidates] : by_profile) {

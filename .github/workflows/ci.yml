@@ -29,6 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 tools/checks/lint.py
+      - name: Specifications (schemas, examples, traceability)
+        run: |
+          sudo apt-get install -y python3-jsonschema
+          python3 tools/checks/specs.py
 
   test:
     name: unit tests and the probe (linux-x64)
@@ -79,5 +83,7 @@ jobs:
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
           "$mcxx" version
           "$mcxx" features
+          python3 -c "import jsonschema" 2>/dev/null || sudo apt-get install -y python3-jsonschema
+          python3 tools/checks/specs.py --mcxx "$mcxx"
           printf 'extern "C" int puts(const char*);\n[[mcpp::cfg(unix)]] int main() { puts("unix"); }\n[[mcpp::cfg(windows)]] int main() { Win(); }\n' > cfg.cpp
           "$mcxx" check --target=x86_64-unknown-linux-gnu cfg.cpp

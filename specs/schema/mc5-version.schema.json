@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc5-version.schema.json",
+  "title": "MC5 0.1.0: `mcxx version --json`",
+  "type": "object",
+  "required": [
+    "mcxx",
+    "compiler",
+    "specifications",
+    "providers"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "mcxx": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+"
+    },
+    "compiler": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "clang"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+"
+        }
+      }
+    },
+    "specifications": {
+      "type": "object",
+      "required": [
+        "mc1",
+        "mc3",
+        "mc4",
+        "mc4-protocols",
+        "mc5"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mc1": {
+          "type": "string"
+        },
+        "mc3": {
+          "type": "string"
+        },
+        "mc4": {
+          "type": "string"
+        },
+        "mc4-protocols": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1
+        },
+        "mc5": {
+          "type": "string"
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

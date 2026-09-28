@@ -1,0 +1,211 @@
+{
+  "mc3-version": "0.1.0",
+  "path": "/work/app/src/buffer.cppm",
+  "module": "app.buffer",
+  "certainty": "certain",
+  "collected": [
+    "declarations",
+    "initializations",
+    "casts",
+    "pointer-arithmetic",
+    "includes",
+    "suppressions",
+    "declaration-types"
+  ],
+  "declarations": [
+    {
+      "range": {
+        "begin": {
+          "line": 5,
+          "column": 7
+        },
+        "end": {
+          "line": 9,
+          "column": 5
+        }
+      },
+      "container": "app",
+      "name": {
+        "begin": {
+          "line": 5,
+          "column": 14
+        },
+        "end": {
+          "line": 5,
+          "column": 20
+        }
+      },
+      "entity": "c:@N@app@F@fill#*C#I#",
+      "qualified-name": "app::fill",
+      "kind": "function",
+      "type": "",
+      "templates": [],
+      "exported": true,
+      "c-array": false,
+      "pointer": false,
+      "union": false,
+      "c-variadic": false
+    },
+    {
+      "range": {
+        "begin": {
+          "line": 5,
+          "column": 19
+        },
+        "end": {
+          "line": 5,
+          "column": 30
+        }
+      },
+      "container": "app",
+      "name": {
+        "begin": {
+          "line": 5,
+          "column": 25
+        },
+        "end": {
+          "line": 5,
+          "column": 28
+        }
+      },
+      "entity": "c:buffer.cppm@60@N@app@F@fill#*C#I#@out",
+      "qualified-name": "out",
+      "kind": "parameter",
+      "type": "char *",
+      "templates": [],
+      "exported": false,
+      "c-array": false,
+      "pointer": true,
+      "union": false,
+      "c-variadic": false
+    },
+    {
+      "range": {
+        "begin": {
+          "line": 6,
+          "column": 4
+        },
+        "end": {
+          "line": 6,
+          "column": 17
+        }
+      },
+      "container": "app",
+      "name": {
+        "begin": {
+          "line": 6,
+          "column": 9
+        },
+        "end": {
+          "line": 6,
+          "column": 13
+        }
+      },
+      "entity": "c:buffer.cppm@95@N@app@F@fill#*C#I#@line",
+      "qualified-name": "line",
+      "kind": "variable",
+      "type": "char[80]",
+      "templates": [],
+      "exported": false,
+      "c-array": true,
+      "pointer": false,
+      "union": false,
+      "c-variadic": false
+    }
+  ],
+  "initializations": [
+    {
+      "range": {
+        "begin": {
+          "line": 7,
+          "column": 4
+        },
+        "end": {
+          "line": 7,
+          "column": 10
+        }
+      },
+      "container": "app",
+      "name": {
+        "begin": {
+          "line": 7,
+          "column": 8
+        },
+        "end": {
+          "line": 7,
+          "column": 9
+        }
+      },
+      "entity": "c:buffer.cppm@120@N@app@F@fill#*C#I#@n",
+      "variable": "n",
+      "type": "int",
+      "type-template": "",
+      "form": "default",
+      "constructor": "",
+      "initializer-list-constructor": false,
+      "elements": 0,
+      "element-braced": false,
+      "member-default": false,
+      "indeterminate": true
+    }
+  ],
+  "casts": [
+    {
+      "range": {
+        "begin": {
+          "line": 8,
+          "column": 11
+        },
+        "end": {
+          "line": 8,
+          "column": 22
+        }
+      },
+      "container": "app",
+      "kind": "c-style",
+      "from": "long",
+      "to": "int",
+      "reinterprets": false,
+      "to-scalar": true
+    }
+  ],
+  "allocations": [],
+  "pointer-arithmetic": [
+    {
+      "range": {
+        "begin": {
+          "line": 9,
+          "column": 4
+        },
+        "end": {
+          "line": 9,
+          "column": 11
+        }
+      },
+      "container": "app",
+      "op": "[]",
+      "type": "char *"
+    }
+  ],
+  "gotos": [],
+  "macros": [],
+  "uses": [],
+  "includes": [
+    {
+      "range": {
+        "begin": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 18
+        }
+      },
+      "container": "",
+      "header": "<string.h>",
+      "global-module-fragment": true
+    }
+  ],
+  "suppressions": []
+}
