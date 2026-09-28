@@ -7,6 +7,7 @@ import mcxx.msa;
 import mcxx.clang;
 import mcxx.rules.json;
 import mcxx.safe;
+import mcxx.cfg;
 
 namespace msa = mcxx::msa;
 
@@ -220,6 +221,29 @@ int main() {
             if (d.severity == msa::Severity::error) codes.push_back(d.code);
         for (const auto* want : { "macros", "union", "c-array", "lib:std.vector", "new-delete", "reinterpret-cast", "goto", "raw-pointer-arithmetic" })
             expect(std::ranges::find(codes, want) != codes.end()) << want;
+    };
+
+
+    "[[mcpp::cfg]]: the editor sees the target's declarations only, at their own positions"_test = [] {
+        Program p { "cfg" };
+        const std::string text {
+            "namespace plat {\n"
+            "[[mcpp::cfg(windows)]] int console() { return AllocConsole(); }\n"
+            "[[mcpp::cfg(not(windows))]] int console() { return 0; }\n"
+            "[[mcpp::cfg(colour = \"red\")]] int broken;\n"
+            "}\n"
+            "int main() { return plat::console(); }\n" };
+        const std::string file { p.file("src/plat.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        std::vector<std::string> errors;
+        for (const auto& d : unit->diagnostics())
+            if (d.severity == msa::Severity::error) errors.push_back(std::format("{}: {}", d.range.begin.line, d.message));
+        expect(errors.size() == 1 && errors[0].starts_with("3: ") && errors[0].contains("unknown key `colour`")) << (errors.empty() ? "none" : errors[0]);
+        const auto console = unit->entity_at(*find(text, "console();", 0));
+        expect(fatal(console.has_value()));
+        expect(console->definition && console->definition->range.begin.line == 2) << "the non-Windows one, where it is written";
     };
 
     return report();

@@ -34,6 +34,7 @@ members = [
     "tools/probe",
     "plugins/json",
     "plugins/safe",
+    "plugins/cfg",
 ]
 
 # This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.
@@ -69,6 +70,7 @@ mcxx-backend = { path = "modules/backend" }
 # The first-party rule plugins, statically composed (A0.6.1's composition comes later: mcxx compose).
 mcxx-rules-json = { path = "plugins/json" }
 mcxx-safe       = { path = "plugins/safe" }
+mcxx-cfg        = { path = "plugins/cfg" }
 
 # clang-dev is named here too: llvm.codegen-dev reaches it by path inside its archive and mcxx.clang
 # by version, and the root settles which one the graph holds.

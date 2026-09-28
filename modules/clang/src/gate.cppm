@@ -34,6 +34,8 @@ module;
 #include <clang/Sema/ParsedAttr.h>
 #include <clang/Sema/Sema.h>
 #include <clang/Basic/ParsedAttrInfo.h>
+#include <clang/Basic/TargetInfo.h>
+#include <llvm/TargetParser/Triple.h>
 #include <clang/Index/IndexDataConsumer.h>
 #include <clang/Index/IndexSymbol.h>
 #include <clang/Index/IndexingAction.h>
@@ -172,9 +174,68 @@ private:
     cl::CompilerInstance& ci_;
 };
 
+// The target, as a source filter reads it (plugin::Target).
+plugin::Target target_of(const cl::CompilerInstance& ci) {
+    const llvm::Triple& t { ci.getTarget().getTriple() };
+    plugin::Target target;
+    target.triple = t.str();
+    target.os = t.isAndroid()        ? "android"
+                : t.isOSLinux()      ? "linux"
+                : t.isOSWindows()    ? "windows"
+                : t.isMacOSX()       ? "macos"
+                : t.isiOS()          ? "ios"
+                : t.isOSFreeBSD()    ? "freebsd"
+                : t.isOSWASI()       ? "wasi"
+                : t.getOS() == llvm::Triple::UnknownOS ? "none"
+                                     : t.getOSName().lower();
+    target.family = t.isOSWindows() ? "windows"
+                    : (t.isOSLinux() || t.isOSDarwin() || t.isOSFreeBSD() || t.isOSNetBSD() || t.isOSOpenBSD() || t.isAndroid()) ? "unix"
+                                                                                                                                 : "";
+    target.arch = llvm::Triple::getArchTypeName(t.getArch()).str();
+    target.env = t.getEnvironmentName().str();
+    target.pointer_width = static_cast<unsigned>(ci.getTarget().getPointerWidth(cl::LangAS::Default));
+    target.endian = ci.getTarget().isBigEndian() ? "big" : "little";
+    bool ndebug { false };
+    for (const auto& [macro, undefined] : ci.getPreprocessorOpts().Macros) {
+        const std::string_view name { std::string_view { macro }.substr(0, macro.find('=')) };
+        if (name == "NDEBUG") ndebug = !undefined;
+        if (!undefined && name.starts_with("MCPP_FEATURE_")) target.features.emplace_back(name.substr(std::string_view { "MCPP_FEATURE_" }.size()));
+    }
+    target.debug_assertions = !ndebug;
+    return target;
+}
+
+// Before the main file is read: every linked source filter over its text ([[mcpp::cfg]] and the
+// like). The replacement has the text's length and line breaks, so every position stays.
+void filter_main_file(cl::CompilerInstance& ci) {
+    if (plugin::source_filters().empty()) return;
+    auto& sm = ci.getSourceManager();
+    const cl::FileID main { sm.getMainFileID() };
+    if (main.isInvalid()) return;
+    const auto entry = sm.getFileEntryRefForID(main);
+    const auto buffer = sm.getBufferOrNone(main);
+    if (!entry || !buffer) return;
+    const std::string path { path_of(sm, main) };
+    const plugin::Target target { target_of(ci) };
+    plugin::Filtered filtered { plugin::apply_source_filters({ path, target }, buffer->getBuffer()) };
+    auto& diags = ci.getDiagnostics();
+    for (const auto& p : filtered.problems) {
+        const unsigned id { diags.getCustomDiagID(cl::DiagnosticsEngine::Error, "%0") };
+        diags.Report(sm.translateLineCol(main, p.range.begin.line + 1, p.range.begin.column + 1), id) << p.message;
+    }
+    if (filtered.text) {
+        base::trace::count("filters.changed");
+        sm.overrideFileContents(*entry, llvm::MemoryBuffer::getMemBufferCopy(*filtered.text, buffer->getBufferIdentifier()));
+    }
+}
+
 class GateAction final : public cl::PluginASTAction {
 protected:
-    std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override { return std::make_unique<GateConsumer>(ci); }
+    // Called once the main file is known and before it is read: the moment a source filter needs.
+    std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override {
+        filter_main_file(ci);
+        return std::make_unique<GateConsumer>(ci);
+    }
     bool ParseArgs(const cl::CompilerInstance&, const std::vector<std::string>&) override { return true; }
     ActionType getActionType() override { return AddAfterMainAction; }
 };

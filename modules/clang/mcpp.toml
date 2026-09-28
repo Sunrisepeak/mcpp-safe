@@ -29,3 +29,4 @@ path = "src/clang.cppm"
 mcxx-testing    = { path = "../testing" }
 mcxx-rules-json = { path = "../../plugins/json" }
 mcxx-safe       = { path = "../../plugins/safe" }
+mcxx-cfg        = { path = "../../plugins/cfg" }
