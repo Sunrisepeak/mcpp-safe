@@ -9,3 +9,5 @@ forks/
 .mcpp/
 **/.mcpp/
 mcpp.lock
+# xlings makes a project-local sub-OS (shims) where it runs beside this repository's .xlings.json
+.xlings/

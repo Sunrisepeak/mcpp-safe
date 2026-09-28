@@ -1,1 +1,0 @@
-/home/speak/.mcpp/registry/data/xpkgs/xim-x-linux-headers/5.11.1/include/scsi/fc/fc_gs.h
