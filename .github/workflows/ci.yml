@@ -79,7 +79,7 @@ jobs:
           mcpp build
           mcpp build -p tools/probe
           mcpp build -p tools/conformance
-          "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json conformance/gates
+          "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json --driver "$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")" conformance/gates
           python3 tools/checks/symbols.py "$(find modules/features/target -type f -name test_iso -path '*/bin/*' | head -1)" --expect-clang "$(find target -type f -name mcxx -path '*/bin/*' | head -1)"
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
           "$mcxx" version
