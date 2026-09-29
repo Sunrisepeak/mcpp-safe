@@ -23,7 +23,8 @@ bool function_kind(msa::Kind k) {
 }
 
 // The words that never name a declaration (`module` and `import` do: they are keywords only where a
-// module declaration or an import is, which run() tells by the line).
+// module declaration or an import is, which run() tells by the line; `final` and `override` are
+// identifiers with a meaning in one place, and names elsewhere).
 constexpr std::string_view KEYWORDS[] {
     "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t",
     "char32_t", "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue", "co_await", "co_return",
@@ -32,7 +33,7 @@ constexpr std::string_view KEYWORDS[] {
     "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast", "requires", "return",
     "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "template", "this", "thread_local", "throw",
     "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
-    "xor_eq", "final", "override", "__attribute__", "__declspec", "__extension__", "__int128", "__restrict", "__restrict__", "__typeof__",
+    "xor_eq", "__attribute__", "__declspec", "__extension__", "__int128", "__restrict", "__restrict__", "__typeof__",
     "__asm__", "__asm", "__volatile__", "__inline", "__inline__", "_Alignas", "_Bool", "_Noreturn", "_Thread_local", "__thread",
     "__builtin_va_arg", "va_arg", "__func__", "__FUNCTION__", "__PRETTY_FUNCTION__",
 };

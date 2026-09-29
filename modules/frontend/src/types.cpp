@@ -465,6 +465,15 @@ std::string type_text(const Syntax& syntax, const Declaration& d, bool return_ty
     if (d.specifiers_end == 0 || d.specifiers_end > all.size() || d.declarator_end > all.size() || d.specifiers_begin > d.specifiers_end ||
         d.declarator_begin > d.declarator_end)
         return {};
+    // An alias-declaration's type (`using X = a::B;`) has no declarator-id: what the declarator read as
+    // one is the last part of the type's name.
+    if (d.kind == msa::Kind::type_alias && d.id_end > d.id_begin && d.specifiers_begin > 0 && all[d.specifiers_begin - 1].kind == Kind::equal) {
+        Declaration whole { d };
+        whole.specifiers_end = d.id_end;
+        whole.declarator_begin = d.id_end;
+        whole.id_begin = whole.id_end = 0;
+        return type_text(syntax, whole, return_type);
+    }
     const auto specifier_tokens { split_shifts(std::span { all }.subspan(d.specifiers_begin, d.specifiers_end - d.specifiers_begin)) };
     const Tokens specifiers { specifier_tokens };
     // The declarator with its id taken out; a function's return type: what precedes its name.
