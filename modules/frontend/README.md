@@ -14,7 +14,7 @@
 | `:unicode` | 标识符可用的 Unicode 字符（XID_Start / XID_Continue，UAX #31，加上 Clang 作为扩展接受的数学记号）。**生成的**：`gen/unicode.py` 读所钉版本 Clang 的 `UnicodeCharSets.h`，Unicode 版本和参照一致（18.0） |
 | `:predefined` | 三个目标（linux-x64、macos-arm64、windows-x64）的预定义宏，**生成的**：`gen/predefined.py` 跑 `mcxx c++ -target T -std=c++23 -dM -E` |
 | `:preprocess` | 预处理：条件编译、文件自己的宏（`#`、`##`、`__VA_ARGS__`、`__VA_OPT__`、GNU 的 `, ## __VA_ARGS__`）、`#include` 记录、模块声明和 import 的识别 |
-| `:syntax` | （实现在 `parser.cpp`：解析器；`outline.cpp`：位置和大纲）声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
+| `:syntax` | （接口单元只声明；每个分区的定义在同名的 `.cpp` 里，`:syntax` 的在 `parser.cpp` 和 `outline.cpp`）声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
 | `:types` | 声明的类型文本：按写出来的 token，照 Clang 的 TypePrinter 打印保留语法糖的类型（`const std::string &`、`char *const *`、`int[3]`、`void (*)(int)`、`std::function<void (int)>`、`unsigned long`、constexpr 变量带 const）。推导出来的类型（`auto`、类模板实参推导）和不是字面量的数组界（Clang 打印它的值）不猜，给空 |
 | `:lookup` | 名字查找（[basic.lookup]）：函数的局部变量按所在块、参数、模板参数、类的成员（成员函数体里全部可见，连同基类的）、外层命名空间（在使用处之前声明的）、无名命名空间、using 指令和 using 声明、命名空间别名，限定名从左往右解析，成员访问经对象声明的类型（`std::unique_ptr`、`std::shared_ptr`、`std::optional` 的 `->` 到元素）。`names_of` 是 MC3 限定名的唯一来源（局部类的成员经函数的参数类型命名，和 Clang 一样）。解不出的（类型是推导出来的对象的成员、依赖名、只有 ADL 找得到的）不给：给出的都是确定的 |
 | `mcxx.frontend` | 上面几部分，再加 `facts(pp)` 和 `facts(syntax)`：MC3 事实，形状和 Clang 后端给的一样（见下文"事实与快速门禁"） |
