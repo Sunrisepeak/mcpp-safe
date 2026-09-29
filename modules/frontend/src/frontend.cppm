@@ -132,6 +132,10 @@ msa::fact::Facts facts(const Syntax& syntax) {
             msa::fact::Declaration f;
             f.range = whole;
             f.name = selection_range(syntax, d);
+            // An alias template's outline is at its `using`, as Clang's is; the alias itself (a fact)
+            // is at its name.
+            if (d.kind == msa::Kind::type_alias && d.name_token + 1 < syntax.pp.tokens.size() && syntax.pp.tokens[d.name_token].spelling == "using")
+                f.name = token_range(syntax, d.name_token + 1, d.name_token + 1);
             f.container = container[i];
             f.qualified_name = qualified[i];
             f.kind = fact_kind(d);
@@ -142,8 +146,10 @@ msa::fact::Facts facts(const Syntax& syntax) {
             if (d.va_list) (syntax.pp.target.starts_with("x86_64") && syntax.pp.target.find("linux") != std::string::npos ? f.c_array : f.pointer) = true;
             f.c_variadic = d.c_variadic;
             f.is_union = d.kind == msa::Kind::union_;
-            // Inside a function: a parameter's parent is the function, a local's too (or a local class's).
-            if (d.kind != msa::Kind::parameter)
+            // Inside a function: a parameter's parent is the function, a local's too (or a local class's);
+            // or inside a lambda, whose call operator is a function (one initializing a variable, say).
+            if (d.kind != msa::Kind::parameter) f.local = d.in_lambda;
+            if (d.kind != msa::Kind::parameter && !f.local)
                 for (auto p = d.parent; p >= 0; p = ds[static_cast<std::size_t>(p)].parent) {
                     const auto k = ds[static_cast<std::size_t>(p)].kind;
                     if (k == msa::Kind::function || k == msa::Kind::method || k == msa::Kind::constructor || k == msa::Kind::destructor ||

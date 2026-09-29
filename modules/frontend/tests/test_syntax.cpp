@@ -161,6 +161,28 @@ void (*signal(int, void (*)(int)))(int);
         }
     };
 
+    "in a condition an expression is not taken for a declaration; a catch's parameter is one"_test = [] {
+        const auto facts = f::facts(f::parse("void f(bool a, bool b) {\n  if (a && b) {}\n  while (a & b) {}\n  if (g(a) && h(b)) {}\n  a && b;\n"
+                                             "  if (auto& r = x; r) {}\n  if (int n(3); n) {}\n  for (auto&& e : v) {}\n  try {} catch (const E& caught) {}\n"
+                                             "  if (auto f = g(); f && ok(*f)) {}\n}\n"));
+        std::vector<std::string> names;
+        for (const auto& d : facts.declarations)
+            if (d.kind == msa::Kind::variable) names.push_back(d.qualified_name);
+        expect(names == std::vector<std::string> { "r", "n", "e", "caught", "f" }) << std::format("{}", names);
+    };
+
+    "what a lambda declares is local, wherever the lambda is; an alias template is at its name"_test = [] {
+        const std::string_view source { "namespace n {\nconstexpr auto T { [](int p) { int table {}; for (int i { 0 }; i < 2; ++i) {} return table; }(1) };\n"
+                                        "template <class T> using Vec = V<T>;\n}\n" };
+        const auto facts = f::facts(f::parse(source));
+        const auto find = [&](std::string_view name) { return std::ranges::find(facts.declarations, name, &msa::fact::Declaration::qualified_name); };
+        expect(find("table") != facts.declarations.end() && find("table")->local && find("i")->local) << "in a lambda initializing a namespace's variable";
+        expect(find("p") != facts.declarations.end() && !find("p")->local) << "a parameter is not local";
+        expect(find("n::T") != facts.declarations.end() && !find("n::T")->local);
+        const auto vec = find("n::Vec");
+        expect(vec != facts.declarations.end() && vec->name.begin == msa::Position { 2, 25 }) << "its name, not its `using`";
+    };
+
     "what it cannot parse it skips, says where, and goes on"_test = [] {
         const auto syntax = f::parse("int good1;\n) ] garbage + + ;\nint good2;\nstruct S { void f( ; int kept; };\nint good3;\n");
         const auto names = outline("int good1;\n) ] garbage + + ;\nint good2;\nstruct S { void f( ; int kept; };\nint good3;\n");

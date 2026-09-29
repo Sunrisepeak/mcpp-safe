@@ -115,9 +115,9 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 ## 事实与快速门禁（M1.8）
 
-`facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：函数里声明的东西（参数、局部变量、lambda 的参数和 init-capture）只用名字本身，和 Clang 一样；`exported` 按词法上的外层传下来（参数、成员、局部变量都算），和 Clang 的 `isInExportDeclContext` 一样；结构化绑定是一个变量，名字是 `[a, b]`，位置在 `[`；无名参数在声明符之后的那个 token，无名 namespace 在它的 `{`，都和 Clang 放的位置一样。
+`facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：函数里声明的东西（参数、局部变量、lambda 的参数和 init-capture）只用名字本身，和 Clang 一样；`exported` 按词法上的外层传下来（参数、成员、局部变量都算），和 Clang 的 `isInExportDeclContext` 一样；结构化绑定是一个变量，名字是 `[a, b]`，位置在 `[`；lambda 里声明的是局部的，不论 lambda 在哪里；条件里的声明要有初始化器（`if (a && b)` 是表达式），只有 catch 的参数可以止于 `)`；别名模板的事实在它的名字处（大纲在 `using`，和 Clang 一样）；无名参数在声明符之后的那个 token，无名 namespace 在它的 `{`，都和 Clang 放的位置一样。
 
-`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16219 个（99.92%），限定名 99.95%，所属命名空间、`exported`、c-array、union、c-variadic 100%；类型文本和模板列表要知道别名和默认模板实参，是 M2 语义层的工作。
+`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16221 个（99.93%），没有多出来的；限定名 99.95%，所属命名空间、`exported`、`local`、c-array、union、c-variadic 100%；类型文本和模板列表要知道别名和默认模板实参，是 M2 语义层的工作。
 
 | 种类 | 内容 |
 |---|---|

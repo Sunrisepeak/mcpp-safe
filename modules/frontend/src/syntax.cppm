@@ -43,6 +43,7 @@ struct Declaration {
     bool c_variadic { false };         // a function with a C `...` parameter
     bool inline_namespace { false };
     bool va_list { false };            // its type is va_list: an array or a pointer, as the target has it
+    bool in_lambda { false };          // declared in a lambda: a parameter, an init-capture, in its body
     // Its [[mcpp::allow("ids", "reason")]] waivers (MC1 §7).
     std::vector<std::pair<std::string, std::string>> allows;
 };
@@ -173,6 +174,7 @@ private:
     std::vector<std::pair<std::string, std::string>> pending_allows_;   // waivers read, for the next declaration
     std::map<std::string, std::pair<bool, bool>, std::less<>> aliases_;   // this file's aliases: (pointer, array)
     std::int32_t owner_ { -1 };   // the declaration whose body or initializer is being read
+    std::size_t lambdas_ { 0 };   // how many lambdas' parameters, captures or bodies are being read
     // The parameters of the template header just read, as its arguments ("<T, N>"), and where it began.
     std::string template_arguments_;
     std::size_t template_begin_ { static_cast<std::size_t>(-1) };
@@ -327,6 +329,7 @@ private:
         d.first_token = static_cast<std::uint32_t>(first);
         d.last_token = static_cast<std::uint32_t>(last);
         d.allows = std::exchange(pending_allows_, {});
+        d.in_lambda = lambdas_ > 0;
         if (tracing_)
             base::trace::debug(TRACE, "{}:{} {} `{}` (declaration {}, in {})", d.name_at.line, d.name_at.column, msa::to_string(d.kind), d.name,
                                out_.declarations.size(), d.parent);
@@ -978,6 +981,7 @@ private:
     struct Specifiers {
         bool type { false }, typedef_ { false }, static_ { false }, friend_ { false }, void_ { false };
         bool auto_ { false };     // the type is `auto` (or `decltype(auto)`): deduced
+        bool extern_ { false };   // `extern`: a declaration, which a reference need not initialize
         bool pointer { false };   // a `*` in a template argument of the type (outside parentheses), or the type an alias of one
         bool c_array { false };   // the type an alias (of this file) of an array
         bool va_list { false };   // the type is va_list: an array or a pointer, by the target
@@ -1013,6 +1017,7 @@ private:
             if (any_word(i_, SPECIFIERS)) {
                 typedef_ = typedef_ || w == "typedef";
                 static_ = static_ || w == "static";
+                sp.extern_ = sp.extern_ || w == "extern";
                 friend_ = friend_ || w == "friend";
                 ++i_;
                 continue;
@@ -1156,7 +1161,7 @@ private:
                     } else if (is(i_, Kind::l_brace)) i_ = compound(i_, owner);
                     while (word(i_, "catch") && is(i_ + 1, Kind::l_paren)) {
                         const std::size_t close { balanced(i_ + 1) };
-                        try_local(i_ + 2, owner, close - 1, true);
+                        try_local(i_ + 2, owner, close - 1, Parens::catch_);
                         i_ = close;
                         if (is(i_, Kind::l_brace)) i_ = compound(i_, owner);
                     }
@@ -1316,6 +1321,7 @@ private:
     void scan(std::size_t from, std::size_t to, std::int32_t owner, bool statements) {
         const std::size_t saved { i_ };
         std::vector<bool> contexts { statements };   // per brace: statements inside, or an initializer list
+        std::vector<bool> lambda_bodies { false };   // per brace: a lambda's body
         bool boundary { statements };                // at a statement's start: a body's `{` is one, whatever precedes it
         std::size_t control_close { static_cast<std::size_t>(-1) };   // the `)` of if/for/while/switch: a statement follows
         bool lambda_body_next { false };
@@ -1327,7 +1333,7 @@ private:
                     k += 2;
                     continue;
                 }
-                if (try_local(k, owner, to, false)) {
+                if (try_local(k, owner, to)) {
                     k = i_;
                     boundary = is(k - 1, Kind::semi) || is(k - 1, Kind::r_brace);
                     if (is(k, Kind::semi)) {
@@ -1397,7 +1403,7 @@ private:
                         control_close = closing_paren(open);
                         if (tracing_)
                             base::trace::debug(TRACE, "{}:{} {} (...) to {}:{}", t.at.line, t.at.column, w, tok(control_close).at.line, tok(control_close).at.column);
-                        if (!word(open + 1, "const") || true) try_local(open + 1, owner, control_close, true);
+                        try_local(open + 1, owner, control_close, w == "catch" ? Parens::catch_ : Parens::control);
                         // What try_local did not take is read on, token by token.
                         k = std::max(open + 1, std::min(i_, control_close));
                         if (i_ <= open + 1) k = open + 1;
@@ -1415,6 +1421,7 @@ private:
             if (t.kind == Kind::l_square && !is(k + 1, Kind::l_square) &&
                 !(k > from && (identifier(k - 1) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) || is(k - 1, Kind::greater) ||
                                is_string(tok(k - 1).kind)))) {
+                ++lambdas_;
                 captures(k, owner);
                 std::size_t j { balanced(k) };
                 if (is(j, Kind::less)) {
@@ -1425,6 +1432,7 @@ private:
                     parameters_of(j, owner, -1);
                     j = balanced(j);
                 }
+                --lambdas_;
                 // Up to the body: mutable, constexpr, noexcept(...), attributes, -> type, requires ...
                 std::size_t b { j };
                 while (b < to && !is(b, Kind::l_brace) && !is(b, Kind::semi) && !is(b, Kind::r_paren) && !is(b, Kind::comma)) {
@@ -1445,6 +1453,8 @@ private:
                 const bool block { lambda_body_next || (contexts.back() && (boundary || (k > 0 && (is(k - 1, Kind::r_paren) || word(k - 1, "else") ||
                                                                                                       word(k - 1, "do") || word(k - 1, "try"))))) };
                 contexts.push_back(block);
+                lambda_bodies.push_back(lambda_body_next);
+                if (lambda_body_next) ++lambdas_;
                 if (tracing_)
                     base::trace::debug(TRACE, "{}:{} `{{` {} (owner {})", t.at.line, t.at.column,
                                        lambda_body_next ? "a lambda's body" : block ? "a block" : "an initializer", owner);
@@ -1454,13 +1464,19 @@ private:
                 continue;
             }
             if (t.kind == Kind::r_brace) {
-                if (contexts.size() > 1) contexts.pop_back();
+                if (contexts.size() > 1) {
+                    contexts.pop_back();
+                    if (lambda_bodies.back()) --lambdas_;
+                    lambda_bodies.pop_back();
+                }
                 boundary = contexts.back();
                 ++k;
                 continue;
             }
             if (t.kind == Kind::semi) {
-                boundary = contexts.back();
+                // Not inside a control statement's parentheses: what follows an init-statement is its
+                // condition (`if (auto f = g(); f && ok(*f))`), not a statement.
+                boundary = contexts.back() && !(control_close != static_cast<std::size_t>(-1) && k < control_close);
                 ++k;
                 continue;
             }
@@ -1473,13 +1489,19 @@ private:
             boundary = false;
             ++k;
         }
+        // A lambda's body the range ended inside (broken text) is no longer being read.
+        for (std::size_t open { 1 }; open < lambda_bodies.size(); ++open)
+            if (lambda_bodies[open]) --lambdas_;
         i_ = saved;
     }
 
     // A local declaration at `k`: T x, T* p = e, auto [..] aside. Records it (and the constructs in
     // its initializers) and leaves i_ after its declarators (at the `;`, `)` or `:`); false, i_
-    // unchanged, when the tokens are not one. `in_parens`: in the ( ) of if/for/while/switch/catch.
-    bool try_local(std::size_t k, std::int32_t owner, std::size_t limit, bool in_parens) {
+    // unchanged, when the tokens are not one. `parens`: in the ( ) of if/for/while/switch, or of a
+    // catch -- what may end a declaration there differs.
+    enum class Parens : std::uint8_t { none, control, catch_ };
+    bool try_local(std::size_t k, std::int32_t owner, std::size_t limit, Parens parens = Parens::none) {
+        const bool in_parens { parens != Parens::none };
         const std::size_t saved { i_ };
         if (k >= limit || any_word(k, STATEMENTS)) return false;
         i_ = k;
@@ -1512,8 +1534,22 @@ private:
         for (;;) {
             const std::size_t start { i_ };
             const Declarator d { declarator(scope) };
-            const bool ends { is(i_, Kind::equal) || is(i_, Kind::semi) || is(i_, Kind::comma) || is(i_, Kind::l_brace) || is(i_, Kind::l_paren) ||
-                              (in_parens && (is(i_, Kind::colon) || is(i_, Kind::r_paren))) };
+            // What ends a declarator of a declaration: in a statement, an initializer or `;` `,`; in a
+            // condition, an initializer (`if (T x = e)`, `{e}`), an init-statement's `;` (a `(e)` only
+            // there), a range-for's `:`; in a catch, the `)`. A reference is initialized, except a
+            // catch's. So `if (a && b)` and `a & b;` are expressions, not declarations of references.
+            const bool reference { d.pointer && !d.star };
+            const bool initialized { is(i_, Kind::equal) || is(i_, Kind::l_brace) || is(i_, Kind::l_paren) || is(i_, Kind::colon) };
+            bool ends { false };
+            switch (parens) {
+            case Parens::none: ends = is(i_, Kind::equal) || is(i_, Kind::semi) || is(i_, Kind::comma) || is(i_, Kind::l_brace) || is(i_, Kind::l_paren); break;
+            case Parens::control:
+                ends = is(i_, Kind::equal) || is(i_, Kind::l_brace) || is(i_, Kind::colon) || is(i_, Kind::semi) || is(i_, Kind::comma) ||
+                       (is(i_, Kind::l_paren) && (is(balanced(i_), Kind::semi) || is(balanced(i_), Kind::comma)));
+                break;
+            case Parens::catch_: ends = is(i_, Kind::r_paren); break;
+            }
+            if (reference && parens != Parens::catch_ && !initialized && !sp.extern_) ends = false;
             if (!d.ok || !d.id.qualifiers.empty() || d.id.op || d.id.destructor || !ends || d.function || i_ > limit) {
                 if (!any) {
                     i_ = saved;
