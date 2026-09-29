@@ -99,6 +99,8 @@ function install()
         "R=$(ls -d \"$L\"/lib/clang/* | head -1)",
         "cp -R " .. q(headers) .. " \"$D/lib/clang/" .. CLANG_MAJOR .. "/include\"",
         "[ -d \"$R/lib\" ] && ln -s \"$R/lib\" \"$D/lib/clang/" .. CLANG_MAJOR .. "/lib\"",
+        -- the llvm payload's clang-scan-deps looks under lib/clang/<its major> for the builtin headers
+        "r=$(basename \"$R\"); [ \"$r\" = " .. CLANG_MAJOR .. " ] || ln -s " .. CLANG_MAJOR .. " \"$D/lib/clang/$r\"",
         -- mcxx under the names its driver selects the mode by; a hard link where the store allows
         "for n in clang++ clang; do ln " .. q(mcxx) .. " \"$D/bin/$n\" 2>/dev/null || cp " .. q(mcxx) .. " \"$D/bin/$n\"; done",
         "ln -s clang++ \"$D/bin/mcxx\"",

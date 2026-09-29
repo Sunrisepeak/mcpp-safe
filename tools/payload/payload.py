@@ -19,6 +19,7 @@ In the payload:
   bin/clang++.cfg, clang.cfg  the LLVM payload's, with the target stated (mcxx's own default is the
                             openkal host, x86_64-unknown-linux-musl) and its paths kept
   lib/clang/23/include      Clang 23's builtin headers; lib/clang/23/lib: the LLVM payload's compiler-rt
+  lib/clang/<llvm's major>  a link to 23: the llvm payload's clang-scan-deps looks there for them
   everything else           symbolic links into the LLVM payload
   .mcxx-payload.json        what it was made of
 """
@@ -66,6 +67,11 @@ resource.mkdir(parents=True)
 shutil.copytree(headers, resource / "include", symlinks=True)
 if (llvm_resource / "lib").exists():
     (resource / "lib").symlink_to(llvm_resource / "lib")
+# clang-scan-deps is the llvm payload's: it finds the builtin headers under lib/clang/<ITS major>
+# beside the compiler a command names -- here, mcxx. Without this a module unit that includes a C
+# header (<cstdio> in a global module fragment) is not scanned: 'stddef.h' file not found.
+if llvm_resource.name != "23":
+    (out / "lib" / "clang" / llvm_resource.name).symlink_to("23")
 
 # The compiler: mcxx, under the names the driver selects its mode by (MC5-2-2).
 for name in ("clang++", "clang"):
