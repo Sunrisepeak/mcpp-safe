@@ -226,6 +226,8 @@ std::optional<Typed> Resolver::range_element(const Typed& written) {
     static constexpr std::string_view maps[] { "std::map", "std::unordered_map", "std::multimap", "std::flat_map" };
     if (std::ranges::contains(sequences, *cls) && !args.empty()) return derived(type, args[0]);
     if (std::ranges::contains(maps, *cls) && args.size() >= 2) return derived(type, std::format("std::pair<const {}, {}>", args[0], args[1]));
+    // A json value's elements are json values (nlohmann's iter_impl gives a reference to one).
+    if (*cls == "nlohmann::basic_json") return type;
     // A directory's iterators give its entries ([fs.class.directory.iterator]).
     if (*cls == "std::filesystem::directory_iterator" || *cls == "std::filesystem::recursive_directory_iterator")
         return Typed { "::std::filesystem::directory_entry", type.at, {}, false };

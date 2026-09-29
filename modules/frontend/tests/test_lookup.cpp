@@ -243,6 +243,31 @@ int main() {
         expect(at(2, 115).starts_with("uncertain")) << at(2, 115);
     };
 
+    "a range-for over a json value gives json values"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.exported = true;
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = { decl("nlohmann", K::namespace_), decl("nlohmann::basic_json", K::class_),
+                                  decl("nlohmann::basic_json::is_string", K::method, "bool"), decl("nlohmann::json", K::type_alias, "basic_json<>") };
+        const std::string_view source {
+            "bool any(const nlohmann::json& items) {\n"
+            "    for (const auto& item : items) if (item.is_string()) return true;\n"
+            "    return false;\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 44 }; });
+        expect(at != references.end() && at->certain && at->target == "nlohmann::basic_json::is_string")
+            << (at == references.end() ? std::string { "not resolved" } : at->target + " " + at->why);
+    };
+
     "a function overloaded across scopes is left to overload resolution"_test = [] {
         using K = mcxx::msa::Kind;
         const auto decl = [](std::string qualified, K kind, std::string type = {}) {
