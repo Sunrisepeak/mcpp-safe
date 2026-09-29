@@ -63,11 +63,13 @@ std::uint32_t cplusplus_of(const cl::LangOptions& lang) {
 
 // The dialect the unit was gated with: its package's profiles, every feature's level for code in
 // the module, and the levels its package sets for namespaces.
-ifc::Dialect dialect_of(const features::Plan& plan, std::string_view module) {
+ifc::Dialect dialect_of(const features::Plan& plan, std::string_view module, std::string_view path) {
     ifc::Dialect dialect;
     dialect.profiles = plan.config.profiles;
+    // The unit's own file's levels: what its code was gated with (MC1 0.4.0's `files` included).
+    const std::string file { plan.relative(path) };
     for (const auto& gate : plan.gates)
-        dialect.features.push_back({ gate.entry->feature->id, std::string { plugin::to_string(plan.level(gate, module, {})) } });
+        dialect.features.push_back({ gate.entry->feature->id, std::string { plugin::to_string(plan.level(gate, module, {}, file)) } });
     for (const auto& [name, levels] : plan.config.namespaces)
         for (const auto& [feature, level] : levels) dialect.namespaces.push_back({ name, feature, std::string { plugin::to_string(level) } });
     return dialect;
@@ -109,7 +111,7 @@ ifc::Interface interface_of(cl::CompilerInstance& ci, cl::ASTContext& ctx, const
     unit.source = path;
     unit.target = ci.getTarget().getTriple().str();
     unit.cplusplus = cplusplus_of(ci.getLangOpts());
-    unit.dialect = dialect_of(plan, unit.module);
+    unit.dialect = dialect_of(plan, unit.module, path);
     unit.declarations = ifc::interface_declarations(facts_of(ctx, &ci.getPreprocessor(), msa::fact::Kinds::declarations | msa::fact::Kinds::declaration_types));
     unit.reachable = reachable_of(ctx);
     for (const auto& e : m.Exports)

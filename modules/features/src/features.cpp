@@ -114,7 +114,8 @@ Config parse_config(std::string_view manifest_text, std::string manifest_path) {
     if (const auto it = mcxx->find("features"); it != mcxx->end() && it->second.is_table())
         read_levels(it->second.as_table(), config.package, where + ".features", config.problems);
     for (const auto& [key, into] : { std::pair { std::string_view { "modules" }, &config.modules },
-                                     std::pair { std::string_view { "namespaces" }, &config.namespaces } }) {
+                                     std::pair { std::string_view { "namespaces" }, &config.namespaces },
+                                     std::pair { std::string_view { "files" }, &config.files } }) {
         const auto it = mcxx->find(key);
         if (it == mcxx->end() || !it->second.is_table()) continue;
         for (const auto& [name, table] : it->second.as_table()) {
@@ -195,6 +196,38 @@ bool profile_known(const plugin::Catalog& catalog, std::string_view name) {
     return false;
 }
 
+// A `files` pattern against a path, both '/'-separated: `*` any characters but '/', `**` any number of
+// whole path components (`src/**` is everything under src, `**/*.cppm` every interface unit), `?` one
+// character but '/'.
+bool glob_match(std::string_view pattern, std::string_view path) {
+    if (pattern.empty()) return path.empty();
+    if (pattern.starts_with("**")) {
+        std::string_view rest { pattern.substr(2) };
+        if (rest.starts_with('/')) rest.remove_prefix(1);
+        else if (!rest.empty()) return false;   // `**` stands alone as a component
+        if (rest.empty()) return true;
+        for (std::size_t at { 0 };;) {
+            if (glob_match(rest, path.substr(at))) return true;
+            const std::size_t slash { path.find('/', at) };
+            if (slash == std::string_view::npos) return false;
+            at = slash + 1;
+        }
+    }
+    if (pattern.front() == '*') {
+        for (std::size_t n { 0 }; n <= path.size(); ++n) {
+            if (glob_match(pattern.substr(1), path.substr(n))) return true;
+            if (n < path.size() && path[n] == '/') break;
+        }
+        return false;
+    }
+    if (path.empty()) return false;
+    if (pattern.front() == '?') return path.front() != '/' && glob_match(pattern.substr(1), path.substr(1));
+    return pattern.front() == path.front() && glob_match(pattern.substr(1), path.substr(1));
+}
+
+// How specific a pattern is: its characters that are not wildcards.
+std::size_t specificity(std::string_view pattern) { return static_cast<std::size_t>(std::ranges::count_if(pattern, [](char c) { return c != '*' && c != '?'; })); }
+
 void check_ids(const plugin::Catalog& catalog, const LevelMap& levels, std::string_view where, std::vector<std::string>& problems) {
     for (const auto& [id, level] : levels)
         if (catalog.find(id) == nullptr) problems.push_back(std::format("{}: `{}` is not a feature any linked provider declares", where, id));
@@ -207,7 +240,13 @@ const Plan::Gate* Plan::gate(std::string_view id) const {
     return entry == nullptr ? nullptr : &gates[static_cast<std::size_t>(entry - catalog->features.data())];
 }
 
-Level Plan::level(const Gate& gate, std::string_view module, std::string_view container) const {
+std::string Plan::relative(std::string_view path) const {
+    if (config.manifest.empty()) return {};
+    const auto rel { base::relative_path(base::normalize_path(path), base::parent_path(config.manifest)) };
+    return rel ? *rel : std::string {};
+}
+
+Level Plan::level(const Gate& gate, std::string_view module, std::string_view container, std::string_view file) const {
     const std::string_view id { gate.entry->feature->id };
     Level level { gate.base };
     if (!module.empty()) {
@@ -216,6 +255,18 @@ Level Plan::level(const Gate& gate, std::string_view module, std::string_view co
             if (const auto m = config.modules.find(name); m != config.modules.end())
                 if (const auto it = m->second.find(id); it != m->second.end()) level = it->second;
             if (name == module) break;
+        }
+    }
+    // The most specific pattern that matches the file and sets this feature (MC1 0.4.0).
+    if (!file.empty()) {
+        std::optional<std::size_t> most;
+        for (const auto& [pattern, levels] : config.files) {
+            const auto it = levels.find(id);
+            if (it == levels.end() || !glob_match(pattern, file)) continue;
+            if (const std::size_t s { specificity(pattern) }; !most || s >= *most) {
+                level = it->second;
+                most = s;
+            }
         }
     }
     // The innermost configured namespace that contains the code and sets this feature.
@@ -244,6 +295,7 @@ Plan make_plan(Config config) {
     check_ids(catalog, c.package, where + ".features", plan.problems);
     for (const auto& [name, levels] : c.modules) check_ids(catalog, levels, std::format("{}.modules.\"{}\"", where, name), plan.problems);
     for (const auto& [name, levels] : c.namespaces) check_ids(catalog, levels, std::format("{}.namespaces.\"{}\"", where, name), plan.problems);
+    for (const auto& [pattern, levels] : c.files) check_ids(catalog, levels, std::format("{}.files.\"{}\"", where, pattern), plan.problems);
     for (const auto& [name, allowance] : c.imports)
         for (const auto& id : allowance.ids)
             if (catalog.find(id) == nullptr)
@@ -263,7 +315,7 @@ Plan make_plan(Config config) {
             const std::string region[] { a.attribute->region };
             if (const auto l = profile_level(catalog, f, region); l && *l != Level::allow) gate.maybe = true;
         }
-        for (const auto* scopes : { &c.modules, &c.namespaces })
+        for (const auto* scopes : { &c.modules, &c.namespaces, &c.files })
             for (const auto& [name, levels] : *scopes)
                 if (const auto it = levels.find(f.id); it != levels.end() && it->second != Level::allow) gate.maybe = true;
         plan.gates.push_back(gate);
@@ -356,7 +408,7 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
         for (const auto& id : f.features) {
             const Plan::Gate* g { plan.gate(id) };
             if (g == nullptr) continue;
-            denied = denied || plan.level(*g, context.module, "") == Level::deny;
+            denied = denied || plan.level(*g, context.module, "", plan.relative(context.path)) == Level::deny;
             for (const auto& [name, levels] : plan.config.namespaces)
                 if (const auto it = levels.find(id); it != levels.end() && it->second == Level::deny) denied = true;
         }
@@ -369,11 +421,12 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
     for (const auto& s : context.facts.suppressions)
         for (const auto& id : s.ids)
             if (catalog.find(id) == nullptr) result.unknown.emplace_back(id, s.range);
+    const std::string file { plan.relative(context.path) };
     for (const auto& finding : findings) {
         const Plan::Gate* gate { plan.gate(finding.feature) };
         if (gate == nullptr || !gate->maybe) continue;
         const plugin::Feature& feature { *gate->entry->feature };
-        Level level { plan.level(*gate, context.module, finding.container) };
+        Level level { plan.level(*gate, context.module, finding.container, file) };
         // Inside a region, its profile's level where that is stricter (MC1 §6, MC4 §2).
         for (const auto& a : context.facts.attributes) {
             const auto* entry = catalog.attribute(a.name);
@@ -424,7 +477,7 @@ std::string catalog_json(const plugin::Catalog& catalog) {
             for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
             return "[" + out + "]";
         };
-        std::string out { "{\"mc1-version\":\"0.3.0\",\"providers\":[" };
+        std::string out { "{\"mc1-version\":\"0.4.0\",\"providers\":[" };
         for (std::size_t i { 0 }; i < catalog.providers.size(); ++i) {
             const auto* p = catalog.providers[i].provider;
             out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));

@@ -1130,5 +1130,14 @@
   {
    "manual": "Dividing a module by concern is a review question; the line limit is linted (file-size)."
   }
+ ],
+ "MC1-5-6": [
+  {
+   "test": "modules/features/tests/test_spec.cpp: a file's level: the most specific pattern that matches it, between its module and its namespace (MC1 0.4.0)"
+  },
+  {
+   "script": "modules/features/src/features.cpp",
+   "contains": "bool glob_match(std::string_view pattern, std::string_view path)"
+  }
  ]
 }

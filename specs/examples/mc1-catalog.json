@@ -1,5 +1,5 @@
 {
-    "mc1-version": "0.3.0",
+    "mc1-version": "0.4.0",
     "providers": [
         {
             "name": "mc++.iso",
@@ -12,14 +12,14 @@
             "kind": "rule"
         },
         {
-            "name": "mcxx.plugins.cfg",
-            "origin": "plugin",
-            "kind": "source filter"
-        },
-        {
             "name": "mcxx.plugins.json",
             "origin": "plugin",
             "kind": "rule"
+        },
+        {
+            "name": "mcxx.plugins.cfg",
+            "origin": "plugin",
+            "kind": "source filter"
         }
     ],
     "replaced": [],

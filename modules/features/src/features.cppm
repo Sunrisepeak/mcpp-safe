@@ -69,6 +69,9 @@ struct Config {
     LevelMap package;
     std::map<std::string, LevelMap, std::less<>> modules;
     std::map<std::string, LevelMap, std::less<>> namespaces;
+    // `[package.metadata.mcxx.files."src/legacy/**"]`: the levels of the package's files a glob matches,
+    // relative to the manifest's directory (MC1 0.4.0).
+    std::map<std::string, LevelMap, std::less<>> files;
     std::map<std::string, ImportAllowance, std::less<>> imports;   // by module name, as imported ("m", "m:p")
     std::vector<std::string> problems;     // what could not be read: told as warnings, never ignored
 };
@@ -98,8 +101,11 @@ struct Plan {
 
     bool idle() const { return !gated && problems.empty(); }
     const Gate* gate(std::string_view id) const;
-    // The level of a gated feature for code in `module` and namespace `container`, before any waiver.
-    Level level(const Gate& gate, std::string_view module, std::string_view container) const;
+    // The level of a gated feature for code in `module` and namespace `container`, in `file` (its
+    // path relative to the manifest's directory, '/'-separated; "" when not known), before any waiver.
+    Level level(const Gate& gate, std::string_view module, std::string_view container, std::string_view file = {}) const;
+    // A source file's path as `files` patterns match it: relative to the manifest's directory ("" outside it).
+    std::string relative(std::string_view path) const;
 };
 
 Plan make_plan(Config config);

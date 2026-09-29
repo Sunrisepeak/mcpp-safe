@@ -25,6 +25,13 @@ c-array = "allow"
 raw-pointers = "allow"
 c-varargs = "allow"
 
+[package.metadata.mcxx.files."src/compat/**"]
+include = "allow"
+macros = "warn"
+
+[package.metadata.mcxx.files."src/compat/zlib_shim.cpp"]
+macros = "allow"
+
 [package.metadata.mcxx.imports."vendor.zlib"]
 allow = ["c-array", "raw-pointers"]
 reason = "zlib's C interface, wrapped in app::compress"

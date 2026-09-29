@@ -2,6 +2,13 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC1 0.4.0: levels by file
+
+- **MC1** 0.4.0: `[package.metadata.mcxx.files."<glob>"]` -- the levels of the package's files a glob
+  matches, relative to the manifest's directory (`*`, `**`, `?`), the most specific pattern winning;
+  in §6 between a namespace's level and a module's. A package can deny headers in its module code and
+  allow them in the files that wrap a C library.
+
 ## 2026-09-29 — MC5 0.3.0: module layout
 
 - **MC5** 0.3.0 (§8, recommended): a module divided by concern -- interface partitions that declare,

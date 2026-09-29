@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
         const auto g = std::ranges::find_if(list, [](const Json& f) { return f["id"] == "goto"; });
         expect(g != list.end() && (*g)["level"] == "deny" && (*g)["gated"] == true);
         auto catalog = client.request("mcxx/catalog", Json::object());
-        expect(catalog.has_value() && (*catalog)["mc1-version"] == "0.3.0" && (*catalog)["features"].size() > 15);
+        expect(catalog.has_value() && (*catalog)["mc1-version"] == "0.4.0" && (*catalog)["features"].size() > 15);
         auto symbols = client.request("textDocument/documentSymbol", program.document());
         expect(symbols.has_value() && symbols->is_array() && !symbols->empty()) << "LSP's own requests are the service's";
     };

@@ -33,5 +33,14 @@
       ],
       "reason": "zlib's C interface, wrapped in app::compress"
     }
+  },
+  "files": {
+    "src/compat/**": {
+      "include": "allow",
+      "macros": "warn"
+    },
+    "src/compat/zlib_shim.cpp": {
+      "macros": "allow"
+    }
   }
 }

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC1 |
-| Version | 0.3.0 |
+| Version | 0.4.0 |
 | Status | Draft |
 | Schemas | [`schema/mc1-config.schema.json`](schema/mc1-config.schema.json), [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json), [`schema/mc1-audit.schema.json`](schema/mc1-audit.schema.json) |
 | Examples | [`examples/mc1-config.toml`](examples/mc1-config.toml) with [`examples/mc1-config.json`](examples/mc1-config.json), [`examples/mc1-catalog.json`](examples/mc1-catalog.json), [`examples/mc1-audit.jsonl`](examples/mc1-audit.jsonl) |
@@ -112,6 +112,9 @@ goto = "allow"
 [package.metadata.mcxx.namespaces."app::detail"]  # a namespace's levels (and those inside it)
 reinterpret-cast = "allow"
 
+[package.metadata.mcxx.files."src/compat/**"]     # the levels of the files a glob matches (0.4.0)
+include = "allow"
+
 [package.metadata.mcxx.imports."legacy"]          # what an import of a module may bring in (§7)
 allow = ["c-array", "raw-pointers"]
 reason = "the C library, wrapped"
@@ -123,6 +126,7 @@ reason = "the C library, wrapped"
 | `features` | table: id → level | The package's levels. |
 | `modules` | table: module name → (id → level) | A named module's levels. A partition `m:p` takes `m`'s, and then its own if `m:p` is listed. <a id="MC1-5-2"></a><sup>MC1-5-2</sup> |
 | `namespaces` | table: qualified name → (id → level) | A namespace's levels; they apply to the namespaces nested in it. <a id="MC1-5-3"></a><sup>MC1-5-3</sup> |
+| `files` | table: glob → (id → level) | The levels of the package's files whose path, relative to the manifest's directory and `/`-separated, the glob matches: `*` any characters within a path component, `**` any number of whole components, `?` one character. Where several match, the most specific -- the most characters that are not wildcards, and the later of equals -- gives a feature its level (0.4.0). A package can so deny headers in its own module code and allow them in the files that wrap a C library, or leave some files as their module is. <a id="MC1-5-6"></a><sup>MC1-5-6</sup> |
 | `imports` | table: module name → { `allow`: id[], `reason`: string } | A waiver over every import of the module in the package's files (§7, 0.3.0). |
 
 A compiler MUST report, as a warning and never silently ignore: a value that is not a level; a feature id that no provider it has declares (in `imports` too); an `imports` entry without `allow`; a profile that no provider defines and no feature joins; a `profile` that is neither a string nor a list of strings. <a id="MC1-5-4"></a><sup>MC1-5-4</sup> Other keys of `[package.metadata.mcxx]` are reserved for later versions and SHOULD be ignored. <a id="MC1-5-5"></a><sup>MC1-5-5</sup>
@@ -134,10 +138,11 @@ The level of a feature for a finding is, from the most specific: <a id="MC1-6-1"
 1. a waiver on a declaration that contains the finding (§7), if the feature is waivable;
 2. within a region -- a declaration carrying an attribute a provider declares as one (MC4 §2) -- the level the region's profile gives the feature, where it is stricter than the level of the steps below; <a id="MC1-6-2"></a><sup>MC1-6-2</sup>
 3. the level of the innermost configured namespace that contains the finding's enclosing namespace and sets the feature;
-4. the level of the finding's module (a partition's own over its module's, §5);
-5. the package's level (`features`);
-6. the profiles' level (§4);
-7. the feature's default.
+4. the level of the most specific `files` pattern that matches the finding's file and sets the feature (§5, 0.4.0);
+5. the level of the finding's module (a partition's own over its module's, §5);
+6. the package's level (`features`);
+7. the profiles' level (§4);
+8. the feature's default.
 
 ## 7. Waivers
 

@@ -1,4 +1,5 @@
 # MC1 §6, every level of the precedence (A0.3.3), and waivers that must reach the audit (A0.3.4).
+# A file's level (MC1 0.4.0): a glob's, the most specific one's.
 [package]
 name    = "gates-scopes"
 version = "0.1.0"
@@ -18,3 +19,9 @@ reinterpret-cast = "allow"    # a namespace over the profile
 
 [package.metadata.mcxx.namespaces."app::interop::checked"]
 reinterpret-cast = "deny"     # an inner namespace over the one around it
+
+[package.metadata.mcxx.files."files/compat/**"]
+include = "allow"             # the files that wrap a C library over the profile
+
+[package.metadata.mcxx.files."files/compat/raw_*.cpp"]
+include = "deny"              # the more specific pattern over the one around it

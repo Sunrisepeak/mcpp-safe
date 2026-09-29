@@ -40,9 +40,33 @@ int main() {
         expect(c.modules.size() == 2 && c.modules.at("app.legacy") == features::LevelMap { { "goto", Level::allow }, { "c-array", Level::warn } });
         expect(c.modules.at("app.legacy:io") == features::LevelMap { { "c-array", Level::allow } });
         expect(c.namespaces.size() == 1 && c.namespaces.at("app::ffi") == features::LevelMap { { "raw-pointers", Level::allow }, { "c-varargs", Level::allow } });
+        expect(c.files.size() == 2 && c.files.at("src/compat/**") == features::LevelMap { { "include", Level::allow }, { "macros", Level::warn } }
+               && c.files.at("src/compat/zlib_shim.cpp") == features::LevelMap { { "macros", Level::allow } });
         expect(c.imports.size() == 1 && c.imports.at("vendor.zlib").ids == std::vector<std::string> { "c-array", "raw-pointers" }
                && c.imports.at("vendor.zlib").reason.contains("zlib"));
         expect(c.problems.empty()) << std::format("{}", c.problems);
+    };
+
+    "a file's level: the most specific pattern that matches it, between its module and its namespace (MC1 0.4.0)"_test = [] {
+        const auto config = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx]\nprofile = \"modules\"\n"
+                                                   "[package.metadata.mcxx.modules.\"app\"]\nmacros = \"warn\"\n"
+                                                   "[package.metadata.mcxx.files.\"src/compat/**\"]\ninclude = \"allow\"\nmacros = \"allow\"\n"
+                                                   "[package.metadata.mcxx.files.\"src/compat/*_c.cpp\"]\ninclude = \"deny\"\n"
+                                                   "[package.metadata.mcxx.namespaces.\"app::strict\"]\nmacros = \"deny\"\n",
+                                                   "/pkg/mcpp.toml");
+        const auto plan = features::make_plan(config);
+        expect(fatal(plan.problems.empty())) << std::format("{}", plan.problems);
+        const auto* include = plan.gate("include");
+        const auto* macros = plan.gate("macros");
+        expect(fatal(include != nullptr && macros != nullptr));
+        expect(plan.relative("/pkg/src/compat/io.cpp") == "src/compat/io.cpp" && plan.relative("/elsewhere/x.cpp").empty());
+        expect(plan.level(*include, "app", "", "src/main.cppm") == Level::deny) << "the profile's, where no pattern matches";
+        expect(plan.level(*include, "app", "", "src/compat/io.cpp") == Level::allow) << "src/compat/**";
+        expect(plan.level(*include, "app", "", "src/compat/zlib_c.cpp") == Level::deny) << "the more specific pattern";
+        expect(plan.level(*include, "app", "", "src/compat/deep/more.cpp") == Level::allow) << "** crosses components";
+        expect(plan.level(*macros, "app", "", "src/compat/io.cpp") == Level::allow) << "a file's level over its module's";
+        expect(plan.level(*macros, "app", "app::strict", "src/compat/io.cpp") == Level::deny) << "a namespace's over a file's";
+        expect(plan.level(*macros, "app", "", "") == Level::warn) << "no file known: the module's";
     };
 
     "keys this version does not define are ignored, not errors"_test = [] {

@@ -57,10 +57,15 @@ goto = "allow"
 [package.metadata.mcxx.namespaces."app::detail"]    # 一个命名空间及其内部的命名空间
 reinterpret-cast = "allow"
 
+[package.metadata.mcxx.files."src/compat/**"]       # 路径匹配的文件（相对 mcpp.toml 所在目录，MC1 0.4.0）
+include = "allow"                                   # 包装 C 库的文件可以用头文件，其余照 profile 禁止
+
 [package.metadata.mcxx.imports."legacy"]            # 导入 legacy 时允许它带进来的东西（M1.2）
 allow = ["c-array", "raw-pointers"]
 reason = "C 库，已经包装"
 ```
+
+文件的级别：`*` 匹配路径的一段之内，`**` 匹配任意多段，`?` 匹配一个字符；多个模式都匹配时，非通配字符最多的那个说了算。优先级从高到低：声明上的豁免、区域、命名空间、文件、模块、包、profile、默认（MC1 §6）。
 
 级别有三档：`allow`、`warn`、`deny`（也可以写 `off`、`warning`、`error`）。下面这些都会作为警告报出，不会被静默忽略：
 - 无法识别的级别；
