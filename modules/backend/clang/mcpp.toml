@@ -25,7 +25,7 @@ mcxx-ifc      = { path = "../../ifc" }              # MC2: the interface beside 
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).
 [dependencies.llvm]
-clang-dev = "23.1.0.3"
+clang-dev = "23.1.0.4"
 
 [lib]
 path = "src/clang.cppm"

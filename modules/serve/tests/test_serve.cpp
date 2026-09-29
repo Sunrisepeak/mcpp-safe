@@ -2,6 +2,7 @@
 // supervising Client -- the handshake, a document's diagnostics, MC++'s requests (facts, gates, the
 // catalog) -- and killed, to see the Client start it again and replay what it was told (A1.3.2).
 import std;
+import mcxx.base;
 import nlohmann.json;
 import mcxx.testing;
 import mcxx.serve;
@@ -41,7 +42,7 @@ struct Program {
     }
     Json open() const {
         Json doc = Json::object();
-        doc["uri"] = "file://" + file;
+        doc["uri"] = mcxx::base::path_to_uri(file);
         doc["languageId"] = "cpp";
         doc["version"] = 1;
         doc["text"] = text();
@@ -51,7 +52,7 @@ struct Program {
     }
     Json document() const {
         Json p = Json::object();
-        p["textDocument"]["uri"] = "file://" + file;
+        p["textDocument"]["uri"] = mcxx::base::path_to_uri(file);
         return p;
     }
 };
@@ -81,7 +82,14 @@ int main(int argc, char** argv) {
         return serve::run(std::cin, std::cout, options);
     }
     using namespace mcxx::testing;
-    const std::string self { fs::read_symlink("/proc/self/exe").generic_string() };
+    // This program, to start again as the other side: Linux names it in /proc; elsewhere argv[0], made
+    // absolute by mcxx.base's rules (a Windows path has a drive).
+    std::error_code link_error;
+    std::string self { fs::read_symlink("/proc/self/exe", link_error).generic_string() };
+    if (link_error || self.empty()) {
+        self = mcxx::base::normalize_path(argv[0]);
+        if (!mcxx::base::is_absolute_path(self)) self = mcxx::base::join_path(fs::current_path(link_error).generic_string(), self);
+    }
 
     "a message is framed as LSP's base protocol says, and read back"_test = [] {
         Json m = Json::object();
@@ -148,7 +156,7 @@ int main(int argc, char** argv) {
         const std::string edited { "#define LIMIT 4\nint f(int n) {\n    int* p = new int { n };\n    if (n) goto out;\n"
                                    "    long a = reinterpret_cast<long>(p);\n    delete p;\n    return 1;\nout:\n    return 0;\n}\n" };
         Json change = Json::object();
-        change["textDocument"]["uri"] = "file://" + program.file;
+        change["textDocument"]["uri"] = mcxx::base::path_to_uri(program.file);
         change["textDocument"]["version"] = 2;
         Json whole = Json::object();
         whole["text"] = edited;

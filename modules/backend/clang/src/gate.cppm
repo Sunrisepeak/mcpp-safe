@@ -219,7 +219,7 @@ public:
         if (path.empty()) return;
         // Absolute, as audit records and configuration lookup name files (MC1 §8), whatever the
         // command line spelled.
-        if (std::error_code ec; fs::path { path }.is_relative()) path = normalize_path(fs::absolute(path, ec).generic_string());
+        path = absolute_path(path);
         std::shared_ptr<const features::Plan> plan { features::plan_for(path) };
         // The package's plugins (MC4 §3): out-of-process ones are started and join the catalog (the
         // plan is then made again); static ones must be composed into this compiler.

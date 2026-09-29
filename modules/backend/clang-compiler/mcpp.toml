@@ -16,8 +16,8 @@ kind = "lib"
 openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
 
 [dependencies.llvm]
-clang-dev    = "23.1.0.3"
-clang-driver = "23.1.0.3"
+clang-dev    = "23.1.0.4"
+clang-driver = "23.1.0.4"
 
 [lib]
 path = "src/compiler.cppm"

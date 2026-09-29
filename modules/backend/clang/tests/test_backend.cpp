@@ -5,6 +5,8 @@ import std;
 import mcxx.testing;
 import mcxx.msa;
 import mcxx.backend.clang;
+import mcxx.os;
+import mcxx.base;
 import mcxx.plugins.json;
 import mcxx.plugins.std;
 import example.device;
@@ -30,8 +32,9 @@ struct Program {
         const auto path = root / relative;
         std::filesystem::create_directories(path.parent_path());
         std::ofstream { path } << text;
-        const std::string p { path.generic_string() };
-        commands.push_back({ root.generic_string(), p, { "clang++", "-std=c++23", "-c", p } });
+        // As libmc++ spells paths (mcxx.base): '/' separators, a Windows path's drive kept.
+        const std::string p { mcxx::base::normalize_path(path.generic_string()) };
+        commands.push_back({ mcxx::base::normalize_path(root.generic_string()), p, { "clang++", "-std=c++23", "-c", p } });
         return p;
     }
 };
@@ -137,11 +140,11 @@ int main() {
     static constexpr std::string_view JSON_PRELUDE {
         "namespace std {\n"
         "template <class E> class initializer_list {\n"
-        "    const E* b; unsigned long n;\n"
-        "    constexpr initializer_list(const E* b, unsigned long n) : b(b), n(n) {}\n"
+        "    const E* b; decltype(sizeof(0)) n;\n"   // size_t, whatever the target's
+        "    constexpr initializer_list(const E* b, decltype(sizeof(0)) n) : b(b), n(n) {}\n"
         "public:\n"
         "    constexpr initializer_list() : b(nullptr), n(0) {}\n"
-        "    constexpr unsigned long size() const { return n; }\n"
+        "    constexpr decltype(sizeof(0)) size() const { return n; }\n"
         "};\n"
         "template <class T> struct vector { T* data; };\n"
         "}\n"
@@ -203,7 +206,7 @@ int main() {
                                  "    int arr[LIMIT] = {};\n"
                                  "    std::vector<int> v;\n"
                                  "    int* q = new int(1);\n"
-                                 "    long bits = reinterpret_cast<long>(q);\n"
+                                 "    long long bits = reinterpret_cast<long long>(q);\n"
                                  "    void* untyped = q;\n"
                                  "    int* back = static_cast<int*>(untyped);\n"
                                  "    const int* c = back;\n"
@@ -296,7 +299,8 @@ int main() {
 
     "an unnamed class's name and type do not say where the file is (MC3-4-4)"_test = [] {
         Program p { "unnamed" };
-        const std::string text { "struct Box { union { int i; char c[4]; }; };\nstruct { int a; } single;\nenum { red } color;\n" };
+        const std::string text { "struct Box { union { int i; char c[4]; }; };\nstruct { int a; } single;\nenum { red } color;\n"
+                                 "namespace outer { namespace { int hidden; } }\n" };
         const std::string file { p.file("src/unnamed.cpp", text) };
         auto w = workspace_for(p);
         auto unit = w->parse(file, text, 1);
@@ -307,6 +311,10 @@ int main() {
             if (!d.type.empty()) types.push_back(d.type);
         }
         expect(std::ranges::find(names, "Box::(anonymous union)") != names.end()) << std::format("{}", names);
+        expect(std::ranges::find(names, "outer::(anonymous namespace)") != names.end() && std::ranges::find(names, "outer::(anonymous namespace)::hidden") != names.end())
+            << "an unnamed namespace is named as in its members' names";
+        for (const auto& d : unit->facts().declarations)
+            if (d.qualified_name == "outer::(anonymous namespace)::hidden") expect(d.container == "outer::(anonymous namespace)") << d.container;
         for (const auto& t : types) expect(!t.contains(" at ") && !t.contains("unnamed.cpp")) << t;
         for (const auto& n : names) expect(!n.contains(" at ") && !n.contains("unnamed.cpp")) << n;
     };
@@ -315,7 +323,7 @@ int main() {
         Program p { "cfg" };
         const std::string text {
             "namespace plat {\n"
-            "[[mcpp::cfg(windows)]] int console() { return AllocConsole(); }\n"
+            "[[mcpp::cfg(windows)]] int console() { return 1; }\n"
             "[[mcpp::cfg(not(windows))]] int console() { return 0; }\n"
             "[[mcpp::cfg(colour = \"red\")]] int broken;\n"
             "}\n"
@@ -330,7 +338,9 @@ int main() {
         expect(errors.size() == 1 && errors[0].starts_with("3: ") && errors[0].contains("unknown key `colour`")) << (errors.empty() ? "none" : errors[0]);
         const auto console = unit->entity_at(*find(text, "console();", 0));
         expect(fatal(console.has_value()));
-        expect(console->definition && console->definition->range.begin.line == 2) << "the non-Windows one, where it is written";
+        // The target's own one, where it is written: this program's target is the editor's.
+        constexpr bool windows { mcxx::os::FAMILY == mcxx::os::Family::windows };
+        expect(console->definition && console->definition->range.begin.line == (windows ? 1u : 2u)) << "the target's one, where it is written";
     };
 
 
@@ -360,9 +370,11 @@ int main() {
         }
         std::string all;
         for (const auto& d : unit->diagnostics()) all += std::format("[{}] {}\n", d.code, d.message);
-        expect(lint != nullptr && lint->severity == msa::Severity::error && lint->range.begin.column == 4) << "the plugin's finding, at its level: " << all;
+        // The out-of-process plugin is a shell script: a POSIX system's.
+        if constexpr (mcxx::os::FAMILY != mcxx::os::Family::windows)
+            expect(lint != nullptr && lint->severity == msa::Severity::error && lint->range.begin.column == 4) << "the plugin's finding, at its level: " << all;
         expect(composed != nullptr && composed->severity == msa::Severity::warning && composed->message.contains("mcxx compose"))
-            << "the editor cannot compose: a warning";
+            << "the editor cannot compose: a warning: " << all;
     };
 
 

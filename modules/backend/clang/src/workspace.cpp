@@ -488,7 +488,7 @@ std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) 
 
 std::vector<std::string> derived_arguments(const msa::Command& command) {
     msa::Command absolute { command };
-    if (!absolute.file.empty() && std::filesystem::path { absolute.file }.is_relative())
+    if (!absolute.file.empty() && !mcxx::base::is_absolute_path(absolute.file))
         absolute.file = clang_backend::normalize_path(absolute.file, absolute.directory);
     return clang_backend::normalize(absolute);
 }

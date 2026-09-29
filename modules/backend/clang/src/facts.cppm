@@ -97,6 +97,13 @@ namespace {
 // union or enum is `(anonymous union)`, `(unnamed struct)`: without its place, which would name the
 // file as the command line spelled it (MC3-4-4).
 std::string plain_name(const cl::NamedDecl* d) {
+    // An unnamed namespace is `(anonymous namespace)`, as in its members' names: the plain style would
+    // give it `(anonymous)` as its own name, and so to everything's container in it.
+    if (const auto* ns = llvm::dyn_cast<cl::NamespaceDecl>(d); ns != nullptr && ns->isAnonymousNamespace()) {
+        const auto* parent = llvm::dyn_cast<cl::NamedDecl>(cl::Decl::castFromDeclContext(ns->getParent()));
+        const std::string prefix { parent != nullptr ? plain_name(parent) : std::string {} };
+        return prefix.empty() ? std::string { "(anonymous namespace)" } : prefix + "::(anonymous namespace)";
+    }
     cl::PrintingPolicy policy { d->getASTContext().getLangOpts() };
     policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
     policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
@@ -566,8 +573,7 @@ std::string bmi_of(const cl::Module* m) {
     if (m == nullptr) return {};
     const cl::ModuleFileName* file { m->getASTFileName() };
     if (file == nullptr || file->str().empty()) return {};
-    std::error_code ec;
-    return normalize_path(fs::absolute(file->str().str(), ec).generic_string());
+    return absolute_path(file->str().str());
 }
 
 // The file's imports of named modules, and what each brings in as the modules' MC2 interfaces say

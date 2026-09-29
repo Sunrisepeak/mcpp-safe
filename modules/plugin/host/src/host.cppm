@@ -23,6 +23,7 @@ export module mcxx.plugin.host;
 import std;
 import nlohmann.json;
 import mcxx.base;
+import mcxx.os;
 import mcxx.msa;
 import mcxx.plugin;
 import mcxx.plugin.wire;
@@ -125,7 +126,10 @@ std::expected<Process, std::string> Process::start(const std::vector<std::string
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_adddup2(&actions, to_child[0], 0);
     posix_spawn_file_actions_adddup2(&actions, from_child[1], 1);
-    if (!show_errors) posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0);
+    // Its standard error, when not shown: the null device. openkal's Windows target has none to open by
+    // name and refuses to close a started program's standard streams (ENOSYS), so there it is ours.
+    if constexpr (mcxx::os::FAMILY != mcxx::os::Family::windows)
+        if (!show_errors) posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0);
     if (!directory.empty()) posix_spawn_file_actions_addchdir_np(&actions, directory.c_str());
     std::vector<char*> argv;
     for (const auto& a : command) argv.push_back(const_cast<char*>(a.c_str()));

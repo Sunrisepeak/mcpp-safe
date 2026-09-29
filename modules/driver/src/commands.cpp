@@ -168,7 +168,7 @@ void write_composition(const fs::path& dir, const features::Config& config, cons
         "[build]\nldflags = [\"-Wl,--error-limit=0\"]\n\n"
         "[dependencies]\nopenkal-llvm-runtime = \"0.15.2\"\n"
         "mcxx-driver = {{ path = {} }}\nmcxx-plugins-std = {{ path = {} }}\nmcxx-plugins-libs = {{ path = {} }}\n{}\n"
-        "# Version settlement, as in MC++'s own root manifest.\n[dependencies.llvm]\nclang-dev = \"23.1.0.3\"\n",
+        "# Version settlement, as in MC++'s own root manifest.\n[dependencies.llvm]\nclang-dev = \"23.1.0.4\"\n",
         config.manifest, key, VERSION, toml_string((root / "index/llvm").generic_string()), toml_string((root / "index/microsoft").generic_string()),
         toml_string((root / "modules/driver").generic_string()),
         toml_string((root / "plugins/std").generic_string()), toml_string((root / "plugins/libs").generic_string()), deps));

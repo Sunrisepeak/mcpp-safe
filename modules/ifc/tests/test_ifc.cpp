@@ -191,5 +191,5 @@ int main() {
     if (const char* dump = std::getenv("MCXX_IFC_DUMP"); dump != nullptr && *dump != '\0') {
         if (const auto error = mcxx::ifc::save(dump, sample())) std::println(std::cerr, "{}", *error);
     }
-    return 0;
+    return report();
 }

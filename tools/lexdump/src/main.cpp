@@ -7,6 +7,9 @@
 // (tools/checks/ppdiff.py): the main file's lines of it (by its line markers), lexed, token for token.
 // mcxx-lexdump --syntax [OPTIONS] FILE: the file's outline from mcxx.frontend:syntax, one JSON object,
 // as `mcxx-probe --symbols` prints Clang's (tools/checks/syntaxdiff.py), with the parser's diagnostics.
+// mcxx-lexdump --facts [OPTIONS] FILE: the file's declarations as MC++'s own front end gives them (MC3
+// T1, facts(syntax)), one JSON object: {"declarations": [...]} with MC3's members, as `mcxx-probe
+// --facts` prints the Clang backend's (tools/checks/declsdiff.py, M2.1).
 // mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
 // parsed every time; the process ending is the pass (A1.7.3). Prints the counts.
 // mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best.
@@ -140,6 +143,47 @@ int syntax(int argc, char** argv) {
     std::vector<std::string> notes;
     for (const auto& d : parsed.diagnostics) notes.push_back(std::format("{}:{}: {}", d.at.line, d.at.column, d.message));
     std::println("{{\"symbols\":{},\"diagnostics\":{},\"certain\":{},\"seconds\":{:.6f}}}", out, strings(notes), parsed.pp.certain, seconds);
+    return 0;
+}
+
+std::string range_json(const mcxx::msa::Range& r) {
+    return std::format("{{\"begin\":{{\"line\":{},\"column\":{}}},\"end\":{{\"line\":{},\"column\":{}}}}}", r.begin.line, r.begin.column, r.end.line,
+                       r.end.column);
+}
+
+int facts(int argc, char** argv) {
+    mcxx::frontend::PreprocessOptions options;
+    std::string file;
+    for (int i { 2 }; i < argc; ++i) {
+        const std::string_view a { argv[i] };
+        if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a == "--header-macros" && i + 1 < argc) {
+            std::istringstream lines { read(argv[++i]) };
+            for (std::string l; std::getline(lines, l);) options.header_macros.push_back(l);
+            options.header_macros_complete = true;
+        } else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
+        else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else file = a;
+    }
+    options.file = file;
+    const std::string text { read(file) };
+    const auto parsed = mcxx::frontend::parse(text, options);
+    const auto f = mcxx::frontend::facts(parsed);
+    std::string out { "{\"declarations\":[" };
+    bool first { true };
+    for (const auto& d : f.declarations) {
+        std::string kind { mcxx::msa::to_string(d.kind) };
+        std::ranges::replace(kind, ' ', '-');
+        std::string list;
+        for (const auto& t : d.templates) list += (list.empty() ? "" : ",") + json(t);
+        out += std::format("{}{{\"range\":{},\"name\":{},\"container\":{},\"qualified-name\":{},\"kind\":\"{}\",\"type\":{},\"templates\":[{}],"
+                           "\"exported\":{},\"c-array\":{},\"pointer\":{},\"union\":{},\"c-variadic\":{},\"local\":{}}}",
+                           first ? "" : ",", range_json(d.range), range_json(d.name), json(d.container), json(d.qualified_name), kind, json(d.type), list,
+                           d.exported, d.c_array, d.pointer, d.is_union, d.c_variadic, d.local);
+        first = false;
+    }
+    out += std::format("],\"certain\":{}}}", f.certainty == mcxx::msa::Certainty::certain);
+    std::println("{}", out);
     return 0;
 }
 
@@ -302,6 +346,7 @@ int main(int argc, char** argv) {
     if (argc > 3 && std::string_view { argv[1] } == "--parse-bench") return parse_bench(std::stoi(argv[2]), argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--directives") return directives(argv[2]);
     if (argc > 2 && std::string_view { argv[1] } == "--syntax") return syntax(argc, argv);
+    if (argc > 2 && std::string_view { argv[1] } == "--facts") return facts(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--bench") return bench(std::stoi(argv[2]), argc, argv);
     if (argc > 1 && (std::string_view { argv[1] } == "--pp" || std::string_view { argv[1] } == "--ppdiff")) return preprocessed(std::string_view { argv[1] } == "--ppdiff", argc, argv);
     for (int i { 1 }; i < argc; ++i) {

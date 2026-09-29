@@ -12,7 +12,7 @@ mcpp 用自己的 xlings（`~/.mcpp/registry`），所以包要注册到那里�
 export XLINGS_HOME=~/.mcpp/registry
 $XLINGS_HOME/bin/xlings config --add-xpkg xpkgs/pkgs/m/mcxx.lua
 MCXX_BINARY=<构建出的 mcxx> \
-MCXX_CLANG_HEADERS=<llvm.clang-dev 的 llvm/clang/lib/Headers，例如 .mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.3/*/llvm/clang/lib/Headers> \
+MCXX_CLANG_HEADERS=<llvm.clang-dev 的 llvm/clang/lib/Headers，例如 .mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.4/*/llvm/clang/lib/Headers> \
     $XLINGS_HOME/bin/xlings install mcxx:mcxx@0.1.0 -y
 ```
 
@@ -34,6 +34,6 @@ payload 采用 xim:llvm 的布局，mcpp 就会把它当作 llvm 族的工具链
 
 ## 与 mcpp 相关的三点
 
-- **默认目标**：mcpp 做本机构建时会传 `--no-default-config`，这样 payload 配置里的 `--target` 就不起作用了。所以 mcxx 的默认目标必须是 x86_64-unknown-linux-gnu，这在 llvm-clang-dev 23.1.0.3 里配置：宿主仍然是 openkal 的 musl，默认目标改为 linux-gnu。
+- **默认目标**：mcpp 做本机构建时会传 `--no-default-config`，这样 payload 配置里的 `--target` 就不起作用了。所以 mcxx 的默认目标必须是 x86_64-unknown-linux-gnu，这从 llvm-clang-dev 23.1.0.3 起配置：宿主仍然是 openkal 的 musl，默认目标改为 linux-gnu。
 - **std 模块缓存**：mcpp 的全局 std 模块缓存（`~/.mcpp/build-cache/v1/std`）按工具链的路径和版本作为键，不看编译器本身。所以重新构建 mcxx 并重新安装 payload 后，要删掉引用 `23.1.0-mcxx` 的缓存项：`grep -rl 23.1.0-mcxx ~/.mcpp/build-cache/v1/std`。
 - **构建类型**：mcxx 目前是 dev 构建（未优化），作为工具链编译会慢一些。

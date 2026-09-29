@@ -38,16 +38,21 @@ std::string json_string(std::string_view text) {
 
 } // namespace
 
+// Upward by mcxx.base's path rules: std::filesystem's are the C library's, POSIX on every system, to
+// which a Windows path (`C:/Users/x/src/a.cpp`) is relative.
 std::optional<std::string> find_manifest(std::string_view source_path) {
     std::error_code ec;
-    std::filesystem::path dir { std::filesystem::absolute(std::filesystem::path { source_path }, ec).parent_path() };
+    std::string path { source_path };
+    if (!base::is_absolute_path(path)) path = base::join_path(std::filesystem::current_path(ec).generic_string(), path);
+    std::string dir { base::parent_path(path) };
     while (!dir.empty()) {
-        const auto candidate = dir / "mcpp.toml";
+        const std::string candidate { base::join_path(dir, "mcpp.toml") };
         if (std::filesystem::is_regular_file(candidate, ec)) {
-            if (auto doc = toml::parse_file(candidate); doc && doc->get_table("package") != nullptr) return candidate.generic_string();
+            if (auto doc = toml::parse_file(candidate); doc && doc->get_table("package") != nullptr) return candidate;
         }
-        if (dir == dir.parent_path()) break;
-        dir = dir.parent_path();
+        const std::string up { base::parent_path(dir) };
+        if (up == dir) break;
+        dir = up;
     }
     return std::nullopt;
 }

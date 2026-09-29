@@ -12,6 +12,12 @@ package = {
 
     xpm = {
         linux = {
+            -- 23.1.0.4: also openkal's Windows and macOS targets, cross-built from Linux (a path on
+            -- Windows has a drive, read by Windows' rules).
+            ["23.1.0.4"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.4.tar.gz",
+                sha256 = "88ddd72f1b557be60b1f22a28a76e912ec327f6b2f7806bbfd2b2a2757202b74",
+            },
             -- 23.1.0.3: the default target is x86_64-unknown-linux-gnu (the host stays openkal's musl), so
             -- the compiler serves as a glibc Linux's llvm toolchain (V0.6).
             ["23.1.0.3"] = {

@@ -2,6 +2,8 @@
 // rule runs in process and out of process on the same facts (MC4-6.3-3); shell scripts inject the
 // failures (a crash, a hang, garbage, another protocol) that must be reported, not crash or hang.
 import std;
+import mcxx.base;
+import mcxx.os;
 import nlohmann.json;
 import mcxx.testing;
 import mcxx.msa;
@@ -87,7 +89,14 @@ int main(int argc, char** argv) {
         return mcxx::plugin::remote::serve();
     }
     using namespace mcxx::testing;
-    const std::string self { fs::read_symlink("/proc/self/exe").generic_string() };
+    // This program, to start again as the other side: Linux names it in /proc; elsewhere argv[0], made
+    // absolute by mcxx.base's rules (a Windows path has a drive).
+    std::error_code link_error;
+    std::string self { fs::read_symlink("/proc/self/exe", link_error).generic_string() };
+    if (link_error || self.empty()) {
+        self = mcxx::base::normalize_path(argv[0]);
+        if (!mcxx::base::is_absolute_path(self)) self = mcxx::base::join_path(fs::current_path(link_error).generic_string(), self);
+    }
 
     "a plugin out of process finds what the same rule finds in process"_test = [&] {
         std::vector<plugin::Finding> direct;
@@ -107,54 +116,57 @@ int main(int argc, char** argv) {
         expect(host::load(with("naming", { self, "--serve" })).empty()) << "loaded once per package and name";
     };
 
-    "a plugin that crashes on a request is reported at the file, an error where its feature is denied"_test = [] {
-        const auto problems = host::load(with("crashy", script("crash.sh", "read l\necho '" + welcome("crashy", "acme-crash", "deny") + "'\nread l\nexit 3\n")));
-        expect(fatal(problems.empty())) << (problems.empty() ? "" : problems.front());
-        const auto ds = gate();
-        const auto* d = coded(ds, "mcxx-plugin", "crashy");
-        expect(fatal(d != nullptr));
-        expect(d->severity == msa::Severity::error && d->message.contains("exited with status 3") && d->message.contains("acme-crash")) << d->message;
-        const auto again = gate();
-        const auto* d2 = coded(again, "mcxx-plugin", "crashy");
-        expect(d2 != nullptr && d2->severity == msa::Severity::error) << "every later file too";
-    };
+    // The failures are injected by shell scripts: a POSIX shell's, which a Windows host does not have.
+    if constexpr (mcxx::os::FAMILY != mcxx::os::Family::windows) {
+        "a plugin that crashes on a request is reported at the file, an error where its feature is denied"_test = [] {
+            const auto problems = host::load(with("crashy", script("crash.sh", "read l\necho '" + welcome("crashy", "acme-crash", "deny") + "'\nread l\nexit 3\n")));
+            expect(fatal(problems.empty())) << (problems.empty() ? "" : problems.front());
+            const auto ds = gate();
+            const auto* d = coded(ds, "mcxx-plugin", "crashy");
+            expect(fatal(d != nullptr));
+            expect(d->severity == msa::Severity::error && d->message.contains("exited with status 3") && d->message.contains("acme-crash")) << d->message;
+            const auto again = gate();
+            const auto* d2 = coded(again, "mcxx-plugin", "crashy");
+            expect(d2 != nullptr && d2->severity == msa::Severity::error) << "every later file too";
+        };
 
-    "a plugin that does not answer in time is killed and reported; a warn feature's failure is a warning"_test = [] {
-        const auto problems = host::load(with("hangs", script("hang.sh", "read l\necho '" + welcome("hangs", "acme-hang", "warn") + "'\nread l\nsleep 30\n"),
-                                              std::chrono::milliseconds { 300 }));
-        expect(fatal(problems.empty()));
-        const auto start = std::chrono::steady_clock::now();
-        const auto ds = gate();
-        const auto took = std::chrono::steady_clock::now() - start;
-        const auto* d = coded(ds, "mcxx-plugin", "hangs");
-        expect(fatal(d != nullptr));
-        expect(d->severity == msa::Severity::warning && d->message.contains("did not answer in 300 ms")) << d->message;
-        expect(took < std::chrono::seconds { 3 }) << "the host waited for the time limit only";
-    };
+        "a plugin that does not answer in time is killed and reported; a warn feature's failure is a warning"_test = [] {
+            const auto problems = host::load(with("hangs", script("hang.sh", "read l\necho '" + welcome("hangs", "acme-hang", "warn") + "'\nread l\nsleep 30\n"),
+                                                  std::chrono::milliseconds { 300 }));
+            expect(fatal(problems.empty()));
+            const auto start = std::chrono::steady_clock::now();
+            const auto ds = gate();
+            const auto took = std::chrono::steady_clock::now() - start;
+            const auto* d = coded(ds, "mcxx-plugin", "hangs");
+            expect(fatal(d != nullptr));
+            expect(d->severity == msa::Severity::warning && d->message.contains("did not answer in 300 ms")) << d->message;
+            expect(took < std::chrono::seconds { 3 }) << "the host waited for the time limit only";
+        };
 
-    "a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"_test = [] {
-        const auto garbage = host::load(with("garbage", script("garbage.sh", "read l\necho 'hello, world'\n")));
-        expect(garbage.size() == 1 && garbage[0].contains("garbage") && garbage[0].contains("not an MC4 message")) << (garbage.empty() ? "" : garbage[0]);
-        const auto future = host::load(with("future", script("future.sh",
-            "read l\necho '{\"type\":\"error\",\"id\":0,\"code\":\"protocol\",\"message\":\"MC4 protocol 2 only\",\"protocols\":[2]}'\n")));
-        expect(future.size() == 1 && future[0].contains("protocol 2 only")) << (future.empty() ? "" : future[0]);
-        const auto missing = host::load(with("missing", { "/nonexistent/plugin" }));
-        expect(missing.size() == 1 && missing[0].contains("could not be started"));
-        expect(host::load(with("garbage", { "/bin/true" })).size() == 1) << "the problem is remembered, not retried per file";
-    };
+        "a plugin that cannot shake hands is a problem of its package, and nothing it gates is registered"_test = [] {
+            const auto garbage = host::load(with("garbage", script("garbage.sh", "read l\necho 'hello, world'\n")));
+            expect(garbage.size() == 1 && garbage[0].contains("garbage") && garbage[0].contains("not an MC4 message")) << (garbage.empty() ? "" : garbage[0]);
+            const auto future = host::load(with("future", script("future.sh",
+                "read l\necho '{\"type\":\"error\",\"id\":0,\"code\":\"protocol\",\"message\":\"MC4 protocol 2 only\",\"protocols\":[2]}'\n")));
+            expect(future.size() == 1 && future[0].contains("protocol 2 only")) << (future.empty() ? "" : future[0]);
+            const auto missing = host::load(with("missing", { "/nonexistent/plugin" }));
+            expect(missing.size() == 1 && missing[0].contains("could not be started"));
+            expect(host::load(with("garbage", { "/bin/true" })).size() == 1) << "the problem is remembered, not retried per file";
+        };
 
-    "a proxy answers only for its own package's files"_test = [&] {
-        const fs::path owner { scratch() / "owner" };
-        fs::create_directories(owner / "src");
-        std::ofstream { owner / "mcpp.toml" } << "[package]\nname = \"owner\"\n";
-        features::Config c { with("scoped", script("scoped.sh", "read l\necho '" + welcome("scoped", "acme-scoped", "deny") + "'\nread l\nexit 1\n")) };
-        c.manifest = (owner / "mcpp.toml").generic_string();
-        expect(fatal(host::load(c).empty()));
-        const auto ds = gate();
-        expect(coded(ds, "mcxx-plugin", "scoped") == nullptr) << "a file of no package is not the plugin's";
-        const auto mine = features::evaluate({ (owner / "src/a.cpp").generic_string(), "", facts() }, features::Config {}).diagnostics;
-        expect(coded(mine, "mcxx-plugin", "scoped") != nullptr) << "its package's file is";
-    };
+        "a proxy answers only for its own package's files"_test = [&] {
+            const fs::path owner { scratch() / "owner" };
+            fs::create_directories(owner / "src");
+            std::ofstream { owner / "mcpp.toml" } << "[package]\nname = \"owner\"\n";
+            features::Config c { with("scoped", script("scoped.sh", "read l\necho '" + welcome("scoped", "acme-scoped", "deny") + "'\nread l\nexit 1\n")) };
+            c.manifest = (owner / "mcpp.toml").generic_string();
+            expect(fatal(host::load(c).empty()));
+            const auto ds = gate();
+            expect(coded(ds, "mcxx-plugin", "scoped") == nullptr) << "a file of no package is not the plugin's";
+            const auto mine = features::evaluate({ (owner / "src/a.cpp").generic_string(), "", facts() }, features::Config {}).diagnostics;
+            expect(coded(mine, "mcxx-plugin", "scoped") != nullptr) << "its package's file is";
+        };
+    }
 
     std::error_code ec;
     fs::remove_all(scratch(), ec);

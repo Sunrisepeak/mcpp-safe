@@ -113,6 +113,8 @@ inline thread_local bool gates_suppressed { false };
 
 void run_on_clang_stack(const std::function<void()>& body) {
     if constexpr (!STACK_SWITCH) {
+        // The thread's own stack (clang_thread gives it DesiredStackSize): still libmc++'s Clang work.
+        on_clang_stack = true;
         body();
         return;
     }
@@ -194,10 +196,19 @@ private:
 // 1. commands
 // ============================================================================================
 
+// Paths by mcxx.base's rules, not std::filesystem's: beneath this program is a POSIX C library on every
+// system, to which `C:\\Users\\x\\a.cpp` is a relative name; mcxx.base knows it for an absolute one
+// on Windows, and keeps every path with '/' separators and its drive.
 std::string normalize_path(std::string_view path, std::string_view base = {}) {
-    fs::path p { std::string { path } };
-    if (p.is_relative() && !base.empty()) p = fs::path { std::string { base } } / p;
-    return p.lexically_normal().generic_string();
+    if (!base.empty() && !base::is_absolute_path(path)) return base::join_path(base, path);
+    return base::normalize_path(path);
+}
+
+// `path` made absolute against the working directory, when it is not.
+std::string absolute_path(std::string_view path) {
+    if (base::is_absolute_path(path)) return base::normalize_path(path);
+    std::error_code ec;
+    return normalize_path(path, fs::current_path(ec).generic_string());
 }
 
 bool is_source_argument(std::string_view arg, const msa::Command& command) {

@@ -140,8 +140,7 @@ void write_interface(cl::CompilerInstance& ci, cl::ASTContext& ctx, const std::s
     if (bmi.empty()) return;
     const std::string out { ifc::path_for(bmi) };
     if (!save_interface(ci, ctx, path, plan, out)) return;
-    std::error_code ec;
-    ifc::note_written(normalize_path(fs::absolute(bmi, ec).generic_string()), normalize_path(fs::absolute(out, ec).generic_string()));
+    ifc::note_written(absolute_path(bmi), absolute_path(out));
 }
 
 // libmc++'s own BMI builds (the editor's, `mcxx check -p`'s): the interface beside the BMI they

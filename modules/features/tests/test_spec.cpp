@@ -12,6 +12,9 @@ using mcxx::plugin::Level;
 namespace {
 
 std::filesystem::path repository() {
+    // $MCXX_REPOSITORY, for a test run elsewhere than it was built (a cross-built one: its source's path
+    // is the build machine's); otherwise where the source was compiled from.
+    if (const char* given = std::getenv("MCXX_REPOSITORY")) return given;
     // tests/test_spec.cpp -> modules/features -> modules -> the repository
     return std::filesystem::path { std::source_location::current().file_name() }.parent_path().parent_path().parent_path().parent_path();
 }
