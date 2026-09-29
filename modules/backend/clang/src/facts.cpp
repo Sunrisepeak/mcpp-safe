@@ -118,6 +118,8 @@ std::string type_text(const cl::ASTContext& ctx, cl::QualType type) {
     if (type.isNull()) return {};
     cl::PrintingPolicy policy { printing_policy(ctx) };
     policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
+    // Names in it as MC3 names them: without inline namespaces (libc++'s std::__1).
+    policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
     return type.getAsString(policy);
 }
 

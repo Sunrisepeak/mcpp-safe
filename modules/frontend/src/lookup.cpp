@@ -22,12 +22,13 @@ bool function_kind(msa::Kind k) {
            k == msa::Kind::conversion;
 }
 
-// The words that never name a declaration.
+// The words that never name a declaration (`module` and `import` do: they are keywords only where a
+// module declaration or an import is, which run() tells by the line).
 constexpr std::string_view KEYWORDS[] {
     "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t",
     "char32_t", "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue", "co_await", "co_return",
     "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false",
-    "float", "for", "friend", "goto", "if", "import", "inline", "int", "long", "module", "mutable", "namespace", "new", "noexcept", "not",
+    "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not",
     "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast", "requires", "return",
     "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "template", "this", "thread_local", "throw",
     "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
@@ -205,12 +206,14 @@ public:
             auto target { resolve(k) };
             if (!target) {
                 // A member F1 cannot find because it cannot type the object: said, not guessed.
-                if (k > 0 && (is(k - 1, Kind::period) || is(k - 1, Kind::arrow)) && !object_known_) {
+                if (k > 0 && (is(k - 1, Kind::period) || is(k - 1, Kind::arrow))) {
                     Reference r;
                     r.range = token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k));
                     r.name = std::string { t.spelling };
                     r.certain = false;
-                    r.why = deduced_placeholder_ ? "deduced" : "unknown";
+                    // A type F1 cannot deduce; an object whose class it cannot tell; a class it knows
+                    // without that member (one its interface does not carry: a specialization's).
+                    r.why = deduced_placeholder_ ? "deduced" : object_known_ ? "member" : "unknown";
                     out.push_back(std::move(r));
                 }
                 continue;
@@ -469,6 +472,12 @@ private:
                 }
             } else {
                 found = in_scope(scope, part, t_.size(), 0, true);
+            }
+            // An inline namespace a printed type names (libc++'s `__1`) is its enclosing one's: MC3's
+            // names leave it out.
+            if (!found && !first && part.starts_with("__") && at != std::string_view::npos) {
+                rest.remove_prefix(at + 2);
+                continue;
             }
             if (!found) return std::nullopt;
             auto next { follow(*found) };
@@ -778,9 +787,12 @@ private:
                 if (!function_kind(c.kind)) return std::nullopt;
                 return typed(c, depth + 1);
             }
-            // `(x)`: what is inside.
-            if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > 0)
-                return expression_type(end - 1, depth + 1);
+            // `(x)`: what is inside; `(*x)`: what x points to.
+            if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > 0) {
+                auto inner { expression_type(end - 1, depth + 1) };
+                if (inner && is(*open + 1, Kind::star) && *open + 2 < end) return pointee(*inner);
+                return inner;
+            }
             return std::nullopt;
         }
         if (is(end, Kind::r_square)) {
@@ -832,7 +844,6 @@ private:
         if (k < 2) return std::nullopt;
         auto type { expression_type(k - 2) };
         if (!type) return std::nullopt;
-        object_known_ = true;   // its type is known; a member it does not have is not F1's to doubt
         if (is(k - 1, Kind::arrow)) {
             type = pointee(*type);
             if (!type) return std::nullopt;
@@ -840,12 +851,26 @@ private:
         const auto scope { class_of(*type) };
         if (!scope) return std::nullopt;
         // A class of the file, or an imported one: its members are the imports' own.
-        if (classes_.contains(*scope) || scopes_.contains(*scope)) return scope;
-        return std::nullopt;
+        if (!classes_.contains(*scope) && !scopes_.contains(*scope)) return std::nullopt;
+        object_known_ = true;
+        return scope;
     }
 
     std::optional<Target> resolve(std::size_t k) {
         const std::string n { t_[k].spelling };
+        // A designated initializer: `T { .n = ... }` names T's member.
+        if (k > 1 && is(k - 1, Kind::period) && (is(k - 2, Kind::l_brace) || is(k - 2, Kind::comma)) && (is(k + 1, Kind::equal) || is(k + 1, Kind::l_brace))) {
+            std::size_t open { k - 2 };
+            for (int depth { 0 }; open > 0; --open) {
+                if (is(open, Kind::r_brace) || is(open, Kind::r_paren)) ++depth;
+                else if ((is(open, Kind::l_brace) || is(open, Kind::l_paren)) && depth-- == 0) break;
+            }
+            if (is(open, Kind::l_brace)) {
+                if (auto type = type_named_before(open))
+                    if (auto scope = class_of(*type)) return in_scope(*scope, n, t_.size());
+            }
+            return std::nullopt;
+        }
         // A member access: `x.n`, `p->n`.
         if (k > 0 && (is(k - 1, Kind::period) || is(k - 1, Kind::arrow))) {
             const auto scope { object_class(k) };
