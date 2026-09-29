@@ -201,8 +201,20 @@ public:
             }
             if (t.kind != Kind::raw_identifier || t.expanded || module_line || declares[k] || keyword(t.spelling)) continue;
             if (k > 0 && (word(k - 1, "goto") || word(k - 1, "operator"))) continue;
+            deduced_placeholder_ = false;
             auto target { resolve(k) };
-            if (!target) continue;
+            if (!target) {
+                // A member F1 cannot find because it cannot type the object: said, not guessed.
+                if (k > 0 && (is(k - 1, Kind::period) || is(k - 1, Kind::arrow)) && !object_known_) {
+                    Reference r;
+                    r.range = token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k));
+                    r.name = std::string { t.spelling };
+                    r.certain = false;
+                    r.why = deduced_placeholder_ ? "deduced" : "unknown";
+                    out.push_back(std::move(r));
+                }
+                continue;
+            }
             resolved_[k] = *target;
             Reference r;
             r.range = token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k));
@@ -243,6 +255,8 @@ private:
     std::map<std::int32_t, std::vector<std::string>> bases_;
     int depth_ { 0 };   // how deep a name's resolution has gone through aliases and bases: a cycle ends
     std::map<std::size_t, std::optional<Typed>> deduced_;   // what `auto` stands for, by declaration
+    bool deduced_placeholder_ { false };   // the name being resolved met a type F1 cannot deduce
+    bool object_known_ { false };          // the member access being resolved had a typed object
 
     bool is(std::size_t k, Kind kind) const { return k < t_.size() && t_[k].kind == kind; }
     bool word(std::size_t k, std::string_view w) const { return k < t_.size() && t_[k].kind == Kind::raw_identifier && t_[k].spelling == w; }
@@ -486,7 +500,10 @@ private:
             const auto& d = ds_[static_cast<std::size_t>(t.declaration)];
             if (t.kind == msa::Kind::variable && placeholder(d)) {
                 auto deduced { deduce(static_cast<std::size_t>(t.declaration), depth) };
-                if (!deduced) return std::nullopt;
+                if (!deduced) {
+                    deduced_placeholder_ = true;
+                    return std::nullopt;
+                }
                 // `auto*` keeps what is written around the placeholder: what is deduced is what
                 // it points to. (`auto&` refers to it: the same type for a member access.)
                 bool pointer { false };
@@ -498,7 +515,22 @@ private:
             return Typed { t.type, d.name_token, {}, false };
         }
         if (t.type.empty()) return std::nullopt;
+        // A function template's return type deduced from its body: not in its interface (A2.2.3).
+        if (placeholder_text(t.type)) {
+            deduced_placeholder_ = true;
+            return std::nullopt;
+        }
         return Typed { t.type, 0, scope_of(t.qualified), true };
+    }
+
+    // Whether a type's text is a placeholder (`auto`, `decltype(auto)`), however qualified.
+    static bool placeholder_text(std::string_view type) {
+        for (std::size_t at { type.find("auto") }; at != std::string_view::npos; at = type.find("auto", at + 1)) {
+            const bool starts { at == 0 || !(std::isalnum(static_cast<unsigned char>(type[at - 1])) || type[at - 1] == '_') };
+            const bool ends { at + 4 >= type.size() || !(std::isalnum(static_cast<unsigned char>(type[at + 4])) || type[at + 4] == '_') };
+            if (starts && ends) return true;
+        }
+        return false;
     }
 
     // Whether a declaration's type is deduced: `auto` among its specifiers (`decltype(auto)` too).
@@ -796,9 +828,11 @@ private:
     // The class a member access's object has: the expression before `.` or `->` at k - 1, typed; `->`
     // through what it points to.
     std::optional<std::string> object_class(std::size_t k) {
+        object_known_ = false;
         if (k < 2) return std::nullopt;
         auto type { expression_type(k - 2) };
         if (!type) return std::nullopt;
+        object_known_ = true;   // its type is known; a member it does not have is not F1's to doubt
         if (is(k - 1, Kind::arrow)) {
             type = pointee(*type);
             if (!type) return std::nullopt;

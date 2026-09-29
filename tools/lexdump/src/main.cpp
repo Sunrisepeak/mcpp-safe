@@ -253,8 +253,15 @@ int references(int argc, char** argv) {
     const auto parsed = mcxx::frontend::parse(text, options);
     const auto imported { imported_by(parsed, module_files, prebuilt) };
     std::string out { "{\"references\":[" };
+    std::string uncertain;
     bool first { true };
     for (const auto& r : mcxx::frontend::references(parsed, imported)) {
+        // What F1 will not guess (A2.2.3): a service asks the Clang backend for these.
+        if (!r.certain) {
+            uncertain += std::format("{}{{\"range\":[{},{},{},{}],\"name\":{},\"why\":{}}}", uncertain.empty() ? "" : ",", r.range.begin.line,
+                                     r.range.begin.column, r.range.end.line, r.range.end.column, json(r.name), json(r.why));
+            continue;
+        }
         std::string declaration { "null" };
         if (r.declaration >= 0) {
             const auto at = mcxx::frontend::selection_range(parsed, parsed.declarations[static_cast<std::size_t>(r.declaration)]);
@@ -265,7 +272,7 @@ int references(int argc, char** argv) {
                            mcxx::msa::to_string(r.kind), declaration);
         first = false;
     }
-    out += "]}";
+    out += "],\"uncertain\":[" + uncertain + "]}";
     std::println("{}", out);
     return 0;
 }
@@ -402,7 +409,7 @@ int fuzz(int rounds, int argc, char** argv) {
             declarations += mcxx::frontend::symbols(parsed).size();
             // And the facts the editor's quick gates read on every edit: types as text among them.
             facts += mcxx::frontend::facts(parsed).declarations.size();
-            references += mcxx::frontend::references(parsed).size();   // and the names it resolves
+            references += static_cast<std::size_t>(std::ranges::count_if(mcxx::frontend::references(parsed), [](const auto& r) { return r.certain; }));   // and the names it resolves
             ++parses;
         }
     }

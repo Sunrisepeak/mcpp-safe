@@ -35,6 +35,11 @@ struct Reference {
     std::string target;                // the qualified name of what it names (a local's: its name)
     msa::Kind kind { msa::Kind::unknown };
     std::int32_t declaration { -1 };   // the file's declaration it names (Syntax::declarations), or -1: one it imports
+    // False for a name F1 cannot resolve and will not guess (A2.2.3): a member of an object whose type
+    // it cannot tell -- one a function template deduces (`auto`), or an initializer it cannot type.
+    // Its target is empty; a service asks the Clang backend instead. `why`: "deduced" or "unknown".
+    bool certain { true };
+    std::string why;
 };
 
 // What the file can name but does not declare: the declarations its imports bring in, by qualified
@@ -43,7 +48,8 @@ struct Imported {
     std::vector<msa::fact::Declaration> declarations;
 };
 
-// Every name the file writes (outside macro expansions) that F1 resolves, in order.
+// Every name the file writes (outside macro expansions) that F1 resolves, in order; and, not certain,
+// each member name whose object's type F1 cannot tell.
 std::vector<Reference> references(const Syntax& syntax, const Imported& imported = {});
 
 } // namespace mcxx::frontend

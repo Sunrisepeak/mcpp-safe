@@ -13,7 +13,8 @@ is the name of what it names (a contextual `operator bool` at a variable's name,
 name, is not what the name says). Printed, split by where the target is declared -- in the file, or
 elsewhere (another module, a header: what M2.2's imported interfaces answer) -- how many of Clang's the
 front end resolves to the same target (qualified name and kind; a local's also by where it is declared),
-how many it resolves to another (wrong: the number that must stay near zero), and how many it leaves out.
+how many it resolves to another (wrong: the number that must stay near zero), and how many it leaves out --
+and of those, how many it says it is uncertain of (A2.2.3: a member of an object whose type it cannot tell).
 `--reference-cache` keeps Clang's side per file (its path's digest and modification time).
 `--min-in-file`: fail when fewer of the file's own names resolve the same; `--max-other`: fail when more
 resolve to another target (either place) -- a wrong answer is worse than none.
@@ -91,6 +92,7 @@ def compare(unit):
     counts = collections.Counter()
     wrong = collections.defaultdict(list)
     mine = {tuple(r["range"][:2]): r for r in ours["references"]}
+    unsure = {tuple(r["range"][:2]) for r in ours.get("uncertain", [])}
     lines = pathlib.Path(unit["file"]).read_bytes().split(b"\n")
     by_place = collections.defaultdict(list)
     for r in theirs["references"]:
@@ -109,6 +111,8 @@ def compare(unit):
         counts[f"{where}:clang"] += 1
         m = mine.get(place)
         if m is None:
+            if place in unsure:   # said to be uncertain (A2.2.3): what a service asks the Clang backend
+                counts[f"{where}:uncertain"] += 1
             counts[f"{where}:left-out"] += 1
             wrong[f"{where}:left-out"].append(f"{place[0] + 1}:{place[1] + 1} {plain(rs[0]['target'])} ({rs[0]['kind']})")
             continue
@@ -149,7 +153,8 @@ for where in ("in-file", "elsewhere"):
     n = total[f"{where}:clang"]
     pct = lambda k: 100 * total[f"{where}:{k}"] / max(1, n)
     print(f"  {where:<9} Clang's references {n}: the same {total[f'{where}:same']} ({pct('same'):.2f}%), "
-          f"another target {total[f'{where}:other']} ({pct('other'):.2f}%), left out {total[f'{where}:left-out']} ({pct('left-out'):.2f}%)")
+          f"another target {total[f'{where}:other']} ({pct('other'):.2f}%), left out {total[f'{where}:left-out']} ({pct('left-out'):.2f}%), "
+          f"of which said uncertain {total[f'{where}:uncertain']} ({pct('uncertain'):.2f}%)")
     for k in ("other", "left-out"):
         for x in examples[f"{where}:{k}"][:6]:
             print(f"      {k}: {x}")

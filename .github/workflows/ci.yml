@@ -117,6 +117,10 @@ jobs:
             --reference-cache "$HOME/syntax-reference"
           # MC++'s parser against Clang's outline (A1.7.1, A1.7.2), from the outlines facts.py kept.
           lexdump=$(realpath "$(find tools/lexdump/target -type f -name mcxx-lexdump -path '*/bin/*' | head -1)")
+          # M2.2: an import answered from the module's interface alone, its source and BMI gone (A2.2.1); a
+          # member of a deduced return type said uncertain, and answered by the Clang backend (A2.2.3).
+          python3 tools/checks/imports.py --mcxx "$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")" --lexdump "$lexdump" \
+            --probe "$probe" --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --work "$HOME/imports-check"
           python3 tools/checks/syntaxdiff.py --corpus "$HOME/c-mcppls" --probe "$probe" --lexdump "$lexdump" --reference-cache "$HOME/syntax-reference" \
             --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 4
           # MC++'s declarations and name lookup against Clang's (M2.1), as regression gates at what is reached.
