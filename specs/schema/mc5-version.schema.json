@@ -62,6 +62,10 @@
         },
         "mc5": {
           "type": "string"
+        },
+        "mc6": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },

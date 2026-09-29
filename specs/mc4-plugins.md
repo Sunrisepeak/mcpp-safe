@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC4 |
-| Version | 0.1.0 (protocol version 1) |
+| Version | 0.2.0 (protocol version 1) |
 | Status | Draft |
 | Schema | [`schema/mc4-protocol.schema.json`](schema/mc4-protocol.schema.json) |
 | Examples | [`examples/mc4-session.jsonl`](examples/mc4-session.jsonl), [`examples/mc4-plugins.toml`](examples/mc4-plugins.toml) |
@@ -28,11 +28,14 @@ A provider has a `name`, unique among the providers a host has; the features it 
 |---|---|---|---|
 | **rule** | a file's path, its module, the facts asked for (MC3), and the ids it is asked for | findings: `feature`, `range`, `message`, `container` | after the file is parsed |
 | **source filter** | a file's path, its text, and the target (§2.1) | a replacement text or none, problems, findings of the filter's own features | before the file is parsed |
-| **profile** | -- | named sets of levels (MC1 §4) | when a configuration is resolved |
+| **profile** | -- | named sets of levels (MC1 §4): by joining features, by category, by feature id | when a configuration is resolved |
+| **attribute** | -- | attributes it claims, `ns::name`: the compiler accepts them on declarations and records each use as an MC3 fact (MC3 §4.12); a rule reads the declaration's facts (`plugin::subtree`) | when a file is parsed |
+| **region** | -- | an attribute that names a profile: inside the declaration it is on, that profile's levels apply where stricter (MC1 §6) | when a finding is gated |
 
 - A rule MUST report findings only for features it declares, and SHOULD report only those it is asked for. <a id="MC4-2-2"></a><sup>MC4-2-2</sup>
 - A rule decides whether code uses a feature; it MUST NOT decide the level: that is the configuration's (MC1 §6). <a id="MC4-2-3"></a><sup>MC4-2-3</sup>
 - A source filter's replacement MUST have the text's length and a line break exactly where the text has one; a host MUST refuse, and report, a replacement that does not, so that every position stays where it was. <a id="MC4-2-4"></a><sup>MC4-2-4</sup>
+- A compiler MUST accept, on a declaration, an attribute a provider it has claims, without a diagnostic about an unknown attribute, and MUST record each use (MC3 §4.12). <a id="MC4-2-6"></a><sup>MC4-2-6</sup> Two providers claiming one attribute is a conflict (§4). <a id="MC4-2-7"></a><sup>MC4-2-7</sup>
 - A feature declares the kinds of facts it is decided from (`needs`) and MAY name a declaration without which it cannot occur (`requires-declaration`); a host SHOULD collect only the facts the features it asks for need, and SHOULD NOT ask a feature whose required name the file neither declares nor imports. <a id="MC4-2-5"></a><sup>MC4-2-5</sup>
 
 ### 2.1 The target
@@ -86,7 +89,7 @@ The host starts the plugin's `command` with no arguments beyond those given, and
 ### 6.2 Handshake and version negotiation
 
 1. The host sends `hello`: `{"type":"hello","id":0,"host":"mcxx 0.1.0","protocols":[1]}` -- the protocol versions it speaks.
-2. The plugin answers `welcome` with the version it chose, which MUST be one the host offered, and describes itself: its providers (`name`, `extension-points`, `features`, `profiles`, `replaces`), in the fields of MC1 §10. <a id="MC4-6.2-1"></a><sup>MC4-6.2-1</sup> A plugin that speaks none of the offered versions answers `error` with `code` `"protocol"` and the versions it speaks, and exits. <a id="MC4-6.2-2"></a><sup>MC4-6.2-2</sup>
+2. The plugin answers `welcome` with the version it chose, which MUST be one the host offered, and describes itself: its providers (`name`, `extension-points`, `features`, `profiles`, `replaces`, and in 0.2.0 `attributes`), in the fields of MC1 §10. <a id="MC4-6.2-1"></a><sup>MC4-6.2-1</sup> A plugin that speaks none of the offered versions answers `error` with `code` `"protocol"` and the versions it speaks, and exits. <a id="MC4-6.2-2"></a><sup>MC4-6.2-2</sup>
 
 The host adds the plugin's providers to its catalog (§4) as it does a static plugin's. <a id="MC4-6.2-3"></a><sup>MC4-6.2-3</sup>
 

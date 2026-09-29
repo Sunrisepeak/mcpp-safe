@@ -128,7 +128,8 @@
               "uses",
               "includes",
               "suppressions",
-              "declaration-types"
+              "declaration-types",
+              "attributes"
             ]
           },
           "uniqueItems": true
@@ -191,6 +192,29 @@
         },
         "replaces": {
           "type": "boolean"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "level": {
+                "enum": [
+                  "allow",
+                  "warn",
+                  "deny"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -236,6 +260,28 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "region": {
+                "type": "string"
+              }
+            }
           }
         }
       }

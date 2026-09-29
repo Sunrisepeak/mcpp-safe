@@ -140,6 +140,8 @@ std::optional<Level> profile_level(const plugin::Catalog& catalog, const plugin:
         if (profile == nullptr) return;
         for (const auto& [category, value] : profile->categories)
             if (category == feature.category) raise(value);
+        for (const auto& [id, value] : profile->features)
+            if (id == feature.id) raise(value);
         for (const auto& inner : profile->includes) self(inner);
     };
     for (const auto& name : profiles) visit(name);
@@ -218,6 +220,12 @@ Plan make_plan(Config config) {
         if (const auto by_profile = profile_level(catalog, f, c.profiles)) gate.base = *by_profile;
         if (const auto it = c.package.find(f.id); it != c.package.end()) gate.base = it->second;
         gate.maybe = gate.base != Level::allow;
+        // A region (an attribute naming a profile, MC4 §2) may raise the feature where it is written.
+        for (const auto& a : catalog.attributes) {
+            if (a.attribute->region.empty()) continue;
+            const std::string region[] { a.attribute->region };
+            if (const auto l = profile_level(catalog, f, region); l && *l != Level::allow) gate.maybe = true;
+        }
         for (const auto* scopes : { &c.modules, &c.namespaces })
             for (const auto& [name, levels] : *scopes)
                 if (const auto it = levels.find(f.id); it != levels.end() && it->second != Level::allow) gate.maybe = true;
@@ -228,8 +236,10 @@ Plan make_plan(Config config) {
         if (const auto rule = std::ranges::find(catalog.rules, entry.provider); rule != catalog.rules.end())
             plan.wanted[static_cast<std::size_t>(rule - catalog.rules.begin())].push_back(f.id);
     }
-    // Waivers are read whenever anything is gated.
+    // Waivers are read whenever anything is gated, and regions where a provider declares one.
     if (plan.gated) plan.needs |= msa::fact::Kinds::suppressions;
+    if (plan.gated && std::ranges::any_of(catalog.attributes, [](const auto& a) { return !a.attribute->region.empty(); }))
+        plan.needs |= msa::fact::Kinds::attributes;
     return plan;
 }
 
@@ -275,6 +285,7 @@ Selection select(const Plan& plan, const std::function<bool(std::string_view)>& 
         if (g.maybe && std::ranges::find(plan.catalog->rules, g.entry->provider) == plan.catalog->rules.end()) s.gated = true;
     for (const auto& ids : s.wanted) s.gated = s.gated || !ids.empty();
     if (s.gated) s.needs |= msa::fact::Kinds::suppressions;
+    if (s.gated && msa::fact::contains(plan.needs, msa::fact::Kinds::attributes)) s.needs |= msa::fact::Kinds::attributes;
     return s;
 }
 
@@ -325,7 +336,14 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
         const Plan::Gate* gate { plan.gate(finding.feature) };
         if (gate == nullptr || !gate->maybe) continue;
         const plugin::Feature& feature { *gate->entry->feature };
-        const Level level { plan.level(*gate, context.module, finding.container) };
+        Level level { plan.level(*gate, context.module, finding.container) };
+        // Inside a region, its profile's level where that is stricter (MC1 §6, MC4 §2).
+        for (const auto& a : context.facts.attributes) {
+            const auto* entry = catalog.attribute(a.name);
+            if (entry == nullptr || entry->attribute->region.empty() || !within(a.range, finding.range)) continue;
+            const std::string region[] { entry->attribute->region };
+            if (const auto l = profile_level(catalog, feature, region)) level = std::max(level, *l);
+        }
         if (level == Level::allow) continue;
         // The innermost declaration waiving it.
         const msa::fact::Suppression* waiver { nullptr };
@@ -366,7 +384,7 @@ std::string catalog_json(const plugin::Catalog& catalog) {
             for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
             return "[" + out + "]";
         };
-        std::string out { "{\"mc1-version\":\"0.1.0\",\"providers\":[" };
+        std::string out { "{\"mc1-version\":\"0.2.0\",\"providers\":[" };
         for (std::size_t i { 0 }; i < catalog.providers.size(); ++i) {
             const auto* p = catalog.providers[i].provider;
             out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));
@@ -391,6 +409,12 @@ std::string catalog_json(const plugin::Catalog& catalog) {
                                json_string(catalog.profiles[i].provider->name()), json_string(p.summary), strings(p.includes),
                                strings(profile_members(catalog, p.name)));
         }
+    out += "],\"attributes\":[";
+    for (std::size_t i { 0 }; i < catalog.attributes.size(); ++i) {
+        const auto& a = *catalog.attributes[i].attribute;
+        out += std::format("{}{{\"name\":{},\"provider\":{},\"summary\":{},\"region\":{}}}", i ? "," : "", json_string(a.name),
+                           json_string(catalog.attributes[i].provider->name()), json_string(a.summary), json_string(a.region));
+    }
     return std::format("{}],\"problems\":{}}}", out, strings(catalog.problems));
 }
 

@@ -54,6 +54,7 @@
   },
   "result": {
    "allocations": [],
+   "attributes": [],
    "casts": [],
    "certainty": "certain",
    "collected": [
@@ -67,7 +68,8 @@
     "uses",
     "includes",
     "suppressions",
-    "declaration-types"
+    "declaration-types",
+    "attributes"
    ],
    "declarations": [
     {
@@ -224,7 +226,7 @@
     }
    ],
    "macros": [],
-   "mc3-version": "0.1.0",
+   "mc3-version": "0.2.0",
    "module": "",
    "path": "/work/app/src/a.cpp",
    "pointer-arithmetic": [],
@@ -326,7 +328,7 @@
   "method": "mcxx/catalog",
   "params": {},
   "result": {
-   "mc1-version": "0.1.0",
+   "mc1-version": "0.2.0",
    "$comment": "the whole catalog: specs/examples/mc1-catalog.json"
   }
  }

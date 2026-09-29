@@ -2,6 +2,15 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC1 0.2.0, MC3 0.2.0, MC4 0.2.0: attributes and regions (M1.9)
+
+- **MC4**: two extension points. A provider claims attributes (`acme::hot`): the compiler accepts
+  them and records each use; a rule reads the declaration's facts. A region is an attribute that
+  names a profile. Profiles may set levels for features by id. Additive: protocol version stays 1.
+- **MC3**: the kind `attributes` (§4.12). Readers take 0.1.0 documents, which have none.
+- **MC1**: within a region, its profile's level where stricter, below a declaration's waiver (§6);
+  the catalog lists the claimed attributes.
+
 ## 2026-09-29 — MC6 1: `mcxx serve`
 
 LSP's base protocol on standard input and output; LSP's document notifications and the service's

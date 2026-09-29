@@ -51,6 +51,14 @@ fact::Facts every_kind() {
     f.uses.push_back({ { at(8), "" }, "typeid", "T" });
     f.includes.push_back({ { at(9), "" }, "<vector>", true });
     f.suppressions.push_back({ { at(10), "app" }, { "goto", "macros" }, "c:@F@f#", "app::f", "why" });
+    fact::Attribute a { { at(11), "app" } };
+    a.name = "acme::device";
+    a.arguments = { "gpu", "3" };
+    a.name_range = at(11);
+    a.entity = "c:@N@app@F@kernel#";
+    a.declaration = "app::kernel";
+    a.kind = msa::Kind::function;
+    f.attributes.push_back(a);
     return f;
 }
 
@@ -76,6 +84,7 @@ int main() {
         expect(wire::facts_to_json(*back, "/p/a.cpp", "m:p") == first);
         expect(back->declarations[0].kind == msa::Kind::type_alias && first["declarations"][0]["kind"] == "type-alias");
         expect(back->casts[0].to_scalar && back->includes[0].global_module_fragment && back->certainty == msa::Certainty::unknown);
+        expect(back->attributes.size() == 1 && back->attributes[0].arguments == std::vector<std::string> { "gpu", "3" });
     };
 
     "reading is strict: a missing or mistyped member is an error that names it"_test = [] {
@@ -89,6 +98,10 @@ int main() {
         Json kind = j;
         kind["collected"] = Json::array({ "lifetimes" });
         expect(!wire::facts_from_json(kind) && wire::facts_from_json(kind).error().contains("lifetimes"));
+        Json old = j;
+        old["mc3-version"] = "0.1.0";
+        old.erase("attributes");
+        expect(wire::facts_from_json(old).has_value()) << "an MC3 0.1.0 document still reads";
         Json version = j;
         version["mc3-version"] = "9.0.0";
         expect(!wire::facts_from_json(version));

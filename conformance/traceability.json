@@ -876,5 +876,39 @@
    "script": "modules/serve/src/client.cpp",
    "contains": "did not answer in {} ms"
   }
+ ],
+ "MC1-6-2": [
+  {
+   "test": "plugins/examples/device/tests/test_device.cpp: [[acme::device]]: its profile applies inside it, not outside; a waiver there still waives"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: claimed attributes: [[acme::hot]]'s rule reads its declaration, [[acme::device]] is a region"
+  }
+ ],
+ "MC3-4.12-1": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: claimed attributes: [[acme::hot]]'s rule reads its declaration, [[acme::device]] is a region"
+  },
+  {
+   "test": "modules/plugin/wire/tests/test_wire.cpp: every kind of fact survives a round trip"
+  }
+ ],
+ "MC4-2-6": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: claimed attributes: [[acme::hot]]'s rule reads its declaration, [[acme::device]] is a region"
+  },
+  {
+   "script": "modules/backend/clang/src/gate.cppm",
+   "contains": "class ClaimedAttrInfo final"
+  }
+ ],
+ "MC4-2-7": [
+  {
+   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "contains": "is claimed by {} and by {}"
+  },
+  {
+   "test": "plugins/examples/device/tests/test_device.cpp: the catalog has the attributes, the region and its profile"
+  }
  ]
 }

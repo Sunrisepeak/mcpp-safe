@@ -362,6 +362,7 @@ public:
     std::span<const Feature> features() const override { return info_.features; }
     std::span<const Profile> profiles() const override { return info_.profiles; }
     std::span<const std::string_view> replaces() const override { return replaces_; }
+    std::span<const AttributeSpec> attributes() const override { return info_.attributes; }
 
     void check(const Context& context, std::vector<Finding>& out) const override {
         if (!mine(context.path)) return;

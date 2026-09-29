@@ -14,7 +14,7 @@ export namespace mcxx::plugin::wire {
 using Json = nlohmann::json;
 
 inline constexpr int PROTOCOL { 1 };
-inline constexpr std::string_view MC3_VERSION { "0.1.0" };
+inline constexpr std::string_view MC3_VERSION { "0.2.0" };   // 0.2.0 adds attributes; 0.1.0 documents are read too
 
 template <class T>
 using Read = std::expected<T, std::string>;
@@ -43,6 +43,7 @@ struct ProviderInfo {
     std::vector<Feature> features;
     std::vector<Profile> profiles;
     std::vector<std::string> replaces;
+    std::vector<AttributeSpec> attributes;
 };
 Json to_json(const ProviderInfo& provider);
 Read<ProviderInfo> provider_from(const Json& j);
@@ -333,13 +334,24 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
         x["reason"] = s.reason;
         suppressions.push_back(std::move(x));
     }
+    Json& attributes = j["attributes"] = Json::array();
+    for (const auto& a : f.attributes) {
+        Json x = place(a);
+        x["name"] = a.name;
+        x["arguments"] = a.arguments;
+        x["name-range"] = to_json(a.name_range);
+        x["entity"] = a.entity;
+        x["declaration"] = a.declaration;
+        x["kind"] = kind_name(a.kind);
+        attributes.push_back(std::move(x));
+    }
     return j;
 }
 
 Read<fact::Facts> facts_from_json(const Json& j) {
     if (!j.is_object()) return std::unexpected("facts is not an object");
-    if (!j.contains("mc3-version") || j["mc3-version"] != std::string { MC3_VERSION })
-        return std::unexpected(std::format("facts are not MC3 {}", MC3_VERSION));
+    if (!j.contains("mc3-version") || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.1.0"))
+        return std::unexpected(std::format("facts are not MC3 {} (nor 0.1.0)", MC3_VERSION));
     fact::Facts f;
     std::string error;
     Reader top { j, "facts", {} };
@@ -417,6 +429,17 @@ Read<fact::Facts> facts_from_json(const Json& j) {
         s.declaration = r.str("declaration");
         s.reason = r.str("reason");
     });
+    if (j.contains("attributes"))   // MC3 0.1.0 documents written before attributes have none
+        read_list(j, "attributes", f.attributes, error, [](Reader& r, fact::Attribute& a) {
+            a.name = r.str("name");
+            a.arguments = r.strings("arguments");
+            a.name_range = r.range("name-range");
+            a.entity = r.str("entity");
+            a.declaration = r.str("declaration");
+            const std::string kind { r.str("kind") };
+            if (const auto k = kind_from(kind)) a.kind = *k;
+            else r.fail(std::format("{}.kind: `{}` is not a kind of declaration", r.where, kind));
+        });
     if (!error.empty()) return std::unexpected(error);
     return f;
 }
@@ -515,6 +538,13 @@ Json to_json(const Profile& p) {
         categories.push_back(std::move(c));
     }
     j["replaces"] = p.replaces;
+    Json& levels = j["features"] = Json::array();
+    for (const auto& [id, level] : p.features) {
+        Json f = Json::object();
+        f["id"] = id;
+        f["level"] = std::string { name_of(LEVELS, level) };
+        levels.push_back(std::move(f));
+    }
     return j;
 }
 
@@ -533,6 +563,14 @@ Read<Profile> profile_from(const Json& j) {
             else p.categories.emplace_back(*category, *level);
         }
     p.replaces = r.flag_or("replaces", false);
+    if (r.has("features") && j["features"].is_array())
+        for (const auto& f : j["features"]) {
+            Reader fr { f, "profile.features[]", {} };
+            const std::string id { fr.str("id") };
+            const auto level = lookup(LEVELS, fr.str("level"));
+            if (!fr.ok() || !level) r.fail(std::format("profile {}: a feature's level is not one", p.name));
+            else p.features.emplace_back(id, *level);
+        }
     if (!r.ok()) return std::unexpected(r.error);
     return p;
 }
@@ -576,6 +614,14 @@ Json to_json(const ProviderInfo& p) {
     Json& profiles = j["profiles"] = Json::array();
     for (const auto& pr : p.profiles) profiles.push_back(to_json(pr));
     j["replaces"] = p.replaces;
+    Json& attributes = j["attributes"] = Json::array();
+    for (const auto& a : p.attributes) {
+        Json x = Json::object();
+        x["name"] = a.name;
+        x["summary"] = a.summary;
+        x["region"] = a.region;
+        attributes.push_back(std::move(x));
+    }
     return j;
 }
 
@@ -599,6 +645,13 @@ Read<ProviderInfo> provider_from(const Json& j) {
         if (!profile) return std::unexpected(std::format("provider {}: {}", p.name, profile.error()));
         p.profiles.push_back(std::move(*profile));
     }
+    if (j.contains("attributes") && j["attributes"].is_array())
+        for (const auto& a : j["attributes"]) {
+            Reader ar { a, std::format("provider {}.attributes[]", p.name), {} };
+            AttributeSpec spec { ar.str("name"), ar.str_or("summary"), ar.str_or("region") };
+            if (!ar.ok()) return std::unexpected(ar.error);
+            p.attributes.push_back(std::move(spec));
+        }
     return p;
 }
 
@@ -610,6 +663,7 @@ ProviderInfo describe(const Provider& provider, bool rule, bool filter) {
     p.features.assign(provider.features().begin(), provider.features().end());
     p.profiles.assign(provider.profiles().begin(), provider.profiles().end());
     for (const auto name : provider.replaces()) p.replaces.emplace_back(name);
+    p.attributes.assign(provider.attributes().begin(), provider.attributes().end());
     return p;
 }
 

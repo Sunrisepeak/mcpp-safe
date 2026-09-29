@@ -1,0 +1,22 @@
+# An example of MC4's attribute and region extension points (M1.9):
+#   [[acme::hot]]     an attribute: its rule reads the declaration's facts (acme-hot-alloc)
+#   [[acme::device]]  a region: profile acme.device applies inside the declaration
+[package]
+name        = "mcxx-example-device"
+version     = "0.1.0"
+description = "An example MC++ plugin: an attribute ([[acme::hot]]) and a region ([[acme::device]])"
+license     = "Apache-2.0"
+
+[targets.mcxx-example-device]
+kind = "lib"
+
+[dependencies]
+mcxx-msa    = { path = "../../../modules/msa" }
+mcxx-plugin = { path = "../../../modules/plugin/sdk" }
+
+[dev-dependencies]
+mcxx-testing  = { path = "../../../modules/testing" }
+mcxx-features = { path = "../../../modules/features" }
+
+[lib]
+path = "src/device.cppm"

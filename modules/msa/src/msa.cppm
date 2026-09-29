@@ -355,6 +355,18 @@ struct Include : Place {
     bool global_module_fragment { false };   // before the module declaration of a module unit (`module;` ... `module m;`)
 };
 
+// An attribute a plugin claims (MC4 §2: `[[acme::hot]]`, `[[acme::device]]`) on a declaration: its
+// name, its arguments as written (string literals unquoted), and the declaration it is on, whose
+// range is the attribute's reach -- a rule reads the facts inside it (plugin::subtree).
+struct Attribute : Place {
+    std::string name;                 // "acme::hot", as claimed
+    std::vector<std::string> arguments;
+    Range name_range;                 // where the attribute is written
+    std::string entity;               // the declaration's id
+    std::string declaration;          // and its qualified name
+    Kind kind { Kind::unknown };      // and its kind
+};
+
 // [[mcpp::allow("id", ...)]] on a declaration: the gates it waives, over the declaration's range.
 struct Suppression : Place {
     std::vector<std::string> ids;
@@ -381,7 +393,8 @@ enum class Kinds : std::uint32_t {
     // themselves, so asked for on its own. Without it, `type` is filled only for a declaration a
     // flag marks (c_array, pointer) and `templates` is empty.
     declaration_types = 1u << 10,
-    all = (1u << 11) - 1,
+    attributes = 1u << 11,
+    all = (1u << 12) - 1,
 };
 constexpr Kinds operator|(Kinds a, Kinds b) { return static_cast<Kinds>(std::to_underlying(a) | std::to_underlying(b)); }
 constexpr Kinds& operator|=(Kinds& a, Kinds b) { return a = a | b; }
@@ -394,7 +407,7 @@ inline constexpr std::pair<Kinds, std::string_view> KIND_NAMES[] {
     { Kinds::pointer_arithmetic, "pointer-arithmetic" }, { Kinds::gotos, "gotos" },
     { Kinds::macros, "macros" },               { Kinds::uses, "uses" },
     { Kinds::includes, "includes" },           { Kinds::suppressions, "suppressions" },
-    { Kinds::declaration_types, "declaration-types" },
+    { Kinds::declaration_types, "declaration-types" }, { Kinds::attributes, "attributes" },
 };
 std::vector<std::string_view> names(Kinds set) {
     std::vector<std::string_view> out;
@@ -421,6 +434,7 @@ struct Facts {
     std::vector<Use> uses;
     std::vector<Include> includes;
     std::vector<Suppression> suppressions;
+    std::vector<Attribute> attributes;
 };
 
 } // namespace fact

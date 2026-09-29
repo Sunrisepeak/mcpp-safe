@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc3-facts.schema.json",
-  "title": "MC3 0.1.0: the facts of one file, in JSON",
+  "title": "MC3 0.2.0: the facts of one file, in JSON",
   "type": "object",
   "required": [
     "mc3-version",
@@ -68,7 +68,8 @@
         "uses",
         "includes",
         "suppressions",
-        "declaration-types"
+        "declaration-types",
+        "attributes"
       ]
     },
     "declaration": {
@@ -460,11 +461,81 @@
           "type": "string"
         }
       }
+    },
+    "attribute": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "name",
+        "arguments",
+        "name-range",
+        "entity",
+        "declaration",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name-range": {
+          "$ref": "#/$defs/range"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "declaration": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "unknown",
+            "module",
+            "namespace",
+            "namespace-alias",
+            "class",
+            "struct",
+            "union",
+            "enum",
+            "enumerator",
+            "type-alias",
+            "concept",
+            "function",
+            "method",
+            "constructor",
+            "destructor",
+            "conversion",
+            "field",
+            "variable",
+            "parameter",
+            "template-parameter",
+            "macro",
+            "label"
+          ]
+        }
+      }
     }
   },
   "properties": {
     "mc3-version": {
-      "const": "0.1.0"
+      "enum": [
+        "0.1.0",
+        "0.2.0"
+      ]
     },
     "path": {
       "type": "string"
@@ -543,6 +614,12 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/suppression"
+      }
+    },
+    "attributes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attribute"
       }
     }
   }

@@ -202,6 +202,26 @@ public:
     }
 
     bool VisitDecl(cl::Decl* d) override {
+        if (wants(fact::Kinds::attributes))
+            for (const auto* attr : d->specific_attrs<cl::AnnotateAttr>()) {
+                const llvm::StringRef text { attr->getAnnotation() };
+                if (!text.starts_with("mcpp::attr|")) continue;
+                fact::Attribute a;
+                a.range = range_of(d->getSourceRange()).value_or(Range {});
+                a.name_range = range_of(attr->getRange()).value_or(a.range);
+                a.container = namespace_of(d->getDeclContext());
+                a.entity = usr_of(d);
+                if (const auto* named = llvm::dyn_cast<cl::NamedDecl>(d)) a.declaration = plain_name(named);
+                a.kind = kind_of(d);
+                const auto [name, args] = text.drop_front(std::string_view { "mcpp::attr|" }.size()).split('|');
+                a.name = name.str();
+                if (!args.empty()) {
+                    llvm::SmallVector<llvm::StringRef, 4> parts;
+                    args.split(parts, '\x1f');
+                    for (auto p : parts) a.arguments.emplace_back(p.str());
+                }
+                facts_.attributes.push_back(std::move(a));
+            }
         if (!wants(fact::Kinds::suppressions)) return true;
         for (const auto* attr : d->specific_attrs<cl::AnnotateAttr>()) {
             const llvm::StringRef text { attr->getAnnotation() };
@@ -539,7 +559,8 @@ fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kind
     fact::Facts facts;
     facts.collected = needs;
     constexpr fact::Kinds from_ast { fact::Kinds::declarations | fact::Kinds::initializations | fact::Kinds::casts | fact::Kinds::allocations |
-                                     fact::Kinds::pointer_arithmetic | fact::Kinds::gotos | fact::Kinds::uses | fact::Kinds::suppressions };
+                                     fact::Kinds::pointer_arithmetic | fact::Kinds::gotos | fact::Kinds::uses | fact::Kinds::suppressions |
+                                     fact::Kinds::attributes };
     if ((std::to_underlying(needs) & std::to_underlying(from_ast)) != 0) {
         Collector collector { ctx, facts, needs };
         collector.TraverseDecl(ctx.getTranslationUnitDecl());

@@ -133,6 +133,73 @@ struct AllowAttrInfo final : public cl::ParsedAttrInfo {
 
 cl::ParsedAttrInfoRegistry::Add<AllowAttrInfo> allow_registration { "mcpp-allow", "[[mcpp::allow(\"feature\")]]: waives an MC++ feature gate" };
 
+// The attributes providers claim (MC4 §2: `[[acme::hot]]`, a region `[[acme::device]]`): accepted on
+// a declaration, and kept as an annotation -- `mcpp::attr|name|arg<US>arg...` -- that :facts turns
+// into a fact::Attribute. Clang makes one instance of each attribute plugin the first time it looks
+// for one; the spellings are the catalog's then, and follow it when it changes (refresh()).
+class ClaimedAttrInfo final : public cl::ParsedAttrInfo {
+public:
+    ClaimedAttrInfo() {
+        NumArgs = 0;
+        OptArgs = 15;
+        instance() = this;
+        refresh();
+    }
+
+    static ClaimedAttrInfo*& instance() {
+        static ClaimedAttrInfo* self { nullptr };
+        return self;
+    }
+
+    // The catalog's attributes as spellings, scoped and (Clang 23's parser asks by the unscoped name
+    // alone, as for mcpp::allow) unscoped.
+    void refresh() {
+        const auto catalog = plugin::catalog();
+        if (catalog->generation == generation_) return;
+        generation_ = catalog->generation;
+        names_.clear();
+        for (const auto& a : catalog->attributes) {
+            names_.push_back(a.attribute->name);
+            names_.push_back(a.attribute->name.substr(a.attribute->name.rfind(':') + 1));
+        }
+        spellings_.clear();
+        for (const auto& n : names_) spellings_.push_back({ cl::ParsedAttr::AS_CXX11, n.c_str() });
+        Spellings = spellings_;
+    }
+
+    bool diagAppertainsToDecl(cl::Sema&, const cl::ParsedAttr&, const cl::Decl*) const override { return true; }
+
+    AttrHandling handleDeclAttribute(cl::Sema& sema, cl::Decl* d, const cl::ParsedAttr& attr) const override {
+        // The claimed name: scoped as written, or the one claimed attribute with this unscoped name.
+        std::string name { attr.getAttrName() ? attr.getAttrName()->getName().str() : std::string {} };
+        if (attr.getScopeName() != nullptr) name = attr.getScopeName()->getName().str() + "::" + name;
+        else
+            for (const auto& n : names_)
+                if (n.ends_with("::" + name)) {
+                    name = n;
+                    break;
+                }
+        std::string text { "mcpp::attr|" + name + "|" };
+        const auto& sm = sema.getSourceManager();
+        for (unsigned i { 0 }; i < attr.getNumArgs(); ++i) {
+            if (i != 0) text += '\x1f';
+            const cl::Expr* e { attr.getArgAsExpr(i) };
+            if (e == nullptr) continue;
+            if (const auto* s = llvm::dyn_cast<cl::StringLiteral>(e->IgnoreParenCasts())) text += s->getString().str();
+            else text += cl::Lexer::getSourceText(cl::CharSourceRange::getTokenRange(e->getSourceRange()), sm, sema.getLangOpts()).str();
+        }
+        d->addAttr(cl::AnnotateAttr::Create(sema.Context, text, nullptr, 0, attr.getRange()));
+        return AttributeApplied;
+    }
+
+private:
+    std::uint64_t generation_ { 0 };
+    std::vector<std::string> names_;
+    std::vector<Spelling> spellings_;
+};
+
+cl::ParsedAttrInfoRegistry::Add<ClaimedAttrInfo> claimed_registration { "mcxx-claimed", "the attributes MC++'s providers claim (MC4 §2)" };
+
 // At the end of every compilation this program runs (mcxx's own, and libmc++'s parses for the
 // editor): the active rules -- MC++'s built-in ones and the plugins linked in -- over the file's
 // facts, at the levels its configuration gives. The configuration's plan says what to collect: a
@@ -285,6 +352,13 @@ class GateAction final : public cl::PluginASTAction {
 protected:
     // Called once the main file is known and before it is read: the moment a source filter needs.
     std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override {
+        // The package's out-of-process plugins before the file is parsed: their attributes are claimed too.
+        if (!gates_suppressed) {
+            const auto& sm = ci.getSourceManager();
+            if (const std::string path { path_of(sm, sm.getMainFileID()) }; !path.empty())
+                if (const auto plan = features::plan_for(path); !plan->config.plugins.empty()) (void)plugin::host::load(plan->config);
+        }
+        if (auto* claimed = ClaimedAttrInfo::instance()) claimed->refresh();
         // Compiling a precompiled interface (a .pcm) to an object: its source was parsed, and gated,
         // when it was precompiled. Gating the AST read back would report every finding twice (MC5-3-3).
         for (const auto& input : ci.getFrontendOpts().Inputs)

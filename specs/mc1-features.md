@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC1 |
-| Version | 0.1.0 |
+| Version | 0.2.0 |
 | Status | Draft |
 | Schemas | [`schema/mc1-config.schema.json`](schema/mc1-config.schema.json), [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json), [`schema/mc1-audit.schema.json`](schema/mc1-audit.schema.json) |
 | Examples | [`examples/mc1-config.toml`](examples/mc1-config.toml) with [`examples/mc1-config.json`](examples/mc1-config.json), [`examples/mc1-catalog.json`](examples/mc1-catalog.json), [`examples/mc1-audit.jsonl`](examples/mc1-audit.jsonl) |
@@ -81,9 +81,9 @@ Each of these rows is REQUIRED as stated; the conformance fixtures under `confor
 
 ## 4. Profiles
 
-A profile is a named set of levels. A feature joins a profile by naming it (`profiles` in §2); a profile MAY also include other profiles and set a level for every feature of a category. <a id="MC1-4-1"></a><sup>MC1-4-1</sup>
+A profile is a named set of levels. A feature joins a profile by naming it (`profiles` in §2); a profile MAY also include other profiles, set a level for every feature of a category, and set levels for features by id, whichever provider provides them. <a id="MC1-4-1"></a><sup>MC1-4-1</sup>
 
-The level a feature has under a profile is the strictest of: the levels the feature gives itself for that profile, the level the profile gives the feature's category, and the level the feature has under each profile it includes (recursively, each profile once). <a id="MC1-4-2"></a><sup>MC1-4-2</sup> Under several profiles, a feature has the strictest level any of them gives it; a profile that gives it none does not lower it. <a id="MC1-4-3"></a><sup>MC1-4-3</sup>
+The level a feature has under a profile is the strictest of: the levels the feature gives itself for that profile, the level the profile gives the feature's category, the level the profile gives the feature by id, and the level the feature has under each profile it includes (recursively, each profile once). <a id="MC1-4-2"></a><sup>MC1-4-2</sup> Under several profiles, a feature has the strictest level any of them gives it; a profile that gives it none does not lower it. <a id="MC1-4-3"></a><sup>MC1-4-3</sup>
 
 MC++ defines these profiles. A compiler MUST provide them with these contents, unless a plugin replaces them (MC4 §4): <a id="MC1-4-4"></a><sup>MC1-4-4</sup>
 
@@ -127,11 +127,12 @@ A compiler MUST report, as a warning and never silently ignore: a value that is 
 The level of a feature for a finding is, from the most specific: <a id="MC1-6-1"></a><sup>MC1-6-1</sup>
 
 1. a waiver on a declaration that contains the finding (§7), if the feature is waivable;
-2. the level of the innermost configured namespace that contains the finding's enclosing namespace and sets the feature;
-3. the level of the finding's module (a partition's own over its module's, §5);
-4. the package's level (`features`);
-5. the profiles' level (§4);
-6. the feature's default.
+2. within a region -- a declaration carrying an attribute a provider declares as one (MC4 §2) -- the level the region's profile gives the feature, where it is stricter than the level of the steps below; <a id="MC1-6-2"></a><sup>MC1-6-2</sup>
+3. the level of the innermost configured namespace that contains the finding's enclosing namespace and sets the feature;
+4. the level of the finding's module (a partition's own over its module's, §5);
+5. the package's level (`features`);
+6. the profiles' level (§4);
+7. the feature's default.
 
 ## 7. Waivers
 
@@ -155,4 +156,4 @@ error: `x` (`int`) is not initialized [uninitialized]; give it an initializer (`
 
 ## 10. The catalog
 
-`mcxx features --json` prints what the compiler can gate: its active providers, every feature with the provider that provides it and the providers it replaces, every profile with the features it does not leave at `allow`, and the conflicts (MC4 §4). The output MUST validate against [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json). <a id="MC1-10-1"></a><sup>MC1-10-1</sup> `mcxx features` without `--json` prints the same for people, and exits with 1 when there are conflicts. <a id="MC1-10-2"></a><sup>MC1-10-2</sup>
+`mcxx features --json` prints what the compiler can gate: its active providers, every feature with the provider that provides it and the providers it replaces, every profile with the features it does not leave at `allow`, the attributes providers claim (MC4 §2), and the conflicts (MC4 §4). The output MUST validate against [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json). <a id="MC1-10-1"></a><sup>MC1-10-1</sup> `mcxx features` without `--json` prints the same for people, and exits with 1 when there are conflicts. <a id="MC1-10-2"></a><sup>MC1-10-2</sup>

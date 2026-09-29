@@ -81,6 +81,17 @@ struct Profile {
     std::vector<std::string> includes;                    // profiles it contains
     std::vector<std::pair<Category, Level>> categories;   // a level for every feature of a category
     bool replaces { false };                              // redefines a profile of that name
+    std::vector<std::pair<std::string, Level>> features;  // a level for features by id, any provider's
+};
+
+// An attribute a provider claims (MC4 §2): `[[acme::hot]]` is accepted by the compiler (no unknown-
+// attribute warning), and each use is an MC3 fact (fact::Attribute) the provider's rule reads with
+// the facts of the declaration it is on (plugin::subtree). A region names a profile: within the
+// declaration, that profile's levels apply where they are stricter than what applies otherwise.
+struct AttributeSpec {
+    std::string name;             // "acme::hot": a namespace and a name
+    std::string summary;
+    std::string region;           // a profile's name: the attribute is a region; "" : it is not
 };
 
 struct Finding {
@@ -123,6 +134,7 @@ public:
     virtual std::string_view name() const = 0;   // "mc++.iso", "mcxx.plugins.json"
     virtual std::span<const Feature> features() const { return {}; }
     virtual std::span<const Profile> profiles() const { return {}; }
+    virtual std::span<const AttributeSpec> attributes() const { return {}; }
     // Providers this one replaces, by name: they are not run, and their features and profiles are
     // this one's to provide, or nobody's.
     virtual std::span<const std::string_view> replaces() const { return {}; }
@@ -209,16 +221,25 @@ struct Catalog {
     std::vector<const SourceFilter*> filters;
     std::vector<Entry> features;                 // by id
     std::vector<ProfileEntry> profiles;          // by name
+    struct AttributeEntry {
+        const AttributeSpec* attribute { nullptr };
+        const Provider* provider { nullptr };
+    };
+    std::vector<AttributeEntry> attributes;      // by name
     std::vector<std::string> replaced;           // providers another stands in for
     std::vector<std::string> problems;           // conflicts: two providers of one id, neither replacing
 
     const Entry* find(std::string_view id) const;
     const Profile* profile(std::string_view name) const;
+    const AttributeEntry* attribute(std::string_view name) const;
     Origin origin_of(const Provider* provider) const;
 };
 
 std::shared_ptr<const Catalog> catalog();
 const Feature* find_feature(std::string_view id);   // the active provider's
+
+// The facts inside a range (an attribute's declaration): what an attribute's rule reads (MC4 §2).
+msa::fact::Facts subtree(const msa::fact::Facts& facts, const msa::Range& range);
 
 // Every active filter in order, each over the previous one's text; a replacement that changes the
 // length or the line breaks is refused (reported, and that filter's output dropped).
@@ -387,6 +408,20 @@ std::shared_ptr<const Catalog> build(const std::vector<Registered>& providers, s
         check_feature(entry, c->problems);
         c->features.push_back(std::move(entry));
     }
+    std::map<std::string, std::vector<const Registered*>, std::less<>> by_attribute;
+    for (const auto* p : active)
+        for (const auto& a : p->provider->attributes()) by_attribute[a.name].push_back(p);
+    for (const auto& [name, owners] : by_attribute) {
+        const Registered* owner { owners.front() };
+        for (const auto* o : owners)
+            if (o->origin == Origin::builtin) owner = o;
+        for (const auto* o : owners)
+            if (o != owner)
+                c->problems.push_back(std::format("attribute [[{}]] is claimed by {} and by {}; {}'s claim is not used", name, owner->provider->name(),
+                                                  o->provider->name(), o->provider->name()));
+        const auto spec = std::ranges::find(owner->provider->attributes(), name, &AttributeSpec::name);
+        c->attributes.push_back({ &*spec, owner->provider.get() });
+    }
     for (const auto& [name, candidates] : by_profile) {
         const std::size_t i { choose<Profile>(candidates, [](const Profile& p) { return p.replaces; }, "profile", name, c->problems) };
         c->profiles.push_back({ candidates[i].first, candidates[i].second->provider.get() });
@@ -434,6 +469,31 @@ Origin Catalog::origin_of(const Provider* provider) const {
     for (const auto& p : providers)
         if (p.provider == provider) return p.origin;
     return Origin::plugin;
+}
+
+const Catalog::AttributeEntry* Catalog::attribute(std::string_view name) const {
+    const auto it = std::ranges::lower_bound(attributes, name, {}, [](const AttributeEntry& e) { return std::string_view { e.attribute->name }; });
+    return it != attributes.end() && it->attribute->name == name ? &*it : nullptr;
+}
+
+msa::fact::Facts subtree(const msa::fact::Facts& facts, const msa::Range& range) {
+    const auto inside = [&](const msa::fact::Place& p) { return range.begin <= p.range.begin && p.range.end <= range.end; };
+    msa::fact::Facts out;
+    out.certainty = facts.certainty;
+    out.collected = facts.collected;
+    const auto copy = [&](const auto& from, auto& to) { std::ranges::copy_if(from, std::back_inserter(to), inside); };
+    copy(facts.declarations, out.declarations);
+    copy(facts.initializations, out.initializations);
+    copy(facts.casts, out.casts);
+    copy(facts.allocations, out.allocations);
+    copy(facts.pointer_arithmetic, out.pointer_arithmetic);
+    copy(facts.gotos, out.gotos);
+    copy(facts.macros, out.macros);
+    copy(facts.uses, out.uses);
+    copy(facts.includes, out.includes);
+    copy(facts.suppressions, out.suppressions);
+    copy(facts.attributes, out.attributes);
+    return out;
 }
 
 const Feature* find_feature(std::string_view id) {

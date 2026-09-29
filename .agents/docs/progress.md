@@ -44,6 +44,7 @@
 | M0.7 mc++.safe | 🟡 | **A0.7.1**：`mc++.iso` 共 15 个 ISO 特性，都带 stable name；profile `safe` 覆盖 10 个未定义行为来源；插件样例 `raw-pointers`、`lib:std.vector`、`ext:cfg`。<br>**A0.7.2**：19 个特性、20 个程序、41 个文件，精确率和召回率都是 100%（`mcxx-conformance`）。<br>**A0.7.3**：跨模块用例。<br>**A0.7.4**：`test_override`。<br>**A0.7.5**：诊断带 id、改法和豁免方法。<br>还差 MC1 的示例文件 |
 
 | M1.3 `mcxx serve` | ✅ | **A1.3.1**：MC6 1（`specs/mc6-serve.md`），`modules/serve`：<br>- 传输是 LSP 基础协议；<br>- 文档通知和 Service 的请求；<br>- MC++ 自己的 `mcxx/setCommands`、`mcxx/facts`、`mcxx/gates`、`mcxx/catalog`；<br>- 示例会话是真实输出。<br>**A1.3.2**：`Client` 在进程被杀掉后重新启动它，重放命令和打开的文档，结果不变（`test_serve`）。请求有时间限制。`specs.py --mcxx` 检查真实的 `mcxx serve` 生命周期 |
+| M1.9 属性与区域 | ✅ | **A1.9.1** 属性插件：SDK 提供 `AttributeSpec`，宿主以 `ClaimedAttrInfo` 在 Clang 中认领 catalog 里的属性，记为 MC3 事实 `attributes`，规则用 `plugin::subtree` 读取对应的子树。示例 `[[acme::hot]]`，Clang 端到端测试见 `test_backend`。<br>**A1.9.2** 区域插件：`[[acme::device]]` 在所在声明范围内套用 profile `acme.device`，范围外不受影响，范围内的豁免照样有效（`plugins/examples/device` 的测试和 `test_backend`）。<br>**A1.9.3**：MC4 0.2.0 的扩展点有规则、源码过滤器、profile、属性、区域，库控制通过规则的 library 类别实现。MC1、MC3 也升到 0.2.0 |
 | M1.4 接入 mcppls | 🟡 | **A1.4.1** ✅：fork 的 mcxx 引擎是默认引擎。<br>**A1.4.2** ✅：编辑器（workspace 解析）和构建（`mcxx c++`：预编译接口、检查单元）对门禁 fixture 的 117 条发现完全相同（`mcxx-conformance --driver`，已进入 CI）。有 1 个文件构建时不会被编译，因为它导入的接口有门禁错误，这个文件单独列出。<br>**A1.4.3** ✅：58 个 fixture。<br>**A1.4.4** 🟡：参数一致性已有测试（A0.5.2），热启动 `Built module = 0` 的回归检查还没有进 fork 的 CI |
 
 M0.x、M1.x、M2.x、MS 各项按里程碑文档的编号逐项补到这里。

@@ -1,5 +1,5 @@
 {
-  "mc3-version": "0.1.0",
+  "mc3-version": "0.2.0",
   "path": "/work/app/src/buffer.cppm",
   "module": "app.buffer",
   "certainty": "certain",
@@ -207,5 +207,6 @@
       "global-module-fragment": true
     }
   ],
-  "suppressions": []
+  "suppressions": [],
+  "attributes": []
 }

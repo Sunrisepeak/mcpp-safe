@@ -7,6 +7,7 @@ import mcxx.msa;
 import mcxx.backend.clang;
 import mcxx.plugins.json;
 import mcxx.plugins.std;
+import example.device;
 
 namespace msa = mcxx::msa;
 
@@ -299,6 +300,38 @@ int main() {
         expect(lint != nullptr && lint->severity == msa::Severity::error && lint->range.begin.column == 4) << "the plugin's finding, at its level: " << all;
         expect(composed != nullptr && composed->severity == msa::Severity::warning && composed->message.contains("mcxx compose"))
             << "the editor cannot compose: a warning";
+    };
+
+
+    "claimed attributes: [[acme::hot]]'s rule reads its declaration, [[acme::device]] is a region"_test = [] {
+        Program p { "attributes" };
+        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n");
+        const std::string text { "[[acme::hot]] int on_frame() { int* p = new int(1); int v = *p; delete p; return v; }\n"
+                                 "[[acme::device]] int kernel(int n) {\n"
+                                 "    if (n < 0) throw n;\n"
+                                 "    return n;\n"
+                                 "}\n"
+                                 "int host(int n) { if (n < 0) throw n; return n; }\n"
+                                 "[[acme::hot(\"frame\", 3)]] int quiet() { return 0; }\n" };
+        const std::string file { p.file("src/a.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto& f = unit->facts();
+        expect(fatal(f.attributes.size() == 3)) << f.attributes.size();
+        expect(f.attributes[0].name == "acme::hot" && f.attributes[0].declaration == "on_frame");
+        expect(f.attributes[1].name == "acme::device" && f.attributes[1].range.begin.line == 1 && f.attributes[1].range.end.line == 4);
+        expect(f.attributes[2].arguments == std::vector<std::string> { "frame", "3" });
+        std::vector<std::pair<std::string, std::uint32_t>> found;
+        std::string all;
+        for (const auto& d : unit->diagnostics()) {
+            all += std::format("[{}] {}:{}\n", d.code, d.range.begin.line, d.message.substr(0, 80));
+            if (d.severity == msa::Severity::error) found.emplace_back(d.code, d.range.begin.line);
+            expect(!d.message.contains("unknown attribute")) << "a claimed attribute is known";
+        }
+        expect(std::ranges::count(found, std::pair<std::string, std::uint32_t> { "acme-hot-alloc", 0 }) == 1) << all;
+        expect(std::ranges::count(found, std::pair<std::string, std::uint32_t> { "exceptions", 2 }) == 1) << "the region denies throw: " << all;
+        expect(std::ranges::none_of(found, [](const auto& x) { return x.second == 5; })) << "outside the region, the package's levels: " << all;
     };
 
 

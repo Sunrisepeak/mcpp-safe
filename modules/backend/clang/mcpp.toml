@@ -32,3 +32,4 @@ path = "src/clang.cppm"
 mcxx-testing      = { path = "../../testing" }
 mcxx-plugins-std  = { path = "../../../plugins/std" }
 mcxx-plugins-libs = { path = "../../../plugins/libs" }
+mcxx-example-device = { path = "../../../plugins/examples/device" }   # M1.9: an attribute and a region
