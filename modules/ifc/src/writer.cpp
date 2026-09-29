@@ -269,6 +269,11 @@ public:
             std::vector<std::string> args { std::to_string(i),     kind_name(d.kind), d.entity, d.qualified_name, d.container, d.type,
                                             std::move(flags),      range_text(d.range), range_text(d.name) };
             for (const auto& t : d.templates) args.push_back(t);
+            // 1.3.0: the bases, after a `|` (which no name holds).
+            if (!d.bases.empty()) {
+                args.emplace_back("|");
+                for (const auto& b : d.bases) args.push_back(b);
+            }
             sym::trait::DeclAttributes association {};
             clear(association);
             association.entity = self;

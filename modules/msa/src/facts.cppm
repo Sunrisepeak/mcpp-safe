@@ -26,11 +26,16 @@ struct Declaration : Place {
     std::string entity;               // id (Entity::id)
     std::string qualified_name;
     Kind kind { Kind::unknown };
-    std::string type;                 // variables, members, parameters, aliases: the declared type (Kinds::declaration_types)
+    // Variables, members, parameters, aliases: the declared type; a function's, a method's: its return
+    // type (MC3 0.5.0) (Kinds::declaration_types).
+    std::string type;
     // Every class template the declared type names, qualified without inline namespaces
     // ("std::vector", "nlohmann::basic_json"): what library control (lib:std.vector) looks at
     // (Kinds::declaration_types).
     std::vector<std::string> templates;
+    // A class's direct bases, by the names MC3 gives classes -- a specialization by its template's
+    // (MC3 0.5.0; Kinds::declaration_types): where a member access finds what the class inherits.
+    std::vector<std::string> bases;
     bool exported { false };          // inside `export`
     bool c_array { false };           // of C array type
     bool pointer { false };           // the declared type holds a raw pointer (T*), anywhere in it

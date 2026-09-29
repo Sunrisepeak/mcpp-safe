@@ -205,6 +205,13 @@
             "type": "string"
           }
         },
+        "bases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "$comment": "MC3 0.5.0: a class's direct bases"
+        },
         "exported": {
           "type": "boolean"
         },

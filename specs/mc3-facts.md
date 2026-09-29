@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.4.0 |
+| Version | 0.5.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -61,8 +61,9 @@ One per variable, field, parameter, function, type alias, class, union, enum and
 | `entity` | string | A stable id of the entity (a USR for Clang). |
 | `qualified-name` | string | |
 | `kind` | string | `variable`, `field`, `parameter`, `function`, `method`, `constructor`, `type-alias`, `class`, `struct`, `union`, `enum`, `namespace`, ... |
-| `type` | string | The declared type (of a variable, member, parameter or alias). Filled for every declaration when `declaration-types` was asked for, and otherwise at least for a declaration marked `c-array` or `pointer`. <a id="MC3-4.2-2"></a><sup>MC3-4.2-2</sup> |
+| `type` | string | The declared type (of a variable, member, parameter or alias); a function's or a method's return type (0.5.0) -- a constructor, a destructor and a conversion function have none, their names say it. Filled for every declaration when `declaration-types` was asked for, and otherwise at least for a declaration marked `c-array` or `pointer`. <a id="MC3-4.2-2"></a><sup>MC3-4.2-2</sup> |
 | `templates` | string[] | Every class template the declared type names, at any depth (`std::vector`, `nlohmann::basic_json`); with `declaration-types`. |
+| `bases` | string[] | A class's direct bases, by the qualified names this specification gives classes (a specialization by its template's name, `std::__atomic_base`); with `declaration-types`, and absent where there are none (0.5.0). It is where a member access finds what a class inherits. <a id="MC3-4.2-5"></a><sup>MC3-4.2-5</sup> |
 | `exported` | boolean | Inside `export`. |
 | `c-array` | boolean | Its type is an array type. |
 | `pointer` | boolean | Its type holds a pointer type anywhere: itself, an array element, a template argument; for a function, its return type. <a id="MC3-4.2-3"></a><sup>MC3-4.2-3</sup> |

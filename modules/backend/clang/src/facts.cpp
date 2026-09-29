@@ -197,6 +197,30 @@ bool is_initializer_list(cl::QualType type) {
     return record != nullptr && record->getName() == "initializer_list" && record->isInStdNamespace();
 }
 
+// The class a base specifier names: a class, or a specialization by its template's name (MC3 names
+// classes so); nothing for a template parameter or a dependent name.
+const cl::NamedDecl* base_class(cl::QualType type) {
+    if (type.isNull()) return nullptr;
+    if (const auto* spec = specialization_of(type)) return spec->getSpecializedTemplate();
+    if (const auto* tst = type->getAs<cl::TemplateSpecializationType>())
+        if (const auto* td = tst->getTemplateName().getAsTemplateDecl()) return td;
+    return type->getAsCXXRecordDecl();
+}
+
+// A class's direct bases (MC3 0.5.0).
+std::vector<std::string> bases_of(const cl::NamedDecl* d) {
+    std::vector<std::string> out;
+    const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d);
+    const auto* def = record != nullptr ? record->getDefinition() : nullptr;
+    if (def == nullptr) return out;
+    for (const auto& base : def->bases())
+        if (const auto* named = base_class(base.getType())) {
+            std::string name { plain_name(named) };
+            if (std::ranges::find(out, name) == out.end()) out.push_back(std::move(name));
+        }
+    return out;
+}
+
 // A declaration's MC3 members that do not depend on where it is written (its ranges apart): entity,
 // qualified name, container, kind, exported, local, the flags, and with `types` its type and templates.
 fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bool types) {
@@ -215,7 +239,10 @@ fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bo
     if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d)) {
         if (types) collect_templates(ctx, fn->getReturnType(), decl.templates);
         decl.pointer = holds_pointer(ctx, fn->getReturnType());
-        if (decl.pointer) decl.type = type_text(ctx, fn->getReturnType());
+        // A function's or a method's return type (MC3 0.5.0); a constructor, a destructor and a
+        // conversion function have none (their names say it).
+        const bool returns { !llvm::isa<cl::CXXConstructorDecl, cl::CXXDestructorDecl, cl::CXXConversionDecl>(fn) };
+        if (decl.pointer || (types && returns)) decl.type = type_text(ctx, fn->getReturnType());
         decl.c_variadic = fn->isVariadic();
     } else if (types) {
         collect_templates(ctx, type, decl.templates);
@@ -226,6 +253,7 @@ fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bo
         if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx, type);
     }
     if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d)) decl.is_union = record->isUnion();
+    if (types) decl.bases = bases_of(d);
     return decl;
 }
 
@@ -678,6 +706,10 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
         fact::Declaration decl { describe(ctx, d, true) };
         decl.exported = true;
         decl.local = false;
+        // A member of a partial specialization is named in its primary template, as Clang names what
+        // a use of it refers to (`std::__atomic_base::fetch_add`).
+        if (const auto* partial = llvm::dyn_cast<cl::ClassTemplatePartialSpecializationDecl>(d->getDeclContext()))
+            decl.qualified_name = plain_name(partial->getSpecializedTemplate()) + "::" + d->getNameAsString();
         out.push_back(std::move(decl));
     };
     const auto enumerators = [&](const cl::EnumDecl* e) {
@@ -690,11 +722,24 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
         if (const auto* t = llvm::dyn_cast<cl::TemplateDecl>(d); t != nullptr && t->getTemplatedDecl() != nullptr) d = t->getTemplatedDecl();
         if (!seen.insert(d->getCanonicalDecl()).second) return;
         if (llvm::isa<cl::UsingShadowDecl, cl::UsingDecl, cl::NamespaceDecl>(d)) return;
-        push(d);
+        if (!llvm::isa<cl::ClassTemplatePartialSpecializationDecl>(d)) push(d);
         if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d)) enumerators(e);
+        // An alias reaches the class it names (MC2 1.3.0): `using json = basic_json<>` is a use of
+        // basic_json's members.
+        if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d))
+            if (const auto* named = base_class(alias->getUnderlyingType())) add(named, depth + 1);
         const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d);
         const auto* def = record != nullptr ? record->getDefinition() : nullptr;
         if (def == nullptr) return;
+        // What it inherits reaches an importer too: its bases (MC2 1.3.0), with their members.
+        for (const auto& base : def->bases())
+            if (const auto* named = base_class(base.getType())) add(named, depth + 1);
+        // A class template's partial specializations: their members are the template's to a use.
+        if (const auto* pattern = def->getDescribedClassTemplate()) {
+            llvm::SmallVector<cl::ClassTemplatePartialSpecializationDecl*, 4> partials;
+            const_cast<cl::ClassTemplateDecl*>(pattern)->getPartialSpecializations(partials);
+            for (const auto* partial : partials) add(partial, depth + 1);
+        }
         for (const auto* member : def->decls()) {
             const auto* nd = llvm::dyn_cast<cl::NamedDecl>(member);
             if (nd == nullptr || nd->isImplicit() || nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected) continue;

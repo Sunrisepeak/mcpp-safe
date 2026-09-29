@@ -19,7 +19,9 @@ import mcxx.msa;
 
 export namespace mcxx::ifc {
 
-inline constexpr std::string_view MC2_VERSION { "1.2.0" };   // 1.2.0 adds reachable declarations, 1.1.0 re-exports; 1.0 and 1.1 files are read too
+// 1.3.0: bases, and a function's return type (MC3 0.5.0); 1.2.0 adds reachable declarations, 1.1.0
+// re-exports; 1.0, 1.1 and 1.2 files are read too.
+inline constexpr std::string_view MC2_VERSION { "1.3.0" };
 inline constexpr std::uint8_t IFC_MAJOR { 0 };
 inline constexpr std::uint8_t IFC_MINOR { 43 };
 

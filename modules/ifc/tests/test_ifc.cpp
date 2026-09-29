@@ -101,7 +101,7 @@ int main() {
         expect(!back->internal);
     };
 
-    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"_test = [] {
+    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2), with bases and return types (1.3)"_test = [] {
         auto unit = sample();
         const auto reach = [](std::string qualified, mcxx::msa::Kind kind, std::string type = {}) {
             mcxx::msa::fact::Declaration d;
@@ -113,7 +113,9 @@ int main() {
             return d;
         };
         using K = mcxx::msa::Kind;
-        unit.reachable = { reach("std", K::namespace_), reach("std::vector", K::class_), reach("std::vector::size", K::method),
+        auto vector = reach("std::vector", K::class_);
+        vector.bases = { "std::__vector_base", "std::__allocator_holder" };   // MC2 1.3.0: a class's bases
+        unit.reachable = { reach("std", K::namespace_), vector, reach("std::vector::size", K::method, "size_type"),
                            reach("std::vector::size_type", K::type_alias, "size_t"), reach("std::errc", K::enum_),
                            reach("std::errc::invalid_argument", K::enumerator, "std::errc"), reach("std::memory_order_relaxed", K::enumerator, "std::memory_order") };
         const auto back = mcxx::ifc::read(mcxx::ifc::write(unit));

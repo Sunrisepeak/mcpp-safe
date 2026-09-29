@@ -171,6 +171,7 @@ Json declaration_json(const fact::Declaration& d) {
     x["kind"] = kind_name(d.kind);
     x["type"] = d.type;
     x["templates"] = d.templates;
+    if (!d.bases.empty()) x["bases"] = d.bases;   // MC3 0.5.0: a class's, when there are any
     x["exported"] = d.exported;
     x["c-array"] = d.c_array;
     x["pointer"] = d.pointer;
@@ -189,6 +190,7 @@ void read_declaration(Reader& r, fact::Declaration& d) {
     else r.fail(std::format("{}.kind: `{}` is not a kind of declaration", r.where, kind));
     d.type = r.str("type");
     d.templates = r.strings("templates");
+    if (r.j.contains("bases")) d.bases = r.strings("bases");   // before 0.5.0: none
     d.exported = r.flag("exported");
     d.c_array = r.flag("c-array");
     d.pointer = r.flag("pointer");

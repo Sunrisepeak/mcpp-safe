@@ -77,12 +77,12 @@ msa::fact::Facts facts(const Syntax& syntax) {
             if (d.va_list) (syntax.pp.target.starts_with("x86_64") && syntax.pp.target.find("linux") != std::string::npos ? f.c_array : f.pointer) = true;
             f.c_variadic = d.c_variadic;
             f.is_union = d.kind == msa::Kind::union_;
-            // Its type as written (MC3's `type`), where the tokens say it: a function's only when it
-            // returns a pointer (its return type), as the Clang backend gives it.
+            // Its type as written (MC3's `type`), where the tokens say it: a function's or a method's
+            // return type (MC3 0.5.0); a constructor, a destructor, a conversion function has none.
             const bool function_kind { d.kind == msa::Kind::function || d.kind == msa::Kind::method || d.kind == msa::Kind::constructor ||
                                        d.kind == msa::Kind::destructor || d.kind == msa::Kind::conversion };
             if (!function_kind) f.type = type_text(syntax, d);
-            else if (d.pointer) f.type = type_text(syntax, d, true);
+            else if (d.kind == msa::Kind::function || d.kind == msa::Kind::method) f.type = type_text(syntax, d, true);
             // Inside a function: a parameter's parent is the function, a local's too (or a local class's);
             // or inside a lambda, whose call operator is a function (one initializing a variable, say).
             if (d.kind != msa::Kind::parameter) f.local = d.in_lambda;

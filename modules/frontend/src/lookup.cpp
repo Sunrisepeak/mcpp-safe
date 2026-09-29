@@ -87,6 +87,7 @@ public:
             if (d.name.empty() && d.kind != msa::Kind::namespace_) continue;
             Target target { static_cast<std::int32_t>(i), qualified_[i], d.kind, d.name_token, {} };
             if (d.kind == msa::Kind::variable || d.kind == msa::Kind::field || d.kind == msa::Kind::parameter) target.type = type_text(syntax, d);
+            else if (d.kind == msa::Kind::function || d.kind == msa::Kind::method) target.type = type_text(syntax, d, true);
             if (function_local(i)) {
                 locals_[d.name].push_back(static_cast<std::int32_t>(i));
                 continue;
@@ -112,7 +113,13 @@ public:
             scopes_[scope_of(d.qualified_name)][std::string { last_component(d.qualified_name) }].push_back(target);
             if (scope_kind(d.kind)) scopes_[d.qualified_name];
             if (d.kind == msa::Kind::namespace_) namespaces_.insert(d.qualified_name);
-            if (class_kind(d.kind)) imported_classes_.insert(d.qualified_name);
+            if (class_kind(d.kind)) {
+                imported_classes_.insert(d.qualified_name);
+                // Its bases (MC3 0.5.0), where a member it inherits is found.
+                auto& bases = imported_bases_[d.qualified_name];
+                for (const auto& b : d.bases)
+                    if (!std::ranges::contains(bases, b)) bases.push_back(b);
+            }
             if (d.kind == msa::Kind::namespace_ && last_component(d.qualified_name) == "(anonymous namespace)") {
                 auto& list = transparent_[scope_of(d.qualified_name)];
                 if (!std::ranges::contains(list, d.qualified_name)) list.push_back(d.qualified_name);
@@ -166,13 +173,18 @@ public:
             }
             if (t.kind == Kind::raw_identifier && declares[k] && constructor_of[k] >= 0 && !t.expanded) {
                 const std::string owner { scope_of(qualified_[static_cast<std::size_t>(constructor_of[k])]) };
+                Reference r;
+                r.range = token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k));
+                r.name = std::string { t.spelling };
+                r.target = owner;
                 if (const auto c = classes_.find(owner); c != classes_.end()) {
-                    Reference r;
-                    r.range = token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k));
-                    r.name = std::string { t.spelling };
-                    r.target = owner;
                     r.kind = ds_[static_cast<std::size_t>(c->second)].kind;
                     r.declaration = c->second;
+                    out.push_back(std::move(r));
+                } else if (imported_classes_.contains(owner)) {
+                    // An out-of-line constructor of a class another unit declares (its module's
+                    // interface): its name is that class's.
+                    r.kind = imported_kind(owner);
                     out.push_back(std::move(r));
                 }
                 continue;
@@ -194,6 +206,15 @@ public:
     }
 
 private:
+    // A type as a declaration writes it, with where its names are looked up: the file's own at its
+    // name, an imported one in its scope.
+    struct Typed {
+        std::string text;
+        std::size_t at { 0 };
+        std::string context;
+        bool imported { false };
+    };
+
     const Syntax& syntax_;
     const std::vector<PpToken>& t_;
     const std::vector<Declaration>& ds_;
@@ -203,6 +224,7 @@ private:
     std::set<std::string, std::less<>> namespaces_;
     std::map<std::string, std::int32_t, std::less<>> classes_;
     std::set<std::string, std::less<>> imported_classes_;   // the classes the imports declare (their members are theirs)
+    std::map<std::string, std::vector<std::string>, std::less<>> imported_bases_;   // an imported class's bases (MC3 0.5.0)
     // An unnamed namespace's members are its enclosing namespace's too ([namespace.unnamed]).
     std::map<std::string, std::vector<std::string>, std::less<>> transparent_;
     std::vector<std::int32_t> enclosing_;
@@ -210,6 +232,7 @@ private:
     std::map<std::int32_t, std::vector<std::string>> chains_;
     std::map<std::int32_t, std::vector<std::string>> bases_;
     int depth_ { 0 };   // how deep a name's resolution has gone through aliases and bases: a cycle ends
+    std::map<std::size_t, std::optional<Typed>> deduced_;   // what `auto` stands for, by declaration
 
     bool is(std::size_t k, Kind kind) const { return k < t_.size() && t_[k].kind == kind; }
     bool word(std::size_t k, std::string_view w) const { return k < t_.size() && t_[k].kind == Kind::raw_identifier && t_[k].spelling == w; }
@@ -234,6 +257,7 @@ private:
         const auto& d = ds_[static_cast<std::size_t>(i)];
         Target target { i, qualified_[static_cast<std::size_t>(i)], d.kind, d.name_token, {} };
         if (d.kind == msa::Kind::variable || d.kind == msa::Kind::field || d.kind == msa::Kind::parameter) target.type = type_text(syntax_, d);
+        else if (d.kind == msa::Kind::function || d.kind == msa::Kind::method) target.type = type_text(syntax_, d, true);
         return target;
     }
 
@@ -307,6 +331,9 @@ private:
             for (const auto& base : bases_of(c->second))
                 if (auto found = in_scope(base, n, k, depth + 1, scope_only)) return found;
         }
+        if (const auto b = imported_bases_.find(scope); b != imported_bases_.end())
+            for (const auto& base : b->second)
+                if (auto found = in_scope(base, n, k, depth + 1, scope_only)) return found;
         return std::nullopt;
     }
 
@@ -381,27 +408,347 @@ private:
             if (first) found = unqualified(part, k, true);
             else found = in_scope(scope, part, t_.size(), 0, true);
             if (!found) return std::nullopt;
-            if (found->kind == msa::Kind::namespace_alias) {
-                auto aliased { alias_target(*found) };
-                if (!aliased) return std::nullopt;
-                scope = *aliased;
-            } else if (found->kind == msa::Kind::type_alias) {
-                // An alias of a class: the class its type names.
-                const auto aliased { class_name_of(found->type.empty() && found->declaration >= 0
-                                                       ? type_text(syntax_, ds_[static_cast<std::size_t>(found->declaration)])
-                                                       : found->type) };
-                if (aliased.empty() || found->declaration < 0) return std::nullopt;
-                auto named { scope_named(aliased, ds_[static_cast<std::size_t>(found->declaration)].name_token) };
-                if (!named) return std::nullopt;
-                scope = *named;
-            } else {
-                scope = found->qualified;
-            }
+            auto next { follow(*found) };
+            if (!next) return std::nullopt;
+            scope = std::move(*next);
             first = false;
             if (at == std::string_view::npos) break;
             rest.remove_prefix(at + 2);
         }
         return scope;
+    }
+
+    // A name written in an imported declaration, whose scope is `context`: its first component looked up
+    // in `context` and the scopes around it, as a name written there is.
+    std::optional<std::string> scope_named_in(std::string_view written, const std::string& context) {
+        struct Deeper {
+            int& depth;
+            explicit Deeper(int& d) : depth { d } { ++depth; }
+            ~Deeper() { --depth; }
+        } deeper { depth_ };
+        if (depth_ > 16) return std::nullopt;
+        std::string_view rest { written };
+        std::string scope;
+        bool first { true };
+        if (rest.starts_with("::")) {
+            rest.remove_prefix(2);
+            first = false;
+        }
+        while (!rest.empty()) {
+            const auto at = rest.find("::");
+            const std::string part { rest.substr(0, at) };
+            std::optional<Target> found;
+            if (first) {
+                for (std::string s { context };; s = scope_of(s)) {
+                    if ((found = in_scope(s, part, t_.size(), 0, true))) break;
+                    if (s.empty()) break;
+                }
+            } else {
+                found = in_scope(scope, part, t_.size(), 0, true);
+            }
+            if (!found) return std::nullopt;
+            auto next { follow(*found) };
+            if (!next) return std::nullopt;
+            scope = std::move(*next);
+            first = false;
+            if (at == std::string_view::npos) break;
+            rest.remove_prefix(at + 2);
+        }
+        return scope;
+    }
+
+    // The scope a name that names one leads to: a namespace or a class itself, what a namespace alias
+    // names, the class a type alias names -- the file's own looked up where it is declared, an
+    // imported one in its own scope.
+    std::optional<std::string> follow(const Target& found) {
+        if (found.kind == msa::Kind::namespace_alias) return alias_target(found);
+        if (found.kind != msa::Kind::type_alias) return found.qualified;
+        const std::string written { found.type.empty() && found.declaration >= 0 ? type_text(syntax_, ds_[static_cast<std::size_t>(found.declaration)])
+                                                                               : found.type };
+        const std::string aliased { class_name_of(written) };
+        if (aliased.empty()) return std::nullopt;
+        if (found.declaration >= 0) return scope_named(aliased, ds_[static_cast<std::size_t>(found.declaration)].name_token);
+        return scope_named_in(aliased, scope_of(found.qualified));
+    }
+
+    std::optional<Typed> typed(const Target& t, int depth = 0) {
+        if (t.declaration >= 0) {
+            const auto& d = ds_[static_cast<std::size_t>(t.declaration)];
+            if (t.kind == msa::Kind::variable && placeholder(d)) {
+                auto deduced { deduce(static_cast<std::size_t>(t.declaration), depth) };
+                if (!deduced) return std::nullopt;
+                // `auto*` keeps what is written around the placeholder: what is deduced is what
+                // it points to. (`auto&` refers to it: the same type for a member access.)
+                bool pointer { false };
+                for (std::uint32_t k { d.declarator_begin }; k < d.id_begin && k < t_.size(); ++k) pointer = pointer || is(k, Kind::star);
+                if (pointer && !bare(deduced->text).ends_with('*')) deduced->text += " *";
+                return deduced;
+            }
+            if (t.type.empty()) return std::nullopt;
+            return Typed { t.type, d.name_token, {}, false };
+        }
+        if (t.type.empty()) return std::nullopt;
+        return Typed { t.type, 0, scope_of(t.qualified), true };
+    }
+
+    // Whether a declaration's type is deduced: `auto` among its specifiers (`decltype(auto)` too).
+    bool placeholder(const Declaration& d) const {
+        for (std::uint32_t k { d.specifiers_begin }; k < d.specifiers_end && k < t_.size(); ++k)
+            if (word(k, "auto")) return true;
+        return false;
+    }
+
+    // What `auto` stands for in a variable the file declares: its initializer's type (a name, a
+    // call, a construction), or the element of the range a range-for's variable ranges over. Once
+    // per declaration.
+    std::optional<Typed> deduce(std::size_t i, int depth) {
+        if (const auto known = deduced_.find(i); known != deduced_.end()) return known->second;
+        deduced_[i] = std::nullopt;   // while being worked out: a variable deduced from itself is not
+        const auto& d = ds_[i];
+        std::optional<Typed> out;
+        std::size_t k { d.declarator_end };
+        if (k < t_.size() && is(k, Kind::colon)) {
+            // `for (auto& x : range)`: the range runs to the `)` that closes the for's parentheses.
+            int depth_parens { 0 };
+            std::size_t end { k + 1 };
+            for (; end < t_.size(); ++end) {
+                if (is(end, Kind::l_paren) || is(end, Kind::l_square) || is(end, Kind::l_brace)) ++depth_parens;
+                else if (is(end, Kind::r_paren) || is(end, Kind::r_square) || is(end, Kind::r_brace)) {
+                    if (depth_parens == 0) break;
+                    --depth_parens;
+                }
+            }
+            if (end > k + 1)
+                if (auto range = expression_type(end - 1, depth + 1)) out = range_element(*range);
+        } else if (k < t_.size() && (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren))) {
+            // The initializer's last token: before the `;` that ends the declaration, inside the
+            // braces or parentheses that are the initializer.
+            std::size_t end { d.last_token };
+            while (end > k && (is(end, Kind::semi) || is(end, Kind::comma))) --end;
+            if (!is(k, Kind::equal) && end > k && (is(end, Kind::r_brace) || is(end, Kind::r_paren))) --end;
+            if (end > k) out = expression_type(end, depth + 1);
+            if (out) out->text = bare(out->text);
+        }
+        deduced_[i] = out;
+        return out;
+    }
+
+    // What a range-for over a value of this type gives: a sequence's element, a map's pair.
+    std::optional<Typed> range_element(const Typed& type) {
+        const std::string text { bare(type.text) };
+        if (const auto square = text.find('['); square != std::string::npos && text.find('<') > square)
+            return Typed { bare(text.substr(0, square)), type.at, type.context, type.imported };
+        const auto cls { class_of(type) };
+        if (!cls) return std::nullopt;
+        const auto args { arguments_of(text) };
+        static constexpr std::string_view sequences[] { "std::vector", "std::array", "std::span", "std::deque", "std::list", "std::set",
+                                                         "std::unordered_set", "std::initializer_list", "std::multiset", "std::forward_list" };
+        static constexpr std::string_view maps[] { "std::map", "std::unordered_map", "std::multimap", "std::flat_map" };
+        if (std::ranges::contains(sequences, *cls) && !args.empty()) return Typed { args[0], type.at, type.context, type.imported };
+        if (std::ranges::contains(maps, *cls) && args.size() >= 2)
+            return Typed { std::format("std::pair<const {}, {}>", args[0], args[1]), type.at, type.context, type.imported };
+        // A directory's iterators give its entries ([fs.class.directory.iterator]).
+        if (*cls == "std::filesystem::directory_iterator" || *cls == "std::filesystem::recursive_directory_iterator")
+            return Typed { "::std::filesystem::directory_entry", type.at, {}, false };
+        return std::nullopt;
+    }
+
+    // An imported class's kind (class, struct or union), as its interface says.
+    msa::Kind imported_kind(const std::string& qualified) const {
+        if (const auto s = scopes_.find(scope_of(qualified)); s != scopes_.end())
+            if (const auto m = s->second.find(std::string { last_component(qualified) }); m != s->second.end())
+                for (const auto& target : m->second)
+                    if (class_kind(target.kind)) return target.kind;
+        return msa::Kind::class_;
+    }
+
+    // The class a type names (cv, references, pointers and arguments off; aliases followed).
+    std::optional<std::string> class_of(const Typed& type) {
+        const std::string name { class_name_of(type.text) };
+        if (name.empty()) return std::nullopt;
+        return type.imported ? scope_named_in(name, type.context) : scope_named(name, type.at);
+    }
+
+    // A type's text without its top-level cv-qualifiers and reference.
+    static std::string bare(std::string text) {
+        for (std::string_view prefix : { "const ", "volatile " })
+            while (text.starts_with(prefix)) text.erase(0, prefix.size());
+        while (!text.empty() && (text.back() == '&' || text.back() == ' ')) text.pop_back();
+        for (std::string_view suffix : { " const", " volatile" })
+            while (text.ends_with(suffix)) text.erase(text.size() - suffix.size());
+        return text;
+    }
+
+    // The top-level template arguments of a type's text ("std::map<K, std::vector<V>>" -> K, std::vector<V>).
+    static std::vector<std::string> arguments_of(const std::string& text) {
+        std::vector<std::string> out;
+        const auto open = text.find('<');
+        if (open == std::string::npos) return out;
+        int depth { 0 };
+        std::string current;
+        for (std::size_t i { open + 1 }; i < text.size(); ++i) {
+            const char c { text[i] };
+            if (c == '<' || c == '(' || c == '[') ++depth;
+            if ((c == '>' || c == ')' || c == ']') && depth-- == 0) {
+                out.push_back(current);
+                return out;
+            }
+            if (c == ',' && depth == 0) {
+                out.push_back(current);
+                current.clear();
+                continue;
+            }
+            if (!(current.empty() && c == ' ')) current += c;
+        }
+        return {};
+    }
+
+    // What `*` (or `->`) of a value of this type reaches: a pointer's pointee; the element of the
+    // standard's smart pointers and optional ([unique.ptr], [util.smartptr.shared], [optional]).
+    std::optional<Typed> pointee(const Typed& type) {
+        std::string text { bare(type.text) };
+        if (text.ends_with('*')) {
+            text.pop_back();
+            return Typed { bare(text), type.at, type.context, type.imported };
+        }
+        const auto cls { class_of(type) };
+        if (!cls) return std::nullopt;
+        if (*cls == "std::unique_ptr" || *cls == "std::shared_ptr" || *cls == "std::optional" || *cls == "std::weak_ptr") {
+            const auto args { arguments_of(text) };
+            if (args.empty()) return std::nullopt;
+            return Typed { args.front(), type.at, type.context, type.imported };
+        }
+        return std::nullopt;
+    }
+
+    // What `[i]` of a value of this type is: a pointer's or an array's element; the element of the
+    // standard's sequences, a map's mapped type.
+    std::optional<Typed> element(const Typed& type) {
+        std::string text { bare(type.text) };
+        if (text.ends_with('*')) {
+            text.pop_back();
+            return Typed { bare(text), type.at, type.context, type.imported };
+        }
+        if (const auto square = text.find('['); square != std::string::npos && text.find('<') > square)
+            return Typed { bare(text.substr(0, square)), type.at, type.context, type.imported };
+        const auto cls { class_of(type) };
+        if (!cls) return std::nullopt;
+        const auto args { arguments_of(text) };
+        static constexpr std::string_view sequences[] { "std::vector", "std::array", "std::span", "std::deque", "std::basic_string_view",
+                                                         "std::initializer_list", "std::valarray" };
+        static constexpr std::string_view maps[] { "std::map", "std::unordered_map", "std::flat_map" };
+        if (std::ranges::contains(sequences, *cls) && !args.empty()) return Typed { args[0], type.at, type.context, type.imported };
+        if (std::ranges::contains(maps, *cls) && args.size() >= 2) return Typed { args[1], type.at, type.context, type.imported };
+        return std::nullopt;
+    }
+
+    // The token that opens the bracket closing at `close` (`)`, `]` or `}`), or none.
+    std::optional<std::size_t> opening(std::size_t close) const {
+        const Kind open_kind { is(close, Kind::r_paren) ? Kind::l_paren : is(close, Kind::r_brace) ? Kind::l_brace : Kind::l_square };
+        const Kind close_kind { t_[close].kind };
+        int depth { 0 };
+        for (std::size_t k { close + 1 }; k-- > 0;) {
+            if (is(k, close_kind)) ++depth;
+            else if (is(k, open_kind) && --depth == 0) return k;
+        }
+        return std::nullopt;
+    }
+
+    // The type a construction names, written before the `{` or `(` at `open`: `ns::T`, `std::vector<int>`.
+    std::optional<Typed> type_named_before(std::size_t open) {
+        std::size_t begin { open };
+        while (begin > 0) {
+            const std::size_t k { begin - 1 };
+            if (is(k, Kind::greater)) {
+                std::size_t less { k };
+                for (int angle { 0 }; less > 0; --less) {
+                    if (is(less, Kind::greater)) ++angle;
+                    else if (is(less, Kind::less) && --angle == 0) break;
+                }
+                if (less == 0) return std::nullopt;
+                begin = less;
+                continue;
+            }
+            if ((is(k, Kind::raw_identifier) && !keyword(t_[k].spelling)) || is(k, Kind::coloncolon)) {
+                begin = k;
+                continue;
+            }
+            break;
+        }
+        if (begin == open) return std::nullopt;
+        return Typed { type_text(std::span { t_ }.subspan(begin, open - begin)), begin, {}, false };
+    }
+
+    // The type of the expression that ends at token `end`: what a member access's object has. A
+    // name (a variable, a parameter, a field, `this`), a call (its function's return type), a
+    // subscript (its element), a parenthesized expression. Nothing when it is not one of these.
+    std::optional<Typed> expression_type(std::size_t end, int depth = 0) {
+        if (depth > 8 || end >= t_.size()) return std::nullopt;
+        if (word(end, "this")) {
+            for (const auto& scope : chain_at(end))
+                if (classes_.contains(scope) || imported_classes_.contains(scope)) return Typed { "::" + scope + " *", end, {}, false };
+            return std::nullopt;
+        }
+        if (is(end, Kind::raw_identifier)) {
+            if (!resolved_[end]) return std::nullopt;
+            const auto& o = *resolved_[end];
+            if (function_kind(o.kind)) return std::nullopt;   // a function's name, not called
+            return typed(o, depth + 1);
+        }
+        if (is(end, Kind::r_brace)) {
+            // `T { ... }`: a T.
+            const auto open { opening(end) };
+            if (!open || *open == 0) return std::nullopt;
+            return type_named_before(*open);
+        }
+        if (is(end, Kind::r_paren)) {
+            const auto open { opening(end) };
+            if (!open || *open == 0) return std::nullopt;
+            const std::size_t callee { *open - 1 };
+            if (is(callee, Kind::greater)) {
+                // `f<T>(...)`: the named casts and the standard's makers say what they make; another
+                // template's call is its function's.
+                std::size_t less { callee };
+                for (int angle { 0 }; less > 0; --less) {
+                    if (is(less, Kind::greater)) ++angle;
+                    else if (is(less, Kind::less) && --angle == 0) break;
+                }
+                if (less == 0 || !is(less - 1, Kind::raw_identifier)) return std::nullopt;
+                const std::string_view name { t_[less - 1].spelling };
+                const std::string argument { type_text(std::span { t_ }.subspan(less + 1, callee - less - 1)) };
+                if (name == "static_cast" || name == "dynamic_cast" || name == "const_cast" || name == "reinterpret_cast")
+                    return Typed { argument, less, {}, false };
+                // std::chrono's conversions: what they convert to is what they give.
+                if (name == "duration_cast" || name == "time_point_cast" || name == "floor" || name == "ceil" || name == "round")
+                    return Typed { argument, less, {}, false };
+                if (name == "make_shared" || name == "make_unique") {
+                    const std::string maker { name == "make_shared" ? "std::shared_ptr" : "std::unique_ptr" };
+                    return Typed { std::format("{}<{}>", maker, argument), less, {}, false };
+                }
+                if (resolved_[less - 1] && function_kind(resolved_[less - 1]->kind)) return typed(*resolved_[less - 1], depth + 1);
+                return std::nullopt;
+            }
+            if (is(callee, Kind::raw_identifier) && !keyword(t_[callee].spelling)) {
+                if (!resolved_[callee]) return std::nullopt;
+                const auto& c = *resolved_[callee];
+                // `T(...)`: a T.
+                if (class_kind(c.kind) || c.kind == msa::Kind::type_alias) return type_named_before(*open);
+                if (!function_kind(c.kind)) return std::nullopt;
+                return typed(c, depth + 1);
+            }
+            // `(x)`: what is inside.
+            if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > 0)
+                return expression_type(end - 1, depth + 1);
+            return std::nullopt;
+        }
+        if (is(end, Kind::r_square)) {
+            const auto open { opening(end) };
+            if (!open || *open == 0) return std::nullopt;
+            const auto base { expression_type(*open - 1, depth + 1) };
+            if (!base) return std::nullopt;
+            return element(*base);
+        }
+        return std::nullopt;
     }
 
     // Unqualified lookup of `n` at k: locals, then the scope chain, then using-directives and
@@ -436,40 +783,21 @@ private:
         return out;
     }
 
-    // The class a member access's object (the token before `.` or `->` at k - 1) has: `this`, or a
-    // variable, a parameter, a field whose declared type names a class.
+    // The class a member access's object has: the expression before `.` or `->` at k - 1, typed; `->`
+    // through what it points to.
     std::optional<std::string> object_class(std::size_t k) {
         if (k < 2) return std::nullopt;
-        const std::size_t object { k - 2 };
-        if (word(object, "this")) {
-            for (const auto& scope : chain_at(k))
-                if (classes_.contains(scope) || imported_classes_.contains(scope)) return scope;
-            return std::nullopt;
+        auto type { expression_type(k - 2) };
+        if (!type) return std::nullopt;
+        if (is(k - 1, Kind::arrow)) {
+            type = pointee(*type);
+            if (!type) return std::nullopt;
         }
-        if (!is(object, Kind::raw_identifier) || !resolved_[object]) return std::nullopt;
-        const auto& o = *resolved_[object];
-        if (o.type.empty()) return std::nullopt;
-        std::string type { class_name_of(o.type) };
-        // The standard's `->` of a smart pointer or an optional reaches its element ([unique.ptr],
-        // [util.smartptr.shared], [optional]).
-        if (is(k - 1, Kind::arrow) && (type == "std::unique_ptr" || type == "std::shared_ptr" || type == "std::optional")) {
-            const auto open = o.type.find('<');
-            const auto close = o.type.rfind('>');
-            if (open == std::string::npos || close == std::string::npos || close < open) return std::nullopt;
-            std::string element { o.type.substr(open + 1, close - open - 1) };
-            if (const auto comma = element.find(','); comma != std::string::npos && element.find('<') > comma) element.erase(comma);
-            type = class_name_of(element);
-        }
-        if (type.empty()) return std::nullopt;
-        // The type is named where the object is declared.
-        const std::size_t at { o.declaration >= 0 ? static_cast<std::size_t>(ds_[static_cast<std::size_t>(o.declaration)].name_token) : k };
-        auto scope { scope_named(type, at) };
-        if (!scope || !classes_.contains(*scope)) {
-            // An imported class: its members are the imports' own.
-            if (scope && scopes_.contains(*scope)) return scope;
-            return std::nullopt;
-        }
-        return scope;
+        const auto scope { class_of(*type) };
+        if (!scope) return std::nullopt;
+        // A class of the file, or an imported one: its members are the imports' own.
+        if (classes_.contains(*scope) || scopes_.contains(*scope)) return scope;
+        return std::nullopt;
     }
 
     std::optional<Target> resolve(std::size_t k) {
@@ -488,21 +816,9 @@ private:
             }
             const auto& q = resolved_[k - 2];
             if (!q) return std::nullopt;
-            std::string scope { q->qualified };
-            if (q->kind == msa::Kind::namespace_alias) {
-                auto aliased { alias_target(*q) };
-                if (!aliased) return std::nullopt;
-                scope = *aliased;
-            } else if (q->kind == msa::Kind::type_alias) {
-                const std::size_t at { q->declaration >= 0 ? static_cast<std::size_t>(ds_[static_cast<std::size_t>(q->declaration)].name_token) : k };
-                auto named { scope_named(class_name_of(q->type.empty() && q->declaration >= 0
-                                                           ? type_text(syntax_, ds_[static_cast<std::size_t>(q->declaration)])
-                                                           : q->type),
-                                         at) };
-                if (!named) return std::nullopt;
-                scope = *named;
-            }
-            return in_scope(scope, n, t_.size(), 0, is(k + 1, Kind::coloncolon));
+            const auto scope { follow(*q) };
+            if (!scope) return std::nullopt;
+            return in_scope(*scope, n, t_.size(), 0, is(k + 1, Kind::coloncolon));
         }
         // A name before `::` names a namespace, a type or a template ([basic.lookup.qual]/1).
         return unqualified(n, k, is(k + 1, Kind::coloncolon));

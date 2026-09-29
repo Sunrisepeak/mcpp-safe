@@ -2,6 +2,16 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-30 — MC3 0.5.0, MC2 1.3.0: return types and bases
+
+- **MC3** 0.5.0 (§4.2): a function's or a method's `type` is its return type (a constructor, a
+  destructor and a conversion function have none); a class's `bases`, its direct bases by the names
+  MC3 gives classes (MC3-4.2-5). With both, a name after a call (`f().g`) and a member a class
+  inherits are what MC++'s own lookup finds.
+- **MC2** 1.3.0: the interface carries them -- `bases` after a `|` among the `mcxx::decl` arguments --
+  and the reachable declarations include the bases of the reachable classes, with their public
+  members (`std::atomic::store` is `std::__atomic_base`'s). 1.0-1.2 files are read as before.
+
 ## 2026-09-29 — MC4 0.3.0: plugin libraries
 
 - **MC4** 0.3.0 (§3, §5): a third way for a plugin to reach a compiler, `library = "..."` -- the

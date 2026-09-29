@@ -466,7 +466,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
             std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.4.0\","
-                         "\"mc2\":\"{}\",\"mc3\":\"0.4.0\",\"mc4\":\"0.3.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         "\"mc2\":\"{}\",\"mc3\":\"0.5.0\",\"mc4\":\"0.3.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
                          VERSION, json_string(clang), mcxx::ifc::MC2_VERSION, providers);
             return 0;
         }

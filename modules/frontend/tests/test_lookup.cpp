@@ -113,5 +113,66 @@ int main() {
         expect(references.size() >= expected.size());
     };
 
+    "a member access's object typed: auto from a call, a construction, a range, a copy; a field's pointer"_test = [] {
+        const std::string_view source {
+            "namespace ns {\n"
+            "struct State { int input; int output; };\n"
+            "struct Holder { State state; State* pointer; };\n"
+            "State make() { return {}; }\n"
+            "int f() {\n"
+            "    auto s = make();\n"
+            "    int a = s.input;\n"
+            "    auto h = Holder {};\n"
+            "    int b = h.state.output;\n"
+            "    const auto& r = h;\n"
+            "    int c = r.pointer->input;\n"
+            "    State arr[3];\n"
+            "    for (const auto& e : arr) a += e.output;\n"
+            "    return a + b + c + make().input + arr[1].output;\n"
+            "}\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            return it != references.end() ? it->target : std::string { "not resolved" };
+        };
+        expect(at(6, 14) == "ns::State::input") << "auto from a call: " << at(6, 14);
+        expect(at(8, 14) == "ns::Holder::state" && at(8, 20) == "ns::State::output") << "auto from a construction, then a field's type";
+        expect(at(10, 14) == "ns::Holder::pointer" && at(10, 23) == "ns::State::input") << "auto& from a copy, then -> through a pointer";
+        expect(at(12, 37) == "ns::State::output") << "a range-for's element: " << at(12, 37);
+        expect(at(13, 30) == "ns::State::input" && at(13, 45) == "ns::State::output") << "a call's result, a subscript's element";
+    };
+
+    "an imported alias names its class, and a member is found in an imported class's base (MC3 0.5.0)"_test = [] {
+        // What lib's MC2 1.3 interface says: an alias, a class and its base, the base's member.
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}, std::vector<std::string> bases = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.bases = std::move(bases);
+            d.exported = true;
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = { decl("lib", K::namespace_), decl("lib::Base", K::class_), decl("lib::Base::value", K::field, "int"),
+                                  decl("lib::Base::get", K::method, "int"), decl("lib::Derived", K::class_, {}, { "lib::Base" }),
+                                  decl("lib::Handle", K::type_alias, "Derived") };
+        const std::string_view source {
+            "int use(lib::Handle h) {\n"
+            "    return h.value + h.get();\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            return it != references.end() ? it->target : std::string { "not resolved" };
+        };
+        expect(at(1, 13) == "lib::Base::value") << "through the alias (named in lib) and Derived's base: " << at(1, 13);
+        expect(at(1, 23) == "lib::Base::get") << at(1, 23);
+    };
+
     return report();
 }
