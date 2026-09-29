@@ -174,7 +174,7 @@ void write_composition(const fs::path& dir, const features::Config& config, cons
         "[target.'cfg(os = \"linux\")'.build]\nldflags = [\"-Wl,--error-limit=0\", \"-Wl,-pie\", \"-Wl,-z,pack-relative-relocs\", "
         "\"-Wl,--export-dynamic\", {}]\n\n"
         "[dependencies]\nopenkal-llvm-runtime = \"0.15.2\"\n"
-        "openkal-musl = {{ git = \"https://github.com/speak-agent/openkal-musl.git\", tag = \"0.19.4\" }}\n"
+        "openkal-musl = {{ git = \"https://github.com/speak-agent/openkal-musl.git\", tag = \"0.19.5\" }}\n"
         "mcxx-driver = {{ path = {} }}\nmcxx-plugins-std = {{ path = {} }}\nmcxx-plugins-libs = {{ path = {} }}\n{}\n"
         "# Version settlement, as in MC++'s own root manifest.\n[dependencies.llvm]\nclang-dev = \"23.1.0.4\"\n",
         config.manifest, key, VERSION, toml_string((root / "index/llvm").generic_string()), toml_string((root / "index/microsoft").generic_string()),
@@ -466,7 +466,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
             std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.4.0\","
-                         "\"mc2\":\"{}\",\"mc3\":\"0.5.0\",\"mc4\":\"0.3.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         "\"mc2\":\"{}\",\"mc3\":\"0.6.0\",\"mc4\":\"0.3.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
                          VERSION, json_string(clang), mcxx::ifc::MC2_VERSION, providers);
             return 0;
         }
