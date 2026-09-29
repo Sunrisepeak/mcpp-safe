@@ -127,14 +127,24 @@ public:
         }
         // What imported declarations are named in is a namespace where nothing declares it otherwise
         // (`std`: libc++'s std module declares no namespace, it only exports what is in one).
+        // A scope that holds nothing but enumerators is their enumeration, declared in a unit whose
+        // interface was not read: an enumeration, not a namespace.
+        std::map<std::string, bool, std::less<>> only_enumerators;
+        for (const auto& d : imported.declarations) {
+            auto [at, fresh] = only_enumerators.try_emplace(scope_of(d.qualified_name), true);
+            if (d.kind != msa::Kind::enumerator) at->second = false;
+        }
         for (const auto& d : imported.declarations) {
             for (std::string scope { scope_of(d.qualified_name) }; !scope.empty(); scope = scope_of(scope)) {
                 if (namespaces_.contains(scope)) break;
                 const auto around = scopes_.find(scope_of(scope));
                 const bool declared { around != scopes_.end() && around->second.contains(last_component(scope)) };
                 if (declared) break;
-                namespaces_.insert(scope);
-                scopes_[scope_of(scope)][std::string { last_component(scope) }].push_back(Target { -1, scope, msa::Kind::namespace_, 0, {} });
+                const auto enumerators = only_enumerators.find(scope);
+                const bool enumeration { enumerators != only_enumerators.end() && enumerators->second };
+                if (!enumeration) namespaces_.insert(scope);
+                scopes_[scope_of(scope)][std::string { last_component(scope) }].push_back(
+                    Target { -1, scope, enumeration ? msa::Kind::enum_ : msa::Kind::namespace_, 0, {} });
             }
         }
         // Each token's innermost enclosing scope: a namespace, a class, a function (parents are
