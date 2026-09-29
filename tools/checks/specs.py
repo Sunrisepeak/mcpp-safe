@@ -196,7 +196,8 @@ for rid in sorted(ids):
     for e in evidence:
         if "validate" in e:
             ok = any(p.startswith(e["validate"]) for p in passed)
-            check(f"traceability: {rid} validate `{e['validate']}`", ok or (not mcxx and e["validate"].startswith("mcxx ")),
+            live = e["validate"].startswith(("mcxx ", "mcxx:"))   # a check of a built mcxx: only with --mcxx
+            check(f"traceability: {rid} validate `{e['validate']}`", ok or (not mcxx and live),
                   "no passing check has that label")
         elif "test" in e:
             file, _, name = e["test"].partition(": ")
