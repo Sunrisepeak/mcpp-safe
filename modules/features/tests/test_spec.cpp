@@ -75,11 +75,15 @@ int main() {
         expect(c.problems.empty() && c.profiles == std::vector<std::string> { "safe" });
     };
 
-    "a plugin entry is static or out of process, exactly one; the specification's example reads"_test = [&] {
+    "a plugin entry is static, a library or out of process, exactly one; the specification's example reads"_test = [&] {
         const auto example = features::read_config((repository() / "specs/examples/mc4-plugins.toml").generic_string());
-        expect(example.problems.empty() && example.plugins.size() == 3) << (example.problems.empty() ? "" : example.problems.front());
+        expect(example.problems.empty() && example.plugins.size() == 4) << (example.problems.empty() ? "" : example.problems.front());
         const auto lint = std::ranges::find(example.plugins, "gcc-lint", &features::PluginEntry::name);
         expect(lint != example.plugins.end() && !lint->is_static() && lint->timeout == std::chrono::milliseconds { 5000 });
+        const auto fast = std::ranges::find(example.plugins, "acme-fast", &features::PluginEntry::name);
+        expect(fast != example.plugins.end() && fast->is_library() && !fast->is_static() && fast->library == "tools/acme-fast/libacme-fast.so");
+        const auto two = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx.plugins]\nx = { library = \"a.so\", path = \"b\" }\n");
+        expect(two.plugins.empty() && two.problems.size() == 1 && two.problems[0].contains("MC4-3-2"));
         const auto both = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx.plugins]\nx = { path = \"a\", command = [\"b\"] }\n");
         const auto neither = features::parse_config("[package]\nname = \"p\"\n[package.metadata.mcxx.plugins]\nx = { timeout-ms = 5 }\n");
         expect(both.plugins.empty() && both.problems.size() == 1 && both.problems[0].contains("MC4-3-2"));

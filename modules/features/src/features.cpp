@@ -93,6 +93,7 @@ Config parse_config(std::string_view manifest_text, std::string manifest_path) {
                 PluginEntry entry { .name = name };
                 for (const auto& [key, v] : t) {
                     if (key == "path" && v.is_string()) entry.path = v.as_string();
+                    else if (key == "library" && v.is_string()) entry.library = v.as_string();
                     else if (key == "version" && v.is_string()) entry.version = v.as_string();
                     else if (key == "timeout-ms" && v.is_int() && v.as_int() > 0) entry.timeout = std::chrono::milliseconds { v.as_int() };
                     else if (key == "command" && v.is_array()) {
@@ -103,9 +104,10 @@ Config parse_config(std::string_view manifest_text, std::string manifest_path) {
                     } else config.problems.push_back(std::format("{}: {} is not something a plugin entry has", at, key));
                 }
                 // Exactly one way to reach it (MC4-3-2).
-                const int ways { !entry.path.empty() + !entry.version.empty() + !entry.command.empty() };
+                const int ways { !entry.path.empty() + !entry.version.empty() + !entry.command.empty() + !entry.library.empty() };
                 if (ways != 1) {
-                    config.problems.push_back(std::format("{}: a plugin is static (path or version) or out of process (command), exactly one of them (MC4-3-2)", at));
+                    config.problems.push_back(std::format("{}: a plugin is static (path or version), a library (library) or out of process "
+                                                          "(command), exactly one of them (MC4-3-2)", at));
                     continue;
                 }
                 config.plugins.push_back(std::move(entry));

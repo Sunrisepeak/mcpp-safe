@@ -19,9 +19,10 @@ import mcxx.features;
 
 export namespace mcxx::plugin::host {
 
-// Starts and registers the out-of-process plugins `config` declares that are not running yet.
-// Returns what could not be started, one line each, for the gates to report at the file (MC4-5-5):
-// such a plugin gates what nobody knows, so its package's files fail.
+// Starts and registers the out-of-process plugins `config` declares, and loads its plugin libraries,
+// that are not running yet. Returns what could not be started or loaded, one line each, for the
+// gates to report at the file (MC4-5-5): such a plugin gates what nobody knows, so its package's
+// files fail.
 std::vector<std::string> load(const features::Config& config);
 
 // The static plugins (package names) the running compiler was composed with (mcxx compose).
@@ -81,5 +82,13 @@ private:
     std::expected<wire::Json, std::string> exchange(const wire::Json& message, std::int64_t id);
     std::string fail(std::string why);
 };
+
+} // namespace mcxx::plugin::host
+
+namespace mcxx::plugin::host {
+
+// A plugin library (MC4 §3, `library`) loaded into this process, its SDK checked before what it
+// registered is taken (MC4-3-7): nothing when it is, else why not (library.cpp).
+std::string load_library(std::string_view name, const std::filesystem::path& file);
 
 } // namespace mcxx::plugin::host

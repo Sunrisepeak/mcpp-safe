@@ -1,0 +1,15 @@
+# The example plugin (../naming) as a plugin library: loaded into mcxx when a package names it with
+# `library = "..."`, rather than composed into a compiler of its own (MC4 §3). The library is
+# ../naming's objects; its provider registers as the library loads.
+[package]
+name        = "mcxx-example-naming-library"
+version     = "0.1.0"
+description = "An example MC++ plugin library: declared names are snake_case"
+license     = "Apache-2.0"
+
+[targets.mcxx-example-naming-library]
+kind = "shared"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-example-naming  = { path = "../naming" }

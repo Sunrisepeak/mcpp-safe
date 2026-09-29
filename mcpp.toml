@@ -79,8 +79,18 @@ main = "src/main.cpp"
 sources = ["src/**/*.cppm", "src/**/*.cpp"]
 ldflags = ["-Wl,--error-limit=0"]
 
+# A plugin library binds to the names this program offers (MC4 §3): on Linux the program is
+# position-independent and static, its names exported, and it relocates itself when it starts
+# (openkal-linux 0.16).
+[target.'cfg(os = "linux")'.build]
+ldflags = ["-Wl,--error-limit=0", "-Wl,-pie", "-Wl,-z,pack-relative-relocs", "-Wl,--export-dynamic"]
+
 [dependencies]
 openkal-llvm-runtime = "0.15.2"
+# The C library, from speak-agent's fork: dlopen in a static program (MC4's in-process plugins,
+# `library =`). Named here, at the root, so it settles the graph: openkal-llvm-runtime asks for
+# ^0.19.2 by version, and the root's git declaration wins (0.19.3 satisfies it).
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.3" }
 mcxx-driver            = { path = "modules/driver" }       # everything the driver does; this package only links plugins into it
 # MC++'s standard plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose`
 # builds a package's compiler with its own static plugins added (MC4 §3, A0.6.1).

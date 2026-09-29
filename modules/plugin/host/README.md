@@ -1,6 +1,6 @@
 # plugin/host：插件的宿主一侧（`mcxx.plugin.host`）
 
-`load(config)` 做以下几件事：
+`load(config)` 做以下几件事（插件库见 `library.cpp`：在 Linux 上 mcxx 是导出名字的 `-static-pie` 程序，库的引用先绑定到 mcxx 的 SDK、MSA 和运行时，它注册的 provider 就进了 mcxx 的 Catalog）：
 1. 找出包在 `[package.metadata.mcxx.plugins]` 里声明的进程外插件（带 `command` 的条目），每个进程只启动一次，在包的目录里运行。
 2. 握手，然后把插件描述的每个 provider 作为代理注册进 Catalog：
    - 规则代理把文件的事实（MC3 JSON）发过去，拿回发现；
@@ -35,3 +35,4 @@
 | `src/process.cpp` | 插件进程：标准流接成管道，带截止时间地读，杀掉 |
 | `src/session.cpp` | 和一个插件进程的 MC4 会话：握手、请求、关闭 |
 | `src/proxy.cpp` | 进程外插件在目录里的代理，按包加载 |
+| `src/library.cpp` | 插件库（MC4 §3 `library`）：`dlopen` 装入本进程；装入期间注册的 provider 先扣下，读到库的 `mcxx_plugin_sdk_abi` 与本编译器相同才收进 Catalog，否则丢弃并报告（MC4-3-7） |

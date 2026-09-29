@@ -1,5 +1,5 @@
 # MC4 §3: the plugins a package's code is compiled with. `mcxx compose` builds this package's
-# compiler with the static ones; the host starts the out-of-process ones.
+# compiler with the static ones; the host loads the libraries and starts the out-of-process ones.
 [package]
 name    = "app"
 version = "0.1.0"
@@ -10,6 +10,7 @@ profile = "safe"
 [package.metadata.mcxx.plugins]
 acme-rules = { path = "tools/acme-rules" }
 acme-naming = { version = "0.3.0" }
+acme-fast = { library = "tools/acme-fast/libacme-fast.so" }
 gcc-lint = { command = ["tools/gcc-lint/bin/gcc-lint", "--mc4"], timeout-ms = 5000 }
 
 [package.metadata.mcxx.features]

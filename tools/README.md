@@ -15,7 +15,7 @@
 | `checks/toolchain.py` | mcxx 作为 mcpp 的工具链（V0.6，MC5 §7）：用未经修改的 mcpp 和 `llvm@23.1.0-mcxx`（`xpkgs/` 的包）构建并运行一个模块程序，并确认代码是 clang 23.1 编译的 |
 | `checks/selfhost.py` | 自举（A0.5.3）：C-mcppls（mcpp-language-server 377d222）用 mcxx 作为工具链构建，并通过它自己的 `mcpp test`。json-brace-init 在语料里设为 warn：语料里有两处真实的这类问题 |
 | `payload/payload.py` | 不经过 xlings，直接组装 mcxx 的 llvm 族 payload（与 `xpkgs/pkgs/m/mcxx.lua` 的布局相同） |
-| `checks/compose.py` | `mcxx compose` 端到端（A0.6.1）：一个带自有静态插件的包，普通 mcxx 拒绝编译，组合后交给组合好的编译器，再次组合不重新链接。`--mcxx 路径`，第一次约 5 分钟 |
+| `checks/compose.py` | `mcxx compose` 端到端（A0.6.1）：一个带自有静态插件的包，普通 mcxx 拒绝编译，组合后交给组合好的编译器，再次组合不重新链接。`--mcxx 路径`，第一次约 5 分钟。`--remote 程序`：同一插件在进程外给出相同诊断；`--library 库`：同一插件作为插件库装入普通 mcxx，诊断相同，缺失的库、不是按 SDK 构建的库都报错（MC4-3-1、-3-6、-3-7） |
 | `checks/specs.py` | 规范检查（A0.8.1）：schema、示例、反例、catalog 和 MC1 表格的一致性、要求 id 与 `conformance/traceability.json` 的证据；`--mcxx 路径` 时再检查真实的 mcxx 输出和两步编译只报一次。需要 `jsonschema` |
 | `checks/lint.py` | 编译器检查不到的源码规则：`clang-exposure`（Clang 只能出现在 `modules/backend/clang*`）、`platform-exposure`（平台只能出现在 `modules/os`、`modules/arch`）、`json-brace-init`（为还没有用 mcxx 构建的代码保留；编译器本身已能捕获）、`direct-output`（库代码不直接写标准输出和标准错误，经 mcxx.base 的 log 和 trace；只有输出本身就是用途的 5 个文件除外，各自写明原因）。原始字符串的内容是数据，不参与检查。不带参数时检查整个仓库，约 0.5 s |
 | `checks/lexdiff.py` | 词法对照 Clang（A1.6.1）：给定目录下每个 C++ 文件，`mcxx-lexdump` 和 `mcxx-probe --tokens` 的 token 逐个相同（种类、位置、原文，注释也比）。`--any` 连同没有后缀的文件（libc++ 头文件） |

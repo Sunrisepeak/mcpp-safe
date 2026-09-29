@@ -2,6 +2,19 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC4 0.3.0: plugin libraries
+
+- **MC4** 0.3.0 (§3, §5): a third way for a plugin to reach a compiler, `library = "..."` -- the
+  same package as a static plugin, built as a shared library and loaded into the compiler when a
+  package names it; nothing to compose. MC4-3-1 no longer forbids loading: the host binds a
+  library's references to its own names first (SDK, MSA, the C and C++ runtime), and one that
+  cannot load libraries reports the plugin as one that cannot be started. MC4-3-6 (a relative
+  `library` is relative to its manifest), MC4-3-7 (what a library registers while it loads is held
+  until its `mcxx_plugin_sdk_abi` is read, and dropped when it is not the host's). MC4-5-1 now
+  says which plugins it covers: an out-of-process plugin cannot crash the compilation; a static
+  plugin and a library are in its process and trusted as it is. MC1's config schema takes
+  `library`; the example names one.
+
 ## 2026-09-29 — MC5 0.4.0: diagnostic views
 
 - **MC5** 0.4.0 (§9): `--mcxx-diagnostics=human|agent|clang` (or `MCXX_DIAGNOSTICS`): a compile's

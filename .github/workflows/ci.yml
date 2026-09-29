@@ -142,8 +142,11 @@ jobs:
           mcpp toolchain install gcc 16.1.0
           (cd plugins/examples/naming-remote && mcpp build --toolchain gcc@16.1.0)
           remote=$(find plugins/examples/naming-remote/target -type f -name mcxx-example-naming-remote -path '*/bin/*' | head -1)
+          # The same plugin as a plugin library, loaded into plain mcxx (MC4 §3, `library`).
+          (cd plugins/examples/naming-library && mcpp build)
+          library=$(find plugins/examples/naming-library/target -type f -name 'libmcxx-example-naming-library.so' | head -1)
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
-          python3 tools/checks/compose.py --mcxx "$(realpath "$mcxx")" --remote "$(realpath "$remote")" --work "$HOME/compose-check"
+          python3 tools/checks/compose.py --mcxx "$(realpath "$mcxx")" --remote "$(realpath "$remote")" --library "$(realpath "$library")" --work "$HOME/compose-check"
           # mcpp-tools-safe (A1.5): a program built with GCC, gated by MC++ as a blocking check action.
           python3 tools/checks/tools_safe.py --mcxx "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/mcxx" --work "$HOME/tools-safe-check"
           # A1.5.2 on C-mcpp (mcpp-community/mcpp at the corpus revision), built with GCC under the check:

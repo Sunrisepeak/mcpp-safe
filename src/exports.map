@@ -1,0 +1,16 @@
+/* The names mcxx does not offer a plugin library (MC4 §3, `library`).
+ *
+ * On Linux mcxx is linked -static-pie with --export-dynamic: a plugin loaded into it binds to the
+ * program's names first -- the C library's, libc++'s, the plugin SDK's and MSA's -- so the copies
+ * of them a plugin carries are never reached (openkal-musl's dlopen). Clang and LLVM are not among
+ * what a plugin reaches (MC4: a rule reads facts, never Clang), and their names were 136,000 of
+ * the 158,000 exported and 16 of the 20 MB the export table added. Every name that mentions them as a
+ * component is local; the rest stay exported. build.mcpp passes this file to the link.
+ */
+{
+  local:
+    *4llvm*;
+    *5clang*;
+    LLVM*;
+    clang_*;
+};

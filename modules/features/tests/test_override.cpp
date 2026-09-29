@@ -52,6 +52,16 @@ struct Strict final : plugin::Rule {
     }
 };
 
+// What a plugin library registers while it loads (MC4-3-7).
+struct Loaded final : plugin::Rule {
+    std::string name_;
+    std::vector<plugin::Feature> features_;
+    explicit Loaded(std::string name) : name_ { std::move(name) }, features_ { plugin::Feature { .id = name_ + "-feature", .category = plugin::Category::policy } } {}
+    std::string_view name() const override { return name_; }
+    std::span<const plugin::Feature> features() const override { return features_; }
+    void check(const plugin::Context&, std::vector<plugin::Finding>&) const override {}
+};
+
 // A filter that breaks positions: refused.
 struct Stretch final : plugin::SourceFilter {
     std::string_view name() const override { return "acme.stretch"; }
@@ -175,6 +185,20 @@ int main() {
         expect(std::ranges::find(after->replaced, "squatter") != after->replaced.end());
         expect(!std::ranges::any_of(after->problems, [](const std::string& p) { return p.contains("squatter"); }));
         expect(std::ranges::none_of(after->rules, [](const plugin::Rule* r) { return r->name() == "squatter"; }));
+    };
+
+    "what a library registers while it loads is held: taken into the catalog, or dropped unseen (MC4-3-7)"_test = [] {
+        const auto before = plugin::catalog();
+        plugin::hold_registrations();
+        plugin::register_rule(std::make_unique<Loaded>("held.dropped"));
+        expect(plugin::catalog()->generation == before->generation && plugin::find_feature("held.dropped-feature") == nullptr);
+        expect(plugin::release_registrations(false) == 1);
+        expect(plugin::find_feature("held.dropped-feature") == nullptr);
+        plugin::hold_registrations();
+        plugin::register_rule(std::make_unique<Loaded>("held.taken"));
+        expect(plugin::release_registrations(true) == 1);
+        expect(plugin::catalog()->generation > before->generation && plugin::find_feature("held.taken-feature") != nullptr);
+        expect(plugin::release_registrations(true) == 0);   // nothing held: nothing to take
     };
 
     return report();

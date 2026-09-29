@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC4 |
-| Version | 0.2.0 (protocol version 1) |
+| Version | 0.3.0 (protocol version 1) |
 | Status | Draft |
 | Schema | [`schema/mc4-protocol.schema.json`](schema/mc4-protocol.schema.json) |
 | Examples | [`examples/mc4-session.jsonl`](examples/mc4-session.jsonl), [`examples/mc4-plugins.toml`](examples/mc4-plugins.toml) |
@@ -48,22 +48,26 @@ What a source filter knows about the target, in the words a configuration uses: 
 | Way | What a plugin is | How it runs |
 |---|---|---|
 | **static** | an mcpp package that imports `mcxx.plugin` and registers its providers at static initialization | linked into a compiler with libmc++; in process, no serialization |
+| **library** (0.3.0) | the same package, built as a shared library | loaded into the compiler when a package names it; in process, no serialization, nothing to compose |
 | **out of process** | a program that speaks the protocol of §6, built with any toolchain | the host starts it and talks to it over its standard input and output |
 
-A host MUST NOT load plugins with `dlopen`: MC++'s compilers are static programs. <a id="MC4-3-1"></a><sup>MC4-3-1</sup>
+A host loads a plugin library into its own process and binds the library's references to the names the host offers first -- the plugin SDK's, MSA's, the C and C++ runtime's -- so that what the library registers joins the host's catalog and the library shares the host's runtime; the copies of those libraries a library carries are never reached. A host that cannot load a library -- a platform without a loader, a host that offers no names -- MUST report it as a plugin that cannot be started (MC4-5-5). <a id="MC4-3-1"></a><sup>MC4-3-1</sup> (MC++'s compilers are static programs: on Linux mcxx is linked `-static-pie` with its names exported, and loads a library with openkal-musl's `dlopen`; the names of Clang and LLVM are not among those it offers, since a rule reads facts and never Clang. On Windows and macOS a library plugin is not loaded yet.)
 
 A package declares the plugins its code is compiled with in `[package.metadata.mcxx.plugins]` ([`examples/mc4-plugins.toml`](examples/mc4-plugins.toml)):
 
 ```toml
 [package.metadata.mcxx.plugins]
 acme-rules = { path = "tools/acme-rules" }               # static: an mcpp package (or version = "1.2.0")
+acme-fast  = { library = "tools/acme-fast/libacme-fast.so" }   # a plugin library
 gcc-lint   = { command = ["tools/gcc-lint/bin/gcc-lint"], timeout-ms = 5000 }   # out of process
 ```
 
-- An entry with `path` or `version` is static; one with `command` is out of process; an entry with both or neither is an error. <a id="MC4-3-2"></a><sup>MC4-3-2</sup> The entry's name is how the package calls the plugin; a `version` entry's name is the plugin's package name, and a `path` entry's package is whatever the manifest at the path names.
+- An entry with `path` or `version` is static; one with `library` is a plugin library; one with `command` is out of process; an entry with more than one of these ways, or none, is an error. <a id="MC4-3-2"></a><sup>MC4-3-2</sup> The entry's name is how the package calls the plugin; a `version` entry's name is the plugin's package name, and a `path` entry's package is whatever the manifest at the path names.
 - **`mcxx compose`** builds the package's compiler: a temporary mcpp workspace holding a program that links the MC++ driver, its standard plugins and the package's static plugins, cached under a hash of that set; it MUST NOT relink when the set and the plugins' sources are unchanged. <a id="MC4-3-3"></a><sup>MC4-3-3</sup>
 - A compiler invoked for a file whose package declares static plugins it does not have MUST run the composed compiler for that package when there is one, and otherwise MUST fail and say to run `mcxx compose`; it MUST NOT compile without them. <a id="MC4-3-4"></a><sup>MC4-3-4</sup>
 - Out-of-process plugins are started by the host that needs them, in the directory of the manifest that declares them; a relative `command[0]` is relative to that directory. <a id="MC4-3-5"></a><sup>MC4-3-5</sup>
+- A plugin library is loaded by the host that needs them, once per process; a relative `library` is relative to the directory of the manifest that declares it. <a id="MC4-3-6"></a><sup>MC4-3-6</sup>
+- A library's providers register as its static objects are constructed, while it loads. The host MUST hold what a library registers until it has read the plugin SDK ABI the library was built against (`mcxx_plugin_sdk_abi`, an `int` the SDK defines, found in the library by name), MUST take none of it when that is not the host's own, and MUST then report the library as a plugin that cannot be started (MC4-5-5), as it does a library that registers nothing with it. <a id="MC4-3-7"></a><sup>MC4-3-7</sup> The SDK ABI is raised whenever a layout the two share changes: the SDK's types and MSA's facts.
 
 ## 4. Resolution and overriding
 
@@ -79,7 +83,7 @@ A host resolves every provider it has into one **catalog** before it gates anyth
 
 ## 5. Failures
 
-A plugin that crashes, exits, does not answer within its time limit, or answers what this specification does not allow MUST NOT make the compilation crash or hang. <a id="MC4-5-1"></a><sup>MC4-5-1</sup> The host reports, at the file, which plugin failed, on which file, and why; the features that plugin was asked for are then not checked for that file. <a id="MC4-5-2"></a><sup>MC4-5-2</sup> The report is an error when one of those features is at `deny` for the file (a gate that could not be checked does not pass), and a warning otherwise. <a id="MC4-5-3"></a><sup>MC4-5-3</sup> The diagnostic's code is `mcxx-plugin`. <a id="MC4-5-4"></a><sup>MC4-5-4</sup> A plugin a package declares that cannot be started or does not complete its handshake, or a static plugin the compiler was not composed with, gates what is unknown: every file of the package gets an error in a compilation (an editor, which cannot compose, MAY make it a warning). <a id="MC4-5-5"></a><sup>MC4-5-5</sup>
+An out-of-process plugin that crashes, exits, does not answer within its time limit, or answers what this specification does not allow MUST NOT make the compilation crash or hang. <a id="MC4-5-1"></a><sup>MC4-5-1</sup> A static plugin and a plugin library run in the compiler's process and are trusted as the compiler is: what the host can observe of them -- a library that does not load, another SDK -- is reported as below, and a fault in their code is the compiler's; a package that needs a plugin isolated runs it out of process. The host reports, at the file, which plugin failed, on which file, and why; the features that plugin was asked for are then not checked for that file. <a id="MC4-5-2"></a><sup>MC4-5-2</sup> The report is an error when one of those features is at `deny` for the file (a gate that could not be checked does not pass), and a warning otherwise. <a id="MC4-5-3"></a><sup>MC4-5-3</sup> The diagnostic's code is `mcxx-plugin`. <a id="MC4-5-4"></a><sup>MC4-5-4</sup> A plugin a package declares that cannot be started or does not complete its handshake, a plugin library that cannot be loaded or taken (MC4-3-7), or a static plugin the compiler was not composed with, gates what is unknown: every file of the package gets an error in a compilation (an editor, which cannot compose, MAY make it a warning). <a id="MC4-5-5"></a><sup>MC4-5-5</sup>
 
 ## 6. The out-of-process protocol (version 1)
 

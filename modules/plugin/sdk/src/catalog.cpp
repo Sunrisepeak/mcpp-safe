@@ -4,6 +4,10 @@ module mcxx.plugin;
 import std;
 import mcxx.msa;
 
+// The SDK a plugin library was built against (MC4-3-7): the host reads the library's own value of
+// this, found in the library by name, before it takes what the library registered.
+extern "C" const int mcxx_plugin_sdk_abi = mcxx::plugin::SDK_ABI;
+
 namespace mcxx::plugin {
 
 namespace {
@@ -18,6 +22,7 @@ struct Registered {
 struct Registry {
     std::mutex mutex;
     std::vector<Registered> providers;
+    std::optional<std::vector<Registered>> held;   // while a plugin library loads (MC4-3-7)
     std::uint64_t generation { 1 };
     std::shared_ptr<const Catalog> catalog;
 };
@@ -30,6 +35,10 @@ Registry& registry() {
 void add(Registered entry) {
     auto& r = registry();
     std::lock_guard lock { r.mutex };
+    if (r.held) {
+        r.held->push_back(std::move(entry));
+        return;
+    }
     r.providers.push_back(std::move(entry));
     ++r.generation;
     r.catalog.reset();
@@ -164,6 +173,29 @@ void register_rule(std::unique_ptr<Rule> rule, Origin origin) {
 void register_source_filter(std::unique_ptr<SourceFilter> filter, Origin origin) {
     const SourceFilter* raw { filter.get() };
     add({ std::move(filter), nullptr, raw, origin });
+}
+
+void hold_registrations() {
+    auto& r = registry();
+    std::lock_guard lock { r.mutex };
+    r.held.emplace();
+}
+
+std::size_t release_registrations(bool take) {
+    auto& r = registry();
+    std::lock_guard lock { r.mutex };
+    if (!r.held) return 0;
+    auto held { std::move(*r.held) };
+    r.held.reset();
+    const std::size_t count { held.size() };
+    if (take) {
+        for (auto& entry : held) r.providers.push_back(std::move(entry));
+        ++r.generation;
+        r.catalog.reset();
+    } else {
+        for (auto& entry : held) (void)entry.provider.release();
+    }
+    return count;
 }
 
 std::shared_ptr<const Catalog> catalog() {

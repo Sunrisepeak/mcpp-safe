@@ -154,6 +154,15 @@ std::vector<std::string> load(const features::Config& config) {
             if (!it->second.problem.empty()) problems.push_back(it->second.problem);
             continue;
         }
+        if (entry.is_library()) {
+            // A relative library is relative to its package's directory, as a command is (MC4-3-6).
+            fs::path file { entry.library };
+            if (file.is_relative()) file = (dir / file).lexically_normal();
+            Loaded loaded { nullptr, load_library(entry.name, file) };
+            if (!loaded.problem.empty()) problems.push_back(loaded.problem);
+            r.plugins.emplace(key, std::move(loaded));
+            continue;
+        }
         std::vector<std::string> command { entry.command };
         // It runs in its package's directory, and a relative program is relative to it (MC4-3-5).
         if (fs::path program { command[0] }; program.is_relative()) command[0] = (dir / program).lexically_normal().generic_string();

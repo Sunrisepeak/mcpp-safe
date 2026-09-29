@@ -13,3 +13,4 @@ mcpp.lock
 .xlings/
 # xlings keeps a cache of each package index beside it
 index/*/.xlings-index-cache.json
+__pycache__/

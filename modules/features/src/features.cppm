@@ -48,9 +48,11 @@ struct PluginEntry {
     std::string path;                      // as written: relative to the manifest's directory
     std::string version;
     std::vector<std::string> command;
+    std::string library;                   // a shared library loaded into the compiler (MC4 §3)
     std::chrono::milliseconds timeout { 10000 };
 
-    bool is_static() const { return command.empty(); }
+    bool is_static() const { return command.empty() && library.empty(); }
+    bool is_library() const { return !library.empty(); }
 };
 
 // `[package.metadata.mcxx.imports."legacy"]  allow = ["c-array"]  reason = "..."`: what an import of the

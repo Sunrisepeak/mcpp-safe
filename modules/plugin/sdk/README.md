@@ -14,10 +14,10 @@ provider 写给它的接口：特性（级别、类别、由哪些事实判定�
 | `src/feature.cppm` | `:feature`：级别、类别、特性、profile、属性规格 |
 | `src/rule.cppm` | `:rule`：`Finding`、`Failure`、`Context`、`Provider`、`Rule` |
 | `src/filter.cppm` | `:filter`：源码过滤器 |
-| `src/catalog.cppm` | `:catalog`：注册和 `Catalog` |
+| `src/catalog.cppm` | `:catalog`：注册和 `Catalog`；`SDK_ABI`（插件库与装入它的编译器必须一致的布局版本，库里的 `mcxx_plugin_sdk_abi`）和 `hold_registrations`/`release_registrations`（插件库装入期间的注册先扣下，MC4-3-7） |
 | `src/names.cpp` | 级别和类别的写法、特性的宏名 |
 | `src/catalog.cpp` | 注册表、解析成 Catalog、声明的事实子树、应用源码过滤器 |
 
 ## 测试
 
-SDK 的行为由使用它的包测试：`modules/features`（内置 provider 和覆盖）、`plugins/std`、`plugins/libs`、`modules/plugin/host`（进程外）。
+SDK 的行为由使用它的包测试：`modules/features`（内置 provider 和覆盖）、`plugins/std`、`plugins/libs`、`modules/plugin/host`（进程外、插件库）。

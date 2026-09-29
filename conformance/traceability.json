@@ -642,7 +642,16 @@
  ],
  "MC4-3-1": [
   {
-   "manual": "openkal builds static programs, whose dlopen fails with \"Dynamic loading not supported\" (V0.5, .agents/docs/progress.md); the SDK registers plugins at static initialization only"
+   "script": "modules/plugin/host/src/library.cpp",
+   "contains": "::dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL)"
+  },
+  {
+   "script": "src/exports.map",
+   "contains": "*4llvm*"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "the plugin as a library gives the static composition's diagnostics"
   }
  ],
  "MC4-4-1": [
@@ -767,7 +776,7 @@
  ],
  "MC4-3-2": [
   {
-   "test": "modules/features/tests/test_spec.cpp: a plugin entry is static or out of process, exactly one; the specification's example reads"
+   "test": "modules/features/tests/test_spec.cpp: a plugin entry is static, a library or out of process, exactly one; the specification's example reads"
   }
  ],
  "MC4-3-3": [
@@ -1183,6 +1192,29 @@
   },
   {
    "validate": "mcxx: the agent view carries the compiler's own errors"
+  }
+ ],
+ "MC4-3-6": [
+  {
+   "script": "modules/plugin/host/src/proxy.cpp",
+   "contains": "(MC4-3-6)"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "a library that is not there cannot be loaded"
+  }
+ ],
+ "MC4-3-7": [
+  {
+   "test": "modules/features/tests/test_override.cpp: what a library registers while it loads is held: taken into the catalog, or dropped unseen (MC4-3-7)"
+  },
+  {
+   "script": "modules/plugin/host/src/library.cpp",
+   "contains": "(MC4-3-7)"
+  },
+  {
+   "script": "tools/checks/compose.py",
+   "contains": "a shared library not built against the SDK is not taken"
   }
  ]
 }

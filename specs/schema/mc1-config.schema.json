@@ -89,6 +89,10 @@
           "timeout-ms": {
             "type": "integer",
             "minimum": 1
+          },
+          "library": {
+            "type": "string",
+            "$comment": "MC4 §3: a plugin library, loaded into the compiler (MC4 0.3.0)"
           }
         },
         "oneOf": [
@@ -101,6 +105,11 @@
                 {
                   "required": [
                     "version"
+                  ]
+                },
+                {
+                  "required": [
+                    "library"
                   ]
                 },
                 {
@@ -120,6 +129,35 @@
                 {
                   "required": [
                     "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "library"
+                  ]
+                },
+                {
+                  "required": [
+                    "command"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "library"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "version"
                   ]
                 },
                 {
@@ -144,6 +182,11 @@
                 {
                   "required": [
                     "version"
+                  ]
+                },
+                {
+                  "required": [
+                    "library"
                   ]
                 }
               ]
