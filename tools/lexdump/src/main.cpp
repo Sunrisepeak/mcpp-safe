@@ -8,8 +8,10 @@
 // mcxx-lexdump --syntax [OPTIONS] FILE: the file's outline from mcxx.frontend:syntax, one JSON object,
 // as `mcxx-probe --symbols` prints Clang's (tools/checks/syntaxdiff.py), with the parser's diagnostics.
 // mcxx-lexdump --facts [OPTIONS] FILE: the file's declarations as MC++'s own front end gives them (MC3
-// T1, facts(syntax)), one JSON object: {"declarations": [...]} with MC3's members, as `mcxx-probe
-// --facts` prints the Clang backend's (tools/checks/declsdiff.py, M2.1).
+// T1, facts(syntax, imported)), one JSON object: {"declarations": [...]} with MC3's members, as
+// `mcxx-probe --facts` prints the Clang backend's (tools/checks/declsdiff.py, M2.1); the imports found
+// as --references finds them. "uncertain": each declaration whose type, templates or pointer the front
+// end cannot tell (mcxx.frontend:declared), by its name and kind, with the members and why.
 // mcxx-lexdump --references [OPTIONS] FILE: each name the file writes that the front end resolves and
 // what it names (mcxx.frontend:lookup), as `mcxx-probe --references` prints Clang's (refsdiff.py).
 // mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
@@ -155,12 +157,22 @@ std::string range_json(const mcxx::msa::Range& r) {
                        r.end.column);
 }
 
+mcxx::frontend::Imported imported_by(const mcxx::frontend::Syntax& syntax, const std::map<std::string, std::string, std::less<>>& module_files,
+                                     const std::vector<std::string>& prebuilt);
+
 int facts(int argc, char** argv) {
     mcxx::frontend::PreprocessOptions options;
     std::string file;
+    std::map<std::string, std::string, std::less<>> module_files;
+    std::vector<std::string> prebuilt;
     for (int i { 2 }; i < argc; ++i) {
         const std::string_view a { argv[i] };
         if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a.starts_with("-fmodule-file=") && a.find('=', 14) != std::string_view::npos) {
+            const auto rest { a.substr(14) };
+            const auto eq { rest.find('=') };
+            module_files.insert_or_assign(std::string { rest.substr(0, eq) }, std::string { rest.substr(eq + 1) });
+        } else if (a.starts_with("-fprebuilt-module-path=")) prebuilt.emplace_back(a.substr(23));
         else if (a == "--header-macros" && i + 1 < argc) {
             std::istringstream lines { read(argv[++i]) };
             for (std::string l; std::getline(lines, l);) options.header_macros.push_back(l);
@@ -172,7 +184,8 @@ int facts(int argc, char** argv) {
     options.file = file;
     const std::string text { read(file) };
     const auto parsed = mcxx::frontend::parse(text, options);
-    const auto f = mcxx::frontend::facts(parsed);
+    const auto imported { imported_by(parsed, module_files, prebuilt) };
+    const auto f = mcxx::frontend::facts(parsed, imported);
     std::string out { "{\"declarations\":[" };
     bool first { true };
     for (const auto& d : f.declarations) {
@@ -186,7 +199,23 @@ int facts(int argc, char** argv) {
                            d.exported, d.c_array, d.pointer, d.is_union, d.c_variadic, d.local);
         first = false;
     }
-    out += std::format("],\"certain\":{}}}", f.certainty == mcxx::msa::Certainty::certain);
+    // What the front end cannot tell (a service asks the Clang backend): by name and kind.
+    std::string uncertain;
+    const auto types { mcxx::frontend::declared_types(parsed, imported) };
+    for (std::size_t i { 0 }; i < types.size(); ++i) {
+        const auto& t = types[i];
+        if (t.type_certain && t.templates_certain && t.pointer_certain) continue;
+        const auto& d = parsed.declarations[i];
+        std::string kind { mcxx::msa::to_string(d.kind) };
+        std::ranges::replace(kind, ' ', '-');
+        std::string members;
+        for (const auto& [certain, member] : { std::pair { t.type_certain, "type" }, std::pair { t.templates_certain, "templates" },
+                                               std::pair { t.pointer_certain, "pointer" } })
+            if (!certain) members += std::format("{}\"{}\"", members.empty() ? "" : ",", member);
+        uncertain += std::format("{}{{\"name\":{},\"kind\":\"{}\",\"members\":[{}],\"why\":{}}}", uncertain.empty() ? "" : ",",
+                                 range_json(mcxx::frontend::fact_name(parsed, d)), kind, members, json(t.why));
+    }
+    out += std::format("],\"uncertain\":[{}],\"certain\":{}}}", uncertain, f.certainty == mcxx::msa::Certainty::certain);
     std::println("{}", out);
     return 0;
 }
@@ -250,8 +279,14 @@ int references(int argc, char** argv) {
     }
     options.file = file;
     const std::string text { read(file) };
-    const auto parsed = mcxx::frontend::parse(text, options);
-    const auto imported { imported_by(parsed, module_files, prebuilt) };
+    const auto parsed = [&] {
+        const mcxx::base::trace::Span span { "lexdump", "parse", file };
+        return mcxx::frontend::parse(text, options);
+    }();
+    const auto imported = [&] {
+        const mcxx::base::trace::Span span { "lexdump", "imports", file };
+        return imported_by(parsed, module_files, prebuilt);
+    }();
     std::string out { "{\"references\":[" };
     std::string uncertain;
     bool first { true };

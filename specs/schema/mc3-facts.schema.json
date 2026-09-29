@@ -149,6 +149,14 @@
           },
           "$comment": "MC3 0.5.0: a class's direct bases"
         },
+        "template-parameters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "$comment": "MC3 0.6.0: a class template's or an alias template's parameters"
+        },
         "exported": {
           "type": "boolean"
         },

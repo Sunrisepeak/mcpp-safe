@@ -173,8 +173,9 @@ struct Base {
 };
 
 // The decl-specifiers' type: the type-specifier printed, cv-qualifiers apart; storage and function
-// specifiers and attributes dropped. Nothing when not followed (`auto`, a class defined here).
-std::optional<Base> base_of(const Tokens& t) {
+// specifiers and attributes dropped. Nothing when not followed (`auto`, a class defined here); a
+// parameter's `auto` is its own (an invented template parameter's type, which Clang prints `auto`).
+std::optional<Base> base_of(const Tokens& t, bool parameter = false) {
     Base b;
     std::vector<std::string_view> builtins;
     std::string named;
@@ -203,6 +204,11 @@ std::optional<Base> base_of(const Tokens& t) {
         }
         if (w == "volatile") {
             b.is_volatile = true;
+            ++k;
+            continue;
+        }
+        if (w == "auto" && parameter && named.empty() && builtins.empty()) {
+            named = "auto";
             ++k;
             continue;
         }
@@ -484,7 +490,7 @@ std::string type_text(const Syntax& syntax, const Declaration& d, bool return_ty
     const auto declarator { split_shifts(written) };
     // A class defined in the specifiers (`struct S { ... } s;`) is not followed.
     if (std::ranges::any_of(specifiers, [](const PpToken& t) { return t.kind == Kind::l_brace; })) return {};
-    const auto base { base_of(specifiers) };
+    const auto base { base_of(specifiers, d.kind == msa::Kind::parameter) };
     if (!base) return {};
     // A constexpr variable is const at its top level: its base's, or its outermost pointer's.
     const bool outer_pointer { !declarator.empty() && std::ranges::any_of(declarator, [](const PpToken& t) { return t.kind == Kind::star; }) };

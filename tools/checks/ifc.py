@@ -176,6 +176,12 @@ if corpus:
               "std::errc::invalid_argument", "std::optional::value", "std::map::find"]
     check(f"std's interface reaches what its exported using-declarations name ({len(reached)} declarations): {', '.join(wanted[:4])}, ...",
           bool(std_read) and all(w in reached for w in wanted), f"{std_ifc}: missing {[w for w in wanted if w not in reached]}")
+    # MC2-3.1-1: what a unit's OWN exported using-declarations name. A unit that imports std sees std's
+    # exported using-declarations in its context too; they are std's interface's to carry, not every
+    # importer's (each C-mcppls interface once carried std's whole reachable set, about 4 MB).
+    own_ifc = [ifc for _, _, ifc in own if ifc.exists()]
+    carrying = [ifc.name for ifc in own_ifc if any(d["qualified-name"] == "std::println" for d in (read_ifc(ifc) or {}).get("reachable", []))]
+    check(f"no interface of {corpus.name} carries std's reachable declarations again ({len(own_ifc)} read)", not carrying, f"{carrying[:5]}")
 
 print(f"{'FAIL' if failures else 'PASS'}: MC2 v1 ({len(failures)} failed)")
 sys.exit(1 if failures else 0)

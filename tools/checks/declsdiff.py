@@ -3,17 +3,20 @@
 
     python3 tools/checks/declsdiff.py --corpus DIR --probe MCXX_PROBE --lexdump MCXX_LEXDUMP --resource DIR
                                       [--jobs N] [--reference-cache DIR] [--only SUBSTRING] [--report FILE]
-                                      [--min MEMBER=PCT]...
+                                      [--min MEMBER=PCT]... [--max-differ MEMBER=PCT]...
 
 For every source file of a built corpus (its compile database; its own files, not its dependencies'):
 the Clang backend's T1 facts (`mcxx-probe --facts`, every kind, declaration types too) and MC++'s own
-front end's (`mcxx-lexdump --facts`, the command's -D/-U and target). Declarations are matched by where
-their name is and their kind; for each matched pair every T1 member is compared -- qualified name,
-container, exported, the flags (pointer, c-array, union, c-variadic, local), the type as text and the
-templates it names. Printed: how many of Clang's declarations the front end has, and per member the share
-that agrees, with examples of what does not. `--reference-cache` keeps Clang's side per file (its path's
+front end's (`mcxx-lexdump --facts`, the command's -D/-U, target and module files: the imports' MC2
+interfaces). Declarations are matched by where their name is and their kind; for each matched pair every
+T1 member is compared -- qualified name, container, exported, the flags (pointer, c-array, union,
+c-variadic, local), the type as text and the templates it names. A member the front end says it cannot
+tell (its "uncertain": a deduced type, a name it cannot resolve -- a service asks the Clang backend, A2.2.3)
+is counted apart. Printed: how many of Clang's declarations the front end has, and per member the share
+that agrees, the share said uncertain, with examples of what differs. `--reference-cache` keeps Clang's side per file (its path's
 digest and modification time), since it costs a parse. `--min matched=99.9 --min qualified-name=99.9`:
-fail when a share falls below it (a regression gate).
+fail when a share falls below it (a regression gate); `--max-differ templates=0.1`: fail when more than
+that share differs from Clang's (an answer given and wrong, not one said uncertain).
 """
 import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, shlex, shutil, subprocess, sys, tempfile
 
@@ -64,6 +67,8 @@ def own_side(unit):
             flags.append(a + args[i + 1])
         elif a.startswith("--target="):
             flags += ["--target", a.split("=", 1)[1]]
+        elif a.startswith(("-fmodule-file=", "-fprebuilt-module-path=")):
+            flags.append(a)   # where the imports' BMIs, and so their MC2 interfaces, are (M2.2)
     run = subprocess.run([lexdump, "--facts", *flags, unit["file"]], capture_output=True, text=True)
     return json.loads(run.stdout) if run.returncode == 0 and run.stdout.startswith("{") else None
 
@@ -78,6 +83,7 @@ def compare(unit):
         return unit["file"], None
     t = {key(d): d for d in theirs["declarations"]}
     o = {key(d): d for d in ours["declarations"]}
+    unsure = {key(u): set(u["members"]) for u in ours.get("uncertain", [])}
     counts = collections.Counter()
     wrong = collections.defaultdict(list)
     counts["clang"] = len(t)
@@ -89,7 +95,9 @@ def compare(unit):
             continue
         counts["matched"] += 1
         for m in MEMBERS:
-            if mine.get(m) == d.get(m):
+            if m in unsure.get(k, ()):
+                counts[m + ":uncertain"] += 1
+            elif mine.get(m) == d.get(m):
                 counts[m] += 1
             else:
                 wrong[m].append(f"{d['qualified-name']}: {d.get(m)!r} vs {mine.get(m)!r}")
@@ -114,11 +122,16 @@ for f, r in results:
 matched = total["matched"]
 print(f"{len(results) - len(failed)} files of {corpus.name}; Clang's declarations {total['clang']}, the front end's {total['own']}, "
       f"matched {matched} ({100 * matched / max(1, total['clang']):.2f}% of Clang's)")
-summary = {"files": len(results) - len(failed), "clang": total["clang"], "own": total["own"], "matched": matched, "members": {}}
+summary = {"files": len(results) - len(failed), "clang": total["clang"], "own": total["own"], "matched": matched, "members": {}, "uncertain": {},
+           "differ": {}}
 for m in MEMBERS:
     share = 100 * total[m] / max(1, matched)
+    unsure = total[m + ":uncertain"]
     summary["members"][m] = round(share, 3)
-    print(f"  {m:<15} {share:7.3f}%  ({matched - total[m]} differ)")
+    summary["uncertain"][m] = round(100 * unsure / max(1, matched), 3)
+    summary["differ"][m] = round(100 * (matched - total[m] - unsure) / max(1, matched), 3)
+    said = f", said uncertain {unsure} ({100 * unsure / max(1, matched):.2f}%)" if unsure else ""
+    print(f"  {m:<15} {share:7.3f}%  ({matched - total[m] - unsure} differ{said})")
     for x in examples[m][:3]:
         print(f"      {x}")
 for m in ("missing", "extra"):
@@ -137,6 +150,12 @@ for i, a in enumerate(sys.argv):
     share = 100 * matched / max(1, total["clang"]) if member == "matched" else summary["members"].get(member, 0)
     if share < float(floor):
         problems.append(f"{member} {share:.3f}% below {floor}%")
+for i, a in enumerate(sys.argv):
+    if a != "--max-differ" or i + 1 >= len(sys.argv):
+        continue
+    member, ceiling = sys.argv[i + 1].split("=")
+    if summary["differ"].get(member, 100) > float(ceiling):
+        problems.append(f"{member}: {summary['differ'].get(member)}% differ, above {ceiling}%")
 if failed:
     problems.append(f"{len(failed)} files not compared")
 for p in problems:

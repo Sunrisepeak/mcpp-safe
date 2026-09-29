@@ -198,5 +198,50 @@ int main() {
         expect(at(1, 23) == "lib::Base::get") << at(1, 23);
     };
 
+    "a member of a specialization is typed with its template's arguments, and their defaults (MC3 0.6.0)"_test = [] {
+        // What std's and lib's interfaces say: templates with their parameters, members typed in them.
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}, std::vector<std::string> parameters = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.template_parameters = std::move(parameters);
+            d.exported = true;
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = {
+            decl("std::expected", K::class_, {}, { "class _Tp", "class _Err" }), decl("std::expected::error", K::method, "const _Err &"),
+            decl("std::expected::value", K::method, "_Tp &"), decl("std::expected::operator->", K::method, "_Tp *"),
+            decl("std::allocator", K::class_, {}, { "class _Tp" }),
+            decl("std::vector", K::class_, {}, { "class _Tp", "class _Allocator = std::allocator<_Tp>" }),
+            decl("std::vector::value_type", K::type_alias, "_Tp"), decl("std::vector::reference", K::type_alias, "value_type &"),
+            decl("std::vector::front", K::method, "reference"), decl("std::vector::get_allocator", K::method, "_Allocator"),
+            decl("std::allocator::allocate", K::method, "_Tp *"),
+            decl("lib::Run", K::struct_), decl("lib::Run::code", K::field, "int"), decl("lib::Error", K::struct_),
+            decl("lib::Error::message", K::field, "int"), decl("lib::Result", K::type_alias, "std::expected<T, Error>", { "class T" }),
+            decl("lib::stamp", K::function, "lib::Run"), decl("lib::stamp", K::function, "void"),
+        };
+        const std::string_view source {
+            "int use(lib::Result<lib::Run> r, std::vector<lib::Run> v) {\n"
+            "    auto s = lib::stamp();\n"
+            "    return r->code + r.error().message + r.value().code + v.front().code + v.get_allocator().allocate(1)->code + s.code;\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            return it == references.end() ? std::string { "not resolved" } : it->certain ? it->target : "uncertain: " + it->why;
+        };
+        expect(at(2, 14) == "lib::Run::code") << "operator-> of an alias template's expected: " << at(2, 14);
+        expect(at(2, 31) == "lib::Error::message") << "error() gives the second argument: " << at(2, 31);
+        expect(at(2, 51) == "lib::Run::code") << at(2, 51);
+        expect(at(2, 68) == "lib::Run::code") << "front() through member aliases: " << at(2, 68);
+        expect(at(2, 106) == "lib::Run::code") << "a defaulted argument, std::allocator<_Tp>: " << at(2, 106);
+        // Overloads whose return types differ: which one is called needs the arguments' types.
+        expect(at(2, 115).starts_with("uncertain")) << at(2, 115);
+    };
+
     return report();
 }

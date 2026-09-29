@@ -132,10 +132,12 @@ public:
             if (!range || !name_range) return fail(std::format("declaration {}: a range is not line:column-line:column", ordinal));
             d.range = *range;
             d.name = *name_range;
-            bool bases { false };
+            // The templates; 1.3.0: after `|`, the bases; 1.4.0: after `<`, the template parameters.
+            auto* into { &d.templates };
             for (std::size_t t { 9 }; t < args.size(); ++t) {
-                if (args[t] == "|") bases = true;   // 1.3.0: the bases follow
-                else (bases ? d.bases : d.templates).push_back(std::move(args[t]));
+                if (args[t] == "|") into = &d.bases;
+                else if (args[t] == "<") into = &d.template_parameters;
+                else into->push_back(std::move(args[t]));
             }
             found.emplace_back(ordinal, std::pair { reachable, std::move(d) });
         }
@@ -267,6 +269,7 @@ std::vector<std::string> differences(std::span<const msa::fact::Declaration> exp
         field("type", e.type, a.type, str);
         field("templates", e.templates, a.templates, list);
         field("bases", e.bases, a.bases, list);
+        field("template parameters", e.template_parameters, a.template_parameters, list);
         for (const auto& [member, name] : FLAGS) field(name, e.*member, a.*member, flag);
     }
     return out;

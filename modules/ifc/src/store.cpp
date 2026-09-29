@@ -49,6 +49,15 @@ std::optional<Stamp> stamp_of(const std::string& path) {
     return Stamp { size, static_cast<std::int64_t>(time.time_since_epoch().count()) };
 }
 
+// Whether two files hold the same bytes (a missing one holds none).
+bool same_bytes(const std::string& a, const std::string& b) {
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(a, ec);
+    if (ec || std::filesystem::file_size(b, ec) != size || ec) return false;
+    std::ifstream x { a, std::ios::binary }, y { b, std::ios::binary };
+    return x && y && std::equal(std::istreambuf_iterator<char> { x }, {}, std::istreambuf_iterator<char> { y });
+}
+
 bool copy_atomically(const std::string& from, const std::string& to) {
     std::error_code ec;
     std::filesystem::create_directories(std::filesystem::path { to }.parent_path(), ec);
@@ -132,7 +141,9 @@ void publish() {
         if (!stamp) continue;   // the compile did not leave its BMI (an error after the interface was written)
         if (const auto digest = bmi_digest(bmi, *stamp)) {
             const std::string kept { store_directory() + "/" + *digest + ".ifc" };
-            if (!std::filesystem::exists(kept)) (void)copy_atomically(ifc, kept);
+            // The same BMI may come with another interface (a newer MC2 writer, the same Clang): the
+            // copy is replaced, and one that holds these bytes is kept as it is (MC2-2-4).
+            if (!same_bytes(ifc, kept)) (void)copy_atomically(ifc, kept);
         }
     }
 }

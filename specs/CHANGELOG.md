@@ -2,6 +2,23 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-30 — MC3 0.6.0, MC2 1.4.0: template parameters
+
+- **MC3** 0.6.0 (§4.2): a class template's or an alias template's `template-parameters` (MC3-4.2-6),
+  each as written with the names in its default fully qualified: `class _Tp`,
+  `class _Allocator = std::allocator<_Tp>`, `std::size_t _Size`, `template class _C`. With them a
+  member's type written in the template's parameters is known in a specialization
+  (`std::expected<R, E>::error()` gives an `E`), and so are the arguments a specialization leaves to
+  their defaults (`std::vector<int>` is `std::vector<int, std::allocator<int>>`, which names
+  `std::allocator`).
+- **MC2** 1.4.0: the interface carries them, after a `<` among the `mcxx::decl` arguments. The
+  reachable declarations include the enumeration an alias among them names, with its enumerators
+  (`json::value_t::string`), and they start from the unit's own exported using-declarations only: a
+  unit that imports `std` no longer carries `std`'s reachable set again (every module interface of
+  C-mcppls was about 4 MB, and an importer read 212077 declarations for a file that declares 111).
+  1.0-1.3 files are read as before. The store's copy of an interface (§7) is replaced when the same BMI comes
+  with another one (a newer writer): MC2-2-4 keeps only a copy that holds the same bytes.
+
 ## 2026-09-30 — MC3 0.5.0, MC2 1.3.0: return types and bases
 
 - **MC3** 0.5.0 (§4.2): a function's or a method's `type` is its return type (a constructor, a

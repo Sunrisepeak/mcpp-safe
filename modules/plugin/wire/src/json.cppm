@@ -172,6 +172,7 @@ Json declaration_json(const fact::Declaration& d) {
     x["type"] = d.type;
     x["templates"] = d.templates;
     if (!d.bases.empty()) x["bases"] = d.bases;   // MC3 0.5.0: a class's, when there are any
+    if (!d.template_parameters.empty()) x["template-parameters"] = d.template_parameters;   // MC3 0.6.0: a template's
     x["exported"] = d.exported;
     x["c-array"] = d.c_array;
     x["pointer"] = d.pointer;
@@ -191,6 +192,7 @@ void read_declaration(Reader& r, fact::Declaration& d) {
     d.type = r.str("type");
     d.templates = r.strings("templates");
     if (r.j.contains("bases")) d.bases = r.strings("bases");   // before 0.5.0: none
+    if (r.j.contains("template-parameters")) d.template_parameters = r.strings("template-parameters");   // before 0.6.0: none
     d.exported = r.flag("exported");
     d.c_array = r.flag("c-array");
     d.pointer = r.flag("pointer");

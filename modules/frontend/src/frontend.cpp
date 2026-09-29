@@ -34,7 +34,9 @@ msa::fact::Facts facts(const Preprocessed& pp) {
     return out;
 }
 
-msa::fact::Facts facts(const Syntax& syntax) {
+namespace {
+
+msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>* types) {
     auto out = facts(syntax.pp);
     // Not declaration_types: a type is given where the tokens say it (not a deduced one, not the
     // templates an alias names), and a gate needing types is not F1's to decide.
@@ -62,11 +64,7 @@ msa::fact::Facts facts(const Syntax& syntax) {
         if (declared) {
             msa::fact::Declaration f;
             f.range = whole;
-            f.name = selection_range(syntax, d);
-            // An alias template's outline is at its `using`, as Clang's is; the alias itself (a fact)
-            // is at its name.
-            if (d.kind == msa::Kind::type_alias && d.name_token + 1 < syntax.pp.tokens.size() && syntax.pp.tokens[d.name_token].spelling == "using")
-                f.name = token_range(syntax, d.name_token + 1, d.name_token + 1);
+            f.name = fact_name(syntax, d);
             f.container = container[i];
             f.qualified_name = qualified[i];
             f.kind = fact_kind(d);
@@ -83,6 +81,14 @@ msa::fact::Facts facts(const Syntax& syntax) {
                                        d.kind == msa::Kind::destructor || d.kind == msa::Kind::conversion };
             if (!function_kind) f.type = type_text(syntax, d);
             else if (d.kind == msa::Kind::function || d.kind == msa::Kind::method) f.type = type_text(syntax, d, true);
+            if (types != nullptr) {
+                const auto& known = (*types)[i];
+                if (known.type_certain) f.type = known.type;
+                if (known.templates_certain) f.templates = known.templates;
+                if (known.pointer_certain) f.pointer = f.pointer || known.pointer;
+                f.bases = known.bases;
+                f.template_parameters = known.template_parameters;
+            }
             // Inside a function: a parameter's parent is the function, a local's too (or a local class's);
             // or inside a lambda, whose call operator is a function (one initializing a variable, say).
             if (d.kind != msa::Kind::parameter) f.local = d.in_lambda;
@@ -145,6 +151,15 @@ msa::fact::Facts facts(const Syntax& syntax) {
         }
     }
     return out;
+}
+
+} // namespace
+
+msa::fact::Facts facts(const Syntax& syntax) { return facts_of(syntax, nullptr); }
+
+msa::fact::Facts facts(const Syntax& syntax, const Imported& imported) {
+    const auto types { declared_types(syntax, imported) };
+    return facts_of(syntax, &types);
 }
 
 namespace {

@@ -16,6 +16,7 @@ export import :preprocess;
 export import :syntax;
 export import :types;
 export import :lookup;
+export import :declared;
 
 export namespace mcxx::frontend {
 
@@ -34,6 +35,11 @@ msa::fact::Facts facts(const Preprocessed& pp);
 // the kinds are those of a syntax-level reading, and certainty is `unknown` when preprocessing was not
 // certain.
 msa::fact::Facts facts(const Syntax& syntax);
+
+// The same, with each declaration's type as :declared resolves it with the file's imports: `templates`
+// and `pointer` as Clang has them (the canonical type's), an injected-class-name as Clang prints it.
+// Where F1 cannot tell (declared_types() says which), what the tokens say is kept.
+msa::fact::Facts facts(const Syntax& syntax, const Imported& imported);
 
 // `import m [[mcpp::allow("id, id", "reason")]];` (and `export import`): MC++'s annotation of an import
 // that brings in what the importer's dialect restricts (M1.2). No attribute appertains to an import in

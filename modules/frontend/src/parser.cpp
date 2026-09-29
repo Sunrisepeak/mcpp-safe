@@ -176,6 +176,16 @@ private:
         return k;
     }
 
+    // In an expression, at k: past a name's template arguments when it has them -- `<...>` followed by
+    // `(`, `{` or `::` (`std::make_shared<std::map<K, V>>()`, `T<A, B>::f`), what comparisons are
+    // not -- so that a `,` among them does not end the expression; else k + 1.
+    std::size_t past_template_arguments(std::size_t k) const {
+        if (!identifier(k) || !is(k + 1, Kind::less)) return k + 1;
+        const std::size_t after { angle(k + 1) };
+        if (after == k + 1 || !(is(after, Kind::l_paren) || is(after, Kind::l_brace) || is(after, Kind::coloncolon))) return k + 1;
+        return after;
+    }
+
     // Attributes as attributes() skips them, their [[mcpp::allow(...)]] kept for the next declaration.
     std::size_t waivers(std::size_t k) {
         const std::size_t end { attributes(k) };
@@ -1192,9 +1202,19 @@ private:
         }
     }
 
-    // A variable's initializer after `=`: to the `,` or `;` that ends it (template arguments are not
-    // told from comparisons here: a `,` inside `a<b, c>` at this depth ends it early).
-    void initializer() { skip_statement_end(true); }
+    // A variable's initializer after `=`: to the `,` or `;` that ends it (a name's template arguments
+    // skipped whole: past_template_arguments).
+    void initializer() {
+        while (i_ < t_.size()) {
+            const Kind kind { t_[i_].kind };
+            if (kind == Kind::semi || kind == Kind::r_brace || kind == Kind::comma) return;
+            if (kind == Kind::l_paren || kind == Kind::l_square || kind == Kind::l_brace) {
+                i_ = balanced(i_);
+                continue;
+            }
+            i_ = past_template_arguments(i_);
+        }
+    }
 
     // A constructor's member initializers, then its body.
     void initializers(std::int32_t owner) {
@@ -1607,7 +1627,7 @@ private:
             ++i_;
             while (i_ < limit && !is(i_, Kind::semi) && !is(i_, Kind::comma) && !(in_parens && (is(i_, Kind::r_paren) || is(i_, Kind::colon)))) {
                 if (is(i_, Kind::l_paren) || is(i_, Kind::l_square) || is(i_, Kind::l_brace)) i_ = balanced(i_);
-                else ++i_;
+                else i_ = std::min(past_template_arguments(i_), limit);
             }
             scan(from, i_, owner, false);
         } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {

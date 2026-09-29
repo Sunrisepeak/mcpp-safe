@@ -274,6 +274,11 @@ public:
                 args.emplace_back("|");
                 for (const auto& b : d.bases) args.push_back(b);
             }
+            // 1.4.0: a template's parameters, after a `<` (which neither a name nor a parameter is).
+            if (!d.template_parameters.empty()) {
+                args.emplace_back("<");
+                for (const auto& p : d.template_parameters) args.push_back(p);
+            }
             sym::trait::DeclAttributes association {};
             clear(association);
             association.entity = self;

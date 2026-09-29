@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.5.0 |
+| Version | 0.6.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -64,6 +64,7 @@ One per variable, field, parameter, function, type alias, class, union, enum and
 | `type` | string | The declared type (of a variable, member, parameter or alias); a function's or a method's return type (0.5.0) -- a constructor, a destructor and a conversion function have none, their names say it. Filled for every declaration when `declaration-types` was asked for, and otherwise at least for a declaration marked `c-array` or `pointer`. <a id="MC3-4.2-2"></a><sup>MC3-4.2-2</sup> |
 | `templates` | string[] | Every class template the declared type names, at any depth (`std::vector`, `nlohmann::basic_json`); with `declaration-types`. |
 | `bases` | string[] | A class's direct bases, by the qualified names this specification gives classes (a specialization by its template's name, `std::__atomic_base`); with `declaration-types`, and absent where there are none (0.5.0). It is where a member access finds what a class inherits. <a id="MC3-4.2-5"></a><sup>MC3-4.2-5</sup> |
+| `template-parameters` | string[] | A class template's (its class declaration's) or an alias template's parameters, in order: a type parameter `class T`, `class ...Ts`, or with its default `class A = std::allocator<T>` -- every name in a default fully qualified (inline namespaces left out), the template's own parameters by their names; a non-type parameter as its type and name, `std::size_t N` (its default left out); a template template parameter `template class C`. An unnamed parameter has no name (`class = void`). With `declaration-types`, and absent where there are none (0.6.0). It is what a member's type written with the parameters stands for in a specialization (`std::expected<R, E>::error` gives an `E`), and the arguments a specialization leaves to their defaults. <a id="MC3-4.2-6"></a><sup>MC3-4.2-6</sup> |
 | `exported` | boolean | Inside `export`. |
 | `c-array` | boolean | Its type is an array type. |
 | `pointer` | boolean | Its type holds a pointer type anywhere: itself, an array element, a template argument; for a function, its return type. <a id="MC3-4.2-3"></a><sup>MC3-4.2-3</sup> |

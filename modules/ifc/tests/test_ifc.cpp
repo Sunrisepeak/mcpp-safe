@@ -101,7 +101,7 @@ int main() {
         expect(!back->internal);
     };
 
-    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2), with bases and return types (1.3)"_test = [] {
+    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2), with bases and return types (1.3), template parameters (1.4)"_test = [] {
         auto unit = sample();
         const auto reach = [](std::string qualified, mcxx::msa::Kind kind, std::string type = {}) {
             mcxx::msa::fact::Declaration d;
@@ -115,7 +115,10 @@ int main() {
         using K = mcxx::msa::Kind;
         auto vector = reach("std::vector", K::class_);
         vector.bases = { "std::__vector_base", "std::__allocator_holder" };   // MC2 1.3.0: a class's bases
-        unit.reachable = { reach("std", K::namespace_), vector, reach("std::vector::size", K::method, "size_type"),
+        vector.template_parameters = { "class _Tp", "class _Allocator = std::allocator<_Tp>" };   // MC2 1.4.0
+        auto owned = reach("std::owned", K::type_alias, "std::unique_ptr<T>");
+        owned.template_parameters = { "class T" };   // an alias template's, with no bases before them
+        unit.reachable = { reach("std", K::namespace_), vector, owned, reach("std::vector::size", K::method, "size_type"),
                            reach("std::vector::size_type", K::type_alias, "size_t"), reach("std::errc", K::enum_),
                            reach("std::errc::invalid_argument", K::enumerator, "std::errc"), reach("std::memory_order_relaxed", K::enumerator, "std::memory_order") };
         const auto back = mcxx::ifc::read(mcxx::ifc::write(unit));
@@ -205,6 +208,17 @@ int main() {
         std::string why;
         const auto kept = mcxx::ifc::interface_for(copied, &why);
         expect(kept != nullptr && kept->declarations.size() == sample().declarations.size()) << why;
+        // The same BMI with another interface (a newer writer): the store's copy is replaced.
+        auto newer { sample() };
+        newer.declarations.pop_back();
+        expect(!mcxx::ifc::save(mcxx::ifc::path_for(bmi), newer).has_value());
+        mcxx::ifc::note_written(bmi, mcxx::ifc::path_for(bmi));
+        mcxx::ifc::publish();
+        const std::string again { (dir / "elsewhere/again/app-part.pcm").string() };
+        std::filesystem::create_directories(dir / "elsewhere/again");
+        std::filesystem::copy_file(bmi, again);
+        const auto replaced = mcxx::ifc::interface_for(again, &why);
+        expect(replaced != nullptr && replaced->declarations.size() == newer.declarations.size()) << why;
         const std::string other { (dir / "elsewhere/other.pcm").string() };
         std::ofstream { other, std::ios::binary } << "a BMI no mcxx wrote an interface for";
         expect(mcxx::ifc::interface_for(other, &why) == nullptr && why.contains("none kept")) << why;

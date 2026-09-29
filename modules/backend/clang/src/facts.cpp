@@ -13,6 +13,7 @@ module;
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/PrettyPrinter.h>
+#include <clang/AST/QualTypeNames.h>
 #include <clang/AST/RawCommentList.h>
 #include <clang/AST/Type.h>
 #include <clang/Basic/Diagnostic.h>
@@ -209,6 +210,45 @@ const cl::NamedDecl* base_class(cl::QualType type) {
     return type->getAsCXXRecordDecl();
 }
 
+// A type with every name in it fully qualified (inline namespaces left out): what a template
+// parameter's default names, for a reader that is not where the template is.
+std::string qualified_type_text(const cl::ASTContext& ctx, cl::QualType type) {
+    if (type.isNull()) return {};
+    cl::PrintingPolicy policy { printing_policy(ctx) };
+    policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
+    policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
+    return cl::TypeName::getFullyQualifiedName(type, ctx, policy);
+}
+
+// A class template's or an alias template's parameters (MC3 0.6.0): "class T", "class ...Ts",
+// "class A = std::allocator<T>", "std::size_t N", "template class C".
+std::vector<std::string> template_parameters_of(const cl::ASTContext& ctx, const cl::NamedDecl* d) {
+    const cl::TemplateParameterList* list { nullptr };
+    if (const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d))
+        if (const auto* t = record->getDescribedClassTemplate()) list = t->getTemplateParameters();
+    if (const auto* alias = llvm::dyn_cast<cl::TypeAliasDecl>(d))
+        if (const auto* t = alias->getDescribedAliasTemplate()) list = t->getTemplateParameters();
+    std::vector<std::string> out;
+    if (list == nullptr) return out;
+    for (const auto* p : *list) {
+        const std::string name { p->getName() };
+        const auto named = [&](std::string head, bool pack) {
+            if (pack) return head + " ..." + name;
+            return name.empty() ? head : head + " " + name;
+        };
+        if (const auto* type = llvm::dyn_cast<cl::TemplateTypeParmDecl>(p)) {
+            std::string text { named("class", type->isParameterPack()) };
+            if (type->hasDefaultArgument()) text += " = " + qualified_type_text(ctx, type->getDefaultArgument().getArgument().getAsType());
+            out.push_back(std::move(text));
+        } else if (const auto* value = llvm::dyn_cast<cl::NonTypeTemplateParmDecl>(p)) {
+            out.push_back(named(type_text(ctx, value->getType()), value->isParameterPack()));
+        } else if (const auto* tt = llvm::dyn_cast<cl::TemplateTemplateParmDecl>(p)) {
+            out.push_back(named("template class", tt->isParameterPack()));
+        }
+    }
+    return out;
+}
+
 // A class's direct bases (MC3 0.5.0).
 std::vector<std::string> bases_of(const cl::NamedDecl* d) {
     std::vector<std::string> out;
@@ -255,7 +295,10 @@ fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bo
         if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx, type);
     }
     if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d)) decl.is_union = record->isUnion();
-    if (types) decl.bases = bases_of(d);
+    if (types) {
+        decl.bases = bases_of(d);
+        decl.template_parameters = template_parameters_of(ctx, d);
+    }
     return decl;
 }
 
@@ -723,9 +766,12 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
         push(d);
         if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d)) enumerators(e);
         // An alias reaches the class it names (MC2 1.3.0): `using json = basic_json<>` is a use of
-        // basic_json's members.
-        if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d))
+        // basic_json's members; and the enumeration it names, with its enumerators (1.4.0:
+        // `json::value_t::string` is `nlohmann::detail::value_t`'s).
+        if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d)) {
             if (const auto* named = base_class(alias->getUnderlyingType())) add(named, depth + 1);
+            if (const auto* e = alias->getUnderlyingType()->getAsEnumDecl()) add(e, depth + 1);
+        }
         const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d);
         const auto* def = record != nullptr ? record->getDefinition() : nullptr;
         if (def == nullptr) return;
@@ -740,9 +786,12 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
                 add(nd, depth + 1);
         }
     };
-    // The unit's exported using-declarations, and its own exported enumerations (in classes too).
+    // The unit's exported using-declarations, and its own exported enumerations (in classes too). Its
+    // own: what it imports is in its context too (a unit that imports std sees std's exported
+    // using-declarations there), and is that module's interface's to carry, not every importer's.
     std::function<void(const cl::DeclContext*)> walk = [&](const cl::DeclContext* dc) {
         for (const auto* d : dc->decls()) {
+            if (d->isFromASTFile()) continue;
             if (const auto* u = llvm::dyn_cast<cl::UsingDecl>(d); u != nullptr && u->isInExportDeclContext()) {
                 for (const auto* shadow : u->shadows()) add(shadow->getTargetDecl(), 0);
             } else if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d); e != nullptr && e->isInExportDeclContext() && !e->isImplicit()) {

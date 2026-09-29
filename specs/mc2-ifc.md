@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC2 |
-| Version | 1.3.0 |
+| Version | 1.4.0 |
 | Status | Draft |
 | Schema | [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) (an interface as read back) |
 | Examples | [`examples/mc2-interface.json`](examples/mc2-interface.json) (`conformance/ifc/dialect`'s `dialect.ifc`, read back) |
@@ -56,7 +56,7 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 
 An importer names more than a unit's own code declares: `export using std::vector;` makes a declaration of another file nameable through the unit, and libc++'s `std` module exports nothing else. So an interface also carries the unit's *reachable declarations*:
 
-- every declaration an exported using-declaration of the unit names (each of its shadows' targets; a template's pattern), every public member of a class among them -- a field, a method, a constructor, a nested class or enumeration, a member alias, a member template's pattern, a static member -- and so on for the members that are classes, and every enumerator of an enumeration among them or among the unit's own exported ones (MC3's T1 declarations have no enumerators); and (1.3.0) the bases of every class among them, recursively, with their public members -- what a member access on such a class finds (`std::atomic`'s `store` is `std::__atomic_base`'s) --, and the class an alias among them names (`using json = basic_json<>`). Each once, as an MC3 declaration (§4.2 of MC3) with its type and templates, `exported` true, `local` false and no ranges (they are in other files). <a id="MC2-3.1-1"></a><sup>MC2-3.1-1</sup>
+- every declaration an exported using-declaration of the unit names (each of its shadows' targets; a template's pattern), every public member of a class among them -- a field, a method, a constructor, a nested class or enumeration, a member alias, a member template's pattern, a static member -- and so on for the members that are classes, and every enumerator of an enumeration among them or among the unit's own exported ones (MC3's T1 declarations have no enumerators); and (1.3.0) the bases of every class among them, recursively, with their public members -- what a member access on such a class finds (`std::atomic`'s `store` is `std::__atomic_base`'s) --, and the class an alias among them names (`using json = basic_json<>`); and (1.4.0) the enumeration an alias among them names, with its enumerators (`json::value_t`). Each once, as an MC3 declaration (§4.2 of MC3) with its type and templates, `exported` true, `local` false and no ranges (they are in other files). <a id="MC2-3.1-1"></a><sup>MC2-3.1-1</sup>
 - They come after the T1 declarations, in the table's sorts. A reachable declaration's scope is the declaration (T1 or reachable) whose qualified name is its own's prefix, when that is a namespace or a class, else the global scope; an enumerator is in the enumeration its qualified name is in (a scoped one's), else a `Barren` one. Its place is no place (`src.line` entry 0), and its `mcxx::decl` flags include `reachable`. <a id="MC2-3.1-2"></a><sup>MC2-3.1-2</sup>
 
 ## 4. What IFC has no field for: `[[mcxx::decl]]`
@@ -74,7 +74,7 @@ An importer names more than a unit's own code declares: `export using std::vecto
 | 6 | its flags, comma-separated: `exported`, `c-array`, `pointer`, `union`, `c-variadic`; `reachable` for a reachable declaration (§3.1) | the booleans |
 | 7 | its range, `line:column-line:column` (MC3's, from 0) | `range` |
 | 8 | its name's range | `name` |
-| 9... | the templates its type names; then (1.3.0), when it has any, an argument `|` -- which no name holds -- and its bases | `templates`, `bases` |
+| 9... | the templates its type names; then (1.3.0), when it has any, an argument `|` -- which no name holds -- and its bases; then (1.4.0), when it has any, an argument `<` -- which neither a name nor a parameter is -- and its template parameters | `templates`, `bases`, `template-parameters` |
 
 - An MC2 attribute is a `CalledAttr` (`attr.called`) whose function is a `ScopedAttr` (`attr.scoped`) of two identifier words, `mcxx` and its name, and whose arguments are a `TupleAttr` (`attr.tuple`, entries in `heap.attr`) of `BasicAttr`s (`attr.basic`), each one word of sort `Literal` (`source::Literal::String`) whose text is a C++ string literal's spelling: `"` and `\` escaped, newline, tab and carriage return as `\n`, `\t`, `\r`, other control characters as three octal digits, anything else as it is. <a id="MC2-4-2"></a><sup>MC2-4-2</sup>
 
@@ -101,7 +101,7 @@ An importer names more than a unit's own code declares: `export using std::vecto
 
 A build may copy a BMI where nothing beside it is copied: mcpp's build caches keep the BMIs of dependencies and of `std`, and a later build of another project gets a copy of the BMI alone. So the interface is also kept by the BMI's content:
 
-- A compile that wrote an interface beside a BMI and then ended without an error MUST keep a copy of it in the store, named by the SHA-256 of the BMI's bytes (`<store>/<64 hex digits>.ifc`). The store is `$MCXX_IFC_STORE`, else `$XDG_CACHE_HOME/mcxx/ifc`, else `~/.cache/mcxx/ifc`; a host may name its own. <a id="MC2-7-1"></a><sup>MC2-7-1</sup>
+- A compile that wrote an interface beside a BMI and then ended without an error MUST keep a copy of it in the store, named by the SHA-256 of the BMI's bytes (`<store>/<64 hex digits>.ifc`). The store is `$MCXX_IFC_STORE`, else `$XDG_CACHE_HOME/mcxx/ifc`, else `~/.cache/mcxx/ifc`; a host may name its own. A copy already there that holds other bytes (the same BMI, an interface another writer gave it) is replaced. <a id="MC2-7-1"></a><sup>MC2-7-1</sup>
 - A reader looking for the interface of a BMI MUST read the file beside it, and when there is none, the store's copy for the BMI's content. When neither exists the interface is not known, which is not the same as empty (MC3 §4.13). <a id="MC2-7-2"></a><sup>MC2-7-2</sup> A BMI's digest may be remembered by its path, size and modification time (`<store>/by-path/`), so that a large BMI (`std`) is read whole once.
 
 ## 8. The JSON form
