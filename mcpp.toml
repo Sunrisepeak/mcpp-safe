@@ -34,6 +34,7 @@ members = [
     "modules/plugin/remote",
     "modules/plugin/host",
     "modules/features",
+    "modules/serve",
     "modules/driver",
     "modules/lsp",
     "modules/backend/semantic",

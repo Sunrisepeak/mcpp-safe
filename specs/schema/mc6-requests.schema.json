@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc6-requests.schema.json",
+  "title": "MC6 1: MC++'s requests of mcxx serve, as {method, params, result}",
+  "$defs": {
+    "command": {
+      "type": "object",
+      "required": [
+        "directory",
+        "file"
+      ],
+      "properties": {
+        "directory": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "arguments"
+          ]
+        },
+        {
+          "required": [
+            "command"
+          ]
+        }
+      ]
+    },
+    "document": {
+      "type": "object",
+      "required": [
+        "textDocument"
+      ],
+      "properties": {
+        "textDocument": {
+          "type": "object",
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "pattern": "^file://"
+            }
+          }
+        }
+      }
+    },
+    "level": {
+      "enum": [
+        "allow",
+        "warn",
+        "deny"
+      ]
+    },
+    "gates": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "module",
+        "profiles",
+        "problems",
+        "features"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "manifest": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "category",
+              "level",
+              "gated"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "category": {
+                "enum": [
+                  "iso",
+                  "policy",
+                  "library",
+                  "pitfall",
+                  "extension"
+                ]
+              },
+              "level": {
+                "$ref": "#/$defs/level"
+              },
+              "gated": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "initialize-result": {
+      "type": "object",
+      "required": [
+        "capabilities"
+      ],
+      "properties": {
+        "capabilities": {
+          "type": "object",
+          "required": [
+            "experimental"
+          ],
+          "properties": {
+            "experimental": {
+              "type": "object",
+              "required": [
+                "mcxx"
+              ],
+              "properties": {
+                "mcxx": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "requests"
+                  ],
+                  "properties": {
+                    "version": {
+                      "const": 1
+                    },
+                    "requests": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "mcxx/setCommands",
+                          "mcxx/facts",
+                          "mcxx/gates",
+                          "mcxx/catalog"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "method",
+        "params",
+        "result"
+      ],
+      "properties": {
+        "method": {
+          "const": "initialize"
+        },
+        "result": {
+          "$ref": "#/$defs/initialize-result"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "method",
+        "params",
+        "result"
+      ],
+      "properties": {
+        "method": {
+          "const": "mcxx/setCommands"
+        },
+        "params": {
+          "type": "object",
+          "required": [
+            "commands"
+          ],
+          "properties": {
+            "commands": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/command"
+              }
+            }
+          }
+        },
+        "result": {
+          "type": "null"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "method",
+        "params",
+        "result"
+      ],
+      "properties": {
+        "method": {
+          "const": "mcxx/facts"
+        },
+        "params": {
+          "$ref": "#/$defs/document"
+        },
+        "result": {
+          "type": "object",
+          "required": [
+            "mc3-version"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "method",
+        "params",
+        "result"
+      ],
+      "properties": {
+        "method": {
+          "const": "mcxx/gates"
+        },
+        "params": {
+          "$ref": "#/$defs/document"
+        },
+        "result": {
+          "$ref": "#/$defs/gates"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "method",
+        "params",
+        "result"
+      ],
+      "properties": {
+        "method": {
+          "const": "mcxx/catalog"
+        },
+        "result": {
+          "type": "object",
+          "required": [
+            "mc1-version"
+          ]
+        }
+      }
+    }
+  ]
+}

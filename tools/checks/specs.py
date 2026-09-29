@@ -66,8 +66,8 @@ for path in sorted(specs.rglob("*.json")):
             check(f"schema is valid 2020-12: {path.name}", False, str(e))
         schemas[path.stem.removesuffix(".schema")] = Draft202012Validator(doc)
 
-config, catalog_v, audit, facts, protocol, version = (schemas[n] for n in
-    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version"))
+config, catalog_v, audit, facts, protocol, version, serve = (schemas[n] for n in
+    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version", "mc6-requests"))
 ex = specs / "examples"
 
 # 2. examples validate
@@ -86,6 +86,10 @@ for i, message in enumerate(lines(ex / "mc4-session.jsonl")):
     if message.get("type") == "check":
         validate("MC4 example: a check's facts are MC3 facts", facts, message["facts"])
 validate("MC5 example validates: mc5-version.json", version, load(ex / "mc5-version.json"))
+for entry in load(ex / "mc6-session.json"):
+    validate(f"MC6 example validates: mc6-session.json {entry['method']}", serve, entry)
+    if entry["method"] == "mcxx/facts":
+        validate("MC6 example: mcxx/facts answers MC3 facts", facts, entry["result"])
 
 # 3. what the schemas must reject
 bad = dict(toml_config, features={"goto": "loud"})
@@ -149,6 +153,16 @@ if mcxx:
     check("mcxx features exits 0 without conflicts", text.returncode == 0 and "providers" in text.stdout)
     v = json.loads(subprocess.run([mcxx, "version", "--json"], capture_output=True, text=True).stdout)
     validate("mcxx version --json validates", version, v)
+    def frame(m):
+        body = json.dumps(m).encode()
+        return b"Content-Length: %d\r\n\r\n" % len(body) + body
+    lifecycle = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}, {"jsonrpc": "2.0", "id": 2, "method": "shutdown"},
+                 {"jsonrpc": "2.0", "method": "exit"}]
+    served = subprocess.run([mcxx, "serve", "--cache", "/tmp/mcxx-specs-serve"], input=b"".join(frame(m) for m in lifecycle), capture_output=True)
+    check("mcxx serve: framed answers, MC6's requests named, exit 0 after shutdown",
+          served.returncode == 0 and served.stdout.startswith(b"Content-Length: ") and b'"mcxx/facts"' in served.stdout)
+    unshut = subprocess.run([mcxx, "serve", "--cache", "/tmp/mcxx-specs-serve"], input=frame(lifecycle[0]) + frame(lifecycle[2]), capture_output=True)
+    check("mcxx serve: exit without shutdown ends with 1", unshut.returncode == 1)
     usage = subprocess.run([mcxx, "frobnicate"], capture_output=True, text=True)
     check("mcxx with an unknown command exits 2 with its usage", usage.returncode == 2 and "usage:" in usage.stderr and usage.stdout == "")
     import tempfile

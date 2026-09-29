@@ -47,6 +47,7 @@ libmc++ 是 MC++ 的可复用部分。每个目录都是一个独立的 mcpp 包
 | [`msa`](msa/README.md) | `mcxx.msa` | MC++ 语义 API：位置、诊断、实体、Unit/Workspace 接口、事实（MC3） | M0.4 |
 | [`graph`](graph/README.md) | `mcxx.graph` | 按词法扫描模块声明，建立模块图 | — |
 | [`plugin`](plugin/README.md) | `mcxx.plugin`、`.wire`、`.remote`、`.host` | 插件 SDK（MC4）与进程外插件：provider、Catalog、协议 1、故障隔离 | M0.6 |
+| [`serve`](serve/README.md) | `mcxx.serve` | `mcxx serve`（MC6）：LSP 基础协议之上的语义服务，以及带崩溃重启的客户端 | M1.3 |
 | [`driver`](driver/README.md) | `mcxx.driver` | mcxx 驱动（MC5）：命令、`mcxx features`、`mcxx compose` | M0.5、M0.6 |
 | [`features`](features/README.md) | `mcxx.features`、`mcxx.features.iso` | 特性门禁（MC1）：配置、profile、作用域、级别、豁免、审计、Plan；内置 provider `mc++.iso`（ISO 特性控制） | M0.3、M0.7 |
 | [`lsp`](lsp/README.md) | `mcxx.lsp` | 基于 MSA 的 LSP 形态服务（MC6），不含传输层 | M1.3 |

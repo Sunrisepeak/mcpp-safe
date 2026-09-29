@@ -2,6 +2,12 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC6 1: `mcxx serve`
+
+LSP's base protocol on standard input and output; LSP's document notifications and the service's
+requests; MC++'s requests `mcxx/setCommands`, `mcxx/facts` (MC3), `mcxx/gates` (MC1), `mcxx/catalog`;
+the host's client restarts a process that ended and replays the commands and the open documents.
+
 ## 2026-09-29 — MC1 0.1.0, MC3 0.1.0, MC4 0.1.0 (protocol 1), MC5 0.1.0: first drafts
 
 - **MC1**: features and their categories (`iso`, `policy`, `library`, `pitfall`, `extension`; only

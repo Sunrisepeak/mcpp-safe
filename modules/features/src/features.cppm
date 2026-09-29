@@ -121,6 +121,13 @@ Result evaluate(const plugin::Context& context, const Plan& plan, std::span<cons
 Result evaluate(const plugin::Context& context, const Plan& plan, const Selection& selection, std::span<const plugin::Finding> prior = {});
 Result evaluate(const plugin::Context& context, const Config& config);
 
+// The features a profile does not leave at `allow`.
+std::vector<std::string> profile_members(const plugin::Catalog& catalog, std::string_view profile);
+
+// The catalog as MC1 §10 writes it (specs/schema/mc1-catalog.schema.json): what `mcxx features
+// --json` prints and `mcxx serve` answers mcxx/catalog with.
+std::string catalog_json(const plugin::Catalog& catalog);
+
 // Appends the waivers as JSON lines to `file` (MCXX_AUDIT): one record per waiver.
 void append_audit(std::string_view file, const std::vector<Waiver>& waivers);
 

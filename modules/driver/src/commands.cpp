@@ -15,6 +15,7 @@ import mcxx.msa;
 import mcxx.plugin;
 import mcxx.plugin.host;
 import mcxx.features;
+import mcxx.serve;
 
 namespace mcxx::driver {
 
@@ -32,6 +33,7 @@ void usage() {
                           "       mcxx check <compiler arguments>      check a compile command (-fsyntax-only)\n"
                           "       mcxx features [--json]               the providers, features and profiles linked in\n"
                           "       mcxx compose [--manifest FILE]       build this package's compiler, with its static plugins\n"
+                          "       mcxx serve [--db DIR] [--resource DIR] [--cache DIR]   the semantic service on standard input and output (MC6)\n"
                           "       mcxx version [--json]\n");
 }
 
@@ -48,7 +50,6 @@ std::string json_string(std::string_view text) {
     return out + "\"";
 }
 
-// The features a profile does not leave at `allow`.
 std::vector<std::string> members(const mcxx::plugin::Catalog& catalog, const std::string& profile) {
     std::vector<std::string> out;
     const std::string names[] { profile };
@@ -66,38 +67,7 @@ int list_features(bool json) {
         return std::ranges::find(catalog->filters, p) != catalog->filters.end() ? "source filter" : "rule";
     };
     if (json) {
-        // MC1 §10 (specs/schema/mc1-catalog.schema.json).
-        auto strings = [](const auto& items) {
-            std::string out;
-            for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
-            return "[" + out + "]";
-        };
-        std::string out { "{\"mc1-version\":\"0.1.0\",\"providers\":[" };
-        for (std::size_t i { 0 }; i < catalog->providers.size(); ++i) {
-            const auto* p = catalog->providers[i].provider;
-            out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));
-        }
-        out += "],\"replaced\":" + strings(catalog->replaced) + ",\"features\":[";
-        for (std::size_t i { 0 }; i < catalog->features.size(); ++i) {
-            const auto& e = catalog->features[i];
-            const auto& f = *e.feature;
-            std::string profiles;
-            for (const auto& [name, level] : f.profiles)
-                profiles += std::format("{}{{\"profile\":{},\"level\":\"{}\"}}", profiles.empty() ? "" : ",", json_string(name), plugin::to_string(level));
-            out += std::format("{}{{\"id\":{},\"category\":\"{}\",\"standard\":{},\"layer\":{},\"provider\":{},\"default\":\"{}\",\"waivable\":{},"
-                               "\"summary\":{},\"fix\":{},\"profiles\":[{}],\"needs\":{},\"requires-declaration\":{},\"replaces\":{},\"shadowed\":{}}}",
-                               i ? "," : "", json_string(f.id), plugin::to_string(f.category), json_string(f.standard), json_string(f.layer),
-                               json_string(e.provider->name()), plugin::to_string(f.default_level), f.waivable, json_string(f.summary), json_string(f.fix),
-                               profiles, strings(mcxx::msa::fact::names(f.needs)), json_string(f.requires_declaration), f.replaces, strings(e.shadowed));
-        }
-        out += "],\"profiles\":[";
-        for (std::size_t i { 0 }; i < catalog->profiles.size(); ++i) {
-            const auto& p = *catalog->profiles[i].profile;
-            out += std::format("{}{{\"name\":{},\"provider\":{},\"summary\":{},\"includes\":{},\"features\":{}}}", i ? "," : "", json_string(p.name),
-                               json_string(catalog->profiles[i].provider->name()), json_string(p.summary), strings(p.includes),
-                               strings(members(*catalog, p.name)));
-        }
-        std::println("{}],\"problems\":{}}}", out, strings(catalog->problems));
+        std::println("{}", mcxx::features::catalog_json(*catalog));
         return catalog->problems.empty() ? 0 : 1;
     }
     std::println("providers");
@@ -347,6 +317,23 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
     }
     if (command == "features") return list_features(std::ranges::find(rest, "--json") != rest.end());
     if (command == "compose") return compose(rest);
+    if (command == "serve") {
+        mcxx::serve::Options options;
+        for (std::size_t i { 0 }; i + 1 < rest.size(); ++i) {
+            if (rest[i] == "--db") options.database = rest[++i];
+            else if (rest[i] == "--resource") options.resource = rest[++i];
+            else if (rest[i] == "--cache") options.cache = rest[++i];
+        }
+        // Clang's resource directory beside the program, as the compiler finds it (the payload's layout).
+        if (options.resource.empty()) {
+            std::error_code ec;
+            const auto self = fs::weakly_canonical(fs::path { argv[0] }, ec).parent_path();
+            for (const auto& candidate : { self / "../lib/clang/23", self / "lib/clang/23" })
+                if (fs::is_directory(candidate, ec)) options.resource = candidate.lexically_normal().generic_string();
+        }
+        std::ios::sync_with_stdio(false);
+        return mcxx::serve::run(std::cin, std::cout, std::move(options));
+    }
     if (command == "version" || command == "--version") {
         if (std::ranges::find(rest, "--json") != rest.end()) {
             // MC5 §5 (specs/schema/mc5-version.schema.json).

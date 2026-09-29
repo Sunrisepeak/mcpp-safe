@@ -1,0 +1,33 @@
+# mcxx serve (MC6 v1): libmc++'s semantic service as a process -- LSP's base protocol on standard
+# input and output, the LSP-shaped service (mcxx.lsp) behind it, and MC++'s own requests (facts,
+# gates, the catalog, the commands). And the host's side: a client that supervises the process and
+# restarts it after a crash, replaying what it was told (A1.3.2).
+[package]
+name        = "mcxx-serve"
+version     = "0.1.0"
+description = "mcxx serve: the MC++ semantic service over LSP's base protocol, and a supervising client"
+license     = "Apache-2.0"
+
+[targets.mcxx-serve]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-base        = { path = "../base" }
+mcxx-msa         = { path = "../msa" }
+mcxx-lsp         = { path = "../lsp" }
+mcxx-backend     = { path = "../backend/semantic" }
+mcxx-features    = { path = "../features" }
+mcxx-plugin      = { path = "../plugin/sdk" }
+mcxx-plugin-wire = { path = "../plugin/wire" }
+mcxx-plugin-host = { path = "../plugin/host" }
+
+[dependencies.nlohmann]
+json = "3.12.0"
+
+[dev-dependencies]
+mcxx-testing     = { path = "../testing" }
+mcxx-plugins-std = { path = "../../plugins/std" }
+
+[lib]
+path = "src/serve.cppm"

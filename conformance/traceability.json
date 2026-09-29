@@ -790,5 +790,91 @@
    "script": "tools/checks/selfhost.py",
    "contains": "passes its own tests"
   }
+ ],
+ "MC6-2-1": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: a message is framed as LSP's base protocol says, and read back"
+  },
+  {
+   "validate": "mcxx serve: framed answers"
+  }
+ ],
+ "MC6-2-2": [
+  {
+   "script": "modules/serve/src/server.cpp",
+   "contains": "out_ << frame(message) << std::flush;"
+  }
+ ],
+ "MC6-2-3": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: exit without shutdown ends with 1, after shutdown with 0"
+  },
+  {
+   "validate": "MC6 example validates: mc6-session.json initialize"
+  }
+ ],
+ "MC6-2-4": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: exit without shutdown ends with 1, after shutdown with 0"
+  },
+  {
+   "validate": "mcxx serve: exit without shutdown ends with 1"
+  }
+ ],
+ "MC6-2-5": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: a document's gate findings arrive as diagnostics; facts, gates and the catalog answer"
+  }
+ ],
+ "MC6-2-6": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: a document's gate findings arrive as diagnostics; facts, gates and the catalog answer"
+  },
+  {
+   "script": "modules/serve/src/server.cpp",
+   "contains": "return service_->request(method, p);"
+  }
+ ],
+ "MC6-3-1": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: a document's gate findings arrive as diagnostics; facts, gates and the catalog answer"
+  },
+  {
+   "script": "modules/serve/src/server.cpp",
+   "contains": "service_->unit(uri, true)"
+  }
+ ],
+ "MC6-3-2": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: a document's gate findings arrive as diagnostics; facts, gates and the catalog answer"
+  },
+  {
+   "script": "modules/serve/src/server.cpp",
+   "contains": "features::plan_for(path)"
+  }
+ ],
+ "MC6-3-3": [
+  {
+   "validate": "MC6 example validates: mc6-session.json"
+  },
+  {
+   "validate": "MC6 example: mcxx/facts answers MC3 facts"
+  }
+ ],
+ "MC6-4-1": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: killed, the server is started again and told again what it was told"
+  }
+ ],
+ "MC6-4-2": [
+  {
+   "test": "modules/serve/tests/test_serve.cpp: killed, the server is started again and told again what it was told"
+  }
+ ],
+ "MC6-4-3": [
+  {
+   "script": "modules/serve/src/client.cpp",
+   "contains": "did not answer in {} ms"
+  }
  ]
 }

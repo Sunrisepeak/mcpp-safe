@@ -350,6 +350,50 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
 
 Result evaluate(const plugin::Context& context, const Config& config) { return evaluate(context, make_plan(config)); }
 
+std::vector<std::string> profile_members(const plugin::Catalog& catalog, std::string_view profile) {
+    std::vector<std::string> out;
+    const std::string names[] { std::string { profile } };
+    for (const auto& e : catalog.features)
+        if (const auto level = profile_level(catalog, *e.feature, names); level && *level != Level::allow) out.push_back(e.feature->id);
+    return out;
+}
+
+std::string catalog_json(const plugin::Catalog& catalog) {
+    auto origin = [&](const plugin::Provider* p) { return catalog.origin_of(p) == plugin::Origin::builtin ? "built-in" : "plugin"; };
+    auto kind = [&](const plugin::Provider* p) { return std::ranges::find(catalog.filters, p) != catalog.filters.end() ? "source filter" : "rule"; };
+        auto strings = [](const auto& items) {
+            std::string out;
+            for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
+            return "[" + out + "]";
+        };
+        std::string out { "{\"mc1-version\":\"0.1.0\",\"providers\":[" };
+        for (std::size_t i { 0 }; i < catalog.providers.size(); ++i) {
+            const auto* p = catalog.providers[i].provider;
+            out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));
+        }
+        out += "],\"replaced\":" + strings(catalog.replaced) + ",\"features\":[";
+        for (std::size_t i { 0 }; i < catalog.features.size(); ++i) {
+            const auto& e = catalog.features[i];
+            const auto& f = *e.feature;
+            std::string profiles;
+            for (const auto& [name, level] : f.profiles)
+                profiles += std::format("{}{{\"profile\":{},\"level\":\"{}\"}}", profiles.empty() ? "" : ",", json_string(name), plugin::to_string(level));
+            out += std::format("{}{{\"id\":{},\"category\":\"{}\",\"standard\":{},\"layer\":{},\"provider\":{},\"default\":\"{}\",\"waivable\":{},"
+                               "\"summary\":{},\"fix\":{},\"profiles\":[{}],\"needs\":{},\"requires-declaration\":{},\"replaces\":{},\"shadowed\":{}}}",
+                               i ? "," : "", json_string(f.id), plugin::to_string(f.category), json_string(f.standard), json_string(f.layer),
+                               json_string(e.provider->name()), plugin::to_string(f.default_level), f.waivable, json_string(f.summary), json_string(f.fix),
+                               profiles, strings(msa::fact::names(f.needs)), json_string(f.requires_declaration), f.replaces, strings(e.shadowed));
+        }
+        out += "],\"profiles\":[";
+        for (std::size_t i { 0 }; i < catalog.profiles.size(); ++i) {
+            const auto& p = *catalog.profiles[i].profile;
+            out += std::format("{}{{\"name\":{},\"provider\":{},\"summary\":{},\"includes\":{},\"features\":{}}}", i ? "," : "", json_string(p.name),
+                               json_string(catalog.profiles[i].provider->name()), json_string(p.summary), strings(p.includes),
+                               strings(profile_members(catalog, p.name)));
+        }
+    return std::format("{}],\"problems\":{}}}", out, strings(catalog.problems));
+}
+
 void append_audit(std::string_view file, const std::vector<Waiver>& waivers) {
     if (file.empty() || waivers.empty()) return;
     static std::mutex mutex;

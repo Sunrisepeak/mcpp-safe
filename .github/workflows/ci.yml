@@ -68,7 +68,7 @@ jobs:
       - name: Unit tests
         run: |
           set -euo pipefail
-          for member in modules/base modules/graph modules/lsp modules/features modules/plugin/wire modules/plugin/remote modules/plugin/host plugins/std plugins/libs modules/backend/clang; do
+          for member in modules/base modules/graph modules/lsp modules/features modules/plugin/wire modules/plugin/remote modules/plugin/host modules/serve plugins/std plugins/libs modules/backend/clang; do
             echo "::group::$member"
             mcpp test -p "$member"
             echo "::endgroup::"

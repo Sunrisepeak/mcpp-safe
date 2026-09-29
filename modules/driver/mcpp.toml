@@ -20,6 +20,7 @@ mcxx-plugin-host      = { path = "../plugin/host" }
 mcxx-features         = { path = "../features" }
 mcxx-backend          = { path = "../backend/semantic" }   # links the gates (backend/clang :gate) into every compilation
 mcxx-backend-compiler = { path = "../backend/compiler" }
+mcxx-serve            = { path = "../serve" }            # mcxx serve (MC6)
 
 [lib]
 path = "src/driver.cppm"

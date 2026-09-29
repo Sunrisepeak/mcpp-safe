@@ -9,7 +9,7 @@
 | [MC3](mc3-facts.md) | MSA：位置、certainty、事实 | 0.1.0 | 草案 | [facts](schema/mc3-facts.schema.json) |
 | [MC4](mc4-plugins.md) | 插件：provider、扩展点、组合、进程外协议 | 0.1.0（协议版本 1） | 草案 | [protocol](schema/mc4-protocol.schema.json) |
 | [MC5](mc5-driver.md) | `mcxx` 驱动与工具链契约 | 0.1.0 | 草案 | [version](schema/mc5-version.schema.json) |
-| MC6 | 服务协议（`mcxx serve`） | — | M1 | — |
+| [MC6](mc6-serve.md) | `mcxx serve`：作为进程的语义服务 | 1 | 草案 | [requests](schema/mc6-requests.schema.json) |
 
 ## 各规范之间的关系
 

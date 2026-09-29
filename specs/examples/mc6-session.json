@@ -1,0 +1,333 @@
+[
+ {
+  "method": "initialize",
+  "params": {
+   "processId": null,
+   "rootUri": null,
+   "capabilities": {}
+  },
+  "result": {
+   "capabilities": {
+    "experimental": {
+     "mcxx": {
+      "requests": [
+       "mcxx/setCommands",
+       "mcxx/facts",
+       "mcxx/gates",
+       "mcxx/catalog"
+      ],
+      "version": 1
+     }
+    },
+    "$comment": "and LSP's capabilities (mcxx.lsp Service::capabilities)"
+   },
+   "serverInfo": {
+    "name": "mcxx",
+    "version": "0.1.0"
+   }
+  }
+ },
+ {
+  "method": "mcxx/setCommands",
+  "params": {
+   "commands": [
+    {
+     "directory": "/work/app",
+     "file": "/work/app/src/a.cpp",
+     "arguments": [
+      "clang++",
+      "-std=c++23",
+      "-c",
+      "/work/app/src/a.cpp"
+     ]
+    }
+   ]
+  },
+  "result": null
+ },
+ {
+  "method": "mcxx/facts",
+  "params": {
+   "textDocument": {
+    "uri": "file:///work/app/src/a.cpp"
+   }
+  },
+  "result": {
+   "allocations": [],
+   "casts": [],
+   "certainty": "certain",
+   "collected": [
+    "declarations",
+    "initializations",
+    "casts",
+    "allocations",
+    "pointer-arithmetic",
+    "gotos",
+    "macros",
+    "uses",
+    "includes",
+    "suppressions",
+    "declaration-types"
+   ],
+   "declarations": [
+    {
+     "c-array": false,
+     "c-variadic": false,
+     "container": "",
+     "entity": "c:@F@step#I#",
+     "exported": false,
+     "kind": "function",
+     "name": {
+      "begin": {
+       "column": 4,
+       "line": 0
+      },
+      "end": {
+       "column": 8,
+       "line": 0
+      }
+     },
+     "pointer": false,
+     "qualified-name": "step",
+     "range": {
+      "begin": {
+       "column": 0,
+       "line": 0
+      },
+      "end": {
+       "column": 1,
+       "line": 6
+      }
+     },
+     "templates": [],
+     "type": "",
+     "union": false
+    },
+    {
+     "c-array": false,
+     "c-variadic": false,
+     "container": "",
+     "entity": "c:a.cpp@9@F@step#I#@n",
+     "exported": false,
+     "kind": "parameter",
+     "name": {
+      "begin": {
+       "column": 13,
+       "line": 0
+      },
+      "end": {
+       "column": 14,
+       "line": 0
+      }
+     },
+     "pointer": false,
+     "qualified-name": "n",
+     "range": {
+      "begin": {
+       "column": 9,
+       "line": 0
+      },
+      "end": {
+       "column": 14,
+       "line": 0
+      }
+     },
+     "templates": [],
+     "type": "int",
+     "union": false
+    },
+    {
+     "c-array": false,
+     "c-variadic": false,
+     "container": "",
+     "entity": "c:a.cpp@22@F@step#I#@x",
+     "exported": false,
+     "kind": "variable",
+     "name": {
+      "begin": {
+       "column": 8,
+       "line": 1
+      },
+      "end": {
+       "column": 9,
+       "line": 1
+      }
+     },
+     "pointer": false,
+     "qualified-name": "x",
+     "range": {
+      "begin": {
+       "column": 4,
+       "line": 1
+      },
+      "end": {
+       "column": 9,
+       "line": 1
+      }
+     },
+     "templates": [],
+     "type": "int",
+     "union": false
+    }
+   ],
+   "gotos": [
+    {
+     "container": "",
+     "label": "out",
+     "range": {
+      "begin": {
+       "column": 11,
+       "line": 2
+      },
+      "end": {
+       "column": 19,
+       "line": 2
+      }
+     }
+    }
+   ],
+   "includes": [],
+   "initializations": [
+    {
+     "constructor": "",
+     "container": "",
+     "element-braced": false,
+     "elements": 0,
+     "entity": "c:a.cpp@22@F@step#I#@x",
+     "form": "default",
+     "indeterminate": true,
+     "initializer-list-constructor": false,
+     "member-default": false,
+     "name": {
+      "begin": {
+       "column": 8,
+       "line": 1
+      },
+      "end": {
+       "column": 9,
+       "line": 1
+      }
+     },
+     "range": {
+      "begin": {
+       "column": 4,
+       "line": 1
+      },
+      "end": {
+       "column": 9,
+       "line": 1
+      }
+     },
+     "type": "int",
+     "type-template": "",
+     "variable": "x"
+    }
+   ],
+   "macros": [],
+   "mc3-version": "0.1.0",
+   "module": "",
+   "path": "/work/app/src/a.cpp",
+   "pointer-arithmetic": [],
+   "suppressions": [],
+   "uses": []
+  }
+ },
+ {
+  "method": "mcxx/gates",
+  "params": {
+   "textDocument": {
+    "uri": "file:///work/app/src/a.cpp"
+   }
+  },
+  "result": {
+   "features": [
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "asm",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "c-array",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "c-style-cast",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "c-varargs",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "const-cast",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "goto",
+     "level": "warn"
+    },
+    {
+     "category": "pitfall",
+     "gated": true,
+     "id": "json-brace-init",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "new-delete",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "raw-pointer-arithmetic",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "reinterpret-cast",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "uninitialized",
+     "level": "deny"
+    },
+    {
+     "category": "iso",
+     "gated": true,
+     "id": "union",
+     "level": "deny"
+    }
+   ],
+   "manifest": "/work/app/mcpp.toml",
+   "module": "",
+   "problems": [],
+   "profiles": [
+    "safe"
+   ]
+  }
+ },
+ {
+  "method": "mcxx/catalog",
+  "params": {},
+  "result": {
+   "mc1-version": "0.1.0",
+   "$comment": "the whole catalog: specs/examples/mc1-catalog.json"
+  }
+ }
+]

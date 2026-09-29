@@ -52,6 +52,9 @@ public:
     // The next line (without its line break), or why there is none: it did not come by the
     // deadline, the process closed its output, or it exited.
     std::expected<std::string, std::string> read_line(std::chrono::steady_clock::time_point deadline);
+    // Exactly `size` bytes (a framed message's body), or why not, as read_line.
+    std::expected<std::string, std::string> read_exactly(std::size_t size, std::chrono::steady_clock::time_point deadline);
+    int pid() const { return pid_; }
     void kill();
 
 private:
@@ -191,6 +194,28 @@ std::expected<std::string, std::string> Process::read_line(std::chrono::steady_c
         const int ready { ::poll(&fd, 1, static_cast<int>(std::min<long long>(left, 1000 * 60))) };
         if (ready < 0 && errno == EINTR) continue;
         if (ready == 0) continue;   // the deadline is checked above
+        char chunk[65536];
+        const ssize_t n { ::read(out_, chunk, sizeof chunk) };
+        if (n < 0 && errno == EINTR) continue;
+        if (n <= 0) return std::unexpected(exit_description());
+        buffer_.append(chunk, static_cast<std::size_t>(n));
+    }
+}
+
+std::expected<std::string, std::string> Process::read_exactly(std::size_t size, std::chrono::steady_clock::time_point deadline) {
+    for (;;) {
+        if (buffer_.size() >= size) {
+            std::string out { buffer_.substr(0, size) };
+            buffer_.erase(0, size);
+            return out;
+        }
+        if (out_ < 0) return std::unexpected("it is not running");
+        const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if (left <= 0) return std::unexpected("it did not answer in time");
+        pollfd fd { out_, POLLIN, 0 };
+        const int ready { ::poll(&fd, 1, static_cast<int>(std::min<long long>(left, 1000 * 60))) };
+        if (ready < 0 && errno == EINTR) continue;
+        if (ready == 0) continue;
         char chunk[65536];
         const ssize_t n { ::read(out_, chunk, sizeof chunk) };
         if (n < 0 && errno == EINTR) continue;

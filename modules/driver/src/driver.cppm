@@ -9,6 +9,7 @@
 //   mcxx features [--json]            what this program can gate: its providers (MC++'s built-in
 //                                     mc++.iso and the plugins linked in), features, profiles, conflicts
 //   mcxx compose [--manifest FILE]    builds the package's compiler with its static plugins
+//   mcxx serve [--db DIR] ...         the semantic service over LSP's base protocol (MC6)
 //   mcxx version [--json]
 //
 // The compiler is libmc++'s compiling facade (mcxx.backend.compiler): today clang 23.1 in process.
