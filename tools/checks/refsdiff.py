@@ -18,7 +18,7 @@ how many it resolves to another (wrong: the number that must stay near zero), an
 `--min-in-file`: fail when fewer of the file's own names resolve the same; `--max-other`: fail when more
 resolve to another target (either place) -- a wrong answer is worse than none.
 """
-import collections, concurrent.futures, hashlib, json, os, pathlib, re, shlex, subprocess, sys, tempfile
+import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -37,6 +37,7 @@ units = [u for u in json.loads(database.read_text()) if str(u["file"]).startswit
 if only:
     units = [u for u in units if only in u["file"]]
 probe_cache = tempfile.mkdtemp(prefix="mcxx-refsdiff-")
+atexit.register(shutil.rmtree, probe_cache, True)   # the probe's cache of this run only
 INLINE = re.compile(r"::__\w*\d\w*(?=::|$)")   # libc++'s std::__1:: and its like: MC3 names leave inline namespaces out
 
 

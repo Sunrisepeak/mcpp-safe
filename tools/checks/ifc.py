@@ -18,7 +18,7 @@ built here from its sources: it validates the file (signature, format version, c
 every declaration reachable from the global scope, as a consumer of IFC would. Exits non-zero when any
 check fails.
 """
-import concurrent.futures, json, os, pathlib, shutil, subprocess, sys, tempfile
+import atexit, concurrent.futures, json, os, pathlib, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -144,6 +144,7 @@ if corpus:
     check(f"A1.1.2 ifc-printer reads all {len(all_ifc)} .ifc files without an error", not unread and bool(all_ifc), f"{unread[:5]}")
 
     cache = tempfile.mkdtemp(prefix="mcxx-ifc-")
+    atexit.register(shutil.rmtree, cache, True)   # the probe's cache of this run only
 
     def roundtrip(unit):
         file, _, ifc = unit

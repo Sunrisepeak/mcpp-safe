@@ -15,7 +15,7 @@ that agrees, with examples of what does not. `--reference-cache` keeps Clang's s
 digest and modification time), since it costs a parse. `--min matched=99.9 --min qualified-name=99.9`:
 fail when a share falls below it (a regression gate).
 """
-import collections, concurrent.futures, hashlib, json, os, pathlib, shlex, subprocess, sys, tempfile
+import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, shlex, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -34,6 +34,7 @@ units = [u for u in json.loads(database.read_text()) if str(u["file"]).startswit
 if only:
     units = [u for u in units if only in u["file"]]
 probe_cache = tempfile.mkdtemp(prefix="mcxx-declsdiff-")
+atexit.register(shutil.rmtree, probe_cache, True)   # the probe's cache of this run only
 
 MEMBERS = ["qualified-name", "container", "exported", "pointer", "c-array", "union", "c-variadic", "local", "type", "templates"]
 

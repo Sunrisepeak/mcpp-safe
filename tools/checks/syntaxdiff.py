@@ -20,7 +20,7 @@ A symbol agrees when both give it with the same kind, name, name range and whole
 rate is agreeing symbols over all symbols either gives. Exits non-zero when the rate is under 99.9% or a
 file does not parse.
 """
-import collections, concurrent.futures, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
+import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -44,6 +44,7 @@ units = list({u["file"]: u for u in units}.values())
 if only:
     units = [u for u in units if only in u["file"]]
 cache = tempfile.mkdtemp(prefix="mcxx-syntaxdiff-")
+atexit.register(shutil.rmtree, cache, True)   # the probe's cache of this run only
 
 
 def defines(arguments):

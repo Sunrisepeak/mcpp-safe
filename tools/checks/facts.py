@@ -18,7 +18,7 @@ implicit, a parameter belongs to a function. Everything else is independent: MSA
 mapping, the facts' JSON form, against Clang's traversal. Classes, structs and unions compare together
 (Clang's kind is CXXRecord for all three). Exits non-zero when any file differs.
 """
-import collections, concurrent.futures, hashlib, json, os, pathlib, subprocess, sys, tempfile
+import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -34,6 +34,7 @@ units = [u for u in json.loads(database.read_text()) if str(u["file"]).startswit
 if only:
     units = [u for u in units if only in u["file"]]
 cache = tempfile.mkdtemp(prefix="mcxx-facts-")
+atexit.register(shutil.rmtree, cache, True)   # the probe's cache of this run only
 
 # Clang's kind names, as MSA names its kinds (MC3 §4.2); the other kinds are outside T1's declarations.
 CLANG = {"Var": "variable", "Decomposition": "variable", "ParmVar": "parameter", "Field": "field", "Function": "function",

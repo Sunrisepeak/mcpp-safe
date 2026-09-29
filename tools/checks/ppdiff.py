@@ -22,7 +22,7 @@ With --header-macros the check plays such a host: Clang's `-dM -E` over the file
 less the names the file defines itself, and MC++'s preprocessor gets them -- `header-macro` should then
 be none.
 """
-import collections, concurrent.futures, json, os, pathlib, re, subprocess, sys, tempfile
+import atexit, collections, concurrent.futures, json, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -37,6 +37,7 @@ units = [u for u in json.loads(pathlib.Path(arg("db")).read_text()) if u["file"]
          and "/target/" not in u["file"] and "/.mcpp/" not in u["file"] and u["file"].endswith((".cpp", ".cppm", ".cc", ".cxx", ".ixx"))]
 units = list({u["file"]: u for u in units}.values())
 scratch = tempfile.mkdtemp(prefix="mcxx-ppdiff-")
+atexit.register(shutil.rmtree, scratch, True)   # this run's only
 KEEP_WITH_VALUE = {"-I", "-isystem", "-iquote", "-idirafter", "-D", "-U"}
 KEEP = ("-D", "-U", "-I", "-isystem", "-iquote", "-idirafter", "-std=", "-nostdinc", "-nostdlibinc", "--no-default-config", "--target=", "-target",
         "--sysroot=")
