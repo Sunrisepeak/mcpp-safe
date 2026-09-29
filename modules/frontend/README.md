@@ -16,7 +16,7 @@
 | `:preprocess` | 预处理：条件编译、文件自己的宏（`#`、`##`、`__VA_ARGS__`、`__VA_OPT__`、GNU 的 `, ## __VA_ARGS__`）、`#include` 记录、模块声明和 import 的识别 |
 | `:syntax` | （接口单元只声明；每个分区的定义在同名的 `.cpp` 里，`:syntax` 的在 `parser.cpp` 和 `outline.cpp`）声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
 | `:types` | 声明的类型文本：按写出来的 token，照 Clang 的 TypePrinter 打印保留语法糖的类型（`const std::string &`、`char *const *`、`int[3]`、`void (*)(int)`、`std::function<void (int)>`、`unsigned long`、constexpr 变量带 const）。推导出来的类型（`auto`、类模板实参推导）和不是字面量的数组界（Clang 打印它的值）不猜，给空 |
-| `:lookup` | 名字查找（[basic.lookup]）：函数的局部变量按所在块、参数、模板参数、类的成员（成员函数体里全部可见，连同基类的）、外层命名空间（在使用处之前声明的）、无名命名空间、using 指令和 using 声明、命名空间别名，限定名从左往右解析，成员访问经对象声明的类型（`std::unique_ptr`、`std::shared_ptr`、`std::optional` 的 `->` 到元素）。`names_of` 是 MC3 限定名的唯一来源（局部类的成员经函数的参数类型命名，和 Clang 一样）。解不出的（类型是推导出来的对象的成员、依赖名、只有 ADL 找得到的）不给：给出的都是确定的 |
+| `:lookup` | 名字查找（[basic.lookup]）：函数的局部变量按所在块、参数、模板参数、类的成员（成员函数体里全部可见，连同基类的）、外层命名空间（在使用处之前声明的）、无名命名空间、using 指令和 using 声明、命名空间别名，限定名从左往右解析，成员访问的对象推类型：名字（变量、参数、成员、`this`）、调用（函数的返回类型，MC3 0.5.0）、下标（指针、数组、标准序列的元素，map 的值）、`T { }`、`T( )`、具名转换、`make_shared`/`make_unique`、`std::chrono` 的转换、`(*x)`；`auto` 从初始化器或 range-for 的范围推出；`->` 穿过指针和 `std::unique_ptr`/`shared_ptr`/`weak_ptr`/`optional`；指定初始化器 `T { .n = v }`；导入的别名在它自己的作用域里找它指的类（名字里的内联命名空间跳过），导入类的成员也在它的基类里找（MC3 `bases`）。`names_of` 是 MC3 限定名的唯一来源（局部类的成员经函数的参数类型命名，和 Clang 一样）。解不出的不猜：成员访问找不到时给一个 `certain == false` 的条目（`why`：`deduced` 推导出的返回类型、`unknown` 对象的类说不出、`member` 知道类却没有这个成员），服务把它们交给 Clang 后端（A2.2.3）；依赖名、只有 ADL 找得到的不给 |
 | `mcxx.frontend` | 上面几部分，再加 `facts(pp)` 和 `facts(syntax)`：MC3 事实，形状和 Clang 后端给的一样（见下文"事实与快速门禁"） |
 
 ```cpp
@@ -119,7 +119,7 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 `facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：函数里声明的东西（参数、局部变量、lambda 的参数和 init-capture）只用名字本身，和 Clang 一样；`exported` 按词法上的外层传下来（参数、成员、局部变量都算），和 Clang 的 `isInExportDeclContext` 一样；结构化绑定是一个变量，名字是 `[a, b]`，位置在 `[`；lambda 里声明的是局部的，不论 lambda 在哪里；条件里的声明要有初始化器（`if (a && b)` 是表达式），只有 catch 的参数可以止于 `)`；别名模板的事实在它的名字处（大纲在 `using`，和 Clang 一样）；无名参数在声明符之后的那个 token，无名 namespace 在它的 `{`，都和 Clang 放的位置一样。
 
-`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16221 个（99.93%），没有多出来的；限定名 99.95%，所属命名空间、`exported`、`local`、c-array、union、c-variadic 100%；名字查找（`tools/checks/refsdiff.py`，C-mcppls 220 个文件）：目标声明在本文件里的 41346 个引用，相同 96.83%，指向别的 0.02%（3 处是匿名命名空间和外层的同名重载，要按实参选），没给 3.15%（多是经类型推导出来的对象访问成员）；目标在别处（本模块的接口、其他模块、std）的 48652 个，从导入模块的 MC2 接口读到声明（MC2 1.2.0 起包括 std 经 using 声明可达的），相同 78.04%，指向别的 0.06%。`test_lookup`：54 个名字，期望值全是 Clang 对同一段源码的回答。类型文本 82.3%（起点 22%；剩下的几乎都是推导出来的：`auto` 和 `std::lock_guard lock { m }` 这类类模板实参推导），模板列表要知道别名和默认模板实参，这两者是 M2 语义层的工作。类型文本不算作 F1 收集了 `declaration_types`：需要类型的门禁不由 F1 判定。
+`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16221 个（99.93%），没有多出来的；限定名 99.95%，所属命名空间、`exported`、`local`、c-array、union、c-variadic 100%；名字查找（`tools/checks/refsdiff.py`，C-mcppls 220 个文件，2026-09-30）：目标声明在本文件里的 41346 个引用，相同 99.22%，指向别的 0.01%（匿名命名空间和外层的同名重载，要按实参选），报为不确定 0.64%；目标在别处（本模块的接口、其他模块、std）的 48652 个，从导入模块的 MC2 接口读到声明（1.2.0 起包括经 using 声明可达的，1.3.0 起包括基类和函数的返回类型），相同 91.01%，指向别的 0.04%，报为不确定 7.60%，静默漏掉 1.35%。`test_lookup`：54 个名字，期望值全是 Clang 对同一段源码的回答。类型文本 82.3%（起点 22%；剩下的几乎都是推导出来的：`auto` 和 `std::lock_guard lock { m }` 这类类模板实参推导），模板列表要知道别名和默认模板实参，这两者是 M2 语义层的工作。类型文本不算作 F1 收集了 `declaration_types`：需要类型的门禁不由 F1 判定。
 
 | 种类 | 内容 |
 |---|---|
