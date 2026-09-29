@@ -174,7 +174,7 @@ void write_composition(const fs::path& dir, const features::Config& config, cons
         "[target.'cfg(os = \"linux\")'.build]\nldflags = [\"-Wl,--error-limit=0\", \"-Wl,-pie\", \"-Wl,-z,pack-relative-relocs\", "
         "\"-Wl,--export-dynamic\", {}]\n\n"
         "[dependencies]\nopenkal-llvm-runtime = \"0.15.2\"\n"
-        "openkal-musl = {{ git = \"https://github.com/speak-agent/openkal-musl.git\", tag = \"0.19.6\" }}\n"
+        "openkal-musl = {{ git = \"https://github.com/speak-agent/openkal-musl.git\", tag = \"0.19.7\" }}\n"
         "mcxx-driver = {{ path = {} }}\nmcxx-plugins-std = {{ path = {} }}\nmcxx-plugins-libs = {{ path = {} }}\n{}\n"
         "# Version settlement, as in MC++'s own root manifest.\n[dependencies.llvm]\nclang-dev = \"23.1.0.4\"\n",
         config.manifest, key, VERSION, toml_string((root / "index/llvm").generic_string()), toml_string((root / "index/microsoft").generic_string()),
