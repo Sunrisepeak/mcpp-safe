@@ -8,8 +8,13 @@
 
 ```toml
 # 使用方的 mcpp.toml
-[build-dependencies]
+[indices]
+mcxx = { path = "<mcpp-safe>/index/mcxx" }   # MC++ 自己的 index（规则 R2）
+
+[build-dependencies.mcxx]
 mcpp-tools-safe = { version = "0.1.0", host-module = true }
+
+[build-dependencies]
 llvm            = { version = "23.1.0-mcxx", tools = ["mcxx"] }   # 提供 mcxx 的工具链包
 
 [package.metadata.mcxx]

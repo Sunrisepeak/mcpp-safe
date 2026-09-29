@@ -144,5 +144,7 @@ jobs:
           # the goto it has is found; with asm denied it builds, an asm added fails it, removed it builds.
           git clone --quiet https://github.com/mcpp-community/mcpp.git "$HOME/c-mcpp" && git -C "$HOME/c-mcpp" checkout --quiet 982fc730
           python3 tools/checks/tools_safe.py --mcxx "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/mcxx" --work "$HOME/tools-safe-corpus" --corpus "$HOME/c-mcpp"
+          # E-IDX-5: the rule package and the plugins from this repository's index (the 0.1.0 archive).
+          python3 tools/checks/index.py --mcxx "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/mcxx" --work "$HOME/index-check"
           printf 'extern "C" int puts(const char*);\n[[mcpp::cfg(unix)]] int main() { puts("unix"); }\n[[mcpp::cfg(windows)]] int main() { Win(); }\n' > cfg.cpp
           "$mcxx" check --target=x86_64-unknown-linux-gnu cfg.cpp
