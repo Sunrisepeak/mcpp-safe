@@ -11,7 +11,7 @@ negative cases the schemas must reject; relative links resolve; every requiremen
 keyword) carries an identifier, identifiers are unique, and every identifier has evidence in
 conformance/traceability.json whose evidence exists. Exits non-zero on any failure.
 """
-import json, pathlib, re, subprocess, sys, tomllib
+import json, os, pathlib, re, subprocess, sys, tomllib
 
 from jsonschema import Draft202012Validator
 
@@ -47,7 +47,7 @@ def validate(label, validator, doc, expect_valid=True):
 
 mcxx = None
 if "--mcxx" in sys.argv:
-    mcxx = sys.argv[sys.argv.index("--mcxx") + 1]
+    mcxx = os.path.abspath(sys.argv[sys.argv.index("--mcxx") + 1])   # the live checks run in other directories
 
 # 1. every JSON file parses; every schema is a valid draft 2020-12 schema
 schemas = {}
