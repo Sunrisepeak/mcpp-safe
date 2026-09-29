@@ -14,6 +14,7 @@ kind = "lib"
 [dependencies]
 openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
 mcxx-msa = { path = "../msa" }
+mcxx-base = { path = "../base" }   # its trace: MCXX_LOG=frontend.syntax=debug
 
 [dev-dependencies]
 mcxx-testing = { path = "../testing" }

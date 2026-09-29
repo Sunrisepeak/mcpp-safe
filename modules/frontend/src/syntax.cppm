@@ -11,10 +11,15 @@
 //
 // It always gives a tree: what it cannot parse it skips (to the next `;` at its depth, or past a
 // balanced block), says where (diagnostics), and goes on.
+//
+// What it decides, as it decides it, is traced in the category frontend.syntax at debug
+// (MCXX_LOG=frontend.syntax=debug): each declaration recorded, each brace read as a block, a lambda's
+// body or an initializer, each control statement's parentheses, each skip.
 export module mcxx.frontend:syntax;
 
 import std;
 import mcxx.msa;
+import mcxx.base;
 import :lex;
 import :preprocess;
 
@@ -119,6 +124,8 @@ constexpr std::string_view STATEMENTS[] {
 };
 constexpr std::string_view CASTS[] { "static_cast", "dynamic_cast", "const_cast", "reinterpret_cast" };
 
+constexpr std::string_view TRACE { "frontend.syntax" };
+
 class Parser {
 public:
     Parser(Syntax& out, const Known& known) : out_ { out }, t_ { out.pp.tokens } {
@@ -159,6 +166,8 @@ private:
 
     Syntax& out_;
     const std::vector<PpToken>& t_;
+    // Asked once per parse: a trace point is then a branch, its arguments not even evaluated when off.
+    const bool tracing_ { base::trace::enabled(TRACE, base::trace::Level::debug) };
     std::size_t i_ { 0 };
     std::set<std::string, std::less<>> namespaces_;   // names of the file's namespaces: `ns::f` is not a member
     std::vector<std::pair<std::string, std::string>> pending_allows_;   // waivers read, for the next declaration
@@ -184,6 +193,7 @@ private:
 
     void diagnose(std::string message) {
         const auto& t = tok(std::min(i_, t_.empty() ? 0 : t_.size() - 1));
+        if (tracing_) base::trace::debug(TRACE, "{}:{} cannot follow: {}", t.at.line, t.at.column, message);
         out_.diagnostics.push_back({ Diagnostic::Severity::error, std::move(message), t.at });
     }
 
@@ -212,6 +222,18 @@ private:
             }
         }
         return k;
+    }
+
+    // The `)` matching the `(` at `open`, a `;` inside it allowed (`for (;;)`, `if (init; cond)`, which
+    // balanced() would end at); an unmatched closer (the enclosing block's `}`) where it is missing.
+    std::size_t closing_paren(std::size_t open) const {
+        std::size_t depth { 0 };
+        for (std::size_t k { open }; k < t_.size(); ++k) {
+            const Kind kind { t_[k].kind };
+            if (kind == Kind::l_paren || kind == Kind::l_square || kind == Kind::l_brace) ++depth;
+            else if ((kind == Kind::r_paren || kind == Kind::r_square || kind == Kind::r_brace) && --depth == 0) return k;
+        }
+        return t_.size();
     }
 
     // At `<` after a name: past the matching `>` of template arguments, or `k` when there is none
@@ -305,6 +327,9 @@ private:
         d.first_token = static_cast<std::uint32_t>(first);
         d.last_token = static_cast<std::uint32_t>(last);
         d.allows = std::exchange(pending_allows_, {});
+        if (tracing_)
+            base::trace::debug(TRACE, "{}:{} {} `{}` (declaration {}, in {})", d.name_at.line, d.name_at.column, msa::to_string(d.kind), d.name,
+                               out_.declarations.size(), d.parent);
         out_.declarations.push_back(std::move(d));
         return static_cast<std::int32_t>(out_.declarations.size() - 1);
     }
@@ -528,7 +553,7 @@ private:
         if (parts.empty()) {
             // An unnamed namespace: in the tree, not in an outline (nor what it holds).
             inner.listed = false;
-            made.push_back(record(msa::Kind::namespace_, {}, begin, begin, begin, scope, true, false, {}));
+            made.push_back(record(msa::Kind::namespace_, {}, i_, begin, begin, scope, true, false, {}));   // named at its `{`, as Clang has it
             inner.parent = made.back();
         }
         for (const auto& [first, id, inline_] : parts) {
@@ -952,6 +977,7 @@ private:
     // decl-specifiers declarator [, declarator]... ; or a function definition.
     struct Specifiers {
         bool type { false }, typedef_ { false }, static_ { false }, friend_ { false }, void_ { false };
+        bool auto_ { false };     // the type is `auto` (or `decltype(auto)`): deduced
         bool pointer { false };   // a `*` in a template argument of the type (outside parentheses), or the type an alias of one
         bool c_array { false };   // the type an alias (of this file) of an array
         bool va_list { false };   // the type is va_list: an array or a pointer, by the target
@@ -999,6 +1025,7 @@ private:
             if (any_word(i_, TYPE_KEYWORDS)) {
                 type = true;
                 void_ = void_ || w == "void";
+                sp.auto_ = sp.auto_ || w == "auto";
                 ++i_;
                 continue;
             }
@@ -1253,12 +1280,13 @@ private:
             } else if (!(end == k + 1 && word(k, "void")) && end > k) {
                 i_ = k;
                 const Specifiers sp { specifiers(scope, k) };
-                std::size_t name_token { i_ < end ? i_ : end - 1 };
+                // An unnamed one is where its name would be, as Clang places it: the token after its
+                // declarator (a `,`, the `)`, a default argument's `=`).
+                std::size_t name_token { std::min(i_, end) };
                 Declarator d;
                 if (i_ < end) {
                     d = declarator(scope);
-                    if (d.ok) name_token = d.id.last;
-                    else name_token = std::min(i_, end) > k ? std::min(i_, end) - 1 : k;
+                    name_token = d.ok ? d.id.last : std::min(i_, end);
                 }
                 // Its default argument is not in its range.
                 std::size_t last { std::min(i_, end) > k ? std::min(i_, end) - 1 : k };
@@ -1278,6 +1306,7 @@ private:
     // constructs in it. Past its `}`.
     std::size_t compound(std::size_t open, std::int32_t owner) {
         const std::size_t close { balanced(open) };
+        if (tracing_) base::trace::debug(TRACE, "{}:{} the body of declaration {}", tok(open).at.line, tok(open).at.column, owner);
         scan(open, close, owner, true);
         return close;
     }
@@ -1287,7 +1316,7 @@ private:
     void scan(std::size_t from, std::size_t to, std::int32_t owner, bool statements) {
         const std::size_t saved { i_ };
         std::vector<bool> contexts { statements };   // per brace: statements inside, or an initializer list
-        bool boundary { false };                     // at a statement's start
+        bool boundary { statements };                // at a statement's start: a body's `{` is one, whatever precedes it
         std::size_t control_close { static_cast<std::size_t>(-1) };   // the `)` of if/for/while/switch: a statement follows
         bool lambda_body_next { false };
         for (std::size_t k { from }; k < to && k < t_.size();) {
@@ -1365,7 +1394,9 @@ private:
                     std::size_t open { k + 1 };
                     if (word(open, "constexpr")) ++open;
                     if (is(open, Kind::l_paren)) {
-                        control_close = balanced(open) - 1;
+                        control_close = closing_paren(open);
+                        if (tracing_)
+                            base::trace::debug(TRACE, "{}:{} {} (...) to {}:{}", t.at.line, t.at.column, w, tok(control_close).at.line, tok(control_close).at.column);
                         if (!word(open + 1, "const") || true) try_local(open + 1, owner, control_close, true);
                         // What try_local did not take is read on, token by token.
                         k = std::max(open + 1, std::min(i_, control_close));
@@ -1384,6 +1415,7 @@ private:
             if (t.kind == Kind::l_square && !is(k + 1, Kind::l_square) &&
                 !(k > from && (identifier(k - 1) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) || is(k - 1, Kind::greater) ||
                                is_string(tok(k - 1).kind)))) {
+                captures(k, owner);
                 std::size_t j { balanced(k) };
                 if (is(j, Kind::less)) {
                     const std::size_t after { angle(j) };
@@ -1413,6 +1445,9 @@ private:
                 const bool block { lambda_body_next || (contexts.back() && (boundary || (k > 0 && (is(k - 1, Kind::r_paren) || word(k - 1, "else") ||
                                                                                                       word(k - 1, "do") || word(k - 1, "try"))))) };
                 contexts.push_back(block);
+                if (tracing_)
+                    base::trace::debug(TRACE, "{}:{} `{{` {} (owner {})", t.at.line, t.at.column,
+                                       lambda_body_next ? "a lambda's body" : block ? "a block" : "an initializer", owner);
                 lambda_body_next = false;
                 boundary = block;
                 ++k;
@@ -1455,6 +1490,25 @@ private:
             return false;
         }
         bool any { false };
+        // A structured binding, `auto [a, b] = e;` (`&` or `&&` first for a reference): one variable, as
+        // Clang has it -- named `[a, b]`, at its `[`.
+        if (std::size_t b { i_ }; sp.auto_ && (is(b, Kind::l_square) || ((is(b, Kind::amp) || is(b, Kind::ampamp)) && is(++b, Kind::l_square)))) {
+            std::string names;
+            std::size_t j { b + 1 };
+            while (identifier(j)) {
+                names += (names.empty() ? "" : ", ") + std::string { tok(j).spelling };
+                if (!is(++j, Kind::comma)) break;
+                ++j;
+            }
+            if (!names.empty() && is(j, Kind::r_square) && j < limit &&
+                (is(j + 1, Kind::equal) || is(j + 1, Kind::l_brace) || is(j + 1, Kind::l_paren) || (in_parens && is(j + 1, Kind::colon)))) {
+                i_ = j + 1;
+                const std::int32_t index { record(msa::Kind::variable, "[" + names + "]", b, k, j, scope, true, false, {}) };
+                initializer(owner, limit, in_parens);
+                close(index, i_ - 1);
+                return true;
+            }
+        }
         for (;;) {
             const std::size_t start { i_ };
             const Declarator d { declarator(scope) };
@@ -1473,26 +1527,53 @@ private:
             out_.declarations[static_cast<std::size_t>(index)].c_array = d.array || sp.c_array;
             out_.declarations[static_cast<std::size_t>(index)].va_list = sp.va_list && !d.pointer;
             any = true;
-            // Its initializer.
-            if (is(i_, Kind::equal)) {
-                const std::size_t from { i_ + 1 };
-                ++i_;
-                while (i_ < limit && !is(i_, Kind::semi) && !is(i_, Kind::comma) && !(in_parens && (is(i_, Kind::r_paren) || is(i_, Kind::colon)))) {
-                    if (is(i_, Kind::l_paren) || is(i_, Kind::l_square) || is(i_, Kind::l_brace)) i_ = balanced(i_);
-                    else ++i_;
-                }
-                scan(from, i_, owner, false);
-            } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {
-                const std::size_t from { i_ };
-                i_ = balanced(i_);
-                scan(from, i_, owner, false);
-            }
+            initializer(owner, limit, in_parens);
             close(index, i_ - 1);
             if (is(i_, Kind::comma) && !in_parens) {
                 ++i_;
                 continue;
             }
             return true;
+        }
+    }
+
+    // A local's initializer at i_ (`= e`, `{...}`, `(...)`), if it has one: past it, its constructs read.
+    void initializer(std::int32_t owner, std::size_t limit, bool in_parens) {
+        if (is(i_, Kind::equal)) {
+            const std::size_t from { i_ + 1 };
+            ++i_;
+            while (i_ < limit && !is(i_, Kind::semi) && !is(i_, Kind::comma) && !(in_parens && (is(i_, Kind::r_paren) || is(i_, Kind::colon)))) {
+                if (is(i_, Kind::l_paren) || is(i_, Kind::l_square) || is(i_, Kind::l_brace)) i_ = balanced(i_);
+                else ++i_;
+            }
+            scan(from, i_, owner, false);
+        } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {
+            const std::size_t from { i_ };
+            i_ = balanced(i_);
+            scan(from, i_, owner, false);
+        }
+    }
+
+    // A lambda's captures, [open] to its `]`: an init-capture (`x = e`, `&x = e`, `x{e}`, `...x = e`) is
+    // a variable, as Clang has it; every initializer's constructs are read.
+    void captures(std::size_t open, std::int32_t owner) {
+        const std::size_t close_square { balanced(open) - 1 };
+        const Scope scope { Context::block, {}, owner, false, false };
+        for (std::size_t k { open + 1 }; k < close_square;) {
+            std::size_t end { k };
+            while (end < close_square && !is(end, Kind::comma)) {
+                if (is(end, Kind::l_paren) || is(end, Kind::l_square) || is(end, Kind::l_brace)) end = balanced(end);
+                else ++end;
+            }
+            end = std::min(end, close_square);
+            std::size_t name { k };
+            while (name < end && (is(name, Kind::amp) || is(name, Kind::ellipsis))) ++name;
+            if (identifier(name) && name + 1 < end && (is(name + 1, Kind::equal) || is(name + 1, Kind::l_brace) || is(name + 1, Kind::l_paren))) {
+                const std::int32_t index { record(msa::Kind::variable, std::string { tok(name).spelling }, name, k, end - 1, scope, true, false, {}) };
+                scan(is(name + 1, Kind::equal) ? name + 2 : name + 1, end, owner, false);
+                close(index, end - 1);
+            }
+            k = end + 1;
         }
     }
 

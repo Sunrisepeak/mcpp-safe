@@ -3,7 +3,7 @@
 
     tools/checks/lint.py [ROOT...]        default: the repository (src modules plugins tools, manifests)
 
-The rules: clang-exposure, platform-exposure, json-brace-init (below).
+The rules: clang-exposure, platform-exposure, json-brace-init, direct-output (below).
 
 clang-exposure
     Clang and LLVM are named in two packages only: modules/backend/clang and
@@ -20,6 +20,13 @@ platform-exposure (A0.2.2, A0.2.4)
     openkal module or an #include of an openkal header, and a preprocessor test of a platform macro
     (_WIN32, __linux__, __APPLE__, __x86_64__, __aarch64__, __ELF__, _MSC_VER, ...), are errors. Code
     branches on mcxx.os and mcxx.arch constants with `if constexpr` (plan P9).
+
+direct-output
+    Library code (modules/, plugins/, src/; not tests) does not write to standard output or error:
+    what it has to say goes through mcxx.base's log and trace (MCXX_LOG, MCXX_TRACE; a host installs
+    the sink), and a bug is looked for with a trace point, not a print. std::cout, std::cerr,
+    std::clog, std::print(ln) of a format string, printf, fprintf, puts are errors outside the few
+    files whose output they are (OUTPUT_FILES, each with why).
 
 json-brace-init
     `Json x { expr };` (and nlohmann::json, a member's `{ expr }` default) is list-initialization:
@@ -132,6 +139,27 @@ def manifest_problems(root: pathlib.Path):
     return problems
 
 
+# The files whose standard streams are their output, not a log.
+OUTPUT_FILES = {
+    "modules/driver/src/commands.cpp": "the mcxx program: its commands' results and a compiler's messages",
+    "modules/testing/src/testing.cpp": "the test harness's report",
+    "modules/base/src/trace.cpp": "the trace's own sink, standard error when a host installed none",
+    "modules/plugin/remote/src/remote.cppm": "a plugin process's MC4 stream",
+    "plugins/mcpp-tools-safe/src/safe.cppm": "a build rule's errors, which mcpp shows the build's user",
+}
+DIRECT_OUTPUT = re.compile(r'std::(cerr|cout|clog)\b|\bstd::printl?n?\(\s*"|\bf?printf\s*\(|\bputs\s*\(')
+
+
+def output_checked(path: pathlib.Path) -> bool:
+    """Whether direct-output applies: this repository's library code, not a test, not an output file."""
+    text = path.resolve().as_posix()
+    root = pathlib.Path(__file__).resolve().parents[2].as_posix() + "/"
+    if not text.startswith(root):
+        return False
+    rel = text[len(root):]
+    return rel.startswith(("modules/", "plugins/", "src/")) and "/tests/" not in rel and rel not in OUTPUT_FILES
+
+
 RAW_STRING = re.compile(r'(?<![A-Za-z0-9_])(?:u8|u|U|L)?R"([^()\\ \t\n]{0,16})\(')
 
 
@@ -168,6 +196,10 @@ def main() -> int:
                 for n, line in enumerate(lines, 1):
                     if CLANG_INCLUDE.match(line):
                         problems.append(f"{path}:{n}: clang-exposure: Clang/LLVM is named outside modules/backend/clang*\n    {line.strip()}")
+            if output_checked(path):
+                for n, line in enumerate(code.splitlines(), 1):
+                    if DIRECT_OUTPUT.search(line):
+                        problems.append(f"{path}:{n}: direct-output: library code writes to a standard stream; use mcxx.base's log or trace\n    {lines[n - 1].strip()}")
             if not platform(path):
                 for n, line in enumerate(lines, 1):
                     if OPENKAL.match(line) or PLATFORM_MACRO.match(strip_comment(line)):

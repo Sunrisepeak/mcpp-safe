@@ -24,6 +24,7 @@
 import std;
 import nlohmann.json;
 import mcxx.msa;
+import mcxx.base;
 import mcxx.backend;
 import mcxx.lsp;
 import mcxx.plugin.wire;
@@ -123,6 +124,7 @@ int read_ifc(const std::string& path) {
 } // namespace
 
 int main(int argc, char** argv) {
+    mcxx::base::trace::configure_from_environment();   // MCXX_LOG, MCXX_TRACE, whichever path runs
     if (argc > 1 && std::string_view { argv[1] } == "--tokens") return tokens(argc, argv);
     if (argc == 3 && std::string_view { argv[1] } == "--read-ifc") return read_ifc(argv[2]);
     std::string db, resource, cache, file, ifc;

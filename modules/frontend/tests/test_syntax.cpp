@@ -122,8 +122,43 @@ void (*signal(int, void (*)(int)))(int);
             const auto it = std::ranges::find_if(facts.declarations, [&](const auto& d) { return d.qualified_name == qualified; });
             return it != facts.declarations.end() && it->local;
         };
-        expect(!local("n::g") && !local("n::f") && !local("n::p")) << "a namespace's declarations, a parameter";
-        expect(local("n::x") && local("n::L") && local("n::L::m")) << "a local variable, a local class and its member";
+        const auto named = [&](std::string_view qualified) { return std::ranges::contains(facts.declarations, qualified, &msa::fact::Declaration::qualified_name); };
+        expect(!local("n::g") && !local("n::f") && named("p") && !local("p")) << "a namespace's declarations, a parameter";
+        expect(local("x") && local("L")) << "a local variable, a local class";
+        expect(!named("n::p") && !named("n::x")) << "what a function declares is named by its name alone, as Clang names it";
+    };
+
+    "a structured binding and an init-capture are variables; an unnamed namespace and parameter are where Clang places them"_test = [] {
+        const std::string_view source { "namespace {\nvoid f(int, char* = nullptr) {\n  auto [a, b] = g();\n  for (const auto& [k, v] : m) {}\n"
+                                        "  auto l = [x = h(), &y = z, w{new int}](int q) { return q; };\n}\n}\n" };
+        const auto facts = f::facts(f::parse(source));
+        const auto at = [&](std::string_view qualified) -> const msa::fact::Declaration* {
+            const auto it = std::ranges::find(facts.declarations, qualified, &msa::fact::Declaration::qualified_name);
+            return it == facts.declarations.end() ? nullptr : &*it;
+        };
+        const auto* ab = at("[a, b]");
+        expect(ab != nullptr && ab->kind == msa::Kind::variable && ab->name.begin == msa::Position { 2, 7 } && ab->local);
+        expect(at("[k, v]") != nullptr) << "in a range-based for";
+        for (const auto* name : { "x", "y", "w" }) expect(at(name) != nullptr && at(name)->local) << name;
+        expect(std::ranges::count(facts.allocations, false, &msa::fact::Allocation::is_delete) == 1) << "an init-capture's initializer is read";
+        const auto* ns = at("(anonymous namespace)");
+        expect(ns != nullptr && ns->name.begin == msa::Position { 0, 10 }) << "at its `{`";
+        std::vector<msa::Position> unnamed;
+        for (const auto& d : facts.declarations)
+            if (d.kind == msa::Kind::parameter && d.qualified_name.empty()) unnamed.push_back(d.name.begin);
+        expect(unnamed == std::vector<msa::Position> { { 1, 10 }, { 1, 18 } }) << "after the declarator: the `,`, the `=`";
+    };
+
+    "a body is a block whatever precedes its `{`; a control statement's `;` is inside its parentheses"_test = [] {
+        for (const std::string_view source : { "void f() { auto t = [] { for (int i { 0 }; i < 3; ++i) { int dir {}; } }; }\n",
+                                              "void f() { auto t = [] { if (int i { 0 }; i) { int dir {}; } }; }\n",
+                                              "void f() { for (int i { 0 };;) { int dir {}; } }\n",
+                                              "struct S { bool f() const { int dir {}; return dir; } };\n",
+                                              "struct S { S() : a { 1 } { int dir {}; } int a; };\n",
+                                              "auto f() noexcept -> int { int dir {}; return dir; }\n" }) {
+            const auto facts = f::facts(f::parse(source));
+            expect(std::ranges::contains(facts.declarations, std::string_view { "dir" }, &msa::fact::Declaration::qualified_name)) << source;
+        }
     };
 
     "what it cannot parse it skips, says where, and goes on"_test = [] {

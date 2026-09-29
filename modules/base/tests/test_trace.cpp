@@ -30,6 +30,15 @@ int main() {
         trace::error("index", "hidden {}", 4);
         expect(lines == std::vector<std::string> { "info modules shown 2", "debug parse shown 3" });
         trace::set_sink({});
+        // Below every category's level nothing is on (enabled() answers that without a lock); one
+        // category turned on turns on only itself.
+        trace::configure(*trace::parse("warning"));
+        expect(!trace::enabled("parse", trace::Level::debug) && !trace::enabled("parse", trace::Level::info) && trace::enabled("parse", trace::Level::error));
+        trace::configure(*trace::parse("warning,frontend.syntax=debug"));
+        expect(trace::enabled("frontend.syntax", trace::Level::debug) && !trace::enabled("parse", trace::Level::debug));
+        trace::configure(*trace::parse("off"));
+        expect(!trace::enabled("parse", trace::Level::error));
+        trace::configure({});
     };
 
     "a span counts itself, logs its duration and writes a trace event"_test = [] {

@@ -22,6 +22,7 @@
 // from casts, what it finds must be expected (it sees the named casts, not C-style ones).
 import std;
 import mcxx.msa;
+import mcxx.base;
 import mcxx.plugin;
 import mcxx.backend;
 import mcxx.plugins.std;
@@ -102,6 +103,7 @@ std::string read(const fs::path& p) {
 } // namespace
 
 int main(int argc, char** argv) {
+    mcxx::base::trace::configure_from_environment();   // MCXX_LOG, MCXX_TRACE, whichever path runs
     std::string json, driver;
     bool frontend { false };
     fs::path root { "conformance/gates" };

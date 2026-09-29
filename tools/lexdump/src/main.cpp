@@ -21,6 +21,7 @@
 import std;
 import mcxx.msa;
 import mcxx.frontend;
+import mcxx.base;
 
 namespace {
 
@@ -342,6 +343,7 @@ int parse_bench(int rounds, int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    mcxx::base::trace::configure_from_environment();   // MCXX_LOG=frontend.syntax=debug: what the parser decides
     if (argc > 3 && std::string_view { argv[1] } == "--fuzz") return fuzz(std::stoi(argv[2]), argc, argv);
     if (argc > 3 && std::string_view { argv[1] } == "--parse-bench") return parse_bench(std::stoi(argv[2]), argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--directives") return directives(argv[2]);

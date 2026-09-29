@@ -88,8 +88,12 @@ msa::fact::Facts facts(const Syntax& syntax) {
                     msa::fact::Kinds::allocations | msa::fact::Kinds::casts | msa::fact::Kinds::uses | msa::fact::Kinds::suppressions;
     const auto& ds = syntax.declarations;
     // Each declaration's namespace (container) and qualified name, from its parents: inline
-    // namespaces left out, an unnamed one as Clang prints it.
+    // namespaces left out, an unnamed one as Clang prints it. One in a function -- a parameter, a
+    // local, a lambda's -- is named by its name alone, as Clang names what a function declares. And
+    // whether it is exported: inside `export`, or inside what is (a parameter, a member, a local), as
+    // Clang's isInExportDeclContext has it.
     std::vector<std::string> container(ds.size()), qualified(ds.size());
+    std::vector<bool> exported(ds.size());
     const auto name_of = [](const Declaration& d) { return d.name.empty() && d.kind == msa::Kind::namespace_ ? std::string { "(anonymous namespace)" } : d.name; };
     for (std::size_t i { 0 }; i < ds.size(); ++i) {
         const auto& d = ds[i];
@@ -105,10 +109,11 @@ msa::fact::Facts facts(const Syntax& syntax) {
                 prefix = ns;
             } else {
                 ns = container[p];
-                prefix = scope_parent ? qualified[p] : container[p];   // a function's locals are named in its namespace
+                if (scope_parent) prefix = qualified[p];
             }
         }
         container[i] = ns;
+        exported[i] = d.exported || (d.parent >= 0 && exported[static_cast<std::size_t>(d.parent)]);
         std::string own { d.qualifier + name_of(d) };
         qualified[i] = d.inline_namespace ? prefix : prefix.empty() ? own : prefix + "::" + own;
         if (d.inline_namespace) qualified[i] = prefix;
@@ -130,7 +135,7 @@ msa::fact::Facts facts(const Syntax& syntax) {
             f.container = container[i];
             f.qualified_name = qualified[i];
             f.kind = fact_kind(d);
-            f.exported = d.exported;
+            f.exported = exported[i];
             f.pointer = d.pointer;
             f.c_array = d.c_array;
             // va_list: an array of one struct on x86-64 Linux (the SysV ABI), a pointer on macOS and Windows.

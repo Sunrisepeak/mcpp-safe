@@ -115,7 +115,9 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 ## 事实与快速门禁（M1.8）
 
-`facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：
+`facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：函数里声明的东西（参数、局部变量、lambda 的参数和 init-capture）只用名字本身，和 Clang 一样；`exported` 按词法上的外层传下来（参数、成员、局部变量都算），和 Clang 的 `isInExportDeclContext` 一样；结构化绑定是一个变量，名字是 `[a, b]`，位置在 `[`；无名参数在声明符之后的那个 token，无名 namespace 在它的 `{`，都和 Clang 放的位置一样。
+
+`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16219 个（99.92%），限定名 99.95%，所属命名空间、`exported`、c-array、union、c-variadic 100%；类型文本和模板列表要知道别名和默认模板实参，是 M2 语义层的工作。
 
 | 种类 | 内容 |
 |---|---|
@@ -139,7 +141,11 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 - `tools/checks/lint.py` 的 clang-exposure 规则覆盖本包。
 - `tools/checks/symbols.py` 检查 `mcxx-lexdump` 和测试程序：0 个 Clang/LLVM 符号。
-- 依赖只有 `openkal-llvm-runtime`（C++ 运行时）和 `mcxx-msa`（不涉及任何编译器）。
+- 依赖只有 `openkal-llvm-runtime`（C++ 运行时）、`mcxx-msa` 和 `mcxx-base`（都不涉及任何编译器）。
+
+## 可观测
+
+解析器的判断记在 trace 的 `frontend.syntax` 类别（debug 级）：`MCXX_LOG=frontend.syntax=debug mcxx-lexdump --facts 文件` 逐条打印记录的声明（种类、名字、位置、父声明）、每个 `{` 被当作语句块、lambda 体还是初始化器、控制语句括号的范围、跳过的地方。是否打开在每次解析开始时问一次（`tracing_`），关着时每个 trace 点只是一次分支，参数不求值；`trace::enabled` 本身在低于所有类别的级别时只做一次原子读。
 
 ## 测试与生成
 

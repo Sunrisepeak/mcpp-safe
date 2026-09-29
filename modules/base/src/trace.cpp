@@ -22,6 +22,16 @@ State& state() {
     return s;
 }
 
+// The lowest level any category is on at: below it nothing is enabled, and enabled() says so with one
+// load -- so a trace point in a hot loop (a parser's) costs nothing while its category is off.
+constinit std::atomic<int> floor_ { static_cast<int>(Level::warning) };
+
+int lowest(const Config& config) {
+    int low { static_cast<int>(config.level) };
+    for (const auto& [category, level] : config.categories) low = std::min(low, static_cast<int>(level));
+    return low;
+}
+
 std::uint64_t thread_number() {
     static std::atomic<std::uint64_t> next { 1 };
     thread_local const std::uint64_t mine { next++ };
@@ -104,6 +114,7 @@ void configure(Config config) {
     std::lock_guard lock { s.mutex };
     const bool reopen { config.trace_file != s.config.trace_file };
     s.config = std::move(config);
+    floor_.store(lowest(s.config), std::memory_order_relaxed);
     if (reopen) open_trace(s);
 }
 
@@ -132,6 +143,7 @@ void set_sink(Sink sink) {
 }
 
 bool enabled(std::string_view category, Level level) {
+    if (static_cast<int>(level) < floor_.load(std::memory_order_relaxed)) return false;
     auto& s = state();
     std::lock_guard lock { s.mutex };
     const auto it = s.config.categories.find(category);

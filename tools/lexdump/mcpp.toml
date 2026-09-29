@@ -13,3 +13,4 @@ main = "src/main.cpp"
 openkal-llvm-runtime.workspace = true
 mcxx-msa      = { path = "../../modules/msa" }
 mcxx-frontend = { path = "../../modules/frontend" }
+mcxx-base     = { path = "../../modules/base" }       # MCXX_LOG, MCXX_TRACE
