@@ -7,6 +7,7 @@
 | `conformance/` | `mcxx-conformance`：运行 `conformance/gates` 的门禁 fixture，统计每个特性的精确率和召回率，可输出 JSON。`--driver mcxx`：构建路径和编辑器路径的发现相同（A1.4.2）；`--frontend`：由 MC++ 自己的前端取事实，它能判定的特性（13 个），发现和 fixture 一致；转换类特性只要求不误报（A1.6.2、A1.8.3） |
 | `checks/symbols.py` | 不需要 Clang 的程序里没有 Clang/LLVM 符号（A0.2.3）：用 `nm -C` 检查，mcxx 作为对照组 |
 | `checks/corpus.py` | 语料检查（A0.5.1）：已构建语料的每个单元分别用 mcxx 和不含 MC++ 的 clang 23.1（llvm-clang-dev 的 `driver-smoke`）做 `-fsyntax-only`。要求 mcxx 零错误，编译器诊断和 clang 完全相同；MC++ 自己的诊断单独计数，不参与比较 |
+| `checks/xlings.py` | E-XL-1：用本仓库的 xpkg（`xpkgs/pkgs/m/mcxx.lua`）经 xlings 安装 mcxx、`xlings use mcxx 0.1.0`，xlings 路径上的 `mcxx` 就是装进去的那个（`version --json` 相同），mcpp 列出工具链 `llvm 23.1.0-mcxx` |
 | `checks/boundary.py` | 跨模块的方言边界（M1.2）：用 mcxx 编译 `conformance/boundary`，导入处的发现等于期望、导入处 `[[mcpp::allow]]` 的豁免进审计（A1.2.1）；删掉被导入包的源码结果不变（A1.2.2）；删掉 BMI 旁边的 `.ifc` 时从 store 读到；store 也空时报"无法得知"；带 `--toolchain` 时用 mcpp 构建 manifest 形式的 `app-manifest` |
 | `checks/ifc.py` | MC2（M1.1）：从 SDK 源码构建 `ifc-printer`；方言 fixture `conformance/ifc/dialect` 读回的方言等于期望（A1.1.4）；`--corpus` 时，语料用 mcxx 构建后每个接口单元都有 `.ifc`（A1.1.1，依据 `build.ninja` 的 `bmi_out`）、`ifc-printer` 零错误读完全部 `.ifc`（A1.1.2）、读回的声明和解析结果逐项逐字段相等（A1.1.3） |
 | `checks/facts.py` | T1 事实对照 Clang AST（A0.4.3）：语料自身的每个源文件，MSA 的声明（`mcxx-probe --facts`）和直接从 Clang AST 统计的声明（`--census`，Clang 自己的 RecursiveASTVisitor）按种类逐项相等 |

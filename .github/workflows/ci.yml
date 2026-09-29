@@ -99,8 +99,8 @@ jobs:
           export XLINGS_HOME="$HOME/.mcpp/registry"
           mcxx=$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")
           headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.3/*/llvm/clang/lib/Headers | head -1)
-          "$XLINGS_HOME/bin/xlings" config --add-xpkg "$PWD/xpkgs/pkgs/m/mcxx.lua"
-          MCXX_BINARY="$mcxx" MCXX_CLANG_HEADERS="$headers" "$XLINGS_HOME/bin/xlings" install mcxx:mcxx@0.1.0 -y
+          # E-XL-1: installed from this repository's xpkg, selected with `xlings use`, run through xlings' path.
+          python3 tools/checks/xlings.py --mcxx "$mcxx" --headers "$headers"
           python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
           python3 tools/checks/selfhost.py --work "$HOME/c-mcppls"
           # MC2 (M1.1): every C-mcppls interface unit's .ifc beside its BMI, read by the IFC SDK's ifc-printer
@@ -140,5 +140,9 @@ jobs:
           python3 tools/checks/compose.py --mcxx "$(realpath "$mcxx")" --remote "$(realpath "$remote")" --work "$HOME/compose-check"
           # mcpp-tools-safe (A1.5): a program built with GCC, gated by MC++ as a blocking check action.
           python3 tools/checks/tools_safe.py --mcxx "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/mcxx" --work "$HOME/tools-safe-check"
+          # A1.5.2 on C-mcpp (mcpp-community/mcpp at the corpus revision), built with GCC under the check:
+          # the goto it has is found; with asm denied it builds, an asm added fails it, removed it builds.
+          git clone --quiet https://github.com/mcpp-community/mcpp.git "$HOME/c-mcpp" && git -C "$HOME/c-mcpp" checkout --quiet 982fc730
+          python3 tools/checks/tools_safe.py --mcxx "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/mcxx" --work "$HOME/tools-safe-corpus" --corpus "$HOME/c-mcpp"
           printf 'extern "C" int puts(const char*);\n[[mcpp::cfg(unix)]] int main() { puts("unix"); }\n[[mcpp::cfg(windows)]] int main() { Win(); }\n' > cfg.cpp
           "$mcxx" check --target=x86_64-unknown-linux-gnu cfg.cpp

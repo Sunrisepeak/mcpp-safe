@@ -6,7 +6,7 @@
 //   import mcxx.check;
 //   int main() { return mcxx::check::sources() ? 0 : 1; }
 //
-// One edge: `mcxx check -p <the build's compile database> <files>`, blocking, its inputs the files and
+// One edge: `mcxx check -p <the build's compile database> <files>`, a check, its inputs the files and
 // the manifest (whose [package.metadata.mcxx] says what is gated), its output a stamp mcpp writes when
 // the check passes. mcxx reads each file as the database compiles it -- GCC's commands too -- and
 // builds the module interfaces the files import itself, into a cache kept beside the stamp, so a run
@@ -22,8 +22,13 @@ export namespace mcxx::check {
 struct options {
     // Where the stamp and mcxx's interface cache go.
     std::string out_dir = std::string(mcpp::out_dir()) + "/mcxx-check";
-    // The check gates compilation: a gate's error stops the build before anything is compiled.
-    bool blocking = true;
+    // A gate's error fails the build either way: the check is an edge of the build. Blocking also makes
+    // the package's compile edges wait for it, so nothing is compiled before it passes -- but mcpp
+    // (2026.9.28.2 to at least 2026.9.29.4) does not order a module interface unit's compile edge after
+    // a blocking check, and its own self-check then refuses the plan ("compile edge ... does not wait
+    // for 'mcpp-actions-...'"). So the check runs beside compilation unless a package without module
+    // units asks for more.
+    bool blocking = false;
     // mcxx. Empty: the consumer's dependency graph (`llvm = { version = "23.1.0-mcxx", tools =
     // ["mcxx"] }` in [build-dependencies]), then the MCXX environment variable.
     std::string program;
@@ -37,7 +42,7 @@ struct edge {
     std::vector<std::string> command;
     std::vector<std::string> inputs;
     std::vector<std::string> outputs;
-    bool                     blocking = true;
+    bool                     blocking = false;
 };
 
 // The C++ sources under `dir` (relative to the manifest), sorted: .cpp, .cppm, .cc, .cxx, .ixx.

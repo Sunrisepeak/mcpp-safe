@@ -1,8 +1,9 @@
 # mcpp-tools-safe：用其他编译器构建时的 MC++ 门禁（E-PLG-1，M1.5）
 
-一个 mcpp 构建规则包（host module，模块 `mcxx.check`），写法和 mcpp-index 里的 `clangtidy` 规则包一样。用 GCC 或者不是 mcxx 的 LLVM 构建程序时，它把 `mcxx check` 作为 **blocking 的 `role = "check"` 动作**放进构建图：
+一个 mcpp 构建规则包（host module，模块 `mcxx.check`），写法和 mcpp-index 里的 `clangtidy` 规则包一样。用 GCC 或者不是 mcxx 的 LLVM 构建程序时，它把 `mcxx check` 作为 **`role = "check"` 动作**放进构建图：
 
-- 门禁报错时，构建在编译之前就失败，失败的位置和用 mcxx 构建时一样；
+- 门禁报错时构建失败，报出的位置和用 mcxx 构建时一样；
+- 默认和编译并行（`blocking = false`）。设成 `blocking = true` 时包里的编译边要等检查通过，但 mcpp（2026.9.28.2 到至少 2026.9.29.4）不会让模块接口单元的编译边等待 blocking 的检查，它自己的自检随即拒绝构建计划（"compile edge ... does not wait for 'mcpp-actions-...'"），所以只适合没有模块单元的包；
 - 源码和 manifest 都没变时，这个检查不会再跑。mcpp 在命令成功时写 stamp。
 
 ```toml
