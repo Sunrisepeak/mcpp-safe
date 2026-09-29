@@ -203,6 +203,7 @@ public:
             if (t.kind != Kind::raw_identifier || t.expanded || module_line || declares[k] || keyword(t.spelling)) continue;
             if (k > 0 && (word(k - 1, "goto") || word(k - 1, "operator"))) continue;
             deduced_placeholder_ = false;
+            object_known_ = false;
             auto target { resolve(k) };
             if (!target) {
                 // A member F1 cannot find because it cannot type the object: said, not guessed.
@@ -238,6 +239,7 @@ private:
         std::size_t at { 0 };
         std::string context;
         bool imported { false };
+        std::string iterating;   // an iterator's: the type of the container it came from (its names looked up as text's are)
     };
 
     const Syntax& syntax_;
@@ -507,6 +509,11 @@ private:
     std::optional<Typed> typed(const Target& t, int depth = 0) {
         if (t.declaration >= 0) {
             const auto& d = ds_[static_cast<std::size_t>(t.declaration)];
+            if (t.kind == msa::Kind::variable && d.binding) {
+                auto element { binding_type(static_cast<std::size_t>(t.declaration), depth) };
+                if (!element) deduced_placeholder_ = true;
+                return element;
+            }
             if (t.kind == msa::Kind::variable && placeholder(d)) {
                 auto deduced { deduce(static_cast<std::size_t>(t.declaration), depth) };
                 if (!deduced) {
@@ -521,7 +528,7 @@ private:
                 return deduced;
             }
             if (t.type.empty()) return std::nullopt;
-            return Typed { t.type, d.name_token, {}, false };
+            return iterator_of(Typed { t.type, d.name_token, {}, false, {} });
         }
         if (t.type.empty()) return std::nullopt;
         // A function template's return type deduced from its body: not in its interface (A2.2.3).
@@ -529,7 +536,22 @@ private:
             deduced_placeholder_ = true;
             return std::nullopt;
         }
-        return Typed { t.type, 0, scope_of(t.qualified), true };
+        return iterator_of(Typed { t.type, 0, scope_of(t.qualified), true, {} });
+    }
+
+    // Whether a type names an iterator: `...iterator`, the last component of its name.
+    static bool iterator_name(std::string_view text) {
+        const std::string name { class_name_of(std::string { text }) };
+        const std::string_view last { last_component(name) };
+        return last.ends_with("iterator");
+    }
+
+    // A type written `C::iterator` (`const_iterator`, ...): an iterator of C.
+    static Typed iterator_of(Typed type) {
+        const std::string text { bare(type.text) };
+        const auto at = text.rfind("::");
+        if (at != std::string::npos && iterator_name(text) && at > 0) type.iterating = text.substr(0, at);
+        return type;
     }
 
     // Whether a type's text is a placeholder (`auto`, `decltype(auto)`), however qualified.
@@ -582,6 +604,54 @@ private:
         }
         deduced_[i] = out;
         return out;
+    }
+
+    // A structured binding's name (`auto [a, b] = e;`, `for (auto& [k, v] : m)`): its place among the
+    // names, of what the group is deduced to be -- a pair's or a tuple's argument there, an array's
+    // element, the file's own class's field in that place.
+    std::optional<Typed> binding_type(std::size_t i, int depth) {
+        std::size_t group { i };
+        while (group > 0 && !ds_[--group].name.starts_with('[')) {}
+        if (!ds_[group].name.starts_with('[')) return std::nullopt;
+        std::size_t place { 0 };
+        for (std::size_t j { group + 1 }; j < i; ++j) place += ds_[j].binding ? 1 : 0;
+        // The `]` that closes the names, then the initializer or the range.
+        std::size_t k { ds_[group].name_token };
+        while (k < t_.size() && !is(k, Kind::r_square)) ++k;
+        ++k;
+        std::optional<Typed> whole;
+        if (is(k, Kind::colon)) {
+            int nesting { 0 };
+            std::size_t end { k + 1 };
+            for (; end < t_.size(); ++end) {
+                if (is(end, Kind::l_paren) || is(end, Kind::l_square) || is(end, Kind::l_brace)) ++nesting;
+                else if (is(end, Kind::r_paren) || is(end, Kind::r_square) || is(end, Kind::r_brace)) {
+                    if (nesting == 0) break;
+                    --nesting;
+                }
+            }
+            if (end > k + 1)
+                if (auto range = expression_type(end - 1, depth + 1)) whole = range_element(*range);
+        } else if (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren)) {
+            std::size_t end { ds_[group].last_token };
+            while (end > k && (is(end, Kind::semi) || is(end, Kind::comma))) --end;
+            if (!is(k, Kind::equal) && end > k && (is(end, Kind::r_brace) || is(end, Kind::r_paren))) --end;
+            if (end > k) whole = expression_type(end, depth + 1);
+        }
+        if (!whole) return std::nullopt;
+        const std::string text { bare(whole->text) };
+        const auto cls { class_of(*whole) };
+        if (!cls) return std::nullopt;
+        const auto args { arguments_of(text) };
+        if ((*cls == "std::pair" || *cls == "std::tuple") && place < args.size())
+            return Typed { bare(args[place]), whole->at, whole->context, whole->imported };
+        if (*cls == "std::array" && !args.empty()) return Typed { bare(args[0]), whole->at, whole->context, whole->imported };
+        if (const auto c = classes_.find(*cls); c != classes_.end()) {
+            std::size_t n { 0 };
+            for (std::size_t j { static_cast<std::size_t>(c->second) + 1 }; j < ds_.size(); ++j)
+                if (ds_[j].parent == c->second && ds_[j].kind == msa::Kind::field && n++ == place) return typed(target_of(static_cast<std::int32_t>(j)), depth + 1);
+        }
+        return std::nullopt;
     }
 
     // What a range-for over a value of this type gives: a sequence's element, a map's pair.
@@ -657,6 +727,12 @@ private:
     // What `*` (or `->`) of a value of this type reaches: a pointer's pointee; the element of the
     // standard's smart pointers and optional ([unique.ptr], [util.smartptr.shared], [optional]).
     std::optional<Typed> pointee(const Typed& type) {
+        // An iterator's `*` and `->`: its container's element (a json value's iterators give json values).
+        if (!type.iterating.empty()) {
+            const Typed container { type.iterating, type.at, type.context, type.imported, {} };
+            if (const auto cls = class_of(container); cls && *cls == "nlohmann::basic_json") return container;
+            return range_element(container);
+        }
         std::string text { bare(type.text) };
         if (text.ends_with('*')) {
             text.pop_back();
@@ -785,7 +861,19 @@ private:
                 // `T(...)`: a T.
                 if (class_kind(c.kind) || c.kind == msa::Kind::type_alias) return type_named_before(*open);
                 if (!function_kind(c.kind)) return std::nullopt;
-                return typed(c, depth + 1);
+                auto result { typed(c, depth + 1) };
+                // A member function that returns its class's iterator (`find`, `begin`): an iterator of
+                // the object's type, arguments and all.
+                if (result && result->iterating.empty() && iterator_name(bare(result->text)) && callee >= 2 &&
+                    (is(callee - 1, Kind::period) || is(callee - 1, Kind::arrow))) {
+                    auto object { expression_type(callee - 2, depth + 1) };
+                    if (object && is(callee - 1, Kind::arrow)) object = pointee(*object);
+                    if (object) {
+                        Typed iterator { result->text, object->at, object->context, object->imported, bare(object->text) };
+                        return iterator;
+                    }
+                }
+                return result;
             }
             // `(x)`: what is inside; `(*x)`: what x points to.
             if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > 0) {

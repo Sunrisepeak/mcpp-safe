@@ -109,10 +109,16 @@ def compare(unit):
     for place, rs in by_place.items():
         where = "in-file" if any(r.get("declaration") is not None for r in rs) else "elsewhere"
         counts[f"{where}:clang"] += 1
+        # What `import std;` brings in (A2.2.2): Clang's target in std.
+        in_std = where == "elsewhere" and plain(rs[0]["target"]).startswith("std::")
+        if in_std:
+            counts["std:clang"] += 1
         m = mine.get(place)
         if m is None:
             if place in unsure:   # said to be uncertain (A2.2.3): what a service asks the Clang backend
                 counts[f"{where}:uncertain"] += 1
+                if in_std:
+                    counts["std:uncertain"] += 1
             counts[f"{where}:left-out"] += 1
             wrong[f"{where}:left-out"].append(f"{place[0] + 1}:{place[1] + 1} {plain(rs[0]['target'])} ({rs[0]['kind']})")
             continue
@@ -124,8 +130,12 @@ def compare(unit):
                    for r in rs)
         if same:
             counts[f"{where}:same"] += 1
+            if in_std:
+                counts["std:same"] += 1
         else:
             counts[f"{where}:other"] += 1
+            if in_std:
+                counts["std:other"] += 1
             wrong[f"{where}:other"].append(f"{place[0] + 1}:{place[1] + 1} {m['name']}: Clang {plain(rs[0]['target'])} ({rs[0]['kind']}) "
                                            f"vs {m['target']} ({m['kind']})")
     for place, m in mine.items():
@@ -158,6 +168,10 @@ for where in ("in-file", "elsewhere"):
     for k in ("other", "left-out"):
         for x in examples[f"{where}:{k}"][:6]:
             print(f"      {k}: {x}")
+if total["std:clang"]:
+    n = total["std:clang"]
+    print(f"    of which in std (A2.2.2): {n}: the same {total['std:same']} ({100 * total['std:same'] / n:.2f}%), another target {total['std:other']} "
+          f"({100 * total['std:other'] / n:.2f}%), said uncertain {total['std:uncertain']} ({100 * total['std:uncertain'] / n:.2f}%)")
 print(f"  names the front end resolves that Clang reports nothing at: {total['extra']}")
 for x in examples["extra"][:6]:
     print(f"      {x}")

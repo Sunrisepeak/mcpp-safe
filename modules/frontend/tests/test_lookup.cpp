@@ -128,7 +128,8 @@ int main() {
             "    int c = r.pointer->input;\n"
             "    State arr[3];\n"
             "    for (const auto& e : arr) a += e.output;\n"
-            "    return a + b + c + make().input + arr[1].output;\n"
+            "    auto [first, second] = Holder {};\n"
+            "    return a + b + c + make().input + arr[1].output + first.input + second->output;\n"
             "}\n"
             "}\n"
         };
@@ -141,7 +142,30 @@ int main() {
         expect(at(8, 14) == "ns::Holder::state" && at(8, 20) == "ns::State::output") << "auto from a construction, then a field's type";
         expect(at(10, 14) == "ns::Holder::pointer" && at(10, 23) == "ns::State::input") << "auto& from a copy, then -> through a pointer";
         expect(at(12, 37) == "ns::State::output") << "a range-for's element: " << at(12, 37);
-        expect(at(13, 30) == "ns::State::input" && at(13, 45) == "ns::State::output") << "a call's result, a subscript's element";
+        expect(at(14, 30) == "ns::State::input" && at(14, 45) == "ns::State::output") << "a call's result, a subscript's element";
+        expect(at(14, 60) == "ns::State::input" && at(14, 76) == "ns::State::output") << "structured bindings: a class's fields in order: " << at(14, 60) << " " << at(14, 76);
+    };
+
+    "an iterator a container's member function returns reaches the container's element"_test = [] {
+        const std::string_view source {
+            "namespace std {\n"
+            "template <class T> struct vector { using iterator = T*; iterator begin(); iterator find(int); T& operator[](unsigned); };\n"
+            "}\n"
+            "namespace ns { struct Item { int size; }; }\n"
+            "int f(std::vector<ns::Item>& items) {\n"
+            "    auto it = items.find(1);\n"
+            "    std::vector<ns::Item>::iterator first = items.begin();\n"
+            "    return it->size + first->size + (*it).size;\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            return it != references.end() ? it->target : std::string { "not resolved" };
+        };
+        expect(at(7, 15) == "ns::Item::size") << "auto from find(): " << at(7, 15);
+        expect(at(7, 29) == "ns::Item::size") << "a declared C::iterator: " << at(7, 29);
+        expect(at(7, 42) == "ns::Item::size") << "(*it).size: " << at(7, 42);
     };
 
     "an imported alias names its class, and a member is found in an imported class's base (MC3 0.5.0)"_test = [] {
