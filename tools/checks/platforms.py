@@ -13,7 +13,7 @@ source path is the build machine's). Exits non-zero when a build or a test fails
 """
 import os, pathlib, platform, shutil, subprocess, sys, time
 
-MEMBERS = ["modules/base", "modules/graph", "modules/lsp", "modules/features", "modules/frontend", "modules/ifc",
+MEMBERS = ["modules/base", "modules/graph", "modules/lsp", "modules/features", "modules/diagnostics", "modules/frontend", "modules/ifc",
            "modules/plugin/wire", "modules/plugin/remote", "modules/plugin/host", "modules/serve", "plugins/std",
            "plugins/libs", "modules/backend/clang"]
 

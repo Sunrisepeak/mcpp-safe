@@ -12,6 +12,7 @@ libmc++ 两个可以出现 Clang 的包之一（见 `../README.md` 的边界规�
 | `unit.cppm` | `:unit` | 解析一个文件：诊断、出现位置、符号、实体 |
 | `facts.cppm` | `:facts` | MC3 事实（`imports` 按编译加载的 BMI 读对方的 `.ifc`，顺着再导出）：遍历主文件 AST（声明、初始化和未初始化的局部变量、强制转换、new/delete、指针运算、goto、throw/try/typeid/asm/va_arg、`[[mcpp::allow]]`），宏和 `#include` 来自预处理器和源码管理器。只收集要求的种类（`fact::Kinds`） |
 | `gate.cppm` | `:gate` | `[[mcpp::allow]]` 属性；Clang 静态插件：解析前运行源码过滤器，解析后运行门禁规则 |
+| `diagnostics.cppm`、`diagnostics.cpp` | `:diagnostics`（内部） | MC5 §9 的诊断视角：human 或 agent 时换掉 Clang 的诊断 consumer，把 Clang 的诊断（连同它的 note、fix-it）和门禁的发现（记下的级别、出处、修改建议、豁免写法）交给 `mcxx.diagnostics` 排版；clang 视角时不动 |
 | `ifc.cppm` | `:ifc` | MC2：模块单元写出 BMI 且没有错误时，在 BMI 旁边写 `.ifc`（T1 声明、方言、再导出，`mcxx.ifc`），并登记给 store；libmc++ 自己构建 BMI 时也写（`InterfaceAction`）；导入上的 `[[mcpp::allow]]` 在 Clang 读文件前换成空格，变成对这个导入的豁免 |
 | `completion.cppm` | `:completion` | 代码补全、签名帮助 |
 | `index.cppm` | `:index` | 后台构建的程序索引 |

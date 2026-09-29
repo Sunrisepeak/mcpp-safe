@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC5 |
-| Version | 0.3.0 |
+| Version | 0.4.0 |
 | Status | Draft |
 | Schema | [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json) |
 | Examples | [`examples/mc5-version.json`](examples/mc5-version.json) |
@@ -73,4 +73,13 @@ This section is advice to the projects MC++ builds, and the layout this reposito
 - A module SHOULD be divided by what its parts are about: a primary interface unit that re-exports interface partitions, one per concern, and the definitions in implementation units (`.cpp`: `module m;`), not in the interface units (`.cppm`), which declare. A source file SHOULD stay under 2000 lines. <a id="MC5-8-1"></a><sup>MC5-8-1</sup>
 - Why: with today's compilers an interface unit's BMI changes when any function body in it changes, and every unit that imports it is compiled again; a body in an implementation unit recompiles that unit alone. A one-file module is the slow case.
 - MC++ plans to make the one-file form as cheap as the divided one: an interface unit's BMI carrying only what an importer needs (a reduced BMI: no non-inline function bodies), and a BMI not written again when those bytes would not change, as MC2 already does for the `.ifc` (MC2-2-4) -- so a build tool that looks at what changed rebuilds importers only when the interface did.
+
+## 9. Diagnostic views (0.4.0)
+
+A compile's diagnostics -- the compiler's own and MC++'s feature gates' (MC1 §9) -- are read by people and by agents, which want different things of them.
+
+- `--mcxx-diagnostics=human|agent|clang` chooses a compile's view (`mcxx c++`, `mcxx cc`, `mcxx check`, and `mcxx` started as `clang++` or `clang`); the driver takes it out of the compiler's arguments and passes it on as the environment variable `MCXX_DIAGNOSTICS`, which a build tool that cannot add an option MAY set itself. With neither, the view is `human` when standard error is a terminal and `clang` otherwise, so a build log and an editor's problem matcher see the compiler's own format. A value that names no view is an error. <a id="MC5-9-1"></a><sup>MC5-9-1</sup>
+- `human` lays each diagnostic out as Rust does: `error[code]: headline` (or `warning[...]`), ` --> file:line:column`, the source lines of its range with the range underlined, and then `= help:` lines -- what to write instead, how to allow it here, the compiler's fix-its -- and `= note:` lines, among them for a gate's finding its level and where that level is set (MC1 §6: a profile, the package, a module, a file pattern, a namespace, with the manifest). A compiler's notes follow their diagnostic, each with its place. Color on a terminal, none with `NO_COLOR`. <a id="MC5-9-2"></a><sup>MC5-9-2</sup>
+- `agent` writes each diagnostic as one JSON object on one line, and nothing else, on standard error, valid against [`schema/mc5-diagnostic.schema.json`](schema/mc5-diagnostic.schema.json): `mcxx-diagnostic` (this form's version, `0.1.0`), `severity`, `code` (a gate's feature id, the compiler's own diagnostic name), `message` (the headline, without what to do about it), `file`, `range` (MC3's positions, from 0) and `location` (`file:line:column`, from 1); for a gate's finding `level`, `level-from`, `fix` and `waiver` (the attribute to write, as code); and `fixits` and `notes` when there are any. <a id="MC5-9-3"></a><sup>MC5-9-3</sup> An agent acts on a finding from these fields alone: which rule, where exactly, what to write instead, and which setting to change if the rule should not apply there.
+- `mcxx check -p` prints its diagnostics in the same views.
 

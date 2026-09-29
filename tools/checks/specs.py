@@ -66,8 +66,9 @@ for path in sorted(specs.rglob("*.json")):
             check(f"schema is valid 2020-12: {path.name}", False, str(e))
         schemas[path.stem.removesuffix(".schema")] = Draft202012Validator(doc)
 
-config, catalog_v, audit, facts, protocol, version, serve, interface = (schemas[n] for n in
-    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version", "mc6-requests", "mc2-interface"))
+config, catalog_v, audit, facts, protocol, version, serve, interface, diagnostic = (schemas[n] for n in
+    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version", "mc6-requests", "mc2-interface",
+     "mc5-diagnostic"))
 ex = specs / "examples"
 
 # 2. examples validate
@@ -86,6 +87,8 @@ for i, message in enumerate(lines(ex / "mc4-session.jsonl")):
     if message.get("type") == "check":
         validate("MC4 example: a check's facts are MC3 facts", facts, message["facts"])
 validate("MC5 example validates: mc5-version.json", version, load(ex / "mc5-version.json"))
+for i, d in enumerate(lines(ex / "mc5-diagnostic.jsonl")):
+    validate(f"MC5 example validates: mc5-diagnostic.jsonl line {i + 1}", diagnostic, d)
 validate("MC2 example validates: mc2-interface.json", interface, load(ex / "mc2-interface.json"))
 for entry in load(ex / "mc6-session.json"):
     validate(f"MC6 example validates: mc6-session.json {entry['method']}", serve, entry)
@@ -120,6 +123,10 @@ session = lines(ex / "mc4-session.jsonl")
 validate("MC4 schema rejects a welcome without providers", protocol, dict(session[1], providers=[]), expect_valid=False)
 validate("MC4 schema rejects a message without an id", protocol, {"type": "shutdown"}, expect_valid=False)
 validate("MC4 schema rejects an unknown message type", protocol, {"type": "reload", "id": 3}, expect_valid=False)
+d5 = lines(ex / "mc5-diagnostic.jsonl")[0]
+validate("MC5 diagnostic schema rejects another form's version", diagnostic, dict(d5, **{"mcxx-diagnostic": "9.0.0"}), expect_valid=False)
+validate("MC5 diagnostic schema rejects a level that is not one", diagnostic, dict(d5, level="loud"), expect_valid=False)
+validate("MC5 diagnostic schema rejects a location without its column", diagnostic, dict(d5, location="src/a.cpp:3"), expect_valid=False)
 
 # 4. semantics: the catalog has MC1 section 3's features and section 4's profiles
 mc1 = (specs / "mc1-features.md").read_text(encoding="utf-8")
@@ -211,6 +218,32 @@ if mcxx:
         (w / "bad.cppm").write_text("export module bad;\nexport int f() { return undeclared; }\n")
         bad = subprocess.run([mcxx, *args, "--precompile", "bad.cppm", "-o", "bad.pcm"], cwd=w, capture_output=True, text=True)
         check("mcxx: a compile with an error writes no .ifc", bad.returncode != 0 and not (w / "bad.ifc").exists())
+        # MC5 §9: the views of a compile's diagnostics.
+        (w / "g.cpp").write_text("int f(int n) {\n    if (n) goto out;\n    return 1;\nout:\n    return 0;\n}\nint h() { return undeclared; }\n")
+        view = lambda v: subprocess.run([mcxx, *args, f"--mcxx-diagnostics={v}", "-fsyntax-only", "g.cpp"], cwd=w, capture_output=True, text=True)
+        agent = view("agent")
+        records = [json.loads(l) for l in agent.stderr.splitlines() if l.strip()] if agent.stderr.lstrip().startswith("{") else []
+        check("mcxx: the agent view is one JSON object per line and nothing else",
+              agent.returncode != 0 and records and all(l.startswith("{") for l in agent.stderr.splitlines() if l.strip()), agent.stderr[:300])
+        for r in records:
+            validate(f"mcxx: an agent-view diagnostic validates ({r.get('code')})", diagnostic, r)
+        g = next((r for r in records if r.get("code") == "goto"), {})
+        check("mcxx: the agent view of a gate's finding: its exact range, level and where it is set, fix, waiver",
+              g.get("range") == {"begin": {"line": 1, "column": 11}, "end": {"line": 1, "column": 19}} and g.get("level") == "warn"
+              and "mcpp.toml" in g.get("level-from", "") and g.get("fix") and 'mcpp::allow("goto"' in g.get("waiver", ""), str(g))
+        check("mcxx: the agent view carries the compiler's own errors", any(r.get("severity") == "error" and "undeclared" in r["message"] for r in records))
+        human = view("human")
+        check("mcxx: the human view: headline with its code, place, excerpt underlined, help and note",
+              all(s in human.stderr for s in ("warning[goto]:", " --> g.cpp:2:12", "2 |     if (n) goto out;", "^^^^^^^^", "= help:", "= note: warn,"))
+              and "\x1b[" not in human.stderr, human.stderr[:400])
+        own = view("clang")
+        check("mcxx: the clang view is the compiler's own format", "g.cpp:2:12: warning:" in own.stderr and "g.cpp:7:" in own.stderr, own.stderr[:300])
+        env = subprocess.run([mcxx, *args, "-fsyntax-only", "g.cpp"], cwd=w, capture_output=True, text=True, env=dict(os.environ, MCXX_DIAGNOSTICS="agent"))
+        check("mcxx: MCXX_DIAGNOSTICS chooses the view; off a terminal the default is the compiler's",
+              env.stderr.lstrip().startswith("{") and "g.cpp:2:12: warning:" in subprocess.run([mcxx, *args, "-fsyntax-only", "g.cpp"], cwd=w,
+              capture_output=True, text=True, env={k: v for k, v in os.environ.items() if k != "MCXX_DIAGNOSTICS"}).stderr)
+        wrong = view("loud")
+        check("mcxx: a view that is not one is an error", wrong.returncode != 0 and "--mcxx-diagnostics" in wrong.stderr, wrong.stderr[:200])
         (w / "d.cppm").write_text("export module d;\nexport int d_value();\n")
         checked = subprocess.run([mcxx, "check", "--target=x86_64-unknown-linux-gnu", "-std=c++23", "d.cppm"], cwd=w, capture_output=True, text=True)
         check("mcxx: `mcxx check` of an interface writes no .ifc", checked.returncode == 0 and not (w / "d.ifc").exists(), checked.stderr[:200])

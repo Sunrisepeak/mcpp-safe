@@ -104,6 +104,9 @@ struct Plan {
     // The level of a gated feature for code in `module` and namespace `container`, in `file` (its
     // path relative to the manifest's directory, '/'-separated; "" when not known), before any waiver.
     Level level(const Gate& gate, std::string_view module, std::string_view container, std::string_view file = {}) const;
+    // The same, and where that level is set: "the default", "profile `safe`", "the package", "module
+    // `m`", "files `src/**`", "namespace `a::b`" -- with the manifest it is in.
+    std::pair<Level, std::string> explain(const Gate& gate, std::string_view module, std::string_view container, std::string_view file = {}) const;
     // A source file's path as `files` patterns match it: relative to the manifest's directory ("" outside it).
     std::string relative(std::string_view path) const;
 };

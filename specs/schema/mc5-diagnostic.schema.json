@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc5-diagnostic.schema.json",
+  "title": "MC5 0.4.0 §9: one diagnostic in the agent view (--mcxx-diagnostics=agent), one line of JSON",
+  "type": "object",
+  "required": [
+    "mcxx-diagnostic",
+    "severity",
+    "code",
+    "message"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "mcxx-diagnostic": {
+      "const": "0.1.0",
+      "description": "The version of this form."
+    },
+    "severity": {
+      "enum": [
+        "error",
+        "warning",
+        "note"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "description": "A feature gate's feature id (MC1), or the compiler's own name for the diagnostic; \"\" when it has none."
+    },
+    "message": {
+      "type": "string",
+      "description": "What is wrong, without what to do about it."
+    },
+    "file": {
+      "type": "string"
+    },
+    "range": {
+      "$ref": "#/$defs/range"
+    },
+    "location": {
+      "type": "string",
+      "pattern": "^.+:[0-9]+:[0-9]+$",
+      "description": "file:line:column, from 1."
+    },
+    "level": {
+      "enum": [
+        "warn",
+        "deny"
+      ],
+      "description": "A gate's finding: its level (MC1 §2.2)."
+    },
+    "level-from": {
+      "type": "string",
+      "description": "Where that level is set (MC1 §6), with the manifest."
+    },
+    "fix": {
+      "type": "string",
+      "description": "What to write instead."
+    },
+    "waiver": {
+      "type": "string",
+      "description": "The attribute (or import) to write to allow it there, as code."
+    },
+    "fixits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "range",
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "$ref": "#/$defs/range"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/note"
+      }
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "begin",
+        "end"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "begin": {
+          "$ref": "#/$defs/position"
+        },
+        "end": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "note": {
+      "type": "object",
+      "required": [
+        "severity",
+        "code",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "const": "note"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "location": {
+          "type": "string"
+        },
+        "fixits": {
+          "type": "array"
+        },
+        "notes": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

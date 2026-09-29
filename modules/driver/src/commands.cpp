@@ -18,6 +18,7 @@ import mcxx.features;
 import mcxx.serve;
 import mcxx.backend;
 import mcxx.ifc;
+import mcxx.diagnostics;
 
 namespace mcxx::driver {
 
@@ -36,7 +37,10 @@ void usage() {
                           "       mcxx features [--json]               the providers, features and profiles linked in\n"
                           "       mcxx compose [--manifest FILE]       build this package's compiler, with its static plugins\n"
                           "       mcxx serve [--db DIR] [--resource DIR] [--cache DIR]   the semantic service on standard input and output (MC6)\n"
-                          "       mcxx version [--json]\n");
+                          "       mcxx version [--json]\n"
+                          "\n"
+                          "a compile's diagnostics: --mcxx-diagnostics=human (laid out as Rust's; the default on a terminal),\n"
+                          "agent (one JSON object each), or clang (the compiler's own; the default elsewhere); or MCXX_DIAGNOSTICS\n");
 }
 
 std::string json_string(std::string_view text) {
@@ -294,6 +298,25 @@ std::filesystem::path compose_cache() {
 // builds the module interfaces the files import itself, into the cache, kept between runs. Every gate
 // finding and compiler diagnostic is printed as a compiler prints it; 1 when there is an error (A1.5:
 // a blocking check for a program no mcxx builds).
+// --mcxx-diagnostics=human|agent|clang (MC5 §9): taken out of a compile's arguments and passed on as
+// MCXX_DIAGNOSTICS, to the compiler in this process and to one it starts. False when the value names
+// no view (said on stderr).
+bool take_view(std::vector<std::string>& args) {
+    constexpr std::string_view OPTION { "--mcxx-diagnostics=" };
+    for (auto it = args.begin(); it != args.end(); ++it) {
+        if (!it->starts_with(OPTION)) continue;
+        const std::string value { it->substr(OPTION.size()) };
+        if (!mcxx::diagnostics::view_named(value)) {
+            std::println(std::cerr, "mcxx: --mcxx-diagnostics={}: the views are human, agent and clang", value);
+            return false;
+        }
+        ::setenv("MCXX_DIAGNOSTICS", value.c_str(), 1);
+        args.erase(it);
+        return true;
+    }
+    return true;
+}
+
 int check_database(std::vector<std::string> rest, const char* self) {
     std::string database, cache, resource;
     std::vector<std::string> files;
@@ -336,10 +359,19 @@ int check_database(std::vector<std::string> rest, const char* self) {
             ++errors;
             continue;
         }
+        const auto view = mcxx::diagnostics::view_for(std::nullopt, mcxx::diagnostics::stderr_is_terminal());
+        std::vector<std::string_view> lines;
+        for (const auto line : std::views::split(std::string_view { unit->text() }, '\n')) lines.emplace_back(line.begin(), line.end());
         for (const auto& d : unit->diagnostics()) {
             if (d.severity != msa::Severity::error && d.severity != msa::Severity::warning) continue;
             const bool error { d.severity == msa::Severity::error };
             errors += error ? 1 : 0;
+            if (view != mcxx::diagnostics::View::clang) {
+                mcxx::diagnostics::Item item { d, file, {}, {}, {} };
+                for (std::uint32_t l { d.range.begin.line }; l <= d.range.end.line && l < lines.size(); ++l) item.lines.emplace_back(lines[l]);
+                std::print(std::cerr, "{}", mcxx::diagnostics::render(item, view, mcxx::diagnostics::colored(view)));
+                continue;
+            }
             std::println(std::cerr, "{}:{}:{}: {}: {}{}", file, d.range.begin.line + 1, d.range.begin.column + 1, error ? "error" : "warning", d.message,
                          d.code.empty() || plugin::find_feature(d.code) == nullptr || d.message.contains(std::format("[{}]", d.code))
                              ? std::string {}
@@ -374,6 +406,16 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
     // package declares static plugins this one was not composed with (MC4-3-4).
     if (!compiler::mode_for_name(base_name(argv[0])).empty()) {
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
+        // --mcxx-diagnostics is ours, not the compiler's (MC5 §9).
+        std::vector<std::string> args(argv + 1, argv + argc);
+        if (!take_view(args)) return 2;
+        if (static_cast<int>(args.size()) + 1 != argc) {
+            args.insert(args.begin(), argv[0]);
+            std::vector<char*> kept;
+            for (auto& a : args) kept.push_back(a.data());
+            kept.push_back(nullptr);
+            return compiled(compiler::run(static_cast<int>(args.size()), kept.data()));
+        }
         return compiled(compiler::run(argc, argv));
     }
     if (argc < 2) {
@@ -382,6 +424,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
     }
     const std::string_view command { argv[1] };
     std::vector<std::string> rest(argv + 2, argv + argc);
+    if ((command == "c++" || command == "cc" || command == "check") && !take_view(rest)) return 2;
     if (command == "c++" || command == "cc" || command == "check")
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
     if (command == "c++" || command == "cc") return compiled(compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest)));
@@ -418,7 +461,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
             std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.4.0\","
-                         "\"mc2\":\"{}\",\"mc3\":\"0.4.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.3.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         "\"mc2\":\"{}\",\"mc3\":\"0.4.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
                          VERSION, json_string(clang), mcxx::ifc::MC2_VERSION, providers);
             return 0;
         }

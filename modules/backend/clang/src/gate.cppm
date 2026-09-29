@@ -89,6 +89,7 @@ import :support;
 import :unit;
 import :facts;
 import :ifc;
+import :diagnostics;
 
 namespace mcxx::clang_backend {
 
@@ -289,9 +290,11 @@ private:
                                                                    : diags.getCustomDiagID(cl::DiagnosticsEngine::Warning, "%0") };
             const bool placed { d.range.begin != Position {} || d.range.end != Position {} };
             const cl::SourceLocation begin { placed ? sm.translateLineCol(main, d.range.begin.line + 1, d.range.begin.column + 1) : cl::SourceLocation {} };
-            auto report = diags.Report(begin, id);
             // MC++'s own codes travel in the message, as a feature's id does (MC1-9-3).
-            report << (d.code.starts_with("mcxx-") && !d.message.contains("[" + d.code + "]") ? std::format("{} [{}]", d.message, d.code) : d.message);
+            const std::string text { d.code.starts_with("mcxx-") && !d.message.contains("[" + d.code + "]") ? std::format("{} [{}]", d.message, d.code) : d.message };
+            remember_finding(begin, text, d);   // what the view lays out apart (MC5 §9)
+            auto report = diags.Report(begin, id);
+            report << text;
             if (placed) report << cl::CharSourceRange::getCharRange(begin, sm.translateLineCol(main, d.range.end.line + 1, d.range.end.column + 1));
         }
         for (const auto& [unknown, where] : result.unknown) {
@@ -377,6 +380,7 @@ class GateAction final : public cl::PluginASTAction {
 protected:
     // Called once the main file is known and before it is read: the moment a source filter needs.
     std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef) override {
+        install_view(ci);   // human or agent diagnostics, where asked for (MC5 §9)
         // The package's out-of-process plugins before the file is parsed: their attributes are claimed too.
         if (!gates_suppressed) {
             const auto& sm = ci.getSourceManager();

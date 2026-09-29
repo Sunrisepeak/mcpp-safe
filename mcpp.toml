@@ -29,6 +29,7 @@ members = [
     "modules/testing",
     "modules/base",
     "modules/msa",
+    "modules/diagnostics",
     "modules/graph",
     "modules/plugin/sdk",
     "modules/plugin/wire",

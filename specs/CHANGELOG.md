@@ -2,6 +2,14 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC5 0.4.0: diagnostic views
+
+- **MC5** 0.4.0 (§9): `--mcxx-diagnostics=human|agent|clang` (or `MCXX_DIAGNOSTICS`): a compile's
+  diagnostics laid out as Rust's for people (headline, place, excerpt, help, where a gate's level is
+  set), as one JSON object each for agents (schema `mc5-diagnostic.schema.json`: code, exact range,
+  level and its source, fix, waiver as code, fix-its, notes), or in the compiler's own format -- the
+  default off a terminal.
+
 ## 2026-09-29 — MC1 0.4.0: levels by file
 
 - **MC1** 0.4.0: `[package.metadata.mcxx.files."<glob>"]` -- the levels of the package's files a glob

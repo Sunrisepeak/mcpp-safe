@@ -22,6 +22,7 @@ mcxx-backend          = { path = "../backend/semantic" }   # links the gates (ba
 mcxx-backend-compiler = { path = "../backend/compiler" }
 mcxx-serve            = { path = "../serve" }            # mcxx serve (MC6)
 mcxx-ifc              = { path = "../ifc" }              # MC2: interfaces kept by their BMI's content after a compile
+mcxx-diagnostics      = { path = "../diagnostics" }      # MC5 §9: --mcxx-diagnostics, and mcxx check -p's output
 
 [lib]
 path = "src/driver.cppm"

@@ -1,0 +1,1 @@
+{"code":"goto","file":"src/a.cpp","fix":"use structured control flow","level":"deny","level-from":"the package's [package.metadata.mcxx.features] (/p/mcpp.toml)","location":"src/a.cpp:3:12","mcxx-diagnostic":"0.1.0","message":"`goto out`","range":{"begin":{"column":11,"line":2},"end":{"column":19,"line":2}},"severity":"error","waiver":"[[mcpp::allow(\"goto\", \"<why>\")]]"}

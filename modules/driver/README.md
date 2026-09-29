@@ -6,8 +6,8 @@ mcxx 的全部命令都在这里，以库的形式提供：
 
 | 命令 | 作用 |
 |---|---|
-| `mcxx c++` / `cc` / `check` | 编译或检查（MC5 §2），经由 `mcxx.backend.compiler` |
-| `mcxx check -p 数据库 [--cache 目录] [--resource 目录] 文件...` | 按构建数据库里的命令检查文件，任何编译器的命令都可以（包括 GCC 的），由语义后端解析：文件导入的模块接口由它自己构建进 cache，下次运行复用。门禁发现和编译器诊断按编译器的格式输出，有错误时退出 1。这是 `plugins/mcpp-tools-safe` 的检查动作（M1.5） |
+| `mcxx c++` / `cc` / `check` | 编译或检查（MC5 §2），经由 `mcxx.backend.compiler`。`--mcxx-diagnostics=human\|agent\|clang` 选择诊断的视角（MC5 §9，`mcxx.diagnostics`），驱动把它从编译参数里取出，作为 `MCXX_DIAGNOSTICS` 传下去 |
+| `mcxx check -p 数据库 [--cache 目录] [--resource 目录] 文件...` | 按构建数据库里的命令检查文件，任何编译器的命令都可以（包括 GCC 的），由语义后端解析：文件导入的模块接口由它自己构建进 cache，下次运行复用。门禁发现和编译器诊断按选定的视角输出，有错误时退出 1。这是 `plugins/mcpp-tools-safe` 的检查动作（M1.5） |
 | `mcxx features [--json]` | Catalog（MC1 §10） |
 | `mcxx compose [--manifest 文件]` | 构建本包的编译器：MC++ 驱动、标准插件，加上包声明的静态插件（MC4 §3） |
 | `mcxx version [--json]` | MC5 §5 |

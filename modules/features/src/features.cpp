@@ -247,13 +247,32 @@ std::string Plan::relative(std::string_view path) const {
 }
 
 Level Plan::level(const Gate& gate, std::string_view module, std::string_view container, std::string_view file) const {
+    return explain(gate, module, container, file).first;
+}
+
+std::pair<Level, std::string> Plan::explain(const Gate& gate, std::string_view module, std::string_view container, std::string_view file) const {
     const std::string_view id { gate.entry->feature->id };
+    const std::string in { config.manifest.empty() ? std::string {} : std::format(" ({})", config.manifest) };
     Level level { gate.base };
+    std::string from { "the feature's default" };
+    if (const auto it = config.package.find(id); it != config.package.end()) from = "the package's [package.metadata.mcxx.features]" + in;
+    else if (level != gate.entry->feature->default_level || !config.profiles.empty()) {
+        for (const auto& p : config.profiles) {
+            const std::string one[] { p };
+            if (const auto l = profile_level(*catalog, *gate.entry->feature, one); l && *l == level) {
+                from = std::format("profile `{}`{}", p, in);
+                break;
+            }
+        }
+    }
     if (!module.empty()) {
         const std::string_view primary { module.substr(0, module.find(':')) };
         for (const auto name : { primary, module }) {
             if (const auto m = config.modules.find(name); m != config.modules.end())
-                if (const auto it = m->second.find(id); it != m->second.end()) level = it->second;
+                if (const auto it = m->second.find(id); it != m->second.end()) {
+                    level = it->second;
+                    from = std::format("module `{}`{}", name, in);
+                }
             if (name == module) break;
         }
     }
@@ -265,6 +284,7 @@ Level Plan::level(const Gate& gate, std::string_view module, std::string_view co
             if (it == levels.end() || !glob_match(pattern, file)) continue;
             if (const std::size_t s { specificity(pattern) }; !most || s >= *most) {
                 level = it->second;
+                from = std::format("files `{}`{}", pattern, in);
                 most = s;
             }
         }
@@ -275,10 +295,11 @@ Level Plan::level(const Gate& gate, std::string_view module, std::string_view co
         if (!contains_namespace(container, name) || name.size() < best) continue;
         if (const auto it = levels.find(id); it != levels.end()) {
             level = it->second;
+            from = std::format("namespace `{}`{}", name, in);
             best = name.size();
         }
     }
-    return level;
+    return { level, from };
 }
 
 Plan make_plan(Config config) {
@@ -426,13 +447,16 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
         const Plan::Gate* gate { plan.gate(finding.feature) };
         if (gate == nullptr || !gate->maybe) continue;
         const plugin::Feature& feature { *gate->entry->feature };
-        Level level { plan.level(*gate, context.module, finding.container, file) };
+        auto [level, level_from] = plan.explain(*gate, context.module, finding.container, file);
         // Inside a region, its profile's level where that is stricter (MC1 §6, MC4 §2).
         for (const auto& a : context.facts.attributes) {
             const auto* entry = catalog.attribute(a.name);
             if (entry == nullptr || entry->attribute->region.empty() || !within(a.range, finding.range)) continue;
             const std::string region[] { entry->attribute->region };
-            if (const auto l = profile_level(catalog, feature, region)) level = std::max(level, *l);
+            if (const auto l = profile_level(catalog, feature, region); l && *l > level) {
+                level = *l;
+                level_from = std::format("the region of [[{}]] (profile `{}`)", a.name, entry->attribute->region);
+            }
         }
         if (level == Level::allow) continue;
         // The innermost declaration waiving it.
@@ -449,12 +473,21 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
         std::string message { std::format("{} [{}]", finding.message, feature.id) };
         // At an import (M1.2): what crosses is waived on the import, `import m [[mcpp::allow("id")]];`.
         const auto import = std::ranges::find(context.facts.imports, finding.range, &msa::fact::Import::range);
-        if (!feature.fix.empty() && import == context.facts.imports.end()) message += std::format("; {}", feature.fix);
+        const std::string fix { import == context.facts.imports.end() ? feature.fix : std::string {} };
+        const std::string how { waiver != nullptr                      ? std::string {}
+                                : import != context.facts.imports.end() ? std::format("import {} [[mcpp::allow(\"{}\", \"<why>\")]];", import->module, feature.id)
+                                                                        : std::format("[[mcpp::allow(\"{}\", \"<why>\")]]", feature.id) };
+        if (!fix.empty()) message += std::format("; {}", fix);
         message += waiver != nullptr                      ? std::format("; {} cannot be waived", feature.id)
                    : import != context.facts.imports.end() ? std::format("; to allow it here, `import {} [[mcpp::allow(\"{}\")]];`", import->module, feature.id)
                                                            : std::format("; to allow it here, [[mcpp::allow(\"{}\")]] on the declaration", feature.id);
-        result.diagnostics.push_back({ finding.range, level == Level::deny ? msa::Severity::error : msa::Severity::warning, std::move(message),
-                                       feature.id, "MC++ feature gate", {} });
+        msa::Diagnostic d { finding.range, level == Level::deny ? msa::Severity::error : msa::Severity::warning, std::move(message), feature.id, "MC++ feature gate", {} };
+        d.headline = finding.message;
+        d.fix = fix;
+        d.waiver = how;
+        d.level = std::string { plugin::to_string(level) };
+        d.level_from = std::move(level_from);
+        result.diagnostics.push_back(std::move(d));
     }
     return result;
 }

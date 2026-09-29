@@ -42,6 +42,13 @@ struct Diagnostic {
     std::string code;       // the backend's stable name for it, e.g. "err_undeclared_var_use"
     std::string category;   // e.g. "Semantic Issue"
     std::vector<Note> notes;
+    // What a feature gate's finding says apart (MC1 §9), for a view that lays it out (MC5 §9); empty
+    // for a compiler's own diagnostic. `message` stays the whole one-line text.
+    std::string headline;     // the finding alone, without what to do about it
+    std::string fix;          // what to write instead
+    std::string waiver;       // how to allow it here, as code
+    std::string level;        // "deny" or "warn"
+    std::string level_from;   // where that level is set: "profile `safe` (/p/mcpp.toml)", "files `src/compat/**`", ...
 };
 
 enum class Kind {

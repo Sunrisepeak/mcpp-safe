@@ -1139,5 +1139,50 @@
    "script": "modules/features/src/features.cpp",
    "contains": "bool glob_match(std::string_view pattern, std::string_view path)"
   }
+ ],
+ "MC5-9-1": [
+  {
+   "test": "modules/diagnostics/tests/test_diagnostics.cpp: a view is chosen by name, the option over the environment, human on a terminal"
+  },
+  {
+   "validate": "mcxx: MCXX_DIAGNOSTICS chooses the view; off a terminal the default is the compiler's"
+  },
+  {
+   "validate": "mcxx: a view that is not one is an error"
+  },
+  {
+   "validate": "mcxx: the clang view is the compiler's own format"
+  }
+ ],
+ "MC5-9-2": [
+  {
+   "test": "modules/diagnostics/tests/test_diagnostics.cpp: the human view lays a finding out as Rust does: code, place, excerpt, help, where the level is set"
+  },
+  {
+   "test": "modules/diagnostics/tests/test_diagnostics.cpp: a compiler's own diagnostic with a note and a fix-it, in both views"
+  },
+  {
+   "validate": "mcxx: the human view: headline with its code, place, excerpt underlined, help and note"
+  }
+ ],
+ "MC5-9-3": [
+  {
+   "test": "modules/diagnostics/tests/test_diagnostics.cpp: the agent view is one JSON object with the finding apart: code, range, level and its source, fix, waiver"
+  },
+  {
+   "validate": "MC5 example validates: mc5-diagnostic.jsonl"
+  },
+  {
+   "validate": "mcxx: the agent view is one JSON object per line and nothing else"
+  },
+  {
+   "validate": "mcxx: an agent-view diagnostic validates"
+  },
+  {
+   "validate": "mcxx: the agent view of a gate's finding: its exact range, level and where it is set, fix, waiver"
+  },
+  {
+   "validate": "mcxx: the agent view carries the compiler's own errors"
+  }
  ]
 }
