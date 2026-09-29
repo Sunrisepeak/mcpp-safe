@@ -15,6 +15,7 @@ with mcxx as its compiler.
 In the payload:
   bin/clang++, bin/clang    mcxx (hard links, or copies across file systems): a compiler finds its
                             resource directory beside the path it was started by
+  bin/mcxx                  a link to clang++, as the xpkg installs it
   bin/clang++.cfg, clang.cfg  the LLVM payload's, with the target stated (mcxx's own default is the
                             openkal host, x86_64-unknown-linux-musl) and its paths kept
   lib/clang/23/include      Clang 23's builtin headers; lib/clang/23/lib: the LLVM payload's compiler-rt
@@ -76,6 +77,9 @@ for name in ("clang++", "clang"):
     cfg = llvm / "bin" / f"{name}.cfg"
     lines = cfg.read_text().splitlines() if cfg.exists() else []
     (out / "bin" / f"{name}.cfg").write_text("\n".join([f"--target={target}", *lines]) + "\n")
+
+# And as itself, as the xpkg installs it (xpkgs/pkgs/m/mcxx.lua): `mcxx version`, `mcxx check`.
+(out / "bin" / "mcxx").symlink_to("clang++")
 
 (out / ".mcxx-payload.json").write_text(json.dumps({"mcxx": str(mcxx), "llvm": str(llvm), "clang-headers": str(headers), "target": target}, indent=2) + "\n")
 print(out)

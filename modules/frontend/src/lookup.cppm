@@ -162,6 +162,18 @@ public:
                 if (!std::ranges::contains(list, d.qualified_name)) list.push_back(d.qualified_name);
             }
         }
+        // What imported declarations are named in is a namespace where nothing declares it otherwise
+        // (`std`: libc++'s std module declares no namespace, it only exports what is in one).
+        for (const auto& d : imported.declarations) {
+            for (std::string scope { scope_of(d.qualified_name) }; !scope.empty(); scope = scope_of(scope)) {
+                if (namespaces_.contains(scope)) break;
+                const auto around = scopes_.find(scope_of(scope));
+                const bool declared { around != scopes_.end() && around->second.contains(last_component(scope)) };
+                if (declared) break;
+                namespaces_.insert(scope);
+                scopes_[scope_of(scope)][std::string { last_component(scope) }].push_back(Target { -1, scope, msa::Kind::namespace_, 0, {} });
+            }
+        }
         // Each token's innermost enclosing scope: a namespace, a class, a function (parents are
         // recorded before what they hold, so a later one is an inner one).
         enclosing_.assign(t_.size(), -1);

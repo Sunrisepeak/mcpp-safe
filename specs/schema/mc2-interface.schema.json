@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc2-interface.schema.json",
-  "title": "MC2 1.1.0: a module unit's interface, as read back from the .ifc beside its BMI (mcxx-probe --read-ifc)",
+  "title": "MC2 1.2.0: a module unit's interface, as read back from the .ifc beside its BMI (mcxx-probe --read-ifc)",
   "type": "object",
   "required": [
     "module",
@@ -11,7 +11,8 @@
     "cplusplus",
     "dialect",
     "reexports",
-    "declarations"
+    "declarations",
+    "reachable"
   ],
   "additionalProperties": false,
   "properties": {
@@ -84,6 +85,13 @@
         "$ref": "#/$defs/declaration"
       },
       "description": "The unit's T1 declarations, as MC3 declarations, in the facts' order."
+    },
+    "reachable": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/declaration"
+      },
+      "description": "What else an importer reaches through the unit (MC2 1.2.0, §3.1): the declarations its exported using-declarations name, their public members, enumerators; exported, with no ranges."
     }
   },
   "$defs": {
@@ -214,7 +222,7 @@
         },
         "local": {
           "const": false,
-          "description": "An interface carries what is not local (MC2 \u00a73)."
+          "description": "An interface carries what is not local (MC2 §3)."
         }
       }
     }

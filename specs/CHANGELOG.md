@@ -2,6 +2,14 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC2 1.2.0: what an importer reaches (M2.2)
+
+- **MC2** 1.2.0 (§3.1): an interface also carries the unit's reachable declarations -- what its
+  exported using-declarations name (libc++'s `std` module exports nothing else), the public members of
+  the classes among them, recursively, and the enumerators of the enumerations it exports or reaches --
+  after the T1 declarations, placed by qualified name, at no place, flagged `reachable`. The JSON form's
+  `reachable`. Readers take 1.1.0 and 1.0.0 files, which have none.
+
 ## 2026-09-29 — MC1 0.3.0, MC2 1.1.0, MC3 0.4.0: the dialect boundary across imports (M1.2)
 
 - **MC3** 0.4.0: the kind `imports` (§4.13) -- each import of a named module, and what it brings in as

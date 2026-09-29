@@ -24,7 +24,7 @@ import mcxx.msa;
 
 export namespace mcxx::ifc {
 
-inline constexpr std::string_view MC2_VERSION { "1.1.0" };   // 1.1.0 adds re-exports; 1.0.0 files are read too
+inline constexpr std::string_view MC2_VERSION { "1.2.0" };   // 1.2.0 adds reachable declarations, 1.1.0 re-exports; 1.0 and 1.1 files are read too
 inline constexpr std::uint8_t IFC_MAJOR { 0 };
 inline constexpr std::uint8_t IFC_MINOR { 43 };
 
@@ -59,6 +59,10 @@ struct Interface {
     Dialect dialect;
     std::vector<msa::fact::Declaration> declarations;   // T1: what is not local, in the facts' order
     std::vector<std::string> reexports;                 // `export import`: the modules an importer also sees ("m:part")
+    // What else an importer reaches through the unit (1.2.0): the declarations its exported
+    // using-declarations name, the public members of the classes among them, the enumerators of the
+    // enumerations it exports or reaches; exported, with no ranges (they are in other files).
+    std::vector<msa::fact::Declaration> reachable;
 };
 
 // The declarations of a unit's facts that an interface carries: those that are not local.
@@ -440,7 +444,10 @@ public:
     explicit Writer(const Interface& unit) : unit_ { unit } {}
 
     std::vector<std::byte> run() {
-        const auto& decls = unit_.declarations;
+        // The T1 declarations, then the reachable ones (1.2.0).
+        std::vector<Declaration> decls { unit_.declarations };
+        decls.insert(decls.end(), unit_.reachable.begin(), unit_.reachable.end());
+        const std::size_t own { unit_.declarations.size() };
         const std::size_t n { decls.size() };
         // Line 0 is no place (a null SourceLocation); the unit's file is the only one.
         b_.add(P_LINES, sym::FileAndLine {});
@@ -456,7 +463,7 @@ public:
         std::vector<sdk::DeclSort> sort(n);
         {
             std::vector<std::size_t> open;
-            for (std::size_t i { 0 }; i < n; ++i) {
+            for (std::size_t i { 0 }; i < own; ++i) {
                 const Range& r { decls[i].range };
                 while (!open.empty() && !(decls[open.back()].range.begin <= r.begin && r.end <= decls[open.back()].range.end)) open.pop_back();
                 const Kind k { decls[i].kind };
@@ -471,6 +478,24 @@ public:
                 }
                 if (k == Kind::enumerator && owner[i] < 0) sort[i] = sdk::DeclSort::Barren;   // no enumeration to hold it
                 if (is_scope(k) || is_function(k) || k == Kind::enum_) open.push_back(i);
+            }
+            // A reachable declaration has no range: its scope is the one its qualified name is in, an
+            // enumerator's enumeration the one its name is in (a scoped one's).
+            std::map<std::string_view, std::size_t, std::less<>> named;
+            for (std::size_t i { 0 }; i < n; ++i)
+                if (is_scope(decls[i].kind) || decls[i].kind == Kind::enum_) named.try_emplace(decls[i].qualified_name, i);
+            for (std::size_t i { own }; i < n; ++i) {
+                const Kind k { decls[i].kind };
+                sort[i] = sort_for(k);
+                const std::string_view q { decls[i].qualified_name };
+                const std::size_t cut { q.rfind("::") };
+                const auto around = cut == std::string_view::npos ? named.end() : named.find(q.substr(0, cut));
+                if (k == Kind::enumerator) {
+                    if (around != named.end() && decls[around->second].kind == Kind::enum_) owner[i] = static_cast<std::ptrdiff_t>(around->second);
+                    else sort[i] = sdk::DeclSort::Barren;
+                } else if (around != named.end() && is_scope(decls[around->second].kind)) {
+                    parent[i] = static_cast<std::ptrdiff_t>(around->second);
+                }
             }
         }
 
@@ -540,7 +565,7 @@ public:
             const sdk::DeclIndex self { sort[i], index[i] };
             const sdk::DeclIndex home { parent[i] < 0 ? sdk::DeclIndex {} : sdk::DeclIndex { sort[static_cast<std::size_t>(parent[i])], index[static_cast<std::size_t>(parent[i])] } };
             const std::string_view name { simple_name(d.qualified_name) };
-            const sym::SourceLocation locus { place(d.name.begin) };
+            const sym::SourceLocation locus { i < own ? place(d.name.begin) : sym::SourceLocation {} };   // a reachable one: no place here
             const sdk::BasicSpecifiers spec { d.exported ? sdk::BasicSpecifiers::Cxx : sdk::BasicSpecifiers::NonExported };
             switch (sort[i]) {
             case sdk::DeclSort::Scope: {
@@ -664,8 +689,10 @@ public:
                 b_.set(P_BARREN, index[i], barren);
             }
             }
+            std::string flags { flags_text(d) };
+            if (i >= own) flags += flags.empty() ? "reachable" : ",reachable";
             std::vector<std::string> args { std::to_string(i),     kind_name(d.kind), d.entity, d.qualified_name, d.container, d.type,
-                                            flags_text(d),         range_text(d.range), range_text(d.name) };
+                                            std::move(flags),      range_text(d.range), range_text(d.name) };
             for (const auto& t : d.templates) args.push_back(t);
             sym::trait::DeclAttributes association {};
             clear(association);
@@ -874,7 +901,7 @@ public:
         if (!versioned) return fail("no mcxx::mc2 version: not written by MC2");
 
         // The declarations: every one with an [[mcxx::decl]], back in the facts' order.
-        std::vector<std::pair<std::size_t, Declaration>> found;
+        std::vector<std::pair<std::size_t, std::pair<bool, Declaration>>> found;   // ordinal, (reachable, declaration)
         const auto it = toc_.find(P_DECL_ATTRS);
         const std::uint32_t count { it == toc_.end() ? 0 : sdk::to_underlying(it->second.cardinality) };
         for (std::uint32_t i { 0 }; i < count; ++i) {
@@ -898,9 +925,14 @@ public:
             d.qualified_name = std::move(args[3]);
             d.container = std::move(args[4]);
             d.type = std::move(args[5]);
+            bool reachable { false };
             for (const auto flag : std::views::split(std::string_view { args[6] }, ',')) {
                 const std::string_view f { flag.begin(), flag.end() };
                 if (f.empty()) continue;
+                if (f == "reachable") {
+                    reachable = true;
+                    continue;
+                }
                 const auto known = std::ranges::find(FLAGS, f, &std::pair<bool Declaration::*, std::string_view>::second);
                 if (known == std::end(FLAGS)) return fail(std::format("declaration {}: unknown flag {}", ordinal, f));
                 d.*(known->first) = true;
@@ -911,12 +943,16 @@ public:
             d.range = *range;
             d.name = *name_range;
             for (std::size_t t { 9 }; t < args.size(); ++t) d.templates.push_back(std::move(args[t]));
-            found.emplace_back(ordinal, std::move(d));
+            found.emplace_back(ordinal, std::pair { reachable, std::move(d) });
         }
-        std::ranges::sort(found, {}, &std::pair<std::size_t, Declaration>::first);
+        std::ranges::sort(found, {}, &std::pair<std::size_t, std::pair<bool, Declaration>>::first);
         for (std::size_t i { 0 }; i < found.size(); ++i) {
             if (found[i].first != i) return fail(std::format("declaration ordinals are not 0..{}", found.size() - 1));
-            unit.declarations.push_back(std::move(found[i].second));
+            auto& [reachable, d] = found[i].second;
+            // The T1 declarations first, then the reachable ones.
+            if (reachable) unit.reachable.push_back(std::move(d));
+            else if (!unit.reachable.empty()) return fail(std::format("declaration {} (a T1 one) after a reachable one", i));
+            else unit.declarations.push_back(std::move(d));
         }
         return unit;
     }

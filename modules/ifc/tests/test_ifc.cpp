@@ -101,6 +101,29 @@ int main() {
         expect(!back->internal);
     };
 
+    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"_test = [] {
+        auto unit = sample();
+        const auto reach = [](std::string qualified, mcxx::msa::Kind kind, std::string type = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.exported = true;
+            d.entity = "c:@" + d.qualified_name;
+            return d;
+        };
+        using K = mcxx::msa::Kind;
+        unit.reachable = { reach("std", K::namespace_), reach("std::vector", K::class_), reach("std::vector::size", K::method),
+                           reach("std::vector::size_type", K::type_alias, "size_t"), reach("std::errc", K::enum_),
+                           reach("std::errc::invalid_argument", K::enumerator, "std::errc"), reach("std::memory_order_relaxed", K::enumerator, "std::memory_order") };
+        const auto back = mcxx::ifc::read(mcxx::ifc::write(unit));
+        expect(fatal(back.has_value())) << (back ? "" : back.error());
+        expect(mcxx::ifc::differences(unit.declarations, back->declarations).empty()) << "the T1 declarations as before";
+        const auto diff = mcxx::ifc::differences(unit.reachable, back->reachable);
+        for (const auto& line : diff) std::println("  {}", line);
+        expect(diff.empty() && back->reachable.size() == unit.reachable.size()) << "placed by name: a member in its class, an enumerator in its enumeration or barren";
+    };
+
     "the file is IFC 0.43 as the SDK lays it out"_test = [] {
         const auto bytes = mcxx::ifc::write(sample());
         expect(bytes.size() > 100);

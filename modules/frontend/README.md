@@ -119,7 +119,7 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 `facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：函数里声明的东西（参数、局部变量、lambda 的参数和 init-capture）只用名字本身，和 Clang 一样；`exported` 按词法上的外层传下来（参数、成员、局部变量都算），和 Clang 的 `isInExportDeclContext` 一样；结构化绑定是一个变量，名字是 `[a, b]`，位置在 `[`；lambda 里声明的是局部的，不论 lambda 在哪里；条件里的声明要有初始化器（`if (a && b)` 是表达式），只有 catch 的参数可以止于 `)`；别名模板的事实在它的名字处（大纲在 `using`，和 Clang 一样）；无名参数在声明符之后的那个 token，无名 namespace 在它的 `{`，都和 Clang 放的位置一样。
 
-`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16221 个（99.93%），没有多出来的；限定名 99.95%，所属命名空间、`exported`、`local`、c-array、union、c-variadic 100%；名字查找（`tools/checks/refsdiff.py`，C-mcppls 220 个文件）：目标声明在本文件里的 41346 个引用，相同 96.83%，指向别的 0.02%（3 处是匿名命名空间和外层的同名重载，要按实参选），没给 3.15%（多是经类型推导出来的对象访问成员）；目标在别处（本模块的接口、其他模块、std）的 48652 个要等 M2.2 读导入的接口。`test_lookup`：54 个名字，期望值全是 Clang 对同一段源码的回答。类型文本 82.3%（起点 22%；剩下的几乎都是推导出来的：`auto` 和 `std::lock_guard lock { m }` 这类类模板实参推导），模板列表要知道别名和默认模板实参，这两者是 M2 语义层的工作。类型文本不算作 F1 收集了 `declaration_types`：需要类型的门禁不由 F1 判定。
+`tools/checks/declsdiff.py` 逐个成员对照 Clang 后端（M2.1 的度量）：C-mcppls 220 个文件，Clang 的 16232 个声明配上了 16221 个（99.93%），没有多出来的；限定名 99.95%，所属命名空间、`exported`、`local`、c-array、union、c-variadic 100%；名字查找（`tools/checks/refsdiff.py`，C-mcppls 220 个文件）：目标声明在本文件里的 41346 个引用，相同 96.83%，指向别的 0.02%（3 处是匿名命名空间和外层的同名重载，要按实参选），没给 3.15%（多是经类型推导出来的对象访问成员）；目标在别处（本模块的接口、其他模块、std）的 48652 个，从导入模块的 MC2 接口读到声明（MC2 1.2.0 起包括 std 经 using 声明可达的），相同 78.04%，指向别的 0.06%。`test_lookup`：54 个名字，期望值全是 Clang 对同一段源码的回答。类型文本 82.3%（起点 22%；剩下的几乎都是推导出来的：`auto` 和 `std::lock_guard lock { m }` 这类类模板实参推导），模板列表要知道别名和默认模板实参，这两者是 M2 语义层的工作。类型文本不算作 F1 收集了 `declaration_types`：需要类型的门禁不由 F1 判定。
 
 | 种类 | 内容 |
 |---|---|

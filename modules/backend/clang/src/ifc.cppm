@@ -100,7 +100,8 @@ std::vector<msa::fact::Suppression> strip_import_annotations(cl::CompilerInstanc
     return out;
 }
 
-// The unit's interface: its T1 declarations, its dialect, what it re-exports (`export import`).
+// The unit's interface: its T1 declarations, what else an importer reaches through it (MC2 1.2.0), its
+// dialect, what it re-exports (`export import`).
 ifc::Interface interface_of(cl::CompilerInstance& ci, cl::ASTContext& ctx, const cl::Module& m, const std::string& path, const features::Plan& plan) {
     ifc::Interface unit;
     unit.module = m.getFullModuleName();
@@ -110,6 +111,7 @@ ifc::Interface interface_of(cl::CompilerInstance& ci, cl::ASTContext& ctx, const
     unit.cplusplus = cplusplus_of(ci.getLangOpts());
     unit.dialect = dialect_of(plan, unit.module);
     unit.declarations = ifc::interface_declarations(facts_of(ctx, &ci.getPreprocessor(), msa::fact::Kinds::declarations | msa::fact::Kinds::declaration_types));
+    unit.reachable = reachable_of(ctx);
     for (const auto& e : m.Exports)
         if (const cl::Module* x = static_cast<cl::Module*>(e.first); x != nullptr && x->isNamedModule()) unit.reexports.push_back(x->getFullModuleName());
     return unit;

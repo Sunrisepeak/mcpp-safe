@@ -196,6 +196,38 @@ bool is_initializer_list(cl::QualType type) {
     return record != nullptr && record->getName() == "initializer_list" && record->isInStdNamespace();
 }
 
+// A declaration's MC3 members that do not depend on where it is written (its ranges apart): entity,
+// qualified name, container, kind, exported, local, the flags, and with `types` its type and templates.
+fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bool types) {
+    fact::Declaration decl;
+    decl.container = namespace_of(d->getDeclContext());
+    decl.entity = usr_of(d);
+    decl.qualified_name = plain_name(d);
+    decl.kind = kind_of(d);
+    decl.exported = d->isInExportDeclContext();
+    // Inside a function's body: a local variable, or a local class and what it declares.
+    decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;
+    cl::QualType type;
+    if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d)) type = parm->getOriginalType();
+    else if (const auto* value = llvm::dyn_cast<cl::ValueDecl>(d)) type = value->getType();
+    else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d)) type = alias->getUnderlyingType();
+    if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d)) {
+        if (types) collect_templates(ctx, fn->getReturnType(), decl.templates);
+        decl.pointer = holds_pointer(ctx, fn->getReturnType());
+        if (decl.pointer) decl.type = type_text(ctx, fn->getReturnType());
+        decl.c_variadic = fn->isVariadic();
+    } else if (types) {
+        collect_templates(ctx, type, decl.templates);
+    }
+    if (!type.isNull() && !llvm::isa<cl::FunctionDecl>(d)) {
+        decl.c_array = type.getNonReferenceType()->isArrayType();
+        decl.pointer = holds_pointer(ctx, type);
+        if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx, type);
+    }
+    if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d)) decl.is_union = record->isUnion();
+    return decl;
+}
+
 class Collector final : public cl::DynamicRecursiveASTVisitor {
 public:
     Collector(cl::ASTContext& ctx, fact::Facts& facts, fact::Kinds needs)
@@ -265,37 +297,11 @@ public:
             return true;
         if (!llvm::isa<cl::VarDecl, cl::FieldDecl, cl::FunctionDecl, cl::TypedefNameDecl, cl::RecordDecl, cl::EnumDecl, cl::NamespaceDecl>(d)) return true;
         if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d); record && !record->isThisDeclarationADefinition()) return true;
-        fact::Declaration decl;
-        decl.range = range_of(d->getSourceRange()).value_or(Range {});
-        decl.name = range_of(d->getLocation()).value_or(decl.range);
-        decl.container = namespace_of(d->getDeclContext());
-        decl.entity = usr_of(d);
-        decl.qualified_name = plain_name(d);
-        decl.kind = kind_of(d);
-        decl.exported = d->isInExportDeclContext();
-        // Inside a function's body: a local variable, or a local class and what it declares.
-        decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;
-        cl::QualType type;
-        if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d)) type = parm->getOriginalType();
-        else if (const auto* value = llvm::dyn_cast<cl::ValueDecl>(d)) type = value->getType();
-        else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d)) type = alias->getUnderlyingType();
         // Types as text only when asked for, or for a declaration a flag marks: the text is what
         // costs (a gate over C arrays pays for the arrays' types, not for every variable's).
-        const bool types { wants(fact::Kinds::declaration_types) };
-        if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d)) {
-            if (types) collect_templates(ctx_, fn->getReturnType(), decl.templates);
-            decl.pointer = holds_pointer(ctx_, fn->getReturnType());
-            if (decl.pointer) decl.type = type_text(ctx_, fn->getReturnType());
-            decl.c_variadic = fn->isVariadic();
-        } else if (types) {
-            collect_templates(ctx_, type, decl.templates);
-        }
-        if (!type.isNull() && !llvm::isa<cl::FunctionDecl>(d)) {
-            decl.c_array = type.getNonReferenceType()->isArrayType();
-            decl.pointer = holds_pointer(ctx_, type);
-            if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx_, type);
-        }
-        if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d)) decl.is_union = record->isUnion();
+        fact::Declaration decl { describe(ctx_, d, wants(fact::Kinds::declaration_types)) };
+        decl.range = range_of(d->getSourceRange()).value_or(Range {});
+        decl.name = range_of(d->getLocation()).value_or(decl.range);
         facts_.declarations.push_back(std::move(decl));
         return true;
     }
@@ -664,6 +670,62 @@ fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kind
     }
     base::trace::count("facts.units");
     return facts;
+}
+
+// MC2 1.2.0: what an importer of this module unit can name that the unit's own code does not declare
+// -- the declarations its exported using-declarations name (libc++'s std module is nothing else), the
+// public members of the classes among them, recursively, and the enumerators of every enumeration an
+// importer reaches, the unit's own exported ones included (MC3 has no enumerators among its T1
+// declarations). A template is its pattern. Each once, with its type; no ranges (they are in other
+// files), and exported: the export is what reaches it.
+std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
+    std::vector<fact::Declaration> out;
+    std::set<const cl::Decl*> seen;
+    const auto push = [&](const cl::NamedDecl* d) {
+        fact::Declaration decl { describe(ctx, d, true) };
+        decl.exported = true;
+        decl.local = false;
+        out.push_back(std::move(decl));
+    };
+    const auto enumerators = [&](const cl::EnumDecl* e) {
+        if (const auto* def = e->getDefinition())
+            for (const auto* c : def->enumerators())
+                if (seen.insert(c).second) push(c);
+    };
+    std::function<void(const cl::NamedDecl*, int)> add = [&](const cl::NamedDecl* d, int depth) {
+        if (d == nullptr || depth > 8 || d->isImplicit()) return;
+        if (const auto* t = llvm::dyn_cast<cl::TemplateDecl>(d); t != nullptr && t->getTemplatedDecl() != nullptr) d = t->getTemplatedDecl();
+        if (!seen.insert(d->getCanonicalDecl()).second) return;
+        if (llvm::isa<cl::UsingShadowDecl, cl::UsingDecl, cl::NamespaceDecl>(d)) return;
+        push(d);
+        if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d)) enumerators(e);
+        const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d);
+        const auto* def = record != nullptr ? record->getDefinition() : nullptr;
+        if (def == nullptr) return;
+        for (const auto* member : def->decls()) {
+            const auto* nd = llvm::dyn_cast<cl::NamedDecl>(member);
+            if (nd == nullptr || nd->isImplicit() || nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected) continue;
+            if (llvm::isa<cl::FieldDecl, cl::CXXMethodDecl, cl::CXXRecordDecl, cl::EnumDecl, cl::TypedefNameDecl, cl::FunctionTemplateDecl, cl::ClassTemplateDecl,
+                          cl::VarDecl, cl::TypeAliasTemplateDecl, cl::VarTemplateDecl>(nd))
+                add(nd, depth + 1);
+        }
+    };
+    // The unit's exported using-declarations, and its own exported enumerations (in classes too).
+    std::function<void(const cl::DeclContext*)> walk = [&](const cl::DeclContext* dc) {
+        for (const auto* d : dc->decls()) {
+            if (const auto* u = llvm::dyn_cast<cl::UsingDecl>(d); u != nullptr && u->isInExportDeclContext()) {
+                for (const auto* shadow : u->shadows()) add(shadow->getTargetDecl(), 0);
+            } else if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d); e != nullptr && e->isInExportDeclContext() && !e->isImplicit()) {
+                enumerators(e);
+            } else if (const auto* r = llvm::dyn_cast<cl::CXXRecordDecl>(d); r != nullptr && r->isInExportDeclContext() && r->isThisDeclarationADefinition()) {
+                walk(r);
+            } else if (llvm::isa<cl::NamespaceDecl, cl::ExportDecl, cl::LinkageSpecDecl>(d)) {
+                walk(llvm::cast<cl::DeclContext>(d));
+            }
+        }
+    };
+    walk(ctx.getTranslationUnitDecl());
+    return out;
 }
 
 namespace {

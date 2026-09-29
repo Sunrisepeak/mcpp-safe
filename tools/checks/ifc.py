@@ -160,5 +160,21 @@ if corpus:
           f"({declarations} declarations)", not differ and bool(results), "\n      ".join(f"{f}: {d}" for f, d in differ[:8]))
     shutil.rmtree(cache, ignore_errors=True)
 
+    # MC2 1.2.0 (MC2-3.1-1): libc++'s std module exports only using-declarations; its interface reaches
+    # what they name -- beside the build's std BMI, or kept in the store by the BMI's content (mcpp copies
+    # std's BMI out of its cache).
+    import hashlib, os
+    std_bmi = database.parent / "pcm.cache/std.pcm"
+    store = pathlib.Path(os.environ.get("MCXX_IFC_STORE") or pathlib.Path(os.environ.get("XDG_CACHE_HOME", pathlib.Path.home() / ".cache")) / "mcxx/ifc")
+    std_ifc = std_bmi.with_suffix(".ifc")
+    if not std_ifc.exists() and std_bmi.exists():
+        std_ifc = store / f"{hashlib.sha256(std_bmi.read_bytes()).hexdigest()}.ifc"
+    std_read = read_ifc(std_ifc) if std_ifc.exists() else None
+    reached = {d["qualified-name"] for d in (std_read or {}).get("reachable", [])}
+    wanted = ["std::vector", "std::vector::size", "std::vector::push_back", "std::basic_string", "std::string", "std::move", "std::println",
+              "std::errc::invalid_argument", "std::optional::value", "std::map::find"]
+    check(f"std's interface reaches what its exported using-declarations name ({len(reached)} declarations): {', '.join(wanted[:4])}, ...",
+          bool(std_read) and all(w in reached for w in wanted), f"{std_ifc}: missing {[w for w in wanted if w not in reached]}")
+
 print(f"{'FAIL' if failures else 'PASS'}: MC2 v1 ({len(failures)} failed)")
 sys.exit(1 if failures else 0)

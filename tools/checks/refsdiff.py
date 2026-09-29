@@ -40,8 +40,16 @@ probe_cache = tempfile.mkdtemp(prefix="mcxx-refsdiff-")
 INLINE = re.compile(r"::__\w*\d\w*(?=::|$)")   # libc++'s std::__1:: and its like: MC3 names leave inline namespaces out
 
 
+TEMPLATE_ARGS = re.compile(r"<[^<>]*>")
+
+
 def plain(name):
-    return INLINE.sub("", name)
+    # MC3's names: no inline namespaces (libc++'s __1, its ranges' __cpo), and a member of a class
+    # template named without the arguments of the specialization Clang's indexer saw.
+    name = INLINE.sub("", name).replace("::__cpo::", "::")
+    while TEMPLATE_ARGS.search(name):
+        name = TEMPLATE_ARGS.sub("", name)
+    return name
 
 
 def clang_side(unit):

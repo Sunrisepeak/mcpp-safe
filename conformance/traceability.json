@@ -541,7 +541,7 @@
  "MC3-4.2-2": [
   {
    "script": "modules/backend/clang/src/facts.cppm",
-   "contains": "if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx_, type);"
+   "contains": "if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx, type);"
   }
  ],
  "MC3-4.2-3": [
@@ -1098,6 +1098,28 @@
   {
    "script": "plugins/std/src/policy.cppm",
    "contains": "plugin::report_imports(context.facts, RAW_POINTERS"
+  }
+ ],
+ "MC2-3.1-1": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx)"
+  },
+  {
+   "script": "tools/checks/ifc.py",
+   "contains": "std's interface reaches"
+  }
+ ],
+ "MC2-3.1-2": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "if (i >= own) flags += flags.empty() ? \"reachable\" : \",reachable\";"
   }
  ]
 }

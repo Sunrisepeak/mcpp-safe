@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC2 |
-| Version | 1.1.0 |
+| Version | 1.2.0 |
 | Status | Draft |
 | Schema | [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) (an interface as read back) |
 | Examples | [`examples/mc2-interface.json`](examples/mc2-interface.json) (`conformance/ifc/dialect`'s `dialect.ifc`, read back) |
@@ -12,7 +12,7 @@
 
 ## Abstract
 
-When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ knows of the unit's interface: the declarations its code makes that are not local -- MC3's T1 facts -- and its dialect, the profiles and feature levels its code was gated with. The file is in the IFC format (Microsoft's, <https://github.com/microsoft/ifc-spec>), version 0.43, so any IFC reader can read its declarations; what IFC has no field for is carried in attributes of MC++'s own. An importing module learns what another module exposes, and under which dialect, from this file, without its source.
+When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ knows of the unit's interface: the declarations its code makes that are not local -- MC3's T1 facts -- and its dialect, the profiles and feature levels its code was gated with. The file is in the IFC format (Microsoft's, <https://github.com/microsoft/ifc-spec>), version 0.43, so any IFC reader can read its declarations; what IFC has no field for is carried in attributes of MC++'s own. An importing module learns what another module exposes, and under which dialect, from this file, without its source -- including what the unit makes reachable without declaring it: the declarations its exported using-declarations name, which is all a module like `std` exports (1.2.0).
 
 ## 1. Conventions
 
@@ -52,6 +52,13 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 - Its identity is its name, the last component of its qualified name (an operator's name whole), and the start of its name range as its place: `src.line` entry 0 is no place, the others are the unit's file (`name.source-file` 0) and a line from 1; columns count from 1. A declaration outside `export` has the basic specifier `NonExported`.
 - Declared types are not IFC types in MC2 1.x: MC3's text is carried (§4). A static member function is a `Method`.
 
+### 3.1 Reachable declarations (1.2.0)
+
+An importer names more than a unit's own code declares: `export using std::vector;` makes a declaration of another file nameable through the unit, and libc++'s `std` module exports nothing else. So an interface also carries the unit's *reachable declarations*:
+
+- every declaration an exported using-declaration of the unit names (each of its shadows' targets; a template's pattern), every public member of a class among them -- a field, a method, a constructor, a nested class or enumeration, a member alias, a member template's pattern, a static member -- and so on for the members that are classes, and every enumerator of an enumeration among them or among the unit's own exported ones (MC3's T1 declarations have no enumerators). Each once, as an MC3 declaration (§4.2 of MC3) with its type and templates, `exported` true, `local` false and no ranges (they are in other files). <a id="MC2-3.1-1"></a><sup>MC2-3.1-1</sup>
+- They come after the T1 declarations, in the table's sorts. A reachable declaration's scope is the declaration (T1 or reachable) whose qualified name is its own's prefix, when that is a namespace or a class, else the global scope; an enumerator is in the enumeration its qualified name is in (a scoped one's), else a `Barren` one. Its place is no place (`src.line` entry 0), and its `mcxx::decl` flags include `reachable`. <a id="MC2-3.1-2"></a><sup>MC2-3.1-2</sup>
+
 ## 4. What IFC has no field for: `[[mcxx::decl]]`
 
 - Every T1 declaration MUST carry one attribute `mcxx::decl(...)`, associated with it by the trait `.msvc.trait.decl-attrs` (the SDK's `DeclAttributes`: a `DeclIndex` and an `AttrIndex`, sorted by the declaration index as a 32-bit value). <a id="MC2-4-1"></a><sup>MC2-4-1</sup> Its arguments, in order:
@@ -64,7 +71,7 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 | 3 | its qualified name | `qualified-name` |
 | 4 | its container | `container` |
 | 5 | its type as text | `type` |
-| 6 | its flags, comma-separated: `exported`, `c-array`, `pointer`, `union`, `c-variadic` | the booleans |
+| 6 | its flags, comma-separated: `exported`, `c-array`, `pointer`, `union`, `c-variadic`; `reachable` for a reachable declaration (§3.1) | the booleans |
 | 7 | its range, `line:column-line:column` (MC3's, from 0) | `range` |
 | 8 | its name's range | `name` |
 | 9... | the templates its type names | `templates` |
@@ -77,7 +84,7 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 
 | Item | Arguments | Says |
 |---|---|---|
-| `mcxx::mc2` | the MC2 version (`"1.1.0"`) | the file is MC2's; exactly one |
+| `mcxx::mc2` | the MC2 version (`"1.2.0"`) | the file is MC2's; exactly one |
 | `mcxx::target` | the target triple | the compile's target (absent when unknown) |
 | `mcxx::profile` | a profile | one per profile of the unit's package (MC1 §4), in order |
 | `mcxx::feature` | a feature id, a level | one per feature of the catalog the unit was compiled with: its level for code in the module, before any namespace's or declaration's (MC1 §6) |
@@ -87,8 +94,8 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 ## 6. Reading
 
 - A reader MUST reject a file whose signature, format version or content hash is not §2's, and any offset or index outside the file; it MUST NOT end the process on a malformed file. <a id="MC2-6-1"></a><sup>MC2-6-1</sup>
-- A reader of MC2 1.x MUST reject a file without exactly one `mcxx::mc2` whose major version is 1, a dialect item or an MC2 attribute it does not know, and a declaration whose sort is not its kind's (§3). <a id="MC2-6-2"></a><sup>MC2-6-2</sup> A 1.1 reader reads 1.0 files, which have no `mcxx::reexport`.
-- Read back, the declarations MUST equal the unit's T1 declarations item by item and field by field, in the facts' order (their `local` is false). <a id="MC2-6-3"></a><sup>MC2-6-3</sup>
+- A reader of MC2 1.x MUST reject a file without exactly one `mcxx::mc2` whose major version is 1, a dialect item or an MC2 attribute it does not know, and a declaration whose sort is not its kind's (§3). <a id="MC2-6-2"></a><sup>MC2-6-2</sup> A 1.2 reader reads 1.1 files, which have no reachable declarations, and 1.0 files, which have no `mcxx::reexport` either.
+- Read back, the declarations MUST equal the unit's T1 declarations item by item and field by field, in the facts' order (their `local` is false), and the reachable ones what was written, in order. <a id="MC2-6-3"></a><sup>MC2-6-3</sup>
 
 ## 7. Finding a BMI's interface
 
@@ -99,7 +106,7 @@ A build may copy a BMI where nothing beside it is copied: mcpp's build caches ke
 
 ## 8. The JSON form
 
-`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id), `reexports` and `declarations` as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
+`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id), `reexports`, `declarations` and `reachable` (1.2.0) as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
 
 ## 9. Rationale
 

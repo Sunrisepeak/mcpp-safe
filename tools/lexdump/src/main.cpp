@@ -221,6 +221,8 @@ mcxx::frontend::Imported imported_by(const mcxx::frontend::Syntax& syntax, const
         const bool same_module { !own.empty() && (name == own || name.starts_with(own + ":")) };
         for (const auto& d : iface->declarations)
             if (same_module || d.exported) out.declarations.push_back(d);
+        // What its exported using-declarations name, their members, enumerators (MC2 1.2.0).
+        out.declarations.insert(out.declarations.end(), iface->reachable.begin(), iface->reachable.end());
         for (const auto& reexported : iface->reexports) add(reexported);
     };
     // An implementation unit (`module m;`) imports its module's interface.
