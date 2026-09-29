@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc3-facts.schema.json",
-  "title": "MC3 0.2.0: the facts of one file, in JSON",
+  "title": "MC3 0.3.0: the facts of one file, in JSON",
   "type": "object",
   "required": [
     "mc3-version",
@@ -154,6 +154,9 @@
           "type": "boolean"
         },
         "c-variadic": {
+          "type": "boolean"
+        },
+        "local": {
           "type": "boolean"
         }
       }
@@ -534,7 +537,8 @@
     "mc3-version": {
       "enum": [
         "0.1.0",
-        "0.2.0"
+        "0.2.0",
+        "0.3.0"
       ]
     },
     "path": {

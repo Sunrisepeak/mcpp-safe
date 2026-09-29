@@ -399,6 +399,15 @@
    "fixture": "conformance/gates/policy/raw-pointers/pos.cpp"
   }
  ],
+ "MC3-4.2-4": [
+  {
+   "test": "modules/frontend/tests/test_syntax.cpp: a declaration in a function's body is local; a parameter is not (MC3 0.3.0)"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;"
+  }
+ ],
  "MC3-4.3-1": [
   {
    "fixture": "conformance/gates/safe/uninitialized/pos.cpp"

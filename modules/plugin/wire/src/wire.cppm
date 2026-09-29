@@ -14,7 +14,7 @@ export namespace mcxx::plugin::wire {
 using Json = nlohmann::json;
 
 inline constexpr int PROTOCOL { 1 };
-inline constexpr std::string_view MC3_VERSION { "0.2.0" };   // 0.2.0 adds attributes; 0.1.0 documents are read too
+inline constexpr std::string_view MC3_VERSION { "0.3.0" };   // 0.3.0 adds a declaration's `local`, 0.2.0 attributes; older documents are read too
 
 template <class T>
 using Read = std::expected<T, std::string>;
@@ -255,6 +255,7 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
         x["pointer"] = d.pointer;
         x["union"] = d.is_union;
         x["c-variadic"] = d.c_variadic;
+        x["local"] = d.local;
         decls.push_back(std::move(x));
     }
     Json& inits = j["initializations"] = Json::array();
@@ -350,8 +351,8 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
 
 Read<fact::Facts> facts_from_json(const Json& j) {
     if (!j.is_object()) return std::unexpected("facts is not an object");
-    if (!j.contains("mc3-version") || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.1.0"))
-        return std::unexpected(std::format("facts are not MC3 {} (nor 0.1.0)", MC3_VERSION));
+    if (!j.contains("mc3-version") || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.2.0" && j["mc3-version"] != "0.1.0"))
+        return std::unexpected(std::format("facts are not MC3 {} (nor 0.2.0, 0.1.0)", MC3_VERSION));
     fact::Facts f;
     std::string error;
     Reader top { j, "facts", {} };
@@ -378,6 +379,7 @@ Read<fact::Facts> facts_from_json(const Json& j) {
         d.pointer = r.flag("pointer");
         d.is_union = r.flag("union");
         d.c_variadic = r.flag("c-variadic");
+        d.local = r.flag("local");   // 0.1.0 and 0.2.0 documents have none: false
     });
     read_list(j, "initializations", f.initializations, error, [](Reader& r, fact::Initialization& i) {
         i.name = r.range("name");

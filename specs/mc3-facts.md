@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -67,6 +67,7 @@ One per variable, field, parameter, function, type alias, class, union, enum and
 | `pointer` | boolean | Its type holds a pointer type anywhere: itself, an array element, a template argument; for a function, its return type. <a id="MC3-4.2-3"></a><sup>MC3-4.2-3</sup> |
 | `union` | boolean | A union's definition. |
 | `c-variadic` | boolean | A function with a C `...` parameter. |
+| `local` | boolean | Declared in a function's body -- a local variable, a local class and what it declares -- and so not reachable from outside it; a parameter is not local (0.3.0). <a id="MC3-4.2-4"></a><sup>MC3-4.2-4</sup> |
 
 ### 4.3 Initialization
 
@@ -100,7 +101,7 @@ One per variable or member initialized by an initializer the file writes, and on
 
 ### 4.11 The JSON form
 
-A facts document is an object with `mc3-version` (`"0.2.0"`; a reader also takes `"0.1.0"`, which has no `attributes`), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
+A facts document is an object with `mc3-version` (`"0.3.0"`; a reader also takes `"0.2.0"`, whose declarations have no `local`, and `"0.1.0"`, which has no `attributes` either), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
 
 ### 4.12 Attribute
 

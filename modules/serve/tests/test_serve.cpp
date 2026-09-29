@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
         expect(seen.wait_for_goto(std::chrono::seconds { 60 })) << "a goto, denied by the package, is published";
         auto facts = client.request("mcxx/facts", program.document());
         expect(fatal(facts.has_value())) << (facts ? "" : facts.error());
-        expect((*facts)["mc3-version"] == "0.2.0" && (*facts)["gotos"].size() == 1);
+        expect((*facts)["mc3-version"] == "0.3.0" && (*facts)["gotos"].size() == 1);
         auto gates = client.request("mcxx/gates", program.document());
         expect(fatal(gates.has_value()));
         const auto& list = (*gates)["features"];

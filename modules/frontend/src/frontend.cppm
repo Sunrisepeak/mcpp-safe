@@ -120,6 +120,16 @@ msa::fact::Facts facts(const Syntax& syntax) {
             if (d.va_list) (syntax.pp.target.starts_with("x86_64") && syntax.pp.target.find("linux") != std::string::npos ? f.c_array : f.pointer) = true;
             f.c_variadic = d.c_variadic;
             f.is_union = d.kind == msa::Kind::union_;
+            // Inside a function: a parameter's parent is the function, a local's too (or a local class's).
+            if (d.kind != msa::Kind::parameter)
+                for (auto p = d.parent; p >= 0; p = ds[static_cast<std::size_t>(p)].parent) {
+                    const auto k = ds[static_cast<std::size_t>(p)].kind;
+                    if (k == msa::Kind::function || k == msa::Kind::method || k == msa::Kind::constructor || k == msa::Kind::destructor ||
+                        k == msa::Kind::conversion) {
+                        f.local = true;
+                        break;
+                    }
+                }
             out.declarations.push_back(std::move(f));
         }
         for (const auto& [ids, reason] : d.allows) {

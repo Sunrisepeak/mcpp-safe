@@ -281,6 +281,8 @@ struct Declaration : Place {
     bool pointer { false };           // the declared type holds a raw pointer (T*), anywhere in it
     bool is_union { false };          // a union
     bool c_variadic { false };        // a function with a C `...` parameter
+    bool local { false };             // declared in a function's body (a local variable, a local class and its
+                                      // members): not reachable from outside it (MC3 0.3.0)
 };
 
 enum class InitForm { default_init, copy, direct, direct_list, copy_list };

@@ -2,6 +2,12 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC3 0.3.0: a declaration's `local`
+
+- **MC3** §4.2: `local`, a declaration in a function's body (a local variable, a local class and what it
+  declares), not reachable from outside it; a parameter is not local. What an interface carries is
+  what is not local (MC2). Readers take 0.2.0 and 0.1.0 documents, whose declarations have none.
+
 ## 2026-09-29 — MC5 0.1.1: a GCC command's module switches
 
 - **MC5** §6: the derived arguments of a GCC command leave out GCC's C++20 modules switches

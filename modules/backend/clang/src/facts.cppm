@@ -258,6 +258,8 @@ public:
         decl.qualified_name = plain_name(d);
         decl.kind = kind_of(d);
         decl.exported = d->isInExportDeclContext();
+        // Inside a function's body: a local variable, or a local class and what it declares.
+        decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;
         cl::QualType type;
         if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d)) type = parm->getOriginalType();
         else if (const auto* value = llvm::dyn_cast<cl::ValueDecl>(d)) type = value->getType();

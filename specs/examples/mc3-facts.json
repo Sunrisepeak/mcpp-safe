@@ -1,5 +1,5 @@
 {
-  "mc3-version": "0.2.0",
+  "mc3-version": "0.3.0",
   "path": "/work/app/src/buffer.cppm",
   "module": "app.buffer",
   "certainty": "certain",
@@ -44,7 +44,8 @@
       "c-array": false,
       "pointer": false,
       "union": false,
-      "c-variadic": false
+      "c-variadic": false,
+      "local": false
     },
     {
       "range": {
@@ -77,7 +78,8 @@
       "c-array": false,
       "pointer": true,
       "union": false,
-      "c-variadic": false
+      "c-variadic": false,
+      "local": false
     },
     {
       "range": {
@@ -110,7 +112,8 @@
       "c-array": true,
       "pointer": false,
       "union": false,
-      "c-variadic": false
+      "c-variadic": false,
+      "local": false
     }
   ],
   "initializations": [

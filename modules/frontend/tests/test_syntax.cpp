@@ -116,6 +116,16 @@ void (*signal(int, void (*)(int)))(int);
                list { "variable a", "namespace n", ".variable b", "function c", "variable d" });
     };
 
+    "a declaration in a function's body is local; a parameter is not (MC3 0.3.0)"_test = [] {
+        const auto facts = f::facts(f::parse("namespace n { int g; int f(int p) { int x = p; struct L { int m; }; return x; } }\n"));
+        const auto local = [&](std::string_view qualified) {
+            const auto it = std::ranges::find_if(facts.declarations, [&](const auto& d) { return d.qualified_name == qualified; });
+            return it != facts.declarations.end() && it->local;
+        };
+        expect(!local("n::g") && !local("n::f") && !local("n::p")) << "a namespace's declarations, a parameter";
+        expect(local("n::x") && local("n::L") && local("n::L::m")) << "a local variable, a local class and its member";
+    };
+
     "what it cannot parse it skips, says where, and goes on"_test = [] {
         const auto syntax = f::parse("int good1;\n) ] garbage + + ;\nint good2;\nstruct S { void f( ; int kept; };\nint good3;\n");
         const auto names = outline("int good1;\n) ] garbage + + ;\nint good2;\nstruct S { void f( ; int kept; };\nint good3;\n");
