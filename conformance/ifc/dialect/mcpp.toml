@@ -1,0 +1,19 @@
+# MC2's dialect (A1.1.4): what each module unit's .ifc says its code was gated with -- the package's
+# profile, every feature's level for the module, the namespaces' own levels -- read back as written.
+# tools/checks/ifc.py compiles the units with mcxx and compares expected.json with what it reads.
+[package]
+name    = "ifc-dialect"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "safe"
+
+[package.metadata.mcxx.features]
+goto = "deny"                  # the package adds what its profile does not have
+raw-pointers = "warn"          # the package over its profile
+
+[package.metadata.mcxx.modules."dialect.legacy"]
+goto = "allow"                 # one module over the package (its partitions with it)
+
+[package.metadata.mcxx.namespaces."dialect::interop"]
+reinterpret-cast = "allow"     # a namespace's own level: carried as the package sets it

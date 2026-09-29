@@ -88,6 +88,7 @@ import mcxx.frontend;
 import :support;
 import :unit;
 import :facts;
+import :ifc;
 
 namespace mcxx::clang_backend {
 
@@ -231,6 +232,20 @@ public:
             plan = features::plan_for(path);
         }
         report_plugin_problems(ctx, plugin_problems);
+        check(ctx, path, *plan);
+        // A module unit's BMI gets its interface beside it (MC2), once the unit has passed its gates.
+        write_interface(ci_, ctx, path, *plan);
+    }
+
+private:
+    cl::CompilerInstance& ci_;
+    std::vector<plugin::Finding> filtered_;   // the source filters' findings (an extension's uses)
+
+    // The active rules over the file's facts, at the levels its configuration gives.
+    void check(cl::ASTContext& ctx, const std::string& path, const features::Plan& planned) {
+        const features::Plan* plan { &planned };
+        const auto& sm = ctx.getSourceManager();
+        const cl::FileID main { sm.getMainFileID() };
         if (plan->idle()) {
             base::trace::count("gates.idle");
             return;
@@ -275,10 +290,6 @@ public:
         if (const char* audit = std::getenv("MCXX_AUDIT"); audit != nullptr && *audit != '\0') features::append_audit(audit, result.waived);
         base::trace::count("gates.waived", static_cast<std::int64_t>(result.waived.size()));
     }
-
-private:
-    cl::CompilerInstance& ci_;
-    std::vector<plugin::Finding> filtered_;   // the source filters' findings (an extension's uses)
 
     // A plugin the package declares that is not there: what it gates is unknown, so a compilation
     // fails (MC4-5-5); the editor's parse says so as a warning, since it cannot compose.

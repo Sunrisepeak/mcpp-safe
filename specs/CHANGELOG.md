@@ -2,6 +2,17 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC2 1.0.0: module interfaces in the IFC format
+
+- **MC2** (new): beside every BMI a compile writes, `X.ifc` in IFC format 0.43 -- the unit's T1
+  declarations (MC3's, those not local) as IFC declarations in IFC scopes, what IFC has no field for
+  in `[[mcxx::decl(...)]]` attributes, and the unit's dialect (profiles, every feature's level for the
+  module, the namespaces' levels) in an attribute declaration. A reader rejects what is not MC2 1.x;
+  read back, the declarations equal the facts field by field. Schema: an interface as read back.
+- **MC3** §4 (MC3-4-4): a qualified name or a type does not depend on how the command line named the
+  file -- an unnamed class, union or enum is `(anonymous union)`, `(unnamed struct)`, without its place.
+  Before, the editor (an absolute path) and a build (a relative one) gave different names.
+
 ## 2026-09-29 — MC3 0.3.0: a declaration's `local`
 
 - **MC3** §4.2: `local`, a declaration in a function's body (a local variable, a local class and what it

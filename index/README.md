@@ -5,6 +5,7 @@
 ```toml
 [indices]
 llvm = { path = "index/llvm" }
+microsoft = { path = "index/microsoft" }
 ```
 
 | 命名空间 | 包 | 版本 | 来源 |
@@ -13,6 +14,6 @@ llvm = { path = "index/llvm" }
 | `llvm` | `codegen-dev` | 23.1.0.1、23.1.0.2、23.1.0.3 | 同上，`codegen/`：CodeGen、优化器、x86-64 与 AArch64 后端 |
 | `llvm` | `clang-driver` | 23.1.0.2、23.1.0.3 | 同上，`driver/`：clang 本身（driver、cc1、cc1as） |
 | `microsoft` | `gsl` | 4.2.0 | microsoft/GSL（纯头文件） |
-| `microsoft` | `ifc-sdk` | 0.43.5 | microsoft/ifc：IFC 的读取器、DOM 和 `ifc-printer`（V0.3） |
+| `microsoft` | `ifc-sdk` | 0.43.5 | microsoft/ifc：IFC 的读取器、DOM 和 `ifc-printer`（V0.3）。`modules/ifc`（MC2）用它的结构定义和 SHA-256；`tools/checks/ifc.py` 用它的源码构建 `ifc-printer` |
 
 第四段版本号是打包修订号，上游代码版本相同。按版本使用的包会进入 mcpp 的全局构建缓存（`~/.mcpp/build-cache`），所有项目共用同一份构建结果。所以只有内容真的变了才打新版本。

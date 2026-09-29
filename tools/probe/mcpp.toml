@@ -16,6 +16,7 @@ mcxx-msa   = { path = "../../modules/msa" }
 mcxx-backend = { path = "../../modules/backend/semantic" }
 mcxx-lsp   = { path = "../../modules/lsp" }
 mcxx-plugin-wire = { path = "../../modules/plugin/wire" }   # --facts: MC3 JSON
+mcxx-ifc   = { path = "../../modules/ifc" }           # --ifc, --read-ifc: MC2
 
 [dependencies.nlohmann]
 json.workspace = true

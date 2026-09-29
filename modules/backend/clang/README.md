@@ -12,6 +12,7 @@ libmc++ 两个可以出现 Clang 的包之一（见 `../README.md` 的边界规�
 | `unit.cppm` | `:unit` | 解析一个文件：诊断、出现位置、符号、实体 |
 | `facts.cppm` | `:facts` | MC3 v0 事实：遍历主文件 AST（声明、初始化和未初始化的局部变量、强制转换、new/delete、指针运算、goto、throw/try/typeid/asm/va_arg、`[[mcpp::allow]]`），宏和 `#include` 来自预处理器和源码管理器。只收集要求的种类（`fact::Kinds`） |
 | `gate.cppm` | `:gate` | `[[mcpp::allow]]` 属性；Clang 静态插件：解析前运行源码过滤器，解析后运行门禁规则 |
+| `ifc.cppm` | `:ifc` | MC2：模块单元写出 BMI 且没有错误时，在 BMI 旁边写 `.ifc`（T1 声明和方言，`mcxx.ifc`） |
 | `completion.cppm` | `:completion` | 代码补全、签名帮助 |
 | `index.cppm` | `:index` | 后台构建的程序索引 |
 | `workspace.cpp` | 实现单元 | `msa::Workspace` 的实现 |
@@ -26,7 +27,8 @@ libmc++ 两个可以出现 Clang 的包之一（见 `../README.md` 的边界规�
    - 取这个包的 Plan（`features::plan_for`，有缓存）；
    - 用名字查找去掉这个文件里不可能出现的特性（`requires_declaration`）；
    - 只抽取剩下的特性需要的事实，运行门禁（`mcxx.features`）；
-   - 把结果作为 Clang 诊断报出，写审计记录（`MCXX_AUDIT`）。
+   - 把结果作为 Clang 诊断报出，写审计记录（`MCXX_AUDIT`）；
+   - 如果这次编译写出一个模块单元的 BMI（`--precompile` 的输出或 `-fmodule-output`），而且到这里没有错误，就在 BMI 旁边写 `.ifc`（`:ifc`，MC2）：T1 声明另外收集一次（声明和类型），方言来自同一个 Plan。内容没变时不重写。
 
    什么都不用问时直接返回（计数 `gates.idle`），不遍历 AST。`MCXX_LOG=gates=debug` 分别给出 `gates.facts` 和 `gates.rules` 两段的耗时。
 

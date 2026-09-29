@@ -1,0 +1,25 @@
+# MC2: what MC++ knows of a module interface unit -- its T1 facts and its dialect -- in the IFC format
+# (Microsoft's, format 0.43), written beside the unit's BMI and read back without its source. The
+# structures are the IFC SDK's (microsoft.ifc-sdk, this repository's index/microsoft), so the layout is
+# theirs; no Clang (the clang-exposure rule): the Clang backend hands it MSA facts.
+[package]
+name        = "mcxx-ifc"
+version     = "0.1.0"
+description = "MC2: module interface information in the IFC format, written and read"
+license     = "Apache-2.0"
+
+[targets.mcxx-ifc]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-msa = { path = "../msa" }
+
+[dependencies.microsoft]
+ifc-sdk = "0.43.5"
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
+[lib]
+path = "src/ifc.cppm"

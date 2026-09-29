@@ -1,5 +1,5 @@
 {
- "$comment": "Rule identifiers of MC1, MC3, MC4 and MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
+ "$comment": "Rule identifiers of MC1 to MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
  "$pending": {},
  "MC1-2-1": [
   {
@@ -309,6 +309,111 @@
    "contains": "return catalog->problems.empty() ? 0 : 1;"
   }
  ],
+ "MC2-2-1": [
+  {
+   "validate": "mcxx: an interface's .ifc beside its BMI, from --precompile and -fmodule-output"
+  },
+  {
+   "validate": "mcxx: a compile with an error writes no .ifc"
+  },
+  {
+   "validate": "mcxx: `mcxx check` of an interface writes no .ifc"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: an editor's parse of an interface writes no .ifc: only a compile that writes a BMI does (MC2-2-1)"
+  },
+  {
+   "script": "modules/backend/clang/src/ifc.cppm",
+   "contains": "const std::string out { ifc::path_for(bmi) };"
+  },
+  {
+   "fixture": "conformance/ifc/dialect"
+  }
+ ],
+ "MC2-2-2": [
+  {
+   "validate": "mcxx: the .ifc is IFC 0.43 (signature, format version)"
+  },
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: the file is IFC 0.43 as the SDK lays it out"
+  }
+ ],
+ "MC2-2-3": [
+  {
+   "validate": "mcxx: the .ifc's content hash is the SHA-256 of every byte after it"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "const sdk::SHA256Hash hash { sdk::hash_bytes(file.data() + hashed, file.data() + file.size()) };"
+  }
+ ],
+ "MC2-2-4": [
+  {
+   "validate": "mcxx: the same interface is the same bytes, and an unchanged .ifc is not written again"
+  },
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: save leaves an unchanged file alone"
+  }
+ ],
+ "MC2-3-1": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "sdk::DeclSort sort_for(Kind k)"
+  }
+ ],
+ "MC2-4-1": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "association.trait = called(\"decl\", args);"
+  }
+ ],
+ "MC2-4-2": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "std::string quote(std::string_view s)"
+  }
+ ],
+ "MC2-5-1": [
+  {
+   "fixture": "conformance/ifc/dialect/expected.json"
+  },
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  }
+ ],
+ "MC2-6-1": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: what is not an MC2 file is an error"
+  }
+ ],
+ "MC2-6-2": [
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "if (!versioned) return fail(\"no mcxx::mc2 version: not written by MC2\");"
+  },
+  {
+   "script": "modules/ifc/src/ifc.cppm",
+   "contains": "return fail(std::format(\"unknown dialect item mcxx::{} with {} arguments\", name, args.size()));"
+  }
+ ],
+ "MC2-6-3": [
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  },
+  {
+   "script": "tools/checks/ifc.py",
+   "contains": "A1.1.3 {len(results)} interface units' declarations read back from their .ifc equal a parse's"
+  }
+ ],
  "MC3-2-1": [
   {
    "script": "modules/msa/src/msa.cppm",
@@ -361,6 +466,15 @@
   },
   {
    "test": "modules/backend/clang/tests/test_backend.cpp: json-brace-init is caught when the file is parsed: one value in braces, and nothing else"
+  }
+ ],
+ "MC3-4-4": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: an unnamed class's name and type do not say where the file is (MC3-4-4)"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cppm",
+   "contains": "AnonymousTagMode::Plain"
   }
  ],
  "MC3-4.1-1": [

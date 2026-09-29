@@ -29,7 +29,7 @@ Every answer of the MSA carries a certainty: `certain`, or `unknown`, which mean
 
 ## 4. Facts
 
-Facts describe **the file's own code**: a backend MUST NOT report a fact whose place is in a file the unit includes or a module it imports. <a id="MC3-4-1"></a><sup>MC3-4-1</sup> Every fact has a `range` and a `container`: the qualified name of its enclosing namespace, without inline namespaces, `""` for the global namespace. <a id="MC3-4-2"></a><sup>MC3-4-2</sup> Qualified names throughout omit inline namespaces (`std::vector`, not `std::__1::vector`). <a id="MC3-4-3"></a><sup>MC3-4-3</sup>
+Facts describe **the file's own code**: a backend MUST NOT report a fact whose place is in a file the unit includes or a module it imports. <a id="MC3-4-1"></a><sup>MC3-4-1</sup> Every fact has a `range` and a `container`: the qualified name of its enclosing namespace, without inline namespaces, `""` for the global namespace. <a id="MC3-4-2"></a><sup>MC3-4-2</sup> Qualified names throughout omit inline namespaces (`std::vector`, not `std::__1::vector`). <a id="MC3-4-3"></a><sup>MC3-4-3</sup> A qualified name or a type MUST NOT depend on how the command line named the file: an unnamed class, union or enum is `(anonymous union)`, `(unnamed struct)`, `(unnamed enum)`, without its place. <a id="MC3-4-4"></a><sup>MC3-4-4</sup>
 
 ### 4.1 Kinds
 

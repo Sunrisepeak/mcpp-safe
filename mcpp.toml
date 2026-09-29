@@ -4,6 +4,7 @@
 #   modules/base, os, arch, testing   foundations (no dependency beyond openkal-llvm-runtime)
 #   modules/msa                       the MC++ semantic API and its facts (MC3)
 #   modules/graph                     module declarations scanned lexically, the module graph
+#   modules/ifc                       MC2: T1 facts and the dialect of a module unit in the IFC format
 #   modules/plugin/sdk                the plugin SDK (MC4): providers, rules, source filters, profiles, the catalog
 #   modules/plugin/wire, remote, host MC4's JSON forms; a plugin process's side; the host's (processes, isolation)
 #   modules/features                  the feature gates (MC1) and MC++'s built-in provider mc++.iso
@@ -35,6 +36,7 @@ members = [
     "modules/plugin/host",
     "modules/features",
     "modules/frontend",
+    "modules/ifc",
     "modules/serve",
     "modules/driver",
     "modules/lsp",
@@ -49,9 +51,11 @@ members = [
     "tools/lexdump",
 ]
 
-# This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.
+# This repository's own package indices (rule R2): llvm.clang-dev for mcxx.clang; microsoft.ifc-sdk
+# for mcxx.ifc.
 [indices]
 llvm = { path = "index/llvm" }
+microsoft = { path = "index/microsoft" }
 
 [workspace.dependencies]
 openkal-llvm-runtime = "0.15.2"

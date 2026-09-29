@@ -11,3 +11,5 @@ forks/
 mcpp.lock
 # xlings makes a project-local sub-OS (shims) where it runs beside this repository's .xlings.json
 .xlings/
+# xlings keeps a cache of each package index beside it
+index/*/.xlings-index-cache.json

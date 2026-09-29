@@ -66,8 +66,8 @@ for path in sorted(specs.rglob("*.json")):
             check(f"schema is valid 2020-12: {path.name}", False, str(e))
         schemas[path.stem.removesuffix(".schema")] = Draft202012Validator(doc)
 
-config, catalog_v, audit, facts, protocol, version, serve = (schemas[n] for n in
-    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version", "mc6-requests"))
+config, catalog_v, audit, facts, protocol, version, serve, interface = (schemas[n] for n in
+    ("mc1-config", "mc1-catalog", "mc1-audit", "mc3-facts", "mc4-protocol", "mc5-version", "mc6-requests", "mc2-interface"))
 ex = specs / "examples"
 
 # 2. examples validate
@@ -86,6 +86,7 @@ for i, message in enumerate(lines(ex / "mc4-session.jsonl")):
     if message.get("type") == "check":
         validate("MC4 example: a check's facts are MC3 facts", facts, message["facts"])
 validate("MC5 example validates: mc5-version.json", version, load(ex / "mc5-version.json"))
+validate("MC2 example validates: mc2-interface.json", interface, load(ex / "mc2-interface.json"))
 for entry in load(ex / "mc6-session.json"):
     validate(f"MC6 example validates: mc6-session.json {entry['method']}", serve, entry)
     if entry["method"] == "mcxx/facts":
@@ -106,6 +107,15 @@ validate("MC1 audit schema rejects a 0-based line", audit, dict(lines(ex / "mc1-
 f = load(ex / "mc3-facts.json")
 validate("MC3 schema rejects facts without a kind's array", facts, {k: v for k, v in f.items() if k != "casts"}, expect_valid=False)
 validate("MC3 schema rejects an unknown cast kind", facts, dict(f, casts=[dict(f["casts"][0], kind="bit_cast")]), expect_valid=False)
+i2 = load(ex / "mc2-interface.json")
+validate("MC2 schema rejects a level that is not one", interface, dict(i2, dialect=dict(i2["dialect"], features={"goto": "loud"})), expect_valid=False)
+validate("MC2 schema rejects a local declaration", interface, dict(i2, declarations=[dict(i2["declarations"][0], local=True)]), expect_valid=False)
+validate("MC2 schema rejects an interface without its dialect", interface, {k: v for k, v in i2.items() if k != "dialect"}, expect_valid=False)
+mc2_decl = load(specs / "schema/mc2-interface.schema.json")["$defs"]["declaration"]
+mc3_decl = load(specs / "schema/mc3-facts.schema.json")["$defs"]["declaration"]
+check("MC2's declaration is MC3's, `local` false",
+      {**mc2_decl, "properties": {k: v for k, v in mc2_decl["properties"].items() if k != "local"}}
+      == {**mc3_decl, "properties": {k: v for k, v in mc3_decl["properties"].items() if k != "local"}})
 session = lines(ex / "mc4-session.jsonl")
 validate("MC4 schema rejects a welcome without providers", protocol, dict(session[1], providers=[]), expect_valid=False)
 validate("MC4 schema rejects a message without an id", protocol, {"type": "shutdown"}, expect_valid=False)
@@ -179,6 +189,31 @@ if mcxx:
               one.returncode == 0 and two.returncode == 0 and found == 1, f"{found} reports; {one.stderr[:200]} {two.stderr[:200]}")
         clean = subprocess.run([mcxx, "check", "--target=x86_64-unknown-linux-gnu", "clean.cpp"], cwd=w, capture_output=True, text=True)
         check("mcxx check of a clean file prints nothing", clean.returncode == 0 and clean.stdout == "" and clean.stderr == "", clean.stderr[:200])
+        # MC2: the interface beside the BMI, from --precompile and from -fmodule-output; IFC 0.43, its hash
+        # the SHA-256 of what follows it; written again only when it would change.
+        import hashlib, time
+        (w / "b.cppm").write_text("export module b;\nexport namespace b { int* data(); struct S { int x; }; }\n")
+        (w / "c.cppm").write_text("export module c:p;\nexport int c_value(int v);\n")
+        pre = subprocess.run([mcxx, *args, "--precompile", "b.cppm", "-o", "b.pcm"], cwd=w, capture_output=True, text=True)
+        out = subprocess.run([mcxx, *args, "-fmodule-output=c-p.pcm", "-c", "c.cppm", "-o", "c.o"], cwd=w, capture_output=True, text=True)
+        b_ifc, c_ifc = w / "b.ifc", w / "c-p.ifc"
+        check("mcxx: an interface's .ifc beside its BMI, from --precompile and -fmodule-output",
+              pre.returncode == 0 and out.returncode == 0 and b_ifc.exists() and c_ifc.exists(), pre.stderr[:200] + out.stderr[:200])
+        if b_ifc.exists():
+            data = b_ifc.read_bytes()
+            check("mcxx: the .ifc is IFC 0.43 (signature, format version)", data[:4] == bytes([0x54, 0x51, 0x45, 0x1A]) and data[36:38] == bytes([0, 43]))
+            check("mcxx: the .ifc's content hash is the SHA-256 of every byte after it", data[4:36] == hashlib.sha256(data[36:]).digest())
+            before = b_ifc.stat().st_mtime_ns
+            time.sleep(0.05)
+            again = subprocess.run([mcxx, *args, "--precompile", "b.cppm", "-o", "b.pcm"], cwd=w, capture_output=True, text=True)
+            check("mcxx: the same interface is the same bytes, and an unchanged .ifc is not written again",
+                  again.returncode == 0 and b_ifc.read_bytes() == data and b_ifc.stat().st_mtime_ns == before)
+        (w / "bad.cppm").write_text("export module bad;\nexport int f() { return undeclared; }\n")
+        bad = subprocess.run([mcxx, *args, "--precompile", "bad.cppm", "-o", "bad.pcm"], cwd=w, capture_output=True, text=True)
+        check("mcxx: a compile with an error writes no .ifc", bad.returncode != 0 and not (w / "bad.ifc").exists())
+        (w / "d.cppm").write_text("export module d;\nexport int d_value();\n")
+        checked = subprocess.run([mcxx, "check", "--target=x86_64-unknown-linux-gnu", "-std=c++23", "d.cppm"], cwd=w, capture_output=True, text=True)
+        check("mcxx: `mcxx check` of an interface writes no .ifc", checked.returncode == 0 and not (w / "d.ifc").exists(), checked.stderr[:200])
 else:
     print("note: --mcxx not given; what a built mcxx prints is not checked")
 

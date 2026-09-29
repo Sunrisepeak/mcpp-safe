@@ -5,7 +5,7 @@
 | 规范 | 标题 | 版本 | 状态 | Schema |
 |---|---|---|---|---|
 | [MC1](mc1-features.md) | 特性注册表、profile 与门禁 | 0.2.0 | 草案 | [config](schema/mc1-config.schema.json)、[catalog](schema/mc1-catalog.schema.json)、[audit](schema/mc1-audit.schema.json) |
-| MC2 | IFC 方言信息 | — | M1 | — |
+| [MC2](mc2-ifc.md) | IFC 格式的模块接口：T1 声明与方言 | 1.0.0（IFC 0.43） | 草案 | [interface](schema/mc2-interface.schema.json) |
 | [MC3](mc3-facts.md) | MSA：位置、certainty、事实 | 0.3.0 | 草案 | [facts](schema/mc3-facts.schema.json) |
 | [MC4](mc4-plugins.md) | 插件：provider、扩展点（规则、源码过滤器、profile、属性、区域）、组合、进程外协议 | 0.2.0（协议版本 1） | 草案 | [protocol](schema/mc4-protocol.schema.json) |
 | [MC5](mc5-driver.md) | `mcxx` 驱动与工具链契约 | 0.1.1 | 草案 | [version](schema/mc5-version.schema.json) |
@@ -20,6 +20,9 @@ mcxx（MC5：命令行、环境变量、version --json）
         │  每次编译：源码过滤器 → 解析 → 事实（MC3）→ 门禁（MC1）
         ▼
 provider（MC4）：内置的 mc++.iso 与插件；静态组合或进程外协议；解析、覆盖、冲突、故障隔离
+        │
+        ▼  模块接口单元写出 BMI 时
+X.ifc 在 X.pcm 旁边（MC2）：T1 声明（MC3）+ 方言（MC1 的 profile 与特性级别），导入方不读源码
 ```
 
 ## 目录
@@ -28,7 +31,7 @@ provider（MC4）：内置的 mc++.iso 与插件；静态组合或进程外协�
 |---|---|
 | `mc*.md` | 规范正文 |
 | `schema/` | JSON Schema（draft 2020-12） |
-| `examples/` | 示例，每一个都能通过对应的 schema。`mc1-catalog.json`、`mc5-version.json`、`mc1-audit.jsonl` 是真实的 mcxx 输出 |
+| `examples/` | 示例，每一个都能通过对应的 schema。`mc1-catalog.json`、`mc5-version.json`、`mc1-audit.jsonl` 是真实的 mcxx 输出；`mc2-interface.json` 是 `conformance/ifc/dialect` 的 `dialect.ifc` 读回的结果 |
 | `CHANGELOG.md` | 每份规范、每个版本的变更 |
 
 ## 规范条目 id 与可追溯性

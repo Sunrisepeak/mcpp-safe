@@ -1,0 +1,142 @@
+{
+  "module": "dialect",
+  "internal": false,
+  "source": "/work/conformance/ifc/dialect/src/dialect.cppm",
+  "target": "x86_64-unknown-linux-gnu",
+  "cplusplus": 202302,
+  "dialect": {
+    "features": {
+      "asm": "deny",
+      "c-array": "deny",
+      "c-style-cast": "deny",
+      "c-varargs": "deny",
+      "const-cast": "deny",
+      "exceptions": "allow",
+      "ext:cfg": "allow",
+      "goto": "deny",
+      "include": "allow",
+      "json-brace-init": "deny",
+      "lib:std.vector": "allow",
+      "macros": "allow",
+      "new-delete": "deny",
+      "raw-pointer-arithmetic": "deny",
+      "raw-pointers": "warn",
+      "reinterpret-cast": "deny",
+      "rtti": "allow",
+      "uninitialized": "deny",
+      "union": "deny"
+    },
+    "namespaces": {
+      "dialect::interop": {
+        "reinterpret-cast": "allow"
+      }
+    },
+    "profiles": [
+      "safe"
+    ]
+  },
+  "declarations": [
+    {
+      "c-array": false,
+      "c-variadic": false,
+      "container": "",
+      "entity": "c:@N@dialect",
+      "exported": true,
+      "kind": "namespace",
+      "local": false,
+      "name": {
+        "begin": {
+          "column": 17,
+          "line": 3
+        },
+        "end": {
+          "column": 24,
+          "line": 3
+        }
+      },
+      "pointer": false,
+      "qualified-name": "dialect",
+      "range": {
+        "begin": {
+          "column": 7,
+          "line": 3
+        },
+        "end": {
+          "column": 1,
+          "line": 5
+        }
+      },
+      "templates": [],
+      "type": "",
+      "union": false
+    },
+    {
+      "c-array": false,
+      "c-variadic": false,
+      "container": "dialect",
+      "entity": "c:@N@dialect@F@twice#I#",
+      "exported": true,
+      "kind": "function",
+      "local": false,
+      "name": {
+        "begin": {
+          "column": 4,
+          "line": 4
+        },
+        "end": {
+          "column": 9,
+          "line": 4
+        }
+      },
+      "pointer": false,
+      "qualified-name": "dialect::twice",
+      "range": {
+        "begin": {
+          "column": 0,
+          "line": 4
+        },
+        "end": {
+          "column": 34,
+          "line": 4
+        }
+      },
+      "templates": [],
+      "type": "",
+      "union": false
+    },
+    {
+      "c-array": false,
+      "c-variadic": false,
+      "container": "dialect",
+      "entity": "c:dialect.cppm@82@N@dialect@F@twice#I#@x",
+      "exported": true,
+      "kind": "parameter",
+      "local": false,
+      "name": {
+        "begin": {
+          "column": 14,
+          "line": 4
+        },
+        "end": {
+          "column": 15,
+          "line": 4
+        }
+      },
+      "pointer": false,
+      "qualified-name": "x",
+      "range": {
+        "begin": {
+          "column": 10,
+          "line": 4
+        },
+        "end": {
+          "column": 15,
+          "line": 4
+        }
+      },
+      "templates": [],
+      "type": "int",
+      "union": false
+    }
+  ]
+}

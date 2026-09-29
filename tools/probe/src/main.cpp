@@ -14,12 +14,20 @@
 // prints every token the backend's raw lexer finds in each FILE, comments included, one JSON object
 // per line as mcxx-lexdump prints MC++'s own (tools/checks/lexdiff.py); `--tokens --bench N FILE...`
 // lexes them N times and prints bytes, tokens and the best time, as `mcxx-lexdump --bench` does.
+//
+//   mcxx-probe --read-ifc X.ifc
+//
+// prints an interface MC++ wrote beside a BMI (MC2, mcxx.ifc) as one JSON object: its module, its
+// dialect and its declarations as MC3 facts. With `--ifc X.ifc` a parse of FILE is compared with it:
+// the declarations FILE's facts say are not local, item by item, against those read back from X.ifc
+// (A1.1.3, tools/checks/ifc.py); one JSON object, exit 1 when they differ.
 import std;
 import nlohmann.json;
 import mcxx.msa;
 import mcxx.backend;
 import mcxx.lsp;
 import mcxx.plugin.wire;
+import mcxx.ifc;
 
 using Json = nlohmann::json;
 
@@ -82,11 +90,41 @@ int tokens(int argc, char** argv) {
     return 0;
 }
 
+Json declarations_json(const std::vector<mcxx::msa::fact::Declaration>& declarations, std::string_view path, std::string_view module) {
+    mcxx::msa::fact::Facts facts;
+    facts.collected = mcxx::msa::fact::Kinds::declarations | mcxx::msa::fact::Kinds::declaration_types;
+    facts.declarations = declarations;
+    return mcxx::plugin::wire::facts_to_json(facts, path, module)["declarations"];
+}
+
+int read_ifc(const std::string& path) {
+    const auto unit = mcxx::ifc::load(path);
+    if (!unit) {
+        std::println(std::cerr, "{}", unit.error());
+        return 1;
+    }
+    Json features = Json::object();
+    for (const auto& f : unit->dialect.features) features[f.id] = f.level;
+    Json namespaces = Json::object();
+    for (const auto& n : unit->dialect.namespaces) namespaces[n.name][n.feature] = n.level;
+    Json doc = Json::object();
+    doc["module"] = unit->module;
+    doc["internal"] = unit->internal;
+    doc["source"] = unit->source;
+    doc["target"] = unit->target;
+    doc["cplusplus"] = unit->cplusplus;
+    doc["dialect"] = Json { { "profiles", unit->dialect.profiles }, { "features", features }, { "namespaces", namespaces } };
+    doc["declarations"] = declarations_json(unit->declarations, unit->source, unit->module);
+    std::println("{}", doc.dump());
+    return 0;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
     if (argc > 1 && std::string_view { argv[1] } == "--tokens") return tokens(argc, argv);
-    std::string db, resource, cache, file;
+    if (argc == 3 && std::string_view { argv[1] } == "--read-ifc") return read_ifc(argv[2]);
+    std::string db, resource, cache, file, ifc;
     bool index { false };
     bool facts { false };
     bool census { false };
@@ -101,6 +139,7 @@ int main(int argc, char** argv) {
         else if (a == "--facts") facts = true;
         else if (a == "--census") census = true;
         else if (a == "--symbols") symbols = true;
+        else if (a == "--ifc" && i + 1 < argc) ifc = argv[++i];
         else if (file.empty()) file = a;
         else if (i + 1 < argc) {
             asks.emplace_back(a, argv[i + 1]);
@@ -108,7 +147,7 @@ int main(int argc, char** argv) {
         }
     }
     if (db.empty() || file.empty()) {
-        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] [--symbols] FILE [LINE:COL METHOD]...");
+        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] [--symbols] [--ifc X.ifc] FILE [LINE:COL METHOD]...");
         return 2;
     }
     const auto started = std::chrono::steady_clock::now();
@@ -138,6 +177,28 @@ int main(int argc, char** argv) {
     const auto unit = service.unit(uri, true);
     std::println(std::cerr, "[{:7.2f}] parsed: {} occurrences", seconds_since(started), unit ? unit->occurrences().size() : 0);
     if (facts && unit) std::println("{}", mcxx::plugin::wire::facts_to_json(unit->facts(), path, unit->module_name()).dump());
+    if (!ifc.empty()) {
+        if (!unit) {
+            std::println(std::cerr, "{}: no parse to compare with", path);
+            return 1;
+        }
+        const auto written = mcxx::ifc::load(ifc);
+        Json result = Json::object();
+        result["ifc"] = ifc;
+        result["file"] = path;
+        std::vector<std::string> problems;
+        if (!written) problems.push_back(written.error());
+        else {
+            const auto expected = mcxx::ifc::interface_declarations(unit->facts());
+            result["declarations"] = expected.size();
+            problems = mcxx::ifc::differences(expected, written->declarations);
+            if (written->module != unit->module_name()) problems.push_back(std::format("module {} != {}", unit->module_name(), written->module));
+            if (written->source != path) problems.push_back(std::format("source {} != {}", path, written->source));
+        }
+        result["differences"] = problems;
+        std::println("{}", result.dump());
+        if (!problems.empty()) return 1;
+    }
     if (symbols && unit) {
         Json list = Json::array();
         const std::function<void(const std::vector<mcxx::msa::Symbol>&, int)> walk = [&](const std::vector<mcxx::msa::Symbol>& ss, int parent) {

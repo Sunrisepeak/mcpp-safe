@@ -248,6 +248,34 @@ int main() {
     };
 
 
+    "an editor's parse of an interface writes no .ifc: only a compile that writes a BMI does (MC2-2-1)"_test = [] {
+        Program p { "noifc" };
+        const std::string text { "export module lonely;\nexport int lonely_value() { return 1; }\n" };
+        const std::string file { p.file("src/lonely.cppm", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        expect(!std::filesystem::exists("lonely.ifc") && !std::filesystem::exists(p.root / "lonely.ifc") && !std::filesystem::exists(p.root / "src/lonely.ifc"))
+            << "Clang derives a module output path for a .cppm given with -c; the editor writes nothing there";
+    };
+
+    "an unnamed class's name and type do not say where the file is (MC3-4-4)"_test = [] {
+        Program p { "unnamed" };
+        const std::string text { "struct Box { union { int i; char c[4]; }; };\nstruct { int a; } single;\nenum { red } color;\n" };
+        const std::string file { p.file("src/unnamed.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        std::vector<std::string> names, types;
+        for (const auto& d : unit->facts().declarations) {
+            names.push_back(d.qualified_name);
+            if (!d.type.empty()) types.push_back(d.type);
+        }
+        expect(std::ranges::find(names, "Box::(anonymous union)") != names.end()) << std::format("{}", names);
+        for (const auto& t : types) expect(!t.contains(" at ") && !t.contains("unnamed.cpp")) << t;
+        for (const auto& n : names) expect(!n.contains(" at ") && !n.contains("unnamed.cpp")) << n;
+    };
+
     "[[mcpp::cfg]]: the editor sees the target's declarations only, at their own positions"_test = [] {
         Program p { "cfg" };
         const std::string text {

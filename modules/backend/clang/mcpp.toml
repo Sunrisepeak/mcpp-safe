@@ -20,6 +20,7 @@ mcxx-plugin   = { path = "../../plugin/sdk" }
 mcxx-features = { path = "../../features" }
 mcxx-plugin-host = { path = "../../plugin/host" }   # out-of-process plugins, the composed set
 mcxx-frontend = { path = "../../frontend" }         # MC++'s own front end: quick gate findings (Workspace::quick)
+mcxx-ifc      = { path = "../../ifc" }              # MC2: the interface beside a BMI
 
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).

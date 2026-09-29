@@ -90,10 +90,13 @@ namespace fact = msa::fact;
 namespace {
 
 // Qualified names without inline namespaces ("std::vector", "nlohmann::basic_json"): what a rule
-// and a configuration write, whatever ABI namespace a library versions itself with.
+// and a configuration write, whatever ABI namespace a library versions itself with. An unnamed class,
+// union or enum is `(anonymous union)`, `(unnamed struct)`: without its place, which would name the
+// file as the command line spelled it (MC3-4-4).
 std::string plain_name(const cl::NamedDecl* d) {
     cl::PrintingPolicy policy { d->getASTContext().getLangOpts() };
     policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
+    policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
     std::string out;
     llvm::raw_string_ostream os { out };
     d->printQualifiedName(os, policy);
@@ -102,7 +105,9 @@ std::string plain_name(const cl::NamedDecl* d) {
 
 std::string type_text(const cl::ASTContext& ctx, cl::QualType type) {
     if (type.isNull()) return {};
-    return type.getAsString(printing_policy(ctx));
+    cl::PrintingPolicy policy { printing_policy(ctx) };
+    policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
+    return type.getAsString(policy);
 }
 
 // The namespace code in `dc` belongs to ("" = global).

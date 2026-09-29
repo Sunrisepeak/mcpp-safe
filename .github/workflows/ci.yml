@@ -68,7 +68,7 @@ jobs:
       - name: Unit tests
         run: |
           set -euo pipefail
-          for member in modules/base modules/graph modules/lsp modules/features modules/frontend modules/plugin/wire modules/plugin/remote modules/plugin/host modules/serve plugins/std plugins/libs modules/backend/clang; do
+          for member in modules/base modules/graph modules/lsp modules/features modules/frontend modules/ifc modules/plugin/wire modules/plugin/remote modules/plugin/host modules/serve plugins/std plugins/libs modules/backend/clang; do
             echo "::group::$member"
             mcpp test -p "$member"
             echo "::endgroup::"
@@ -103,6 +103,11 @@ jobs:
           MCXX_BINARY="$mcxx" MCXX_CLANG_HEADERS="$headers" "$XLINGS_HOME/bin/xlings" install mcxx:mcxx@0.1.0 -y
           python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
           python3 tools/checks/selfhost.py --work "$HOME/c-mcppls"
+          # MC2 (M1.1): every C-mcppls interface unit's .ifc beside its BMI, read by the IFC SDK's ifc-printer
+          # and read back equal to a parse's declarations; the dialect fixture's (A1.1.1 - A1.1.4).
+          python3 tools/checks/ifc.py --mcxx "$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")" \
+            --probe "$(realpath "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)")" \
+            --corpus "$HOME/c-mcppls" --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 2 --work "$HOME/ifc-check"
           probe=$(realpath "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)")
           python3 tools/checks/facts.py --corpus "$HOME/c-mcppls" --probe "$probe" --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 2 \
             --reference-cache "$HOME/syntax-reference"

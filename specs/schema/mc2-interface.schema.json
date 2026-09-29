@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc2-interface.schema.json",
+  "title": "MC2 1.0.0: a module unit's interface, as read back from the .ifc beside its BMI (mcxx-probe --read-ifc)",
+  "type": "object",
+  "required": [
+    "module",
+    "internal",
+    "source",
+    "target",
+    "cplusplus",
+    "dialect",
+    "declarations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "module": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.]*(:[A-Za-z_][A-Za-z0-9_.]*)?$",
+      "description": "The module's name, or module:partition."
+    },
+    "internal": {
+      "type": "boolean",
+      "description": "An implementation partition."
+    },
+    "source": {
+      "type": "string",
+      "description": "The unit's source file."
+    },
+    "target": {
+      "type": "string",
+      "description": "The target triple; empty when unknown."
+    },
+    "cplusplus": {
+      "type": "integer",
+      "minimum": 201103
+    },
+    "dialect": {
+      "type": "object",
+      "required": [
+        "profiles",
+        "features",
+        "namespaces"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/level"
+          },
+          "description": "Every feature of the catalog the unit was compiled with, by id: its level for code in the module."
+        },
+        "namespaces": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/level"
+            }
+          },
+          "description": "The levels the package sets for namespaces: namespace, then feature id."
+        }
+      }
+    },
+    "declarations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/declaration"
+      },
+      "description": "The unit's T1 declarations, as MC3 declarations, in the facts' order."
+    }
+  },
+  "$defs": {
+    "level": {
+      "enum": [
+        "allow",
+        "warn",
+        "deny"
+      ]
+    },
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "begin",
+        "end"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "begin": {
+          "$ref": "#/$defs/position"
+        },
+        "end": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "name",
+        "entity",
+        "qualified-name",
+        "kind",
+        "type",
+        "templates",
+        "exported",
+        "c-array",
+        "pointer",
+        "union",
+        "c-variadic"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/range"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "qualified-name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "unknown",
+            "module",
+            "namespace",
+            "namespace-alias",
+            "class",
+            "struct",
+            "union",
+            "enum",
+            "enumerator",
+            "type-alias",
+            "concept",
+            "function",
+            "method",
+            "constructor",
+            "destructor",
+            "conversion",
+            "field",
+            "variable",
+            "parameter",
+            "template-parameter",
+            "macro",
+            "label"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exported": {
+          "type": "boolean"
+        },
+        "c-array": {
+          "type": "boolean"
+        },
+        "pointer": {
+          "type": "boolean"
+        },
+        "union": {
+          "type": "boolean"
+        },
+        "c-variadic": {
+          "type": "boolean"
+        },
+        "local": {
+          "const": false,
+          "description": "An interface carries what is not local (MC2 \u00a73)."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$comment": "Per module unit: what its .ifc must say (mcxx-probe --read-ifc). `features` lists some of the catalog's features; every one the catalog has must be there.",
+  "dialect": {
+    "profiles": ["safe"],
+    "features": { "goto": "deny", "raw-pointers": "warn", "reinterpret-cast": "deny", "union": "deny", "macros": "allow" },
+    "namespaces": { "dialect::interop": { "reinterpret-cast": "allow" } }
+  },
+  "dialect:part": {
+    "profiles": ["safe"],
+    "features": { "goto": "deny", "raw-pointers": "warn", "reinterpret-cast": "deny" },
+    "namespaces": { "dialect::interop": { "reinterpret-cast": "allow" } }
+  },
+  "dialect.legacy": {
+    "profiles": ["safe"],
+    "features": { "goto": "allow", "raw-pointers": "warn", "reinterpret-cast": "deny" },
+    "namespaces": { "dialect::interop": { "reinterpret-cast": "allow" } }
+  }
+}
