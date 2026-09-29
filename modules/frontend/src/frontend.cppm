@@ -15,6 +15,7 @@ export import :lex;
 export import :preprocess;
 export import :syntax;
 export import :types;
+export import :lookup;
 
 export namespace mcxx::frontend {
 
@@ -90,47 +91,24 @@ msa::fact::Facts facts(const Syntax& syntax) {
     out.collected = msa::fact::Kinds::macros | msa::fact::Kinds::includes | msa::fact::Kinds::declarations | msa::fact::Kinds::gotos |
                     msa::fact::Kinds::allocations | msa::fact::Kinds::casts | msa::fact::Kinds::uses | msa::fact::Kinds::suppressions;
     const auto& ds = syntax.declarations;
-    // Each declaration's namespace (container) and qualified name, from its parents: inline
-    // namespaces left out, an unnamed one as Clang prints it. One in a function -- a parameter, a
-    // local, a lambda's -- is named by its name alone, as Clang names what a function declares. And
-    // whether it is exported: inside `export`, or inside what is (a parameter, a member, a local), as
-    // Clang's isInExportDeclContext has it.
-    std::vector<std::string> container(ds.size()), qualified(ds.size());
+    // Each declaration's namespace (container) and qualified name (names_of: what name lookup uses
+    // too). And whether it is exported: inside `export`, or inside what is (a parameter, a member, a
+    // local), as Clang's isInExportDeclContext has it.
+    const Names names { names_of(syntax) };
+    const auto& container = names.container;
+    const auto& qualified = names.qualified;
     std::vector<bool> exported(ds.size());
-    const auto name_of = [](const Declaration& d) { return d.name.empty() && d.kind == msa::Kind::namespace_ ? std::string { "(anonymous namespace)" } : d.name; };
-    for (std::size_t i { 0 }; i < ds.size(); ++i) {
-        const auto& d = ds[i];
-        std::string prefix;
-        std::string ns;
-        if (d.parent >= 0) {
-            const auto p = static_cast<std::size_t>(d.parent);
-            const auto& parent = ds[p];
-            const bool scope_parent { parent.kind == msa::Kind::namespace_ || parent.kind == msa::Kind::class_ || parent.kind == msa::Kind::struct_ ||
-                                      parent.kind == msa::Kind::union_ || parent.kind == msa::Kind::enum_ };
-            if (parent.kind == msa::Kind::namespace_) {
-                ns = parent.inline_namespace ? container[p] : qualified[p];
-                prefix = ns;
-            } else {
-                ns = container[p];
-                if (scope_parent) prefix = qualified[p];
-            }
-        }
-        container[i] = ns;
-        exported[i] = d.exported || (d.parent >= 0 && exported[static_cast<std::size_t>(d.parent)]);
-        std::string own { d.qualifier + name_of(d) };
-        qualified[i] = d.inline_namespace ? prefix : prefix.empty() ? own : prefix + "::" + own;
-        if (d.inline_namespace) qualified[i] = prefix;
-    }
+    for (std::size_t i { 0 }; i < ds.size(); ++i) exported[i] = ds[i].exported || (ds[i].parent >= 0 && exported[static_cast<std::size_t>(ds[i].parent)]);
     for (std::size_t i { 0 }; i < ds.size(); ++i) {
         const auto& d = ds[i];
         const auto whole = whole_range(syntax, d);
         // Declarations: what MSA's facts hold (variables, fields, parameters, functions, aliases, class
         // and enum definitions, namespaces).
         const bool record { d.kind == msa::Kind::class_ || d.kind == msa::Kind::struct_ || d.kind == msa::Kind::union_ || d.kind == msa::Kind::enum_ };
-        const bool declared { d.kind == msa::Kind::variable || d.kind == msa::Kind::field || d.kind == msa::Kind::parameter ||
+        const bool declared { !d.binding && (d.kind == msa::Kind::variable || d.kind == msa::Kind::field || d.kind == msa::Kind::parameter ||
                               d.kind == msa::Kind::function || d.kind == msa::Kind::method || d.kind == msa::Kind::constructor ||
                               d.kind == msa::Kind::destructor || d.kind == msa::Kind::conversion || d.kind == msa::Kind::type_alias ||
-                              (record && d.definition) || d.kind == msa::Kind::namespace_ };
+                              (record && d.definition) || d.kind == msa::Kind::namespace_) };
         if (declared) {
             msa::fact::Declaration f;
             f.range = whole;

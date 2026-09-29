@@ -3,6 +3,7 @@
 
     python3 tools/checks/declsdiff.py --corpus DIR --probe MCXX_PROBE --lexdump MCXX_LEXDUMP --resource DIR
                                       [--jobs N] [--reference-cache DIR] [--only SUBSTRING] [--report FILE]
+                                      [--min MEMBER=PCT]...
 
 For every source file of a built corpus (its compile database; its own files, not its dependencies'):
 the Clang backend's T1 facts (`mcxx-probe --facts`, every kind, declaration types too) and MC++'s own
@@ -11,7 +12,8 @@ their name is and their kind; for each matched pair every T1 member is compared 
 container, exported, the flags (pointer, c-array, union, c-variadic, local), the type as text and the
 templates it names. Printed: how many of Clang's declarations the front end has, and per member the share
 that agrees, with examples of what does not. `--reference-cache` keeps Clang's side per file (its path's
-digest and modification time), since it costs a parse.
+digest and modification time), since it costs a parse. `--min matched=99.9 --min qualified-name=99.9`:
+fail when a share falls below it (a regression gate).
 """
 import collections, concurrent.futures, hashlib, json, os, pathlib, shlex, subprocess, sys, tempfile
 
@@ -126,3 +128,16 @@ if failed:
     print(f"  not compared: {len(failed)} ({', '.join(pathlib.Path(f).name for f in failed[:5])})")
 if report:
     pathlib.Path(report).write_text(json.dumps({**summary, "examples": {k: v[:200] for k, v in examples.items()}}, indent=1))
+problems = []
+for i, a in enumerate(sys.argv):
+    if a != "--min" or i + 1 >= len(sys.argv):
+        continue
+    member, floor = sys.argv[i + 1].split("=")
+    share = 100 * matched / max(1, total["clang"]) if member == "matched" else summary["members"].get(member, 0)
+    if share < float(floor):
+        problems.append(f"{member} {share:.3f}% below {floor}%")
+if failed:
+    problems.append(f"{len(failed)} files not compared")
+for p in problems:
+    print(f"FAIL  {p}")
+sys.exit(1 if problems else 0)

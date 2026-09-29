@@ -49,6 +49,13 @@ struct Declaration {
     // declarator_end) with the declarator-id [id_begin, id_end) among them (an empty one: abstract).
     // All zero where it has no type written (a namespace, a class, a structured binding).
     std::uint32_t specifiers_begin { 0 }, specifiers_end { 0 }, declarator_begin { 0 }, declarator_end { 0 }, id_begin { 0 }, id_end { 0 };
+    // A local's, a parameter's: the last token it is visible at, the end of its block (0: its owner's
+    // end -- a function's parameter, a namespace's declaration).
+    std::uint32_t visible_end { 0 };
+    std::uint32_t visible_begin { 0 };   // where it becomes visible, when not at its name: an init-capture's lambda body
+    bool binding { false };   // a name a structured binding introduces (not a declaration of MC3's: its `[a, b]` is)
+    bool scoped_enum { false };   // `enum class`, `enum struct`: its enumerators are named in it
+    std::uint32_t bases_begin { 0 }, bases_end { 0 };   // a class's base-clause tokens, after its `:`
     // Its [[mcpp::allow("ids", "reason")]] waivers (MC1 §7).
     std::vector<std::pair<std::string, std::string>> allows;
 };
@@ -66,12 +73,22 @@ struct Construct {
     bool array { false };         // new[], delete[]
 };
 
+// `using namespace n;` (a directive) and `using n::x;` (a declaration of x), for name lookup.
+struct Using {
+    bool directive { false };
+    std::string name;                  // as written: "n", "a::b", "n::x"
+    std::uint32_t at { 0 };            // its `using` (Syntax::pp.tokens)
+    std::int32_t parent { -1 };        // the declaration it is in: a namespace, a function; -1 at file scope
+    std::uint32_t visible_end { 0 };   // in a block: its last token; 0: to the end of its scope
+};
+
 struct Syntax {
     Preprocessed pp;
     std::vector<std::uint32_t> line_starts;
     // In the order they are written; parameters and a function's local variables among them (a
     // function's children, not in an outline).
     std::vector<Declaration> declarations;
+    std::vector<Using> usings;
     std::vector<Construct> constructs;
     std::vector<Diagnostic> diagnostics;     // where the parser could not follow the code, and skipped
 };
@@ -126,7 +143,7 @@ constexpr std::string_view OPERATORS_WORDS[] { "new", "delete", "co_await" };
 constexpr std::string_view STATEMENTS[] {
     "return", "delete", "throw", "case", "default", "goto", "break", "continue", "co_return", "co_yield", "co_await", "new", "else", "do", "if",
     "for", "while", "switch", "try", "catch", "static_assert", "sizeof", "this", "using", "typedef", "asm", "__asm__", "__asm", "operator",
-    "alignof", "noexcept", "requires", "true", "false", "nullptr", "typeid",
+    "alignof", "noexcept", "requires", "true", "false", "nullptr", "typeid", "namespace",
 };
 constexpr std::string_view CASTS[] { "static_cast", "dynamic_cast", "const_cast", "reinterpret_cast" };
 
@@ -180,6 +197,7 @@ private:
     std::map<std::string, std::pair<bool, bool>, std::less<>> aliases_;   // this file's aliases: (pointer, array)
     std::int32_t owner_ { -1 };   // the declaration whose body or initializer is being read
     std::size_t lambdas_ { 0 };   // how many lambdas' parameters, captures or bodies are being read
+    std::vector<std::size_t> scope_ends_;   // the blocks being read: each one's `}` (what a local declared now is visible to)
     // The parameters of the template header just read, as its arguments ("<T, N>"), and where it began.
     std::string template_arguments_;
     std::size_t template_begin_ { static_cast<std::size_t>(-1) };
@@ -335,6 +353,7 @@ private:
         d.last_token = static_cast<std::uint32_t>(last);
         d.allows = std::exchange(pending_allows_, {});
         d.in_lambda = lambdas_ > 0;
+        if (!scope_ends_.empty()) d.visible_end = static_cast<std::uint32_t>(scope_ends_.back());
         if (tracing_)
             base::trace::debug(TRACE, "{}:{} {} `{}` (declaration {}, in {})", d.name_at.line, d.name_at.column, msa::to_string(d.kind), d.name,
                                out_.declarations.size(), d.parent);
@@ -575,6 +594,7 @@ private:
     }
 
     void using_declaration(const Scope& scope, std::size_t begin) {
+        const std::size_t using_token { i_ };
         ++i_;   // using
         // using X [[attrs]] = type;
         if (identifier(i_) && (is(attributes(i_ + 1), Kind::equal))) {
@@ -599,7 +619,21 @@ private:
             if (is(i_, Kind::semi)) ++i_;
             return;
         }
+        using_names(scope.parent, using_token);
         skip_statement();   // using namespace, using enum, a using-declaration
+    }
+
+    // `using namespace n;` and `using n::x;` at k (its `using`), recorded for name lookup.
+    void using_names(std::int32_t parent, std::size_t k) {
+        std::size_t j { k + 1 };
+        const bool directive { word(j, "namespace") };
+        if (directive) ++j;
+        if (word(j, "enum") || word(j, "typename")) return;
+        std::string name;
+        while (j < t_.size() && (identifier(j) || is(j, Kind::coloncolon))) name += tok(j++).spelling;
+        if (name.empty() || !is(j, Kind::semi)) return;
+        out_.usings.push_back({ directive, std::move(name), static_cast<std::uint32_t>(k), parent,
+                                static_cast<std::uint32_t>(scope_ends_.empty() ? 0 : scope_ends_.back()) });
     }
 
     // Up to (not past) the `;` that ends this declaration, or a `}` or `,` at this depth.
@@ -616,6 +650,7 @@ private:
     }
 
     void template_declaration(const Scope& scope, std::size_t begin) {
+        std::vector<std::int32_t> parameters;   // visible to the end of what the template declares
         while (word(i_, "template")) {
             ++i_;
             if (!is(i_, Kind::less)) return skip_statement();   // an explicit instantiation
@@ -626,8 +661,17 @@ private:
             }
             template_arguments_ = parameter_names(i_ + 1, after - 1);
             template_begin_ = begin;
+            for (const auto name : parameter_tokens(i_ + 1, after - 1))
+                parameters.push_back(record(msa::Kind::template_parameter, std::string { tok(name).spelling }, name, name, name, scope, true, false, {}));
             i_ = after;
         }
+        struct Visible {
+            Parser& self;
+            const std::vector<std::int32_t>& parameters;
+            ~Visible() {
+                for (const auto p : parameters) self.out_.declarations[static_cast<std::size_t>(p)].visible_end = static_cast<std::uint32_t>(self.i_ > 0 ? self.i_ - 1 : 0);
+            }
+        } visible { *this, parameters };
         if (word(i_, "requires")) constraint();
         i_ = attributes(i_);
         if (word(i_, "concept") && identifier(i_ + 1)) {
@@ -639,6 +683,37 @@ private:
             return;
         }
         declaration(scope, begin);
+    }
+
+    // A template parameter list's names' tokens: each parameter's, where it has one.
+    std::vector<std::size_t> parameter_tokens(std::size_t from, std::size_t to) const {
+        std::vector<std::size_t> out;
+        std::optional<std::size_t> current;
+        bool in_default { false };
+        for (std::size_t k { from }; k <= to && k < t_.size(); ++k) {
+            if (is(k, Kind::comma) || k == to) {
+                if (current) out.push_back(*current);
+                current.reset();
+                in_default = false;
+                continue;
+            }
+            if (in_default) continue;
+            if (is(k, Kind::equal)) {
+                in_default = true;
+                continue;
+            }
+            if (is(k, Kind::less)) {
+                const std::size_t after { angle(k) };
+                if (after != k) k = after - 1;
+                continue;
+            }
+            if (is(k, Kind::l_paren) || is(k, Kind::l_square)) {
+                k = balanced(k) - 1;
+                continue;
+            }
+            if (identifier(k) && !word(k, "typename") && !word(k, "class") && !any_word(k, TYPE_KEYWORDS) && !word(k, "const")) current = k;
+        }
+        return out;
     }
 
     // A template parameter list's names as an argument list: "<T, N, Ts...>"; "" for `<>`.
@@ -710,7 +785,8 @@ private:
         const std::string_view key { tok(i_).spelling };
         const bool is_enum { key == "enum" };
         ++i_;
-        if (is_enum && (word(i_, "class") || word(i_, "struct"))) ++i_;
+        const bool scoped { is_enum && (word(i_, "class") || word(i_, "struct")) };
+        if (scoped) ++i_;
         i_ = waivers(i_);
         Name n;
         if (identifier(i_) || is(i_, Kind::coloncolon)) {
@@ -728,8 +804,10 @@ private:
                 return record(kind, n.spelled, n.last, begin, i_ - 1, scope, false, scope.listed, join(n.qualifiers));
             return -1;
         }
+        std::size_t bases_begin { 0 }, bases_end { 0 };
         if (is(i_, Kind::colon)) {   // bases, or an enum's underlying type
             ++i_;
+            bases_begin = i_;
             while (i_ < t_.size() && !is(i_, Kind::l_brace) && !is(i_, Kind::semi) && !is(i_, Kind::r_brace)) {
                 if (is(i_, Kind::l_paren) || is(i_, Kind::l_square)) i_ = balanced(i_);
                 else if (is(i_, Kind::less)) {
@@ -737,6 +815,7 @@ private:
                     i_ = after == i_ ? i_ + 1 : after;
                 } else ++i_;
             }
+            bases_end = i_;
             if (!is(i_, Kind::l_brace)) {   // an opaque enum declaration: enum class E : int;
                 *definition = false;
                 if (n.ok && !friend_)
@@ -748,6 +827,11 @@ private:
         const bool named { n.ok };
         const std::int32_t index { record(kind, named ? n.spelled : std::string {}, named ? n.last : begin, begin, begin, scope, true,
                                           scope.listed && named && !friend_, join(n.qualifiers)) };
+        out_.declarations[static_cast<std::size_t>(index)].scoped_enum = scoped;
+        if (!is_enum) {
+            out_.declarations[static_cast<std::size_t>(index)].bases_begin = static_cast<std::uint32_t>(bases_begin);
+            out_.declarations[static_cast<std::size_t>(index)].bases_end = static_cast<std::uint32_t>(bases_end);
+        }
         Scope inner { is_enum ? Context::enum_ : Context::class_, named ? n.spelled : std::string {}, index, scope.listed && named && !friend_, scope.exported };
         // A class template (not a specialization, whose arguments are written): its constructors are
         // named with its parameters.
@@ -1371,6 +1455,17 @@ private:
                     continue;
                 }
             }
+            if (boundary && contexts.back() && word(k, "using")) {   // using namespace n; using n::x;
+                using_names(owner, k);
+            }
+            if (boundary && contexts.back() && word(k, "namespace") && identifier(k + 1) && is(k + 2, Kind::equal)) {   // namespace a = b::c;
+                std::size_t end { k + 3 };
+                while (end < to && !is(end, Kind::semi)) ++end;
+                record(msa::Kind::namespace_alias, std::string { tok(k + 1).spelling }, k + 1, k, end, Scope { Context::block, {}, owner, false, false },
+                       true, false, {});
+                k = end;
+                continue;
+            }
             if (boundary && (word(k, "case") || word(k, "default"))) {   // case e: / default:
                 std::size_t j { k + 1 };
                 while (j < to && !(is(j, Kind::colon))) j = is(j, Kind::l_paren) ? balanced(j) : j + 1;
@@ -1431,7 +1526,14 @@ private:
                         control_close = closing_paren(open);
                         if (tracing_)
                             base::trace::debug(TRACE, "{}:{} {} (...) to {}:{}", t.at.line, t.at.column, w, tok(control_close).at.line, tok(control_close).at.column);
+                        // What it declares is visible to the end of the statement it controls.
+                        std::size_t controlled { control_close + 1 };
+                        if (is(controlled, Kind::l_brace)) controlled = balanced(controlled) - 1;
+                        else
+                            while (controlled < to && !is(controlled, Kind::semi)) controlled = is(controlled, Kind::l_paren) || is(controlled, Kind::l_brace) ? balanced(controlled) : controlled + 1;
+                        scope_ends_.push_back(controlled);
                         try_local(open + 1, owner, control_close, w == "catch" ? Parens::catch_ : Parens::control);
+                        scope_ends_.pop_back();
                         // What try_local did not take is read on, token by token.
                         k = std::max(open + 1, std::min(i_, control_close));
                         if (i_ <= open + 1) k = open + 1;
@@ -1450,6 +1552,7 @@ private:
                 !(k > from && (identifier(k - 1) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) || is(k - 1, Kind::greater) ||
                                is_string(tok(k - 1).kind)))) {
                 ++lambdas_;
+                const std::size_t lambda_declarations { out_.declarations.size() };
                 captures(k, owner);
                 std::size_t j { balanced(k) };
                 if (is(j, Kind::less)) {
@@ -1468,6 +1571,12 @@ private:
                     else ++b;
                 }
                 if (is(b, Kind::l_brace)) {
+                    // Its parameters and captures are visible in its body.
+                    for (std::size_t i { lambda_declarations }; i < out_.declarations.size(); ++i) {
+                        out_.declarations[i].visible_end = static_cast<std::uint32_t>(balanced(b) - 1);
+                        // An init-capture is not visible in the captures: `[x = std::move(x)]` moves the outer x.
+                        if (out_.declarations[i].kind == msa::Kind::variable) out_.declarations[i].visible_begin = static_cast<std::uint32_t>(b);
+                    }
                     lambda_body_next = true;
                     k = b;
                     continue;
@@ -1481,6 +1590,7 @@ private:
                 const bool block { lambda_body_next || (contexts.back() && (boundary || (k > 0 && (is(k - 1, Kind::r_paren) || word(k - 1, "else") ||
                                                                                                       word(k - 1, "do") || word(k - 1, "try"))))) };
                 contexts.push_back(block);
+                if (block) scope_ends_.push_back(balanced(k) - 1);
                 lambda_bodies.push_back(lambda_body_next);
                 if (lambda_body_next) ++lambdas_;
                 if (tracing_)
@@ -1493,6 +1603,7 @@ private:
             }
             if (t.kind == Kind::r_brace) {
                 if (contexts.size() > 1) {
+                    if (contexts.back() && !scope_ends_.empty()) scope_ends_.pop_back();
                     contexts.pop_back();
                     if (lambda_bodies.back()) --lambdas_;
                     lambda_bodies.pop_back();
@@ -1517,9 +1628,11 @@ private:
             boundary = false;
             ++k;
         }
-        // A lambda's body the range ended inside (broken text) is no longer being read.
-        for (std::size_t open { 1 }; open < lambda_bodies.size(); ++open)
+        // A lambda's body, a block, the range ended inside (broken text) is no longer being read.
+        for (std::size_t open { 1 }; open < lambda_bodies.size(); ++open) {
             if (lambda_bodies[open]) --lambdas_;
+            if (contexts[open] && !scope_ends_.empty()) scope_ends_.pop_back();
+        }
         i_ = saved;
     }
 
@@ -1555,6 +1668,8 @@ private:
                 (is(j + 1, Kind::equal) || is(j + 1, Kind::l_brace) || is(j + 1, Kind::l_paren) || (in_parens && is(j + 1, Kind::colon)))) {
                 i_ = j + 1;
                 const std::int32_t index { record(msa::Kind::variable, "[" + names + "]", b, k, j, scope, true, false, {}) };
+                for (std::size_t name { b + 1 }; name < j; ++name)
+                    if (identifier(name)) out_.declarations[static_cast<std::size_t>(record(msa::Kind::variable, std::string { tok(name).spelling }, name, name, name, scope, true, false, {}))].binding = true;
                 initializer(owner, limit, in_parens);
                 close(index, i_ - 1);
                 return true;

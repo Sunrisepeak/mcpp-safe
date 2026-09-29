@@ -132,6 +132,7 @@ int main(int argc, char** argv) {
     bool facts { false };
     bool census { false };
     bool symbols { false };
+    bool references { false };
     std::vector<std::pair<std::string, std::string>> asks;
     for (int i { 1 }; i < argc; ++i) {
         const std::string a { argv[i] };
@@ -142,6 +143,7 @@ int main(int argc, char** argv) {
         else if (a == "--facts") facts = true;
         else if (a == "--census") census = true;
         else if (a == "--symbols") symbols = true;
+        else if (a == "--references") references = true;
         else if (a == "--ifc" && i + 1 < argc) ifc = argv[++i];
         else if (file.empty()) file = a;
         else if (i + 1 < argc) {
@@ -150,7 +152,7 @@ int main(int argc, char** argv) {
         }
     }
     if (db.empty() || file.empty()) {
-        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] [--symbols] [--ifc X.ifc] FILE [LINE:COL METHOD]...");
+        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] [--symbols] [--references] [--ifc X.ifc] FILE [LINE:COL METHOD]...");
         return 2;
     }
     const auto started = std::chrono::steady_clock::now();
@@ -220,6 +222,30 @@ int main(int argc, char** argv) {
         walk(unit->symbols(), -1);
         Json doc = Json::object();
         doc["symbols"] = std::move(list);
+        std::println("{}", doc.dump());
+    }
+    // Each name the file writes that names a declaration, and what it names (tools/checks/refsdiff.py,
+    // M2.1's name lookup): Clang's occurrences that are references, not a declaration, not implied.
+    if (references && unit) {
+        Json list = Json::array();
+        const auto path = unit->path();
+        for (const auto& o : unit->occurrences()) {
+            using namespace mcxx::msa;
+            if ((o.roles & role::reference) == 0 || (o.roles & (role::declaration | role::definition | role::implicit)) != 0) continue;
+            const auto e = unit->entity(o.entity);
+            if (!e) continue;
+            Json x = Json::object();
+            x["range"] = Json::array({ o.range.begin.line, o.range.begin.column, o.range.end.line, o.range.end.column });
+            x["name"] = o.name;
+            x["target"] = e->qualified_name;
+            x["kind"] = std::string { to_string(e->kind) };
+            // Where what it names is declared, when that is this file.
+            if (e->declaration && e->declaration->path == path)
+                x["declaration"] = Json::array({ e->declaration->range.begin.line, e->declaration->range.begin.column });
+            list.push_back(std::move(x));
+        }
+        Json doc = Json::object();
+        doc["references"] = std::move(list);
         std::println("{}", doc.dump());
     }
     if (census && unit) {

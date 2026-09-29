@@ -10,6 +10,8 @@
 // mcxx-lexdump --facts [OPTIONS] FILE: the file's declarations as MC++'s own front end gives them (MC3
 // T1, facts(syntax)), one JSON object: {"declarations": [...]} with MC3's members, as `mcxx-probe
 // --facts` prints the Clang backend's (tools/checks/declsdiff.py, M2.1).
+// mcxx-lexdump --references [OPTIONS] FILE: each name the file writes that the front end resolves and
+// what it names (mcxx.frontend:lookup), as `mcxx-probe --references` prints Clang's (refsdiff.py).
 // mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
 // parsed every time, its outline and its facts taken; the process ending is the pass (A1.7.3). Prints the counts.
 // mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best.
@@ -188,6 +190,39 @@ int facts(int argc, char** argv) {
     return 0;
 }
 
+// Each name the file writes that MC++'s front end resolves (mcxx.frontend:lookup), as `mcxx-probe
+// --references` prints the Clang backend's (tools/checks/refsdiff.py, M2.1).
+int references(int argc, char** argv) {
+    mcxx::frontend::PreprocessOptions options;
+    std::string file;
+    for (int i { 2 }; i < argc; ++i) {
+        const std::string_view a { argv[i] };
+        if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
+        else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else file = a;
+    }
+    options.file = file;
+    const std::string text { read(file) };
+    const auto parsed = mcxx::frontend::parse(text, options);
+    std::string out { "{\"references\":[" };
+    bool first { true };
+    for (const auto& r : mcxx::frontend::references(parsed)) {
+        std::string declaration { "null" };
+        if (r.declaration >= 0) {
+            const auto at = mcxx::frontend::selection_range(parsed, parsed.declarations[static_cast<std::size_t>(r.declaration)]);
+            declaration = std::format("[{},{}]", at.begin.line, at.begin.column);
+        }
+        out += std::format("{}{{\"range\":[{},{},{},{}],\"name\":{},\"target\":{},\"kind\":\"{}\",\"declaration\":{}}}", first ? "" : ",",
+                           r.range.begin.line, r.range.begin.column, r.range.end.line, r.range.end.column, json(r.name), json(r.target),
+                           mcxx::msa::to_string(r.kind), declaration);
+        first = false;
+    }
+    out += "]}";
+    std::println("{}", out);
+    return 0;
+}
+
 int preprocessed(bool diff, int argc, char** argv) {
     mcxx::frontend::PreprocessOptions options;
     std::vector<std::string> files;
@@ -299,7 +334,7 @@ int fuzz(int rounds, int argc, char** argv) {
         "requires", "decltype(", "->", "...", "friend", "typedef", "extern \"C\"", "[[", "]]", "&&", "*", "\n",
     };
     std::mt19937_64 random { 20260929 };
-    std::size_t parses { 0 }, declarations { 0 }, facts { 0 };
+    std::size_t parses { 0 }, declarations { 0 }, facts { 0 }, references { 0 };
     for (int i { 3 }; i < argc; ++i) {
         const std::string text { read(argv[i]) };
         for (int r { 0 }; r < rounds; ++r) {
@@ -320,10 +355,11 @@ int fuzz(int rounds, int argc, char** argv) {
             declarations += mcxx::frontend::symbols(parsed).size();
             // And the facts the editor's quick gates read on every edit: types as text among them.
             facts += mcxx::frontend::facts(parsed).declarations.size();
+            references += mcxx::frontend::references(parsed).size();   // and the names it resolves
             ++parses;
         }
     }
-    std::println("{{\"parses\":{},\"symbols\":{},\"facts\":{}}}", parses, declarations, facts);
+    std::println("{{\"parses\":{},\"symbols\":{},\"facts\":{},\"references\":{}}}", parses, declarations, facts, references);
     return 0;
 }
 
@@ -351,6 +387,7 @@ int main(int argc, char** argv) {
     if (argc > 2 && std::string_view { argv[1] } == "--directives") return directives(argv[2]);
     if (argc > 2 && std::string_view { argv[1] } == "--syntax") return syntax(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--facts") return facts(argc, argv);
+    if (argc > 2 && std::string_view { argv[1] } == "--references") return references(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--bench") return bench(std::stoi(argv[2]), argc, argv);
     if (argc > 1 && (std::string_view { argv[1] } == "--pp" || std::string_view { argv[1] } == "--ppdiff")) return preprocessed(std::string_view { argv[1] } == "--ppdiff", argc, argv);
     for (int i { 1 }; i < argc; ++i) {
