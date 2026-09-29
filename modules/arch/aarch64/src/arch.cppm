@@ -11,4 +11,14 @@ enum class Arch { x86_64, aarch64 };
 
 inline constexpr Arch ARCH { Arch::aarch64 };
 
+// Whether mcxx_call_on_stack runs its function on the given stack (src/stack.cpp): on ELF targets.
+#if defined(__ELF__)
+inline constexpr bool STACK_SWITCH { true };
+#else
+inline constexpr bool STACK_SWITCH { false };
+#endif
+
 } // namespace mcxx::arch
+
+// Calls fn(arg) on the stack whose top is `top` (where STACK_SWITCH says so; a plain call elsewhere).
+export extern "C" void mcxx_call_on_stack(void* top, void (*fn)(void*), void* arg);

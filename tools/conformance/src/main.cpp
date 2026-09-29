@@ -7,12 +7,18 @@
 // that must be reported carries `// expect: <feature> [<feature> ...] [-- a note]`; every gate diagnostic must
 // be expected and every expectation reported, on that line. Anything else the compiler says is an
 // error is a broken fixture. The report counts, per feature, what was found, missed and wrong.
+//
+// A finding a declaration waives is marked `// expect-waived: <feature>`: it must be in the audit
+// (MCXX_AUDIT, which the runner sets), and every audited waiver must be expected (A0.3.4). The JSON
+// report carries each program's time and the total (A0.8.2).
 import std;
 import mcxx.msa;
 import mcxx.plugin;
 import mcxx.backend;
 import mcxx.plugins.std;
 import mcxx.plugins.libs;
+
+extern "C" int setenv(const char* name, const char* value, int overwrite);   // POSIX: MCXX_AUDIT for the gates
 
 namespace msa = mcxx::msa;
 namespace fs = std::filesystem;
@@ -30,11 +36,11 @@ struct Tally {
     int found { 0 }, missed { 0 }, wrong { 0 };
 };
 
-std::vector<std::string> expectations(std::string_view line) {
+std::vector<std::string> expectations(std::string_view line, std::string_view marker = "// expect:") {
     std::vector<std::string> out;
-    const auto at = line.find("// expect:");
+    const auto at = line.find(marker);
     if (at == std::string_view::npos) return out;
-    std::string rest { line.substr(at + 10) };
+    std::string rest { line.substr(at + marker.size()) };
     if (const auto note = rest.find("--"); note != std::string::npos) rest.erase(note);   // `-- why`, for readers
     std::ranges::replace(rest, ',', ' ');
     std::istringstream in { rest };
@@ -70,7 +76,16 @@ int main(int argc, char** argv) {
     std::map<std::string, Tally> tally;
     std::vector<std::string> problems;
     int files { 0 };
+    // Waivers: expected and audited (the gates append one JSON line per waived finding).
+    fs::create_directories(cache);
+    const fs::path audit { cache / "audit.jsonl" };
+    setenv("MCXX_AUDIT", audit.generic_string().c_str(), 1);
+    std::set<Mark> expectedWaivers;
+    Tally waiverTally;
+    const auto started = std::chrono::steady_clock::now();
+    std::string timings;
     for (auto& [dir, sources] : programs) {
+        const auto programStarted = std::chrono::steady_clock::now();
         std::ranges::sort(sources);
         std::vector<msa::Command> commands;
         for (const auto& s : sources) {
@@ -91,8 +106,10 @@ int main(int argc, char** argv) {
             const std::string rel { fs::relative(s, root).generic_string() };
             std::uint32_t n { 0 };
             std::istringstream lines { text };
-            for (std::string line; std::getline(lines, line); ++n)
+            for (std::string line; std::getline(lines, line); ++n) {
                 for (auto& id : expectations(line)) expected.insert({ rel, n, std::move(id) });
+                for (auto& id : expectations(line, "// expect-waived:")) expectedWaivers.insert({ rel, n, std::move(id) });
+            }
             const auto unit = workspace->parse(path, text, 1);
             if (!unit) {
                 problems.push_back(std::format("{}: no parse", rel));
@@ -116,11 +133,49 @@ int main(int argc, char** argv) {
             ++tally[m.feature].wrong;
             problems.push_back(std::format("{}:{}: {} was reported where nothing expects it", m.file, m.line + 1, m.feature));
         }
+        const double seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - programStarted).count() };
+        timings += std::format("{}{{\"program\":\"{}\",\"files\":{},\"seconds\":{:.3f}}}", timings.empty() ? "" : ",",
+                               fs::relative(dir, root).generic_string(), sources.size(), seconds);
     }
+    // Every waiver the gates recorded, against the waivers the fixtures expect.
+    std::set<Mark> audited;
+    {
+        std::ifstream in { audit };
+        for (std::string line; std::getline(in, line);) {
+            auto field = [&](std::string_view key) -> std::string {
+                const auto at = line.find(std::format("\"{}\":", key));
+                if (at == std::string::npos) return {};
+                std::size_t b { at + key.size() + 3 };
+                if (line[b] == '"') {
+                    const auto e = line.find('"', b + 1);
+                    return line.substr(b + 1, e - b - 1);
+                }
+                const auto e = line.find_first_of(",}", b);
+                return line.substr(b, e - b);
+            };
+            const std::string file { field("path") };
+            if (file.empty()) continue;
+            audited.insert({ fs::relative(file, root).generic_string(), static_cast<std::uint32_t>(std::stoul(field("line")) - 1), field("feature") });
+        }
+    }
+    for (const auto& m : expectedWaivers) {
+        if (audited.contains(m)) ++waiverTally.found;
+        else {
+            ++waiverTally.missed;
+            problems.push_back(std::format("{}:{}: the waiver of {} is not in the audit", m.file, m.line + 1, m.feature));
+        }
+    }
+    for (const auto& m : audited)
+        if (!expectedWaivers.contains(m)) {
+            ++waiverTally.wrong;
+            problems.push_back(std::format("{}:{}: {} was waived where nothing expects a waiver", m.file, m.line + 1, m.feature));
+        }
+    const double total { std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count() };
     std::error_code ec;
     fs::remove_all(cache, ec);
 
-    std::string report { "{\"programs\":" + std::to_string(programs.size()) + ",\"files\":" + std::to_string(files) + ",\"features\":{" };
+    std::string report { std::format("{{\"programs\":{},\"files\":{},\"seconds\":{:.3f},\"timings\":[{}],\"waivers\":{{\"found\":{},\"missed\":{},\"wrong\":{}}},\"features\":{{",
+                                     programs.size(), files, total, timings, waiverTally.found, waiverTally.missed, waiverTally.wrong) };
     bool first { true };
     std::println("{:<26} {:>5} {:>6} {:>5} {:>9} {:>7}", "feature", "found", "missed", "wrong", "precision", "recall");
     for (const auto& [feature, t] : tally) {
@@ -142,7 +197,8 @@ int main(int argc, char** argv) {
     }
     report += "]}\n";
     for (const auto& p : problems) std::println(std::cerr, "  {}", p);
-    std::println("{} programs, {} files, {} problems", programs.size(), files, problems.size());
+    std::println("waivers: {} audited as expected, {} missing, {} unexpected", waiverTally.found, waiverTally.missed, waiverTally.wrong);
+    std::println("{} programs, {} files, {} problems, {:.1f} s", programs.size(), files, problems.size(), total);
     if (!json.empty()) std::ofstream { json } << report;
     return problems.empty() ? 0 : 1;
 }

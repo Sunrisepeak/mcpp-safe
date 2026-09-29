@@ -4,7 +4,7 @@
 export module mcxx.os;
 
 import std;
-import mcxx.arch;
+export import mcxx.arch;   // the architecture is the target's too
 
 export namespace mcxx::os {
 
@@ -20,5 +20,8 @@ inline constexpr char PATH_LIST_SEPARATOR { ':' };
 inline constexpr std::string_view PLATFORM { mcxx::arch::ARCH == mcxx::arch::Arch::aarch64 ? "darwin-arm64" : "darwin-x64" };
 inline constexpr bool CASE_INSENSITIVE_PATHS { true };
 
+
+// Writes to the process's standard error, unbuffered by C++'s streams (the platform's own stream).
+void write_standard_error(std::string_view text);
 
 } // namespace mcxx::os

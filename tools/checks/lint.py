@@ -3,6 +3,8 @@
 
     tools/checks/lint.py [ROOT...]        default: the repository (src modules plugins tools, manifests)
 
+The rules: clang-exposure, platform-exposure, json-brace-init (below).
+
 clang-exposure
     Clang and LLVM are named in two packages only: modules/backend/clang and
     modules/backend/clang-compiler. Anywhere else, an #include of <clang/...> or <llvm/...> and a
@@ -12,6 +14,12 @@ clang-exposure
 
 The compiler catches this itself now (plugins/json, in every mcxx compile and in the editor); this
 check stays for code not yet built by mcxx.
+
+platform-exposure (A0.2.2, A0.2.4)
+    The platform is named in modules/os/* and modules/arch/* only: anywhere else, an import of an
+    openkal module or an #include of an openkal header, and a preprocessor test of a platform macro
+    (_WIN32, __linux__, __APPLE__, __x86_64__, __aarch64__, __ELF__, _MSC_VER, ...), are errors. Code
+    branches on mcxx.os and mcxx.arch constants with `if constexpr` (plan P9).
 
 json-brace-init
     `Json x { expr };` (and nlohmann::json, a member's `{ expr }` default) is list-initialization:
@@ -85,6 +93,22 @@ def exposure(path: pathlib.Path) -> bool:
     return rel.startswith(CLANG_PACKAGES) or rel.startswith(("forks/", ".deps/", "index/"))
 
 
+PLATFORM_PACKAGES = ("modules/os/", "modules/arch/")
+OPENKAL = re.compile(r'^\s*(export\s+)?import\s+openkal[.;\s]|^\s*#\s*include\s*[<"]openkal/')
+PLATFORM_MACRO = re.compile(r'^\s*#\s*(if|ifdef|ifndef|elif)\b.*\b(_WIN32|_WIN64|__linux__|__linux|__APPLE__|__MACH__|__x86_64__|__aarch64__|'
+                            r'__arm__|__i386__|__ELF__|_MSC_VER|__unix__|__unix|__FreeBSD__|__ANDROID__|__MINGW32__|__MINGW64__|__EMSCRIPTEN__)\b')
+
+
+def platform(path: pathlib.Path) -> bool:
+    """Whether this file may name the platform: inside modules/os or modules/arch (or not ours)."""
+    text = path.resolve().as_posix()
+    root = pathlib.Path(__file__).resolve().parents[2].as_posix() + "/"
+    if not text.startswith(root):
+        return True
+    rel = text[len(root):]
+    return rel.startswith(PLATFORM_PACKAGES) or rel.startswith(("forks/", ".deps/", "index/"))
+
+
 def manifest_problems(root: pathlib.Path):
     problems = []
     for path in walk(root, {"mcpp.toml"}):
@@ -125,6 +149,10 @@ def main() -> int:
                 for n, line in enumerate(lines, 1):
                     if CLANG_INCLUDE.match(line):
                         problems.append(f"{path}:{n}: clang-exposure: Clang/LLVM is named outside modules/backend/clang*\n    {line.strip()}")
+            if not platform(path):
+                for n, line in enumerate(lines, 1):
+                    if OPENKAL.match(line) or PLATFORM_MACRO.match(strip_comment(line)):
+                        problems.append(f"{path}:{n}: platform-exposure: the platform is named outside modules/os, modules/arch\n    {line.strip()}")
     if not sys.argv[1:]:
         problems += manifest_problems(repo)
     for p in problems:

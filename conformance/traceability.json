@@ -209,6 +209,9 @@
   },
   {
    "test": "modules/features/tests/test_spec.cpp: the example's precedence: partition over module over profiles; a namespace over the package"
+  },
+  {
+   "fixture": "conformance/gates/scopes/mcpp.toml"
   }
  ],
  "MC1-7-1": [
@@ -250,6 +253,9 @@
   },
   {
    "test": "modules/features/tests/test_iso.cpp: a module's level, a namespace's, and a waiver"
+  },
+  {
+   "fixture": "conformance/gates/scopes/waivers/machine.cpp"
   }
  ],
  "MC1-8-1": [
@@ -262,6 +268,10 @@
   {
    "script": "modules/backend/clang/src/gate.cppm",
    "contains": "features::append_audit(audit, result.waived)"
+  },
+  {
+   "script": "tools/conformance/src/main.cpp",
+   "contains": "is not in the audit"
   }
  ],
  "MC1-9-1": [

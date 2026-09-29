@@ -9,3 +9,4 @@ export import mcxx.base.text;
 export import mcxx.base.toml;
 export import mcxx.base.trace;
 export import mcxx.base.uri;
+export import mcxx.os;   // the target's platform facts (and mcxx.arch): constants, not #ifdef (plan P9)

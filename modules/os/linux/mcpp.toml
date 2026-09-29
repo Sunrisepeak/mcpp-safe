@@ -7,6 +7,9 @@ license     = "Apache-2.0"
 [targets.mcxx-os-linux]
 kind = "lib"
 
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # openkal's platform stream (src/stream.cpp): the platform layer is where libmc++ names openkal
+
 # PLATFORM names the architecture too, so the architecture is chosen the same way as the OS: by
 # the target, one package of two.
 [target.'cfg(arch = "x86_64")'.dependencies]

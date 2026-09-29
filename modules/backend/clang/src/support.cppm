@@ -89,46 +89,9 @@ inline constexpr std::string_view CACHE_EPOCH { "mcxx.clang/2" };   // 2: reduce
 // pthread attribute asks for is not used) and maps no guard page, so deep template or module code
 // overflows silently into a neighbouring thread's descriptor. Until openkal takes a stack size, a
 // thread switches to a stack this backend allocates before any Clang code runs on it.
-extern "C" void mcxx_call_on_stack(void* top, void (*fn)(void*), void* arg);
-
-#if defined(__x86_64__) && !defined(_WIN32)
-asm(R"(
-    .text
-    .globl mcxx_call_on_stack
-    .type mcxx_call_on_stack,@function
-mcxx_call_on_stack:
-    pushq %rbp
-    movq %rsp, %rbp
-    movq %rdi, %rsp
-    movq %rdx, %rdi
-    callq *%rsi
-    movq %rbp, %rsp
-    popq %rbp
-    retq
-    .size mcxx_call_on_stack, .-mcxx_call_on_stack
-)");
-inline constexpr bool STACK_SWITCH { true };
-#elif defined(__aarch64__) && !defined(_WIN32)
-asm(R"(
-    .text
-    .globl mcxx_call_on_stack
-    .type mcxx_call_on_stack,%function
-mcxx_call_on_stack:
-    stp x29, x30, [sp, #-16]!
-    mov x29, sp
-    mov sp, x0
-    mov x0, x2
-    blr x1
-    mov sp, x29
-    ldp x29, x30, [sp], #16
-    ret
-    .size mcxx_call_on_stack, .-mcxx_call_on_stack
-)");
-inline constexpr bool STACK_SWITCH { true };
-#else
-extern "C" void mcxx_call_on_stack(void*, void (*fn)(void*), void* arg) { fn(arg); }
-inline constexpr bool STACK_SWITCH { false };
-#endif
+// mcxx_call_on_stack and whether it switches stacks come from the target's architecture package
+// (mcxx.arch, through mcxx.base): the one assembly routine, where platform code belongs (plan P9).
+inline constexpr bool STACK_SWITCH { mcxx::arch::STACK_SWITCH };
 
 inline constexpr std::size_t CLANG_STACK { std::size_t { 16 } << 20 };
 

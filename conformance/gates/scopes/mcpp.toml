@@ -1,0 +1,20 @@
+# MC1 §6, every level of the precedence (A0.3.3), and waivers that must reach the audit (A0.3.4).
+[package]
+name    = "gates-scopes"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "strict"
+
+[package.metadata.mcxx.features]
+macros = "allow"              # the package over its profile
+exceptions = "deny"           # the package adds what no profile has
+
+[package.metadata.mcxx.modules."scopes.legacy"]
+goto = "allow"                # a module over the profile (and its partitions with it)
+
+[package.metadata.mcxx.namespaces."app::interop"]
+reinterpret-cast = "allow"    # a namespace over the profile
+
+[package.metadata.mcxx.namespaces."app::interop::checked"]
+reinterpret-cast = "deny"     # an inner namespace over the one around it
