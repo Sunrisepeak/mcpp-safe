@@ -220,7 +220,7 @@ std::string qualified_type_text(const cl::ASTContext& ctx, cl::QualType type) {
     return cl::TypeName::getFullyQualifiedName(type, ctx, policy);
 }
 
-// A class template's or an alias template's parameters (MC3 0.6.0): "class T", "class ...Ts",
+// A class template's, an alias template's or a function template's parameters (MC3 0.6.0, 0.7.0): "class T", "class ...Ts",
 // "class A = std::allocator<T>", "std::size_t N", "template class C".
 std::vector<std::string> template_parameters_of(const cl::ASTContext& ctx, const cl::NamedDecl* d) {
     const cl::TemplateParameterList* list { nullptr };
@@ -228,6 +228,8 @@ std::vector<std::string> template_parameters_of(const cl::ASTContext& ctx, const
         if (const auto* t = record->getDescribedClassTemplate()) list = t->getTemplateParameters();
     if (const auto* alias = llvm::dyn_cast<cl::TypeAliasDecl>(d))
         if (const auto* t = alias->getDescribedAliasTemplate()) list = t->getTemplateParameters();
+    if (const auto* fn = llvm::dyn_cast<cl::FunctionDecl>(d))
+        if (const auto* t = fn->getDescribedFunctionTemplate()) list = t->getTemplateParameters();
     std::vector<std::string> out;
     if (list == nullptr) return out;
     for (const auto* p : *list) {
@@ -286,6 +288,12 @@ fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bo
         const bool returns { !llvm::isa<cl::CXXConstructorDecl, cl::CXXDestructorDecl, cl::CXXConversionDecl>(fn) };
         if (decl.pointer || (types && returns)) decl.type = type_text(ctx, fn->getReturnType());
         decl.c_variadic = fn->isVariadic();
+        // Its parameters' types (MC3 0.7.0): what a call's arguments choose an overload by.
+        if (types) {
+            decl.parameters.emplace();
+            for (const auto* p : fn->parameters())
+                decl.parameters->push_back(type_text(ctx, p->getOriginalType()) + (p->hasDefaultArg() ? " =" : ""));
+        }
     } else if (types) {
         collect_templates(ctx, type, decl.templates);
     }

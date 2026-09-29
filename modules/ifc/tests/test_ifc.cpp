@@ -101,7 +101,7 @@ int main() {
         expect(!back->internal);
     };
 
-    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2), with bases and return types (1.3), template parameters (1.4)"_test = [] {
+    "what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2), with bases and return types (1.3), template parameters (1.4), parameters (1.5)"_test = [] {
         auto unit = sample();
         const auto reach = [](std::string qualified, mcxx::msa::Kind kind, std::string type = {}) {
             mcxx::msa::fact::Declaration d;
@@ -118,7 +118,14 @@ int main() {
         vector.template_parameters = { "class _Tp", "class _Allocator = std::allocator<_Tp>" };   // MC2 1.4.0
         auto owned = reach("std::owned", K::type_alias, "std::unique_ptr<T>");
         owned.template_parameters = { "class T" };   // an alias template's, with no bases before them
-        unit.reachable = { reach("std", K::namespace_), vector, owned, reach("std::vector::size", K::method, "size_type"),
+        auto push_back = reach("std::vector::push_back", K::method, "void");
+        push_back.parameters = std::vector<std::string> { "const value_type &" };   // MC2 1.5.0
+        auto size = reach("std::vector::size", K::method, "size_type");
+        size.parameters = std::vector<std::string> {};   // said, and none
+        auto insert = reach("std::vector::insert", K::method, "iterator");
+        insert.parameters = std::vector<std::string> { "const_iterator", "size_type =" };
+        insert.template_parameters = { "class _InputIterator" };
+        unit.reachable = { reach("std", K::namespace_), vector, owned, size, push_back, insert,
                            reach("std::vector::size_type", K::type_alias, "size_t"), reach("std::errc", K::enum_),
                            reach("std::errc::invalid_argument", K::enumerator, "std::errc"), reach("std::memory_order_relaxed", K::enumerator, "std::memory_order") };
         const auto back = mcxx::ifc::read(mcxx::ifc::write(unit));

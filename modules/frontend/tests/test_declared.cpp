@@ -78,6 +78,7 @@ int main() {
             "struct Circle : Point { int radius; };\n"
             "template <class T, class A = Point, unsigned N = 3, class... Rest> struct Box { T value; };\n"
             "template <class T> using Boxed = Box<T>;\n"
+            "int area(const Circle& c, int scale = 1);\n"
             "}\n"
         };
         const auto facts = f::facts(f::parse(source), f::Imported {});
@@ -92,6 +93,8 @@ int main() {
         expect(of("shapes::Box")->template_parameters == V { "class T", "class A = Point", "unsigned int N", "class ...Rest" })
             << "MC3 0.6.0's template-parameters, as the Clang backend writes them";
         expect(of("shapes::Boxed")->template_parameters == V { "class T" });
+        expect(of("shapes::area") != nullptr && of("shapes::area")->parameters == V { "const Circle &", "int =" }) << "MC3 0.7.0's parameters: "
+            << (of("shapes::area") && of("shapes::area")->parameters ? std::format("{}", *of("shapes::area")->parameters) : std::string { "none" });
     };
 
     return report();

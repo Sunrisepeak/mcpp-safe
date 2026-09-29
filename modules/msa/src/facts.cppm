@@ -36,11 +36,16 @@ struct Declaration : Place {
     // A class's direct bases, by the names MC3 gives classes -- a specialization by its template's
     // (MC3 0.5.0; Kinds::declaration_types): where a member access finds what the class inherits.
     std::vector<std::string> bases;
-    // A class template's or an alias template's parameters, in order (MC3 0.6.0; Kinds::declaration_types):
+    // A class template's, an alias template's or (0.7.0) a function template's parameters, in order (MC3 0.6.0; Kinds::declaration_types):
     // "class T", "class ...Ts", "class A = std::allocator<T>" (the default's names fully qualified),
     // "std::size_t N" (a non-type one, default left out), "template class C" (a template template one).
     // What a member's type written with them, or a specialization's defaulted argument, stands for.
     std::vector<std::string> template_parameters;
+    // A function's, a method's (a constructor's, a conversion's) parameters' types, in order, as
+    // declared: "const std::string &", "int =" for one with a default argument (MC3 0.7.0;
+    // Kinds::declaration_types). Present for every function-like declaration, and only for those;
+    // absent where the producer did not say (before 0.7.0). What a call's arguments choose an overload by.
+    std::optional<std::vector<std::string>> parameters;
     bool exported { false };          // inside `export`
     bool c_array { false };           // of C array type
     bool pointer { false };           // the declared type holds a raw pointer (T*), anywhere in it

@@ -24,6 +24,9 @@ struct DeclaredType {
     // type in a specialization).
     std::vector<std::string> bases;
     std::vector<std::string> template_parameters;
+    // A function's parameters' types as MC3 0.7.0 writes them ("int =": with a default argument);
+    // none when F1 cannot print one of them.
+    std::optional<std::vector<std::string>> parameters;
     // Which of them F1 knows. `why` for one it does not: "deduced" (a placeholder type, a class
     // template's arguments deduced), "unknown" (a name it cannot resolve, a template whose parameters
     // it cannot see, a member type of a specialization).

@@ -279,6 +279,12 @@ public:
                 args.emplace_back("<");
                 for (const auto& p : d.template_parameters) args.push_back(p);
             }
+            // 1.5.0: a function's parameters, after a `(` (present, maybe with none after it, for
+            // every function-like declaration whose producer said them).
+            if (d.parameters) {
+                args.emplace_back("(");
+                for (const auto& p : *d.parameters) args.push_back(p);
+            }
             sym::trait::DeclAttributes association {};
             clear(association);
             association.entity = self;

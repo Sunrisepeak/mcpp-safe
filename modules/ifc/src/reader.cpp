@@ -132,11 +132,13 @@ public:
             if (!range || !name_range) return fail(std::format("declaration {}: a range is not line:column-line:column", ordinal));
             d.range = *range;
             d.name = *name_range;
-            // The templates; 1.3.0: after `|`, the bases; 1.4.0: after `<`, the template parameters.
+            // The templates; 1.3.0: after `|`, the bases; 1.4.0: after `<`, the template parameters;
+            // 1.5.0: after `(`, a function's parameters.
             auto* into { &d.templates };
             for (std::size_t t { 9 }; t < args.size(); ++t) {
                 if (args[t] == "|") into = &d.bases;
                 else if (args[t] == "<") into = &d.template_parameters;
+                else if (args[t] == "(") into = &d.parameters.emplace();
                 else into->push_back(std::move(args[t]));
             }
             found.emplace_back(ordinal, std::pair { reachable, std::move(d) });
@@ -270,6 +272,7 @@ std::vector<std::string> differences(std::span<const msa::fact::Declaration> exp
         field("templates", e.templates, a.templates, list);
         field("bases", e.bases, a.bases, list);
         field("template parameters", e.template_parameters, a.template_parameters, list);
+        field("parameters", e.parameters, a.parameters, [&](const std::optional<std::vector<std::string>>& v) { return v ? "(" + list(*v) + ")" : std::string { "none" }; });
         for (const auto& [member, name] : FLAGS) field(name, e.*member, a.*member, flag);
     }
     return out;

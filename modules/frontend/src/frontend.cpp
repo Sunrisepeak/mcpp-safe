@@ -88,6 +88,7 @@ msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>*
                 if (known.pointer_certain) f.pointer = f.pointer || known.pointer;
                 f.bases = known.bases;
                 f.template_parameters = known.template_parameters;
+                f.parameters = known.parameters;
             }
             // Inside a function: a parameter's parent is the function, a local's too (or a local class's);
             // or inside a lambda, whose call operator is a function (one initializing a variable, say).

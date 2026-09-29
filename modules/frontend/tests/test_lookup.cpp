@@ -243,6 +243,50 @@ int main() {
         expect(at(2, 115).starts_with("uncertain")) << at(2, 115);
     };
 
+    "a call's arguments choose among overloads whose return types differ (MC3 0.7.0)"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}, std::optional<std::vector<std::string>> parameters = std::nullopt,
+                             std::vector<std::string> templates = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.parameters = std::move(parameters);
+            d.template_parameters = std::move(templates);
+            d.exported = true;
+            return d;
+        };
+        using V = std::vector<std::string>;
+        f::Imported imported;
+        imported.declarations = {
+            decl("std", K::namespace_), decl("std::basic_string_view", K::class_), decl("std::string_view", K::type_alias, "basic_string_view<char>"),
+            decl("lib", K::namespace_), decl("lib::Option", K::class_), decl("lib::OptBuilder", K::class_),
+            decl("lib::OptBuilder::help", K::method, "OptBuilder &", V { "std::string_view" }), decl("lib::App", K::class_),
+            decl("lib::App::option", K::method, "App &", V { "lib::Option" }), decl("lib::App::option", K::method, "OptBuilder", V { "std::string_view" }),
+            decl("lib::App::name", K::method, "App &", V { "std::string_view" }),
+            decl("nlohmann", K::namespace_), decl("nlohmann::basic_json", K::class_), decl("nlohmann::json", K::type_alias, "basic_json<>"),
+            decl("nlohmann::basic_json::value", K::method, "ValueType", V { "const typename object_t::key_type &", "const ValueType &" }, V { "class ValueType" }),
+            decl("nlohmann::basic_json::value", K::method, "string_t", V { "const typename object_t::key_type &", "const char *" }),
+            decl("nlohmann::basic_json::object", K::method, "basic_json", V { "initializer_list_t =" }),
+            decl("nlohmann::basic_json::is_object", K::method, "bool", V {}),
+        };
+        const std::string_view source {
+            "bool use(lib::App& app, lib::Option option, nlohmann::json j) {\n"
+            "    app.option(\"x\").help(\"h\");\n"
+            "    app.option(option).name(\"n\");\n"
+            "    return j.value(\"k\", nlohmann::json::object()).is_object();\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            return it == references.end() ? std::string { "not resolved" } : it->certain ? it->target : "uncertain: " + it->why;
+        };
+        expect(at(1, 20) == "lib::OptBuilder::help") << "a string literal: the std::string_view overload: " << at(1, 20);
+        expect(at(2, 23) == "lib::App::name") << "an Option: the other one: " << at(2, 23);
+        expect(at(3, 50) == "nlohmann::basic_json::is_object") << "value(key, default) gives the default's type: " << at(3, 50);
+    };
+
     "a range-for over a json value gives json values"_test = [] {
         using K = mcxx::msa::Kind;
         const auto decl = [](std::string qualified, K kind, std::string type = {}) {

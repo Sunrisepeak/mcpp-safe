@@ -265,8 +265,9 @@ DeclaredType Resolver::declared(std::size_t i) {
                             d.kind == msa::Kind::type_alias };
     out.pointer = d.pointer;
     if (class_kind(d.kind) && d.definition) out.bases = bases_of(static_cast<std::int32_t>(i));
-    if (class_kind(d.kind) || d.kind == msa::Kind::type_alias)
+    if (class_kind(d.kind) || d.kind == msa::Kind::type_alias || function_kind(d.kind))
         for (const auto& p : parameters_of(target_of(static_cast<std::int32_t>(i)))) out.template_parameters.push_back(written(p));
+    if (function_kind(d.kind)) out.parameters = function_parameters(target_of(static_cast<std::int32_t>(i)));
     if (!typed_kind) return out;
     out.type = type_text(syntax_, d, returns);
     const auto uncertain = [&](std::string why, bool type_too) {
@@ -293,7 +294,7 @@ DeclaredType Resolver::declared(std::size_t i) {
         // A deduced type: its text is not F1's to print; what it names is, when F1 deduces it.
         uncertain("deduced", true);
         if (!returns) {
-            if (const auto deduced = typed(target_of(static_cast<std::int32_t>(i)))) {
+            if (const auto deduced = typed(target_of(static_cast<std::int32_t>(i))); deduced && !deduced->through_template) {
                 std::vector<std::string> templates;
                 bool pointer { false };
                 if (collect(*deduced, templates, pointer)) {

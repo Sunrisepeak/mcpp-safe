@@ -2,6 +2,16 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-30 — MC3 0.7.0, MC2 1.5.0: parameters
+
+- **MC3** 0.7.0 (§4.2): a function-like declaration's `parameters`, each parameter's type as
+  declared, ` =` after one with a default argument (MC3-4.2-7); `template-parameters` for a function
+  template too. With them a call chooses among overloads whose return types differ
+  (`app.option("name")` is the `std::string_view` one), and a function template's return type written
+  as one of its parameters is the argument's (`json.value("k", Json::object())` gives a json).
+- **MC2** 1.5.0: the interface carries them, after a `(` among the `mcxx::decl` arguments. 1.0-1.4
+  files are read as before (their functions' parameters not known).
+
 ## 2026-09-30 — MC3 0.6.0, MC2 1.4.0: template parameters
 
 - **MC3** 0.6.0 (§4.2): a class template's or an alias template's `template-parameters` (MC3-4.2-6),

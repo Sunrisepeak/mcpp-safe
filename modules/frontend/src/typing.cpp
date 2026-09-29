@@ -11,11 +11,11 @@ import :resolver;
 
 namespace mcxx::frontend::resolution {
 
-std::optional<Typed> Resolver::typed(const Target& t, int depth) {
+std::optional<Typed> Resolver::typed(const Target& t, int depth, bool chosen) {
     // A function F1 cannot tell the overload of: its overloads' return types differ (a getter and a
-    // setter), and which is called needs the arguments' types. `reference` and `const_reference` of
-    // a const and a non-const one are the same type for this.
-    if (t.kind == msa::Kind::function || t.kind == msa::Kind::method) {
+    // setter), and which is called needs the arguments' types (call_typed chooses by them). `reference`
+    // and `const_reference` of a const and a non-const one are the same type for this.
+    if (!chosen && (t.kind == msa::Kind::function || t.kind == msa::Kind::method)) {
         if (const auto s = scopes_.find(scope_of(t.qualified)); s != scopes_.end())
             if (const auto m = s->second.find(last_component(t.qualified)); m != s->second.end() && m->second.size() > 1) {
                 const auto plain = [](std::string type) {
@@ -107,7 +107,7 @@ std::optional<Typed> Resolver::deduce(std::size_t i, int depth) {
             }
         }
         if (end > k + 1)
-            if (auto range = expression_type(end - 1, depth + 1)) out = range_element(*range);
+            if (auto range = initializer_type(k + 1, end - 1, depth + 1)) out = range_element(*range);
     } else if (k < t_.size() && (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren))) {
         // The initializer's last token: before the `;` that ends the declaration, inside the
         // braces or parentheses that are the initializer.
@@ -203,7 +203,7 @@ std::optional<Typed> Resolver::binding_group(std::size_t group, int depth) {
             }
         }
         if (end > k + 1)
-            if (auto range = expression_type(end - 1, depth + 1)) whole = range_element(*range);
+            if (auto range = initializer_type(k + 1, end - 1, depth + 1)) whole = range_element(*range);
     } else if (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren)) {
         std::size_t end { ds_[group].last_token };
         while (end > k && (is(end, Kind::semi) || is(end, Kind::comma))) --end;
@@ -216,6 +216,7 @@ std::optional<Typed> Resolver::binding_group(std::size_t group, int depth) {
 std::optional<Typed> Resolver::range_element(const Typed& written) {
     const Typed type { unbound(written) };
     const std::string text { bare(type.text) };
+    if (text.ends_with('*')) return std::nullopt;   // a pointer is no range
     if (const auto square = text.find('['); square != std::string::npos && text.find('<') > square)
         return derived(type, bare(text.substr(0, square)));
     const auto cls { class_of(type) };
@@ -431,7 +432,7 @@ std::optional<Typed> Resolver::expression_type(std::size_t end, int depth) {
             if (class_kind(c.kind) || c.kind == msa::Kind::type_alias) return type_named_before(*open);
             if (!function_kind(c.kind)) return std::nullopt;
             const auto object = objects_.find(callee);
-            auto result { object != objects_.end() ? member_typed(c, object->second, depth + 1) : typed(c, depth + 1) };
+            auto result { call_typed(c, *open, end, object != objects_.end() ? &object->second : nullptr, depth + 1) };
             // A member function that returns its class's iterator (`find`, `begin`): an iterator of
             // the object's type, arguments and all.
             if (result && result->iterating.empty() && iterator_name(bare(result->text)) && callee >= 2 &&
@@ -649,8 +650,8 @@ std::shared_ptr<const Bindings> Resolver::bindings_for(const Typed& written, con
     return bindings;
 }
 
-std::optional<Typed> Resolver::member_typed(const Target& member, const Typed& object, int depth) {
-    auto result { typed(member, depth + 1) };
+std::optional<Typed> Resolver::member_typed(const Target& member, const Typed& object, int depth, bool chosen) {
+    auto result { typed(member, depth + 1, chosen) };
     if (!result || result->bindings) return result;
     if (auto bindings = bindings_for(object, scope_of(member.qualified))) result->bindings = std::move(bindings);
     return result;

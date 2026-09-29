@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC2 |
-| Version | 1.4.0 |
+| Version | 1.5.0 |
 | Status | Draft |
 | Schema | [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) (an interface as read back) |
 | Examples | [`examples/mc2-interface.json`](examples/mc2-interface.json) (`conformance/ifc/dialect`'s `dialect.ifc`, read back) |
@@ -74,7 +74,7 @@ An importer names more than a unit's own code declares: `export using std::vecto
 | 6 | its flags, comma-separated: `exported`, `c-array`, `pointer`, `union`, `c-variadic`; `reachable` for a reachable declaration (§3.1) | the booleans |
 | 7 | its range, `line:column-line:column` (MC3's, from 0) | `range` |
 | 8 | its name's range | `name` |
-| 9... | the templates its type names; then (1.3.0), when it has any, an argument `|` -- which no name holds -- and its bases; then (1.4.0), when it has any, an argument `<` -- which neither a name nor a parameter is -- and its template parameters | `templates`, `bases`, `template-parameters` |
+| 9... | the templates its type names; then (1.3.0), when it has any, an argument `|` -- which no name holds -- and its bases; then (1.4.0), when it has any, an argument `<` -- which neither a name nor a parameter is -- and its template parameters; then (1.5.0), for a function-like declaration whose producer said them, an argument `(` and its parameters (none after it for a function without any) | `templates`, `bases`, `template-parameters`, `parameters` |
 
 - An MC2 attribute is a `CalledAttr` (`attr.called`) whose function is a `ScopedAttr` (`attr.scoped`) of two identifier words, `mcxx` and its name, and whose arguments are a `TupleAttr` (`attr.tuple`, entries in `heap.attr`) of `BasicAttr`s (`attr.basic`), each one word of sort `Literal` (`source::Literal::String`) whose text is a C++ string literal's spelling: `"` and `\` escaped, newline, tab and carriage return as `\n`, `\t`, `\r`, other control characters as three octal digits, anything else as it is. <a id="MC2-4-2"></a><sup>MC2-4-2</sup>
 

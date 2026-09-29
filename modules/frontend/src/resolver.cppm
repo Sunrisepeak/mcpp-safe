@@ -36,6 +36,7 @@ struct Target {
     msa::Kind kind { msa::Kind::unknown };
     std::uint32_t declared_at { 0 };   // a declaration of the file: its name's token (what is declared before a use)
     std::string type;                  // a variable's, a field's, a parameter's declared type; a function's return type
+    std::int32_t imported { -1 };      // an imported one: its index in Imported::declarations
 };
 
 struct Bindings;
@@ -50,6 +51,9 @@ struct Typed {
     bool imported { false };
     std::string iterating;   // an iterator's: the type of the container it came from (its names looked up as text's are)
     std::shared_ptr<const Bindings> bindings;
+    // Reached through a function template's deduction (std::move): the class is right, but Clang's
+    // type keeps the template's sugar (libc++'s remove_reference_t), which MC3's templates list names.
+    bool through_template { false };
 };
 
 // A template's parameters' arguments, by name: those of `owner` (a class template, an alias template).
@@ -83,6 +87,7 @@ public:
 
 private:
     const Syntax& syntax_;
+    const Imported& imported_;
     const std::vector<PpToken>& t_;
     const std::vector<Declaration>& ds_;
     std::vector<std::string> qualified_;
@@ -178,7 +183,9 @@ private:
 
     // -- typing.cpp: what an expression's type is
 
-    std::optional<Typed> typed(const Target& t, int depth = 0);
+    // `chosen`: a function the call's arguments chose among its overloads (calls.cpp); otherwise one
+    // whose overloads' return types differ is not typed.
+    std::optional<Typed> typed(const Target& t, int depth = 0, bool chosen = false);
 
     // Whether a type names an iterator: `...iterator`, the last component of its name.
     static bool iterator_name(std::string_view text);
@@ -240,7 +247,7 @@ private:
 
     // A member's type, read in its object's specialization (`object`, what the member access's
     // object has): its class's parameters bound.
-    std::optional<Typed> member_typed(const Target& member, const Typed& object, int depth);
+    std::optional<Typed> member_typed(const Target& member, const Typed& object, int depth, bool chosen = false);
 
     // The type of a class's member function `name` (`operator->`, `operator[]`), in `type`.
     std::optional<Typed> operator_typed(const Typed& type, std::string_view name);
@@ -264,6 +271,35 @@ private:
     // name (a variable, a parameter, a field, `this`), a call (its function's return type), a
     // subscript (its element), a parenthesized expression. Nothing when it is not one of these.
     std::optional<Typed> expression_type(std::size_t end, int depth = 0);
+
+    // -- calls.cpp: what a call gives, its overload chosen by its arguments
+
+    // A call's argument, as far as F1 tells it: a literal's kind, or an expression's type.
+    struct Argument {
+        enum class Sort : std::uint8_t { unknown, string_literal, integer, floating, boolean, null_pointer, typed };
+        Sort sort { Sort::unknown };
+        std::optional<Typed> type;
+    };
+
+    // The functions a call of `callee` may be: its overloads in its scope (the same name and kind).
+    std::vector<Target> overloads(const Target& callee) const;
+
+    // A function's parameters' types (MC3 0.7.0: " =" after one with a default argument): an imported
+    // one's from its interface, the file's own from its parameters. None when not known.
+    std::optional<std::vector<std::string>> function_parameters(const Target& f) const;
+
+    // The type of a call of `callee` -- its name at `callee_token`, its arguments between the
+    // parentheses `open` and `close`, a member's object `object`: when its overloads' return types
+    // differ, the one its arguments choose (only when exactly one fits); a function template's return
+    // type written as one of its parameters' types is that argument's.
+    std::optional<Typed> call_typed(const Target& callee, std::size_t open, std::size_t close, const Typed* object, int depth);
+
+    // The arguments between `open` and `close`, each told apart.
+    std::vector<Argument> arguments(std::size_t open, std::size_t close, int depth);
+
+    // Whether a parameter of type `parameter` (read where `where` is) may take `argument`; a function
+    // template's own parameters (`templates`) take anything.
+    bool accepts(const std::string& parameter, const Typed& where, const Argument& argument, const std::vector<Parameter>& templates);
 
     // -- declared.cpp: what a declared type names
 

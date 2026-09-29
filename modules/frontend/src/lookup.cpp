@@ -75,7 +75,7 @@ std::string class_name_of(std::string type) {
 }
 
 Resolver::Resolver(const Syntax& syntax, const Imported& imported)
-    : syntax_ { syntax }, t_ { syntax.pp.tokens }, ds_ { syntax.declarations } {
+    : syntax_ { syntax }, imported_ { imported }, t_ { syntax.pp.tokens }, ds_ { syntax.declarations } {
     // MCXX_LOG=frontend.lookup=debug: how long the scopes take to set up, and the lookup.
     const base::trace::Span span { "frontend.lookup", "scopes", std::format("{} declarations, {} imported", ds_.size(), imported.declarations.size()) };
     const Names names { names_of(syntax) };
@@ -107,9 +107,10 @@ Resolver::Resolver(const Syntax& syntax, const Imported& imported)
         }
         if (class_kind(d.kind) && d.definition) classes_.try_emplace(qualified_[i], static_cast<std::int32_t>(i));
     }
-    for (const auto& d : imported.declarations) {
+    for (std::size_t index { 0 }; index < imported.declarations.size(); ++index) {
+        const auto& d = imported.declarations[index];
         if (d.local || d.kind == msa::Kind::parameter) continue;
-        Target target { -1, d.qualified_name, d.kind, 0, d.type };
+        Target target { -1, d.qualified_name, d.kind, 0, d.type, static_cast<std::int32_t>(index) };
         scopes_[scope_of(d.qualified_name)][std::string { last_component(d.qualified_name) }].push_back(target);
         if (scope_kind(d.kind)) scopes_[d.qualified_name];
         if (d.kind == msa::Kind::namespace_) namespaces_.insert(d.qualified_name);

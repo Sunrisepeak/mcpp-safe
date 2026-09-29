@@ -218,7 +218,15 @@
             "type": "string",
             "minLength": 1
           },
-          "$comment": "MC3 0.6.0: a class template's or an alias template's parameters"
+          "$comment": "MC3 0.6.0: a class template's or an alias template's parameters; 0.7.0: a function template's too"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "$comment": "MC3 0.7.0: a function's parameters' types, ' =' after one with a default argument"
         },
         "exported": {
           "type": "boolean"
