@@ -216,11 +216,11 @@
  ],
  "MC1-7-1": [
   {
-   "script": "modules/backend/clang/src/gate.cppm",
+   "script": "modules/backend/clang/src/gate.cpp",
    "contains": "takes a feature id and an optional reason, as string literals"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "ids.split(parts, ','"
   }
  ],
@@ -243,7 +243,7 @@
    "test": "modules/features/tests/test_override.cpp: a feature that is not waivable stays what it is; a waiver of an unknown id is reported; a rule speaks only for its own features"
   },
   {
-   "script": "modules/backend/clang/src/gate.cppm",
+   "script": "modules/backend/clang/src/gate.cpp",
    "contains": "which no MC++ rule linked into this program declares"
   }
  ],
@@ -284,7 +284,7 @@
    "validate": "MC1 audit schema rejects a 0-based line"
   },
   {
-   "script": "modules/backend/clang/src/gate.cppm",
+   "script": "modules/backend/clang/src/gate.cpp",
    "contains": "features::append_audit(audit, result.waived)"
   },
   {
@@ -341,7 +341,7 @@
    "test": "modules/backend/clang/tests/test_backend.cpp: an editor's parse of an interface writes no .ifc: only a compile that writes a BMI does (MC2-2-1)"
   },
   {
-   "script": "modules/backend/clang/src/ifc.cppm",
+   "script": "modules/backend/clang/src/ifc.cpp",
    "contains": "const std::string out { ifc::path_for(bmi) };"
   },
   {
@@ -461,7 +461,7 @@
  ],
  "MC3-2-2": [
   {
-   "script": "modules/backend/clang/src/unit.cppm",
+   "script": "modules/backend/clang/src/unit.cpp",
    "contains": "end.column + cl::Lexer::MeasureTokenLength(e, sm, lo)"
   }
  ],
@@ -473,13 +473,13 @@
  ],
  "MC3-3-2": [
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "(MC3-3-2)"
   }
  ],
  "MC3-4-1": [
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "Only the file's own code"
   },
   {
@@ -491,13 +491,13 @@
    "test": "plugins/std/tests/test_policy.cpp: raw-pointers = deny: every declaration holding a pointer, a reference is not one; a namespace may allow it"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "std::string namespace_of(const cl::DeclContext* dc)"
   }
  ],
  "MC3-4-3": [
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "SuppressInlineNamespaceMode::All"
   },
   {
@@ -509,7 +509,7 @@
    "test": "modules/backend/clang/tests/test_backend.cpp: an unnamed class's name and type do not say where the file is (MC3-4-4)"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "AnonymousTagMode::Plain"
   }
  ],
@@ -518,13 +518,13 @@
    "test": "modules/features/tests/test_iso.cpp: a plan asks only the features that are gated, for only the facts they need"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "facts.collected = needs"
   }
  ],
  "MC3-4.2-1": [
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "d->isImplicit()"
   },
   {
@@ -540,7 +540,7 @@
  ],
  "MC3-4.2-2": [
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "if (types || decl.c_array || decl.pointer) decl.type = type_text(ctx, type);"
   }
  ],
@@ -554,7 +554,7 @@
    "test": "modules/frontend/tests/test_syntax.cpp: a declaration in a function's body is local; a parameter is not (MC3 0.3.0)"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;"
   }
  ],
@@ -721,7 +721,7 @@
    "test": "modules/backend/clang/tests/test_backend.cpp: mc++.iso's facts, and profile strict turning them into errors; a plugin's policy at its own level"
   },
   {
-   "script": "modules/backend/clang/src/gate.cppm",
+   "script": "modules/backend/clang/src/gate.cpp",
    "contains": "filter_main_file(ci)"
   }
  ],
@@ -1078,7 +1078,7 @@
    "contains": "A1.2.2 with the imported package's sources deleted, the findings and the audit are the same"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "const auto unit = bmi.empty() ? nullptr : ifc::interface_for(bmi);"
   }
  ],
@@ -1087,7 +1087,7 @@
    "test": "modules/backend/clang/tests/test_backend.cpp: claimed attributes: [[acme::hot]]'s rule reads its declaration, [[acme::device]] is a region"
   },
   {
-   "script": "modules/backend/clang/src/gate.cppm",
+   "script": "modules/backend/clang/src/gate.cpp",
    "contains": "class ClaimedAttrInfo final"
   }
  ],
@@ -1114,7 +1114,7 @@
    "test": "modules/ifc/tests/test_ifc.cpp: what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"
   },
   {
-   "script": "modules/backend/clang/src/facts.cppm",
+   "script": "modules/backend/clang/src/facts.cpp",
    "contains": "std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx)"
   },
   {
