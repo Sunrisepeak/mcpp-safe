@@ -311,8 +311,16 @@ std::optional<Target> Resolver::in_scope(const std::string& scope, const std::st
             // own name is the class (the injected-class-name).
             for (const auto& target : m->second)
                 if ((is_class || target.declaration < 0 || target.declared_at < k) && target.kind != msa::Kind::constructor &&
-                    target.kind != msa::Kind::destructor && (!scope_only || names_scope(target.kind)))
+                    target.kind != msa::Kind::destructor && (!scope_only || names_scope(target.kind))) {
+                    // A function of an unnamed namespace in the same scope is an overload of it too.
+                    if (function_kind(target.kind))
+                        if (const auto t = transparent_.find(scope); t != transparent_.end())
+                            for (const auto& unnamed : t->second)
+                                if (const auto other = in_scope(unnamed, n, k, depth + 1, scope_only);
+                                    other && function_kind(other->kind) && other->qualified != target.qualified)
+                                    overloaded_ = true;
                     return target;
+                }
         }
     }
     if (const auto t = transparent_.find(scope); t != transparent_.end())
@@ -560,6 +568,19 @@ std::optional<std::string> Resolver::object_class(std::size_t k) {
 }
 
 std::optional<Target> Resolver::resolve(std::size_t k) {
+    overloaded_ = false;
+    auto found { resolve_(k) };
+    // libc++'s std re-exports the C library's functions by using-declarations: `std::tolower` is
+    // `::tolower` as well as std's own overloads.
+    if (found && found->declaration < 0 && function_kind(found->kind) && scope_of(found->qualified) == "std")
+        if (const auto global = scopes_.find(std::string {}); global != scopes_.end())
+            if (const auto same = global->second.find(std::string { last_component(found->qualified) }); same != global->second.end())
+                overloaded_ = overloaded_ || std::ranges::any_of(same->second, [](const Target& t) { return t.declaration < 0 && function_kind(t.kind); });
+    if (overloaded_) return std::nullopt;
+    return found;
+}
+
+std::optional<Target> Resolver::resolve_(std::size_t k) {
     const std::string n { t_[k].spelling };
     // A designated initializer: `T { .n = ... }` names T's member.
     if (k > 1 && is(k - 1, Kind::period) && (is(k - 2, Kind::l_brace) || is(k - 2, Kind::comma)) && (is(k + 1, Kind::equal) || is(k + 1, Kind::l_brace))) {

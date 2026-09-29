@@ -107,6 +107,10 @@ private:
     std::map<std::size_t, Typed> objects_;   // a member access's object, by the member's name token
     bool deduced_placeholder_ { false };   // the name being resolved met a type F1 cannot deduce
     bool object_known_ { false };          // the member access being resolved had a typed object
+    // The name being resolved names functions an overload resolution chooses among, in more than one
+    // scope (an unnamed namespace's and its enclosing one's; std's and the C library's it re-exports):
+    // which one needs the arguments' types, so it is not answered.
+    bool overloaded_ { false };
 
     bool is(std::size_t k, Kind kind) const { return k < t_.size() && t_[k].kind == kind; }
     bool word(std::size_t k, std::string_view w) const { return k < t_.size() && t_[k].kind == Kind::raw_identifier && t_[k].spelling == w; }
@@ -170,6 +174,7 @@ private:
     std::optional<std::string> object_class(std::size_t k);
 
     std::optional<Target> resolve(std::size_t k);
+    std::optional<Target> resolve_(std::size_t k);
 
     // -- typing.cpp: what an expression's type is
 

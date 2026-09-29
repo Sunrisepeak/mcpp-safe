@@ -243,5 +243,36 @@ int main() {
         expect(at(2, 115).starts_with("uncertain")) << at(2, 115);
     };
 
+    "a function overloaded across scopes is left to overload resolution"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.exported = true;
+            return d;
+        };
+        f::Imported imported;
+        // What std's interface reaches: std's own tolower and the C library's, which std re-exports.
+        imported.declarations = { decl("std", K::namespace_), decl("std::tolower", K::function, "_CharT"), decl("tolower", K::function, "int"),
+                                  decl("std::size", K::function, "auto") };
+        const std::string_view source {
+            "namespace ns {\n"
+            "int to_json(int v);\n"
+            "namespace { int to_json(double v) { return 0; } }\n"
+            "int use() { return to_json(1.0) + std::tolower(65); }\n"
+            "int other() { return use(); }\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto named = [&](std::uint32_t line, std::uint32_t column) {
+            return std::ranges::any_of(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column } && r.certain; });
+        };
+        expect(!named(3, 19)) << "to_json: the enclosing namespace's and the unnamed one's";
+        expect(!named(3, 39)) << "std::tolower: std's and the C library's";
+        expect(named(4, 21)) << "a function with no overload elsewhere is answered";
+    };
+
     return report();
 }
