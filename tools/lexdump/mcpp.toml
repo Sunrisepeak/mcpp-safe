@@ -11,4 +11,5 @@ main = "src/main.cpp"
 
 [dependencies]
 openkal-llvm-runtime.workspace = true
+mcxx-msa      = { path = "../../modules/msa" }
 mcxx-frontend = { path = "../../modules/frontend" }

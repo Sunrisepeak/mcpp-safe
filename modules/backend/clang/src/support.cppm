@@ -208,13 +208,25 @@ bool is_source_argument(std::string_view arg, const msa::Command& command) {
 // The build's arguments with everything this backend decides for itself taken out: where outputs
 // go, which interfaces are read, the input language, the resource directory, and the source.
 // What remains describes the program and is what a cached interface is keyed on.
+// Whether a command's compiler is GCC, by its program's name (g++, gcc, x86_64-linux-gnu-g++-16, ...).
+bool gcc_command(const msa::Command& command) {
+    if (command.arguments.empty()) return false;
+    const std::string program { fs::path { command.arguments.front() }.filename().string() };
+    return program.find("clang") == std::string::npos && (program.find("g++") != std::string::npos || program.find("gcc") != std::string::npos);
+}
+
 std::vector<std::string> normalize(const msa::Command& command) {
     std::vector<std::string> out;
     const auto& a = command.arguments;
     if (a.empty()) return out;
     out.push_back(a.front());
+    const bool gcc { gcc_command(command) };
     for (std::size_t i { 1 }; i < a.size(); ++i) {
         const std::string& x { a[i] };
+        // GCC's C++20 modules switches (MC5-6-1): its -fmodules is Clang's header modules.
+        if (gcc && (x == "-fmodules" || x == "-fmodule-only" || x == "-fmodule-header" || x.starts_with("-fmodule-header=") || x == "-fmodule-lazy" ||
+                    x == "-fno-module-lazy" || x == "-fmodule-implicit-inline" || x.starts_with("-fdeps-")))
+            continue;
         if (x == "-c" || x == "-MD" || x == "-MMD" || x == "-MP" || x == "--precompile" || x == "-fsyntax-only" ||
             x == "-fmodules-reduced-bmi" || x == "-fmodules-ts" || x == "-fdiagnostics-color" || x == "-fcolor-diagnostics")
             continue;

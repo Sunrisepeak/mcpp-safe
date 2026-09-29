@@ -38,6 +38,7 @@ struct PpToken {
     bool start_of_line { false };
     bool leading_space { false };
     bool expanded { false };
+    std::uint32_t macro_end { 0 };   // expanded: where the outermost invocation's macro name ends
 };
 
 struct IncludeDirective {
@@ -219,14 +220,37 @@ bool has_splice(std::string_view raw) {
     return false;
 }
 
+// A target's predefined macros, made once and shared by every file preprocessed for it.
+struct Shared {
+    NameMap<Macro> macros;
+    std::set<std::string, std::less<>> other_targets;   // predefined for another target, not this one
+    std::deque<std::string> storage;                    // the macros' spellings
+    bool known { false };
+};
+
 class Preprocessor {
 public:
-    Preprocessor(std::string_view text, const PreprocessOptions& options, Preprocessed& out)
-        : text_ { text }, options_ { options }, out_ { out }, raw_ { lex(text) } {
+    // With `shared` null, it makes the shared table for the options' target (build_shared()).
+    Preprocessor(std::string_view text, const PreprocessOptions& options, Preprocessed& out, const Shared* shared)
+        : text_ { text }, options_ { options }, out_ { out }, raw_ { lex(text) }, shared_ { shared } {
         starts_.push_back(0);
         for (std::uint32_t i { 0 }; i < text.size(); ++i)
             if (text[i] == '\n' || (text[i] == '\r' && (i + 1 == text.size() || text[i + 1] != '\n'))) starts_.push_back(i + 1);
-        predefine();
+        if (shared_ == nullptr) predefine_shared();
+        else predefine();
+    }
+
+    static std::unique_ptr<Shared> build_shared(const std::string& target) {
+        PreprocessOptions options;
+        options.target = target;
+        Preprocessed scratch;
+        Preprocessor builder { {}, options, scratch, nullptr };
+        auto shared = std::make_unique<Shared>();
+        shared->macros = std::move(builder.macros_);
+        shared->other_targets = std::move(builder.other_targets_);
+        shared->storage = std::move(scratch.storage);   // a deque: the spellings stay where they are
+        shared->known = builder.known_;
+        return shared;
     }
 
     void run() {
@@ -268,7 +292,10 @@ private:
     std::vector<std::uint32_t> starts_;
     std::size_t at_ { 0 };
     std::vector<Group> groups_;
-    NameMap<Macro> macros_;
+    NameMap<Macro> macros_;          // the file's own, and -D's: over the shared table
+    const Shared* shared_;           // the target's predefined macros
+    std::set<std::string, std::less<>> removed_;   // shared ones the file #undefs
+    bool known_ { false };
     NameMap<std::uint32_t> names_;   // name ids for hide sets
     HideSets hide_;
     std::set<std::string, std::less<>> other_targets_;      // predefined for another target, not this one
@@ -350,14 +377,11 @@ private:
 
     // ---- predefined macros ----
 
-    void predefine() {
+    void predefine_shared() {
         const predefined::Table* mine { nullptr };
         for (const auto& table : predefined::TABLES)
             if (table.target == options_.target) mine = &table;
-        if (mine == nullptr) {
-            error({}, std::format("no predefined macros for target `{}`", options_.target));
-            out_.certain = false;
-        }
+        known_ = mine != nullptr;
         for (const auto& table : predefined::TABLES) {
             for (const auto& d : table.definitions) {
                 if (&table == mine) define_text(std::format("{}{} {}", d.name, d.parameters, d.replacement), false);
@@ -366,12 +390,33 @@ private:
         }
         if (mine != nullptr)
             for (const auto& d : mine->definitions) other_targets_.erase(std::string { d.name });
+    }
+
+    void predefine() {
+        if (!shared_->known) {
+            error({}, std::format("no predefined macros for target `{}`", options_.target));
+            out_.certain = false;
+        }
         for (const auto& d : options_.defines) {
             const auto eq = d.find('=');
             define_text(eq == std::string::npos ? d + " 1" : d.substr(0, eq) + " " + d.substr(eq + 1), false);
         }
-        for (const auto& u : options_.undefines) macros_.erase(u);
+        for (const auto& u : options_.undefines) undefine(u);
     }
+
+    // The macro `name` is here: the file's own, else the target's unless the file #undef'd it.
+    const Macro* find_macro(std::string_view name) const {
+        if (const auto it = macros_.find(name); it != macros_.end()) return &it->second;
+        if (shared_ == nullptr || removed_.contains(name)) return nullptr;
+        const auto it = shared_->macros.find(name);
+        return it == shared_->macros.end() ? nullptr : &it->second;
+    }
+    bool has_macro(std::string_view name) const { return find_macro(name) != nullptr; }
+    void undefine(std::string_view name) {
+        if (const auto it = macros_.find(name); it != macros_.end()) macros_.erase(it);
+        if (shared_ != nullptr && shared_->macros.contains(name)) removed_.emplace(name);
+    }
+    bool other_target(std::string_view name) const { return shared_ != nullptr ? shared_->other_targets.contains(name) : other_targets_.contains(name); }
 
     // A definition written as a #define's text after the directive name ("NAME(a) body"), not from the file.
     void define_text(std::string text, bool from_file) {
@@ -441,7 +486,7 @@ private:
         if (name == "undef") {
             if (rest.empty() || rest[0].kind != Kind::raw_identifier) return error(at, "macro name missing");
             const std::string n { spelled(rest[0]) };
-            macros_.erase(n);
+            undefine(n);
             touched_[n] = first;
             return;
         }
@@ -475,7 +520,7 @@ private:
     // Whether `name` is a macro here; when it is not and a header included before might define it,
     // the answer is not certain.
     bool is_defined(std::string_view name, Where at, std::size_t index) {
-        if (macros_.contains(name)) return true;
+        if (has_macro(name)) return true;
         if (std::ranges::contains(BUILTINS, name)) return true;
         if (!knowably_absent(name, index)) uncertain(at, std::format("`{}` may be a macro of a header included before", name));
         return false;
@@ -483,7 +528,7 @@ private:
 
     bool knowably_absent(std::string_view name, std::size_t index) const {
         if (!header_seen_ || options_.header_macros_complete) return true;
-        if (other_targets_.contains(name)) return true;
+        if (other_target(name)) return true;
         const auto it = touched_.find(name);
         return it != touched_.end() && it->second > last_include_ && it->second < index;
     }
@@ -495,7 +540,7 @@ private:
         const std::string name { spelled(rest[0]) };
         if (name == "defined") return error(where(rest[0]), "`defined` cannot be a macro name");
         if (define(line, true, where(rest[0]))) {
-            out_.macros.push_back({ name, where(rest[0]), macros_[name].function_like });
+            out_.macros.push_back({ name, where(rest[0]), find_macro(name)->function_like });
             touched_[name] = index;
         }
     }
@@ -564,6 +609,7 @@ private:
             error(at, "'##' cannot be at either end of a macro's replacement");
             return false;
         }
+        removed_.erase(std::string { line[0].t.spelling });
         macros_.insert_or_assign(std::string { line[0].t.spelling }, std::move(m));
         return true;
     }
@@ -604,11 +650,15 @@ private:
             const std::string_view quoted { spelled(rest[2]) };
             const std::string name { quoted.substr(1, quoted.size() - 2) };
             if (what == "push_macro") {
-                const auto it = macros_.find(name);
-                pushed_[name].push_back(it == macros_.end() ? std::nullopt : std::optional<Macro> { it->second });
+                const Macro* m { find_macro(name) };
+                pushed_[name].push_back(m == nullptr ? std::nullopt : std::optional<Macro> { *m });
             } else if (auto& stack = pushed_[name]; !stack.empty()) {
-                if (stack.back()) macros_.insert_or_assign(name, *stack.back());
-                else macros_.erase(name);
+                if (stack.back()) {
+                    removed_.erase(name);
+                    macros_.insert_or_assign(name, *stack.back());
+                } else {
+                    undefine(name);
+                }
                 stack.pop_back();
             }
             return;
@@ -716,11 +766,11 @@ private:
         const std::string_view name { t.t.spelling };
         if (name.starts_with("__") || name == "_Pragma")
             if (builtin(s, t)) return true;
-        const auto it = macros_.find(name);
-        if (it == macros_.end()) return false;
+        const Macro* found { find_macro(name) };
+        if (found == nullptr) return false;
         const std::uint32_t id { name_id(name) };
         if (hide_.contains(t.hide, id)) return false;
-        const Macro& m = it->second;
+        const Macro& m = *found;
         Where site { t.t.at };
         std::uint32_t hs { hide_.with(t.hide, id) };
         std::vector<std::vector<Tok>> args;
@@ -768,8 +818,10 @@ private:
         if (!t.t.expanded) out_.expansions.push_back({ std::string { name }, site });
         auto result = substitute(m, args, hs);
         bool first { true };
+        const std::uint32_t macro_end { t.t.expanded ? t.t.macro_end : t.t.at.end };
         for (auto& r : result) {
             r.t.at = site;
+            r.t.macro_end = macro_end;
             r.t.expanded = true;
             r.t.start_of_line = false;
             if (first) r.t.leading_space = t.t.leading_space;
@@ -786,11 +838,12 @@ private:
             Tok r { t };
             r.t.kind = kind;
             r.t.spelling = store(std::move(spelling));
+            if (!t.t.expanded) r.t.macro_end = t.t.at.end;
             r.t.expanded = true;
             s.pending.push_front(std::move(r));
             return true;
         };
-        if (macros_.contains(n)) return false;
+        if (has_macro(n)) return false;
         // In a macro's expansion, the line the outermost invocation ends on (as GCC, and Clang after it).
         if (n == "__LINE__") return make(Kind::numeric_constant, std::to_string(t.t.expanded ? where(t.t.at.end - 1, t.t.at.end).line : t.t.at.line));
         if (n == "__FILE__" || n == "__BASE_FILE__") return make(Kind::string_literal, quote(options_.file));
@@ -1043,7 +1096,7 @@ private:
                 continue;
             }
             if (t.t.kind == Kind::raw_identifier && t.t.spelling.starts_with("__") && i + 1 < in.size() && is(in[i + 1], Kind::l_paren) &&
-                std::ranges::contains(BUILTINS, t.t.spelling) && !macros_.contains(t.t.spelling)) {
+                std::ranges::contains(BUILTINS, t.t.spelling) && !has_macro(t.t.spelling)) {
                 // The operand, to the matching ')'.
                 std::size_t k { i + 2 };
                 int depth { 1 };
@@ -1293,8 +1346,18 @@ private:
 } // namespace
 
 Preprocessed preprocess(std::string_view text, const PreprocessOptions& options) {
+    // Each target's predefined macros are made once, for every file after.
+    static std::mutex mutex;
+    static std::map<std::string, std::unique_ptr<Shared>, std::less<>> shared;
+    const Shared* table { nullptr };
+    {
+        std::lock_guard lock { mutex };
+        auto& slot = shared[options.target];
+        if (!slot) slot = Preprocessor::build_shared(options.target);
+        table = slot.get();
+    }
     Preprocessed out;
-    Preprocessor pp { text, options, out };
+    Preprocessor pp { text, options, out, table };
     pp.run();
     return out;
 }

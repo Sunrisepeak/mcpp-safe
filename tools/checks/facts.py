@@ -2,7 +2,7 @@
 """T1 facts against Clang's AST (A0.4.3): for every source file of a built corpus, the declarations MSA
 reports are, kind by kind, the declarations Clang's AST holds.
 
-    python3 tools/checks/facts.py --corpus DIR --probe MCXX_PROBE --resource DIR [--jobs N] [--only SUBSTRING]
+    python3 tools/checks/facts.py --corpus DIR --probe MCXX_PROBE --resource DIR [--jobs N] [--only SUBSTRING] [--reference-cache DIR]
 
     DIR         a corpus built by mcpp (compile_commands.json under target/); its own sources are checked,
                 not the packages it depends on
@@ -10,13 +10,15 @@ reports are, kind by kind, the declarations Clang's AST holds.
                 counted straight off Clang's AST by a clang::RecursiveASTVisitor with Clang's defaults (no
                 implicit code, no template instantiations), by Clang's own kind names
     --resource  the resource directory (the mcxx payload's lib/clang/23)
+    --reference-cache  also keeps each file's outline from Clang (`--symbols`) where tools/checks/syntaxdiff.py
+                reads it, so the two checks parse each file with Clang once
 
 The two share only what makes a declaration the file's (MC3 §4.2): its location is in the file, it is not
 implicit, a parameter belongs to a function. Everything else is independent: MSA's collector and its kind
 mapping, the facts' JSON form, against Clang's traversal. Classes, structs and unions compare together
 (Clang's kind is CXXRecord for all three). Exits non-zero when any file differs.
 """
-import collections, concurrent.futures, json, os, pathlib, subprocess, sys, tempfile
+import collections, concurrent.futures, hashlib, json, os, pathlib, subprocess, sys, tempfile
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
@@ -26,6 +28,7 @@ probe = str(pathlib.Path(arg("probe")).resolve())
 resource = arg("resource")
 jobs = int(arg("jobs", max(1, (os.cpu_count() or 4) // 4)))
 only = arg("only")
+reference_cache = arg("reference-cache")
 database = sorted(corpus.glob("target/*/*/compile_commands.json"), key=lambda p: p.stat().st_mtime)[-1]
 units = [u for u in json.loads(database.read_text()) if str(u["file"]).startswith(str(corpus)) and u["file"].endswith((".cpp", ".cppm"))]
 if only:
@@ -41,9 +44,14 @@ RECORDS = {"class", "struct", "union"}
 
 
 def check(unit):
-    run = subprocess.run([probe, "--db", str(database.parent), "--resource", resource, "--cache", cache, "--facts", "--census", unit["file"]],
-                         capture_output=True, text=True)
+    run = subprocess.run([probe, "--db", str(database.parent), "--resource", resource, "--cache", cache, "--facts", "--census",
+                          *(["--symbols"] if reference_cache else []), unit["file"]], capture_output=True, text=True)
     lines = [json.loads(l) for l in run.stdout.splitlines() if l.startswith("{")]
+    symbols = next((l["symbols"] for l in lines if "symbols" in l), None)
+    if reference_cache and symbols is not None:   # syntaxdiff.py's key: the path's digest and modification time
+        kept = pathlib.Path(reference_cache) / f"{hashlib.sha1(unit['file'].encode()).hexdigest()}-{int(os.stat(unit['file']).st_mtime)}.json"
+        kept.parent.mkdir(parents=True, exist_ok=True)
+        kept.write_text(json.dumps(symbols))
     facts = next((l for l in lines if "declarations" in l), None)
     census = next((l["census"] for l in lines if "census" in l), None)
     if facts is None or census is None:

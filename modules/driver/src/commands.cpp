@@ -343,7 +343,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
             std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.2.0\","
-                         "\"mc3\":\"0.2.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.1.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         "\"mc3\":\"0.2.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.1.1\",\"mc6\":1}},\"providers\":[{}]}}",
                          VERSION, json_string(clang), providers);
             return 0;
         }

@@ -5,12 +5,18 @@
 // object: certain, the notes, the module, the includes, the macros and the tokens' spellings.
 // mcxx-lexdump --ppdiff [OPTIONS] FILE CLANG_E: that against Clang's `-E` output for the same file
 // (tools/checks/ppdiff.py): the main file's lines of it (by its line markers), lexed, token for token.
+// mcxx-lexdump --syntax [OPTIONS] FILE: the file's outline from mcxx.frontend:syntax, one JSON object,
+// as `mcxx-probe --symbols` prints Clang's (tools/checks/syntaxdiff.py), with the parser's diagnostics.
+// mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
+// parsed every time; the process ending is the pass (A1.7.3). Prints the counts.
+// mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best.
 // mcxx-lexdump --directives FILE: the file's directive lines, as the lexer finds them (not in a raw
 // string or a comment), less #error, #warning and the #defines and #undefs after its last #include,
 // and the names it #defines: what ppdiff.py preprocesses to learn the headers' macros.
 // OPTIONS: --target T, -DNAME[=VALUE], -UNAME, --header-macros FILE (the headers' macros, as `-dM -E`
 // prints them: PreprocessOptions::header_macros, complete).
 import std;
+import mcxx.msa;
 import mcxx.frontend;
 
 namespace {
@@ -96,6 +102,45 @@ std::string main_lines(std::string_view output, std::string_view main) {
         out += '\n';
     }
     return out;
+}
+
+int syntax(int argc, char** argv) {
+    mcxx::frontend::PreprocessOptions options;
+    std::string file;
+    for (int i { 2 }; i < argc; ++i) {
+        const std::string_view a { argv[i] };
+        if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a == "--header-macros" && i + 1 < argc) {
+            std::istringstream lines { read(argv[++i]) };
+            for (std::string l; std::getline(lines, l);) options.header_macros.push_back(l);
+            options.header_macros_complete = true;
+        } else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
+        else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else file = a;
+    }
+    options.file = file;
+    const std::string text { read(file) };
+    const auto started = std::chrono::steady_clock::now();
+    const auto parsed = mcxx::frontend::parse(text, options);
+    const auto outline = mcxx::frontend::symbols(parsed);
+    const double seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count() };
+    std::string out { "[" };
+    int count { 0 };
+    const std::function<void(const std::vector<mcxx::msa::Symbol>&, int)> walk = [&](const std::vector<mcxx::msa::Symbol>& ss, int parent) {
+        for (const auto& s : ss) {
+            const int self { count++ };
+            out += std::format("{}{{\"kind\":\"{}\",\"name\":{},\"range\":[{},{},{},{}],\"selection\":[{},{},{},{}],\"parent\":{}}}", self ? "," : "",
+                               mcxx::msa::to_string(s.kind), json(s.name), s.range.begin.line, s.range.begin.column, s.range.end.line, s.range.end.column,
+                               s.selection.begin.line, s.selection.begin.column, s.selection.end.line, s.selection.end.column, parent);
+            walk(s.children, self);
+        }
+    };
+    walk(outline, -1);
+    out += "]";
+    std::vector<std::string> notes;
+    for (const auto& d : parsed.diagnostics) notes.push_back(std::format("{}:{}: {}", d.at.line, d.at.column, d.message));
+    std::println("{{\"symbols\":{},\"diagnostics\":{},\"certain\":{},\"seconds\":{:.6f}}}", out, strings(notes), parsed.pp.certain, seconds);
+    return 0;
 }
 
 int preprocessed(bool diff, int argc, char** argv) {
@@ -201,8 +246,62 @@ int directives(const char* path) {
     return 0;
 }
 
+int fuzz(int rounds, int argc, char** argv) {
+    // Fragments a mutation inserts: the tokens that open and close what a parser tracks, and noise.
+    static constexpr std::string_view FRAGMENTS[] {
+        "{", "}", "(", ")", "[", "]", "<", ">", ">>", ";", ",", "::", "template", "class", "struct", "enum", "namespace", "export",
+        "module", "import", "using", "operator", "~", "=", "#define X(", "#if 1\n", "#endif\n", "\"", "'", "R\"(", "/*", "\\\n", "\xff",
+        "requires", "decltype(", "->", "...", "friend", "typedef", "extern \"C\"", "[[", "]]", "&&", "*", "\n",
+    };
+    std::mt19937_64 random { 20260929 };
+    std::size_t parses { 0 }, declarations { 0 };
+    for (int i { 3 }; i < argc; ++i) {
+        const std::string text { read(argv[i]) };
+        for (int r { 0 }; r < rounds; ++r) {
+            std::string mutated { text };
+            const auto at = [&] { return mutated.empty() ? std::size_t { 0 } : static_cast<std::size_t>(random() % (mutated.size() + 1)); };
+            switch (random() % 3) {
+            case 0: mutated.resize(at()); break;   // cut short
+            case 1:
+                for (int k { 0 }, n { static_cast<int>(1 + random() % 4) }; k < n; ++k) {
+                    const auto& f = FRAGMENTS[random() % std::size(FRAGMENTS)];
+                    mutated.insert(at(), f);
+                }
+                break;
+            default:
+                for (int k { 0 }, n { static_cast<int>(1 + random() % 8) }; k < n; ++k) mutated.insert(at(), 1, static_cast<char>(random() % 256));
+            }
+            const auto parsed = mcxx::frontend::parse(mutated, { .file = argv[i] });
+            declarations += mcxx::frontend::symbols(parsed).size();
+            ++parses;
+        }
+    }
+    std::println("{{\"parses\":{},\"symbols\":{}}}", parses, declarations);
+    return 0;
+}
+
+int parse_bench(int rounds, int argc, char** argv) {
+    std::vector<std::string> texts;
+    std::size_t bytes { 0 };
+    for (int i { 3 }; i < argc; ++i) bytes += texts.emplace_back(read(argv[i])).size();
+    double best { 1e9 };
+    std::size_t symbols { 0 };
+    for (int r { 0 }; r < rounds; ++r) {
+        const auto started = std::chrono::steady_clock::now();
+        symbols = 0;
+        for (const auto& t : texts) symbols += mcxx::frontend::parse(t).declarations.size();
+        best = std::min(best, std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count());
+    }
+    std::println("{{\"files\":{},\"bytes\":{},\"declarations\":{},\"seconds\":{:.4f},\"mb-per-second\":{:.1f}}}", texts.size(), bytes, symbols, best,
+                 static_cast<double>(bytes) / best / 1e6);
+    return 0;
+}
+
 int main(int argc, char** argv) {
+    if (argc > 3 && std::string_view { argv[1] } == "--fuzz") return fuzz(std::stoi(argv[2]), argc, argv);
+    if (argc > 3 && std::string_view { argv[1] } == "--parse-bench") return parse_bench(std::stoi(argv[2]), argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--directives") return directives(argv[2]);
+    if (argc > 2 && std::string_view { argv[1] } == "--syntax") return syntax(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--bench") return bench(std::stoi(argv[2]), argc, argv);
     if (argc > 1 && (std::string_view { argv[1] } == "--pp" || std::string_view { argv[1] } == "--ppdiff")) return preprocessed(std::string_view { argv[1] } == "--ppdiff", argc, argv);
     for (int i { 1 }; i < argc; ++i) {

@@ -6,7 +6,8 @@
 // for each LINE:COL METHOD (1-based line and column, e.g. 12:5 hover) prints the service's answer.
 // With --index it also waits for the program index before asking; with --facts it prints the file's
 // MC3 facts, every kind, as JSON on standard output (specs/mc3-facts.md §4.11); with --census, the
-// declarations counted straight off Clang's AST by Clang's kind names (tools/checks/facts.py).
+// declarations counted straight off Clang's AST by Clang's kind names (tools/checks/facts.py); with
+// --symbols, the file's outline (Unit::symbols), one JSON object (tools/checks/syntaxdiff.py).
 //
 //   mcxx-probe --tokens FILE...
 //
@@ -89,6 +90,7 @@ int main(int argc, char** argv) {
     bool index { false };
     bool facts { false };
     bool census { false };
+    bool symbols { false };
     std::vector<std::pair<std::string, std::string>> asks;
     for (int i { 1 }; i < argc; ++i) {
         const std::string a { argv[i] };
@@ -98,6 +100,7 @@ int main(int argc, char** argv) {
         else if (a == "--index") index = true;
         else if (a == "--facts") facts = true;
         else if (a == "--census") census = true;
+        else if (a == "--symbols") symbols = true;
         else if (file.empty()) file = a;
         else if (i + 1 < argc) {
             asks.emplace_back(a, argv[i + 1]);
@@ -105,7 +108,7 @@ int main(int argc, char** argv) {
         }
     }
     if (db.empty() || file.empty()) {
-        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] FILE [LINE:COL METHOD]...");
+        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] [--symbols] FILE [LINE:COL METHOD]...");
         return 2;
     }
     const auto started = std::chrono::steady_clock::now();
@@ -135,6 +138,26 @@ int main(int argc, char** argv) {
     const auto unit = service.unit(uri, true);
     std::println(std::cerr, "[{:7.2f}] parsed: {} occurrences", seconds_since(started), unit ? unit->occurrences().size() : 0);
     if (facts && unit) std::println("{}", mcxx::plugin::wire::facts_to_json(unit->facts(), path, unit->module_name()).dump());
+    if (symbols && unit) {
+        Json list = Json::array();
+        const std::function<void(const std::vector<mcxx::msa::Symbol>&, int)> walk = [&](const std::vector<mcxx::msa::Symbol>& ss, int parent) {
+            for (const auto& s : ss) {
+                const int self { static_cast<int>(list.size()) };
+                Json x = Json::object();
+                x["kind"] = std::string { mcxx::msa::to_string(s.kind) };
+                x["name"] = s.name;
+                x["range"] = Json::array({ s.range.begin.line, s.range.begin.column, s.range.end.line, s.range.end.column });
+                x["selection"] = Json::array({ s.selection.begin.line, s.selection.begin.column, s.selection.end.line, s.selection.end.column });
+                x["parent"] = parent;
+                list.push_back(std::move(x));
+                walk(s.children, self);
+            }
+        };
+        walk(unit->symbols(), -1);
+        Json doc = Json::object();
+        doc["symbols"] = std::move(list);
+        std::println("{}", doc.dump());
+    }
     if (census && unit) {
         Json counts = Json::object();
         for (const auto& [kind, n] : mcxx::backend::census(*unit)) counts[kind] = n;

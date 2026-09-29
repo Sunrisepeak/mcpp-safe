@@ -2,6 +2,12 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC5 0.1.1: a GCC command's module switches
+
+- **MC5** §6: the derived arguments of a GCC command leave out GCC's C++20 modules switches
+  (`-fmodules`, `-fmodule-only`, `-fmodule-header`, `-fdeps-*`): to Clang `-fmodules` is its header
+  modules, and a GCC-built program (C-mcpp) did not parse in the semantic services with it.
+
 ## 2026-09-29 — MC1 0.2.0, MC3 0.2.0, MC4 0.2.0: attributes and regions (M1.9)
 
 - **MC4**: two extension points. A provider claims attributes (`acme::hot`): the compiler accepts

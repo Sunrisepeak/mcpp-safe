@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC5 |
-| Version | 0.1.0 |
+| Version | 0.1.1 |
 | Status | Draft |
 | Schema | [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json) |
 | Examples | [`examples/mc5-version.json`](examples/mc5-version.json) |
@@ -58,7 +58,7 @@ The command lines a build system is expected to use, and that the conformance of
 
 ## 6. Arguments of a unit in the semantic services
 
-libmc++'s semantic services (the backend behind mcppls) derive, from a unit's build command, the arguments that describe the program: the command without what the backend decides itself -- outputs (`-o`, `-MF`, `-MT`, `-MQ`, `-fmodule-output`), the interfaces read (`-fmodule-file`, `-fprebuilt-module-path`), the input language (`-x`), the resource directory, the phase (`-c`, `--precompile`, `-fsyntax-only`), dependency and color flags, and the source file itself. <a id="MC5-6-1"></a><sup>MC5-6-1</sup> A unit MUST get byte-for-byte the same derived arguments whichever way it reaches the services: a build database, a cache, or a command line. <a id="MC5-6-2"></a><sup>MC5-6-2</sup> The derived arguments key the cache of built module interfaces: two units with the same derived arguments share an interface. <a id="MC5-6-3"></a><sup>MC5-6-3</sup>
+libmc++'s semantic services (the backend behind mcppls) derive, from a unit's build command, the arguments that describe the program: the command without what the backend decides itself -- outputs (`-o`, `-MF`, `-MT`, `-MQ`, `-fmodule-output`), the interfaces read (`-fmodule-file`, `-fprebuilt-module-path`), the input language (`-x`), the resource directory, the phase (`-c`, `--precompile`, `-fsyntax-only`), dependency and color flags, the source file itself, and -- in a GCC command -- GCC's C++20 modules switches (`-fmodules`, `-fmodule-only`, `-fmodule-header`, `-fdeps-*`, ...), which mean something else to Clang (0.1.1). <a id="MC5-6-1"></a><sup>MC5-6-1</sup> A unit MUST get byte-for-byte the same derived arguments whichever way it reaches the services: a build database, a cache, or a command line. <a id="MC5-6-2"></a><sup>MC5-6-2</sup> The derived arguments key the cache of built module interfaces: two units with the same derived arguments share an interface. <a id="MC5-6-3"></a><sup>MC5-6-3</sup>
 
 ## 7. The toolchain contract
 

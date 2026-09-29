@@ -1,6 +1,7 @@
 // mcxx.frontend: MC++'s own C++ front end (plan P4), beside the Clang backend and without Clang or
-// LLVM. F1 so far: lexing (:lex, token for token Clang's raw lexer -- tools/checks/lexdiff.py) and
-// phase 4 for a module unit (:preprocess), and the MSA facts those two give (facts()).
+// LLVM. F1: lexing (:lex, token for token Clang's raw lexer -- tools/checks/lexdiff.py), phase 4 for
+// a module unit (:preprocess), the declarations and the outline (:syntax -- syntaxdiff.py), and the
+// MSA facts those give (facts()).
 //
 //   auto tokens = mcxx::frontend::lex(text);
 //   auto pp = mcxx::frontend::preprocess(text, { .file = path });
@@ -12,6 +13,7 @@ import mcxx.msa;
 export import :unicode;
 export import :lex;
 export import :preprocess;
+export import :syntax;
 
 export namespace mcxx::frontend {
 

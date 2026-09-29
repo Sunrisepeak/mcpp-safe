@@ -72,5 +72,12 @@ int main() {
         for (const auto& c : { value, order, flag }) expect(bytes(derived_arguments(c)) != bytes(expected)) << std::format("{}", c.arguments);
     };
 
+    "a GCC command's module switches are GCC's: not Clang's header modules (MC5 0.1.1)"_test = [&] {
+        const msa::Command gcc { "/w", "/w/src/m.cppm", { "/opt/gcc/bin/g++", "-std=c++23", "-fmodules", "-fdeps-format=p1689r5", "-DMODE=1", "-c", "src/m.cppm" } };
+        expect(derived_arguments(gcc) == std::vector<std::string> { "/opt/gcc/bin/g++", "-std=c++23", "-DMODE=1" }) << std::format("{}", derived_arguments(gcc));
+        const msa::Command clang { "/w", "/w/src/m.cppm", { "clang++", "-std=c++23", "-fmodules", "-c", "src/m.cppm" } };
+        expect(std::ranges::contains(derived_arguments(clang), std::string { "-fmodules" }));
+    };
+
     return report();
 }

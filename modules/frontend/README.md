@@ -1,6 +1,12 @@
 # frontend：MC++ 自己的前端（`mcxx.frontend`，F1）
 
-和 Clang 后端并列、不依赖 Clang/LLVM 的 C++ 前端（计划 P4）。F1 目前做两件事：词法分析，以及模块单元需要的那部分预处理（翻译阶段 4）；它给出的 MC3 事实交给同一套门禁引擎。语法树是下一步（M1.7）。
+和 Clang 后端并列、不依赖 Clang/LLVM 的 C++ 前端（计划 P4）。F1 做三件事：
+
+- 词法分析；
+- 模块单元需要的那部分预处理（翻译阶段 4）；
+- 声明级的语法树和大纲。
+
+它给出的 MC3 事实交给同一套门禁引擎。
 
 | 分区 | 内容 |
 |---|---|
@@ -8,6 +14,7 @@
 | `:unicode` | 标识符可用的 Unicode 字符（XID_Start / XID_Continue，UAX #31，加上 Clang 作为扩展接受的数学记号）。**生成的**：`gen/unicode.py` 读所钉版本 Clang 的 `UnicodeCharSets.h`，Unicode 版本和参照一致（18.0） |
 | `:predefined` | 三个目标（linux-x64、macos-arm64、windows-x64）的预定义宏，**生成的**：`gen/predefined.py` 跑 `mcxx c++ -target T -std=c++23 -dM -E` |
 | `:preprocess` | 预处理：条件编译、文件自己的宏（`#`、`##`、`__VA_ARGS__`、`__VA_OPT__`、GNU 的 `, ## __VA_ARGS__`）、`#include` 记录、模块声明和 import 的识别 |
+| `:syntax` | 声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
 | `mcxx.frontend` | 上面几部分，再加 `facts(pp)`：MC3 的 `macros` 和 `includes` 事实，形状和 Clang 后端给的一样 |
 
 ```cpp
@@ -78,6 +85,34 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 - `mcxx-conformance --frontend`：门禁 fixture 的每个文件都经过本前端取事实，再交给同一个门禁引擎。凡是由 `macros`、`includes` 事实判定的特性，发现必须和 fixture 的 `// expect:` 一致（A1.6.2）。
 
+## 语法：声明和大纲，和 Clang 的一致
+
+解析器不知道类型。C++ 在需要类型才能区分的地方，按代码的形状决定：
+
+- 声明符之前的名字是类型；
+- 在声明之后，括号里的内容默认是参数表。只有第一个参数在默认值之前出现了只有表达式才会有的东西（字面量、`nullptr`、`true`、运算符），才当作初始化；
+- 类作用域里的函数是成员；`X::f` 形式的定义，除非 `X` 是本文件里的 namespace，也算成员。
+
+和 Clang 大纲一致的细节（从对比中得出）：
+
+- 类模板的构造函数和析构函数带上模板参数（`Box<T, N>`）；
+- 别名模板的名字位置是 `using`；
+- 类内的 `= default`、`= delete`、`= 0` 计入范围，类外定义的 `S::S() = default` 不计入；
+- 匿名 namespace、匿名类和匿名枚举本身不进大纲，它们里面的内容也不进；
+- 友元不进大纲；
+- 位置按 Clang 的算法：宏展开得到的记号，位置是最外层调用的起点；名字的终点是起点加上拼写长度；整体范围的终点是最后一个记号所在处（展开得到的记号就是宏名）的文件记号长度，算在它起始的那一行上，哪怕这个记号跨了多行（跨行的原始字符串）。
+
+**总能给出一棵树**：解析不下去的地方，跳到本层的下一个 `;`，或者跳过一个配平的块，记一条诊断，然后继续。不配对的 `}` 和只出现在括号里、外面没有花括号的 `;` 会结束跳过，一处坏代码不会吞掉后面的声明。
+
+**检查**：`tools/checks/syntaxdiff.py`。一边是 Clang 后端的大纲（`mcxx-probe --symbols`，也就是编辑器文档大纲用的 `Unit::symbols()`），另一边是本前端（`mcxx-lexdump --syntax`），逐个符号比较种类、名字、名字范围和整体范围。2026-09-29 本机的结果：
+
+| 条件 | 结果 |
+|---|---|
+| A1.7.1 零解析失败 | C-mcppls 253 个文件、C-mcpp 334 个文件，都没有解析诊断 |
+| A1.7.2 一致率 ≥ 99.9% | C-mcppls：4725/4725 个符号一致（100%）。C-mcpp：宿主给出头文件的宏时（`--header-macros`，gtest 的 `TEST` 展开成类），18880/18880 一致（100%）；不给时，测试以外的 198 个文件是 99.942% |
+| A1.7.3 模糊测试 | `mcxx-lexdump --fuzz 1000`：随机截断，或插入随机 token 和字节。C-mcppls 253 000 次、C-mcpp 334 000 次，没有崩溃，每次都给出大纲；调试构建另做 25 300 次 |
+| A1.7.4 冷启动解析 ≤ 2 s（4 核） | C-mcppls 整个语料（252 个文件，2.6 MB）单线程 0.15–0.25 s（release，词法、预处理、解析全算） |
+
 ## 不依赖 Clang（A1.6.3）
 
 - `tools/checks/lint.py` 的 clang-exposure 规则覆盖本包。
@@ -88,7 +123,8 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 - `mcpp test -p modules/frontend`：
   - `test_lex`：难写对的词法情况；
-  - `test_preprocess`：标准自己的例子（[cpp.scope] 的例 3–5、[cpp.subst] 里的 `__VA_OPT__`）、按目标取的条件、模块行、不确定的情形、`#error`。
+  - `test_preprocess`：标准自己的例子（[cpp.scope] 的例 3–5、[cpp.subst] 里的 `__VA_OPT__`）、按目标取的条件、模块行、不确定的情形、`#error`；
+  - `test_syntax`：类的成员（构造、析构、运算符、转换、字段、静态）、namespace 的嵌套和匿名、枚举、模板和别名和 concept、类外定义、参数表还是初始化、`export` 和 `extern "C"`、出错后继续。
 - 重新生成表：
   - `python3 modules/frontend/gen/unicode.py <clang-dev>/clang/lib/Lex/UnicodeCharSets.h > modules/frontend/src/unicode.cppm`
   - `python3 modules/frontend/gen/predefined.py <mcxx> > modules/frontend/src/predefined.cppm`
