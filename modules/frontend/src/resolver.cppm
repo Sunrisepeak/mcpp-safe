@@ -116,6 +116,7 @@ private:
     // scope (an unnamed namespace's and its enclosing one's; std's and the C library's it re-exports):
     // which one needs the arguments' types, so it is not answered.
     bool overloaded_ { false };
+    std::vector<Target> overload_candidates_;   // the functions of each scope, when overloaded_
 
     bool is(std::size_t k, Kind kind) const { return k < t_.size() && t_[k].kind == kind; }
     bool word(std::size_t k, std::string_view w) const { return k < t_.size() && t_[k].kind == Kind::raw_identifier && t_[k].spelling == w; }
@@ -261,8 +262,10 @@ private:
     // standard's sequences, a map's mapped type; what a class's own `operator[]` gives.
     std::optional<Typed> element(const Typed& type);
 
-    // The token that opens the bracket closing at `close` (`)`, `]` or `}`), or none.
+    // The token that opens the bracket closing at `close` (`)`, `]` or `}`), or none; and the one that
+    // closes the bracket opening at `open`.
     std::optional<std::size_t> opening(std::size_t close) const;
+    std::optional<std::size_t> opening_forward(std::size_t open) const;
 
     // The type a construction names, written before the `{` or `(` at `open`: `ns::T`, `std::vector<int>`.
     std::optional<Typed> type_named_before(std::size_t open);
@@ -296,6 +299,10 @@ private:
 
     // The arguments between `open` and `close`, each told apart.
     std::vector<Argument> arguments(std::size_t open, std::size_t close, int depth);
+
+    // Of the functions `candidates` a call at `name` (its `(` next) names, the one its arguments fit,
+    // when exactly one does.
+    std::optional<Target> chosen_by_arguments(const std::vector<Target>& candidates, std::size_t name);
 
     // Whether a parameter of type `parameter` (read where `where` is) may take `argument`; a function
     // template's own parameters (`templates`) take anything.

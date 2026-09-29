@@ -318,8 +318,11 @@ std::optional<Target> Resolver::in_scope(const std::string& scope, const std::st
                         if (const auto t = transparent_.find(scope); t != transparent_.end())
                             for (const auto& unnamed : t->second)
                                 if (const auto other = in_scope(unnamed, n, k, depth + 1, scope_only);
-                                    other && function_kind(other->kind) && other->qualified != target.qualified)
+                                    other && function_kind(other->kind) && other->qualified != target.qualified) {
                                     overloaded_ = true;
+                                    overload_candidates_.push_back(target);
+                                    overload_candidates_.push_back(*other);
+                                }
                     return target;
                 }
         }
@@ -570,15 +573,30 @@ std::optional<std::string> Resolver::object_class(std::size_t k) {
 
 std::optional<Target> Resolver::resolve(std::size_t k) {
     overloaded_ = false;
+    overload_candidates_.clear();
     auto found { resolve_(k) };
     // libc++'s std re-exports the C library's functions by using-declarations: `std::tolower` is
     // `::tolower` as well as std's own overloads.
     if (found && found->declaration < 0 && function_kind(found->kind) && scope_of(found->qualified) == "std")
         if (const auto global = scopes_.find(std::string {}); global != scopes_.end())
             if (const auto same = global->second.find(std::string { last_component(found->qualified) }); same != global->second.end())
-                overloaded_ = overloaded_ || std::ranges::any_of(same->second, [](const Target& t) { return t.declaration < 0 && function_kind(t.kind); });
-    if (overloaded_) return std::nullopt;
-    return found;
+                for (const auto& t : same->second)
+                    if (t.declaration < 0 && function_kind(t.kind)) {
+                        if (!overloaded_) overload_candidates_.push_back(*found);
+                        overloaded_ = true;
+                        overload_candidates_.push_back(t);
+                    }
+    if (!overloaded_) return found;
+    // Functions of more than one scope: a call's arguments may choose among them.
+    if (is(k + 1, Kind::l_paren)) {
+        std::vector<Target> candidates;
+        for (const auto& c : overload_candidates_)
+            for (const auto& o : overloads(c))
+                if (!std::ranges::any_of(candidates, [&](const Target& x) { return x.qualified == o.qualified && x.declaration == o.declaration && x.imported == o.imported; }))
+                    candidates.push_back(o);
+        if (auto chosen = chosen_by_arguments(candidates, k)) return chosen;
+    }
+    return std::nullopt;
 }
 
 std::optional<Target> Resolver::resolve_(std::size_t k) {
@@ -630,7 +648,18 @@ Names names_of(const Syntax& syntax) {
     out.container.resize(ds.size());
     out.qualified.resize(ds.size());
     std::vector<std::string> prefix_of(ds.size());   // the scope each is named in
-    const auto name_of = [](const Declaration& d) { return d.name.empty() && d.kind == msa::Kind::namespace_ ? std::string { "(anonymous namespace)" } : d.name; };
+    const auto name_of = [](const Declaration& d) {
+        if (!d.name.empty()) return d.name;
+        // Unnamed, as Clang's plain style names them (MC3-4-4).
+        switch (d.kind) {
+        case msa::Kind::namespace_: return std::string { "(anonymous namespace)" };
+        case msa::Kind::struct_: return std::string { "(unnamed struct)" };
+        case msa::Kind::class_: return std::string { "(unnamed class)" };
+        case msa::Kind::union_: return std::string { "(anonymous union)" };
+        case msa::Kind::enum_: return std::string { "(unnamed enum)" };
+        default: return d.name;
+        }
+    };
     for (std::size_t i { 0 }; i < ds.size(); ++i) {
         const auto& d = ds[i];
         std::string prefix;
@@ -643,8 +672,22 @@ Names names_of(const Syntax& syntax) {
                 prefix = ns;
             } else {
                 ns = out.container[p];
-                // An unscoped enumerator is named in its enum's scope, as Clang names it.
-                if (parent.kind == msa::Kind::enum_ && !parent.scoped_enum) prefix = prefix_of[p];
+                // An unscoped enumerator is named in its enum's scope, as Clang names it; a local
+                // enumeration's in its function's (`f(int)::red`), as a local class's members are.
+                if (parent.kind == msa::Kind::enum_ && parent.parent >= 0 && function_kind(ds[static_cast<std::size_t>(parent.parent)].kind)) {
+                    const auto f = static_cast<std::size_t>(parent.parent);
+                    std::string params;
+                    bool known { true };
+                    for (std::size_t j { f + 1 }; j < ds.size() && j < p; ++j) {
+                        if (ds[j].parent != static_cast<std::int32_t>(f) || ds[j].kind != msa::Kind::parameter || ds[j].in_lambda) continue;
+                        const std::string type { type_text(syntax, ds[j]) };
+                        if (type.empty()) known = false;
+                        params += (params.empty() ? "" : ", ") + type;
+                    }
+                    if (ds[f].c_variadic) params += params.empty() ? "..." : ", ...";
+                    if (known) prefix = std::format("{}({})", out.qualified[f], params) + (parent.scoped_enum ? "::" + name_of(parent) : std::string {});
+                    else prefix = parent.scoped_enum ? out.qualified[p] : prefix_of[p];
+                } else if (parent.kind == msa::Kind::enum_ && !parent.scoped_enum) prefix = prefix_of[p];
                 else if (scope_kind(parent.kind)) {
                     prefix = out.qualified[p];
                     // What a local class or enum declares is named through its function, as Clang
@@ -655,7 +698,7 @@ Names names_of(const Syntax& syntax) {
                         std::string params;
                         bool known { true };
                         for (std::size_t j { f + 1 }; j < ds.size() && j < p; ++j) {
-                            if (ds[j].parent != static_cast<std::int32_t>(f) || ds[j].kind != msa::Kind::parameter) continue;
+                            if (ds[j].parent != static_cast<std::int32_t>(f) || ds[j].kind != msa::Kind::parameter || ds[j].in_lambda) continue;
                             const std::string type { type_text(syntax, ds[j]) };
                             if (type.empty()) known = false;
                             params += (params.empty() ? "" : ", ") + type;

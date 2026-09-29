@@ -146,6 +146,7 @@ bool Resolver::collect(const Typed& written, std::vector<std::string>& out, bool
     // A pointer, an array: what they are of. A function type, a pointer to one: nothing in it is
     // looked into (Clang's collect_templates does not); a pointer to one is a pointer.
     for (int guard { 0 }; guard < 8; ++guard) {
+        if (text.ends_with("::*")) return true;   // a member pointer: no pointer, nothing looked into
         if (text.ends_with("*const")) text.erase(text.size() - 5);
         if (text.ends_with('*')) {
             pointer = true;
@@ -185,6 +186,8 @@ bool Resolver::collect(const Typed& written, std::vector<std::string>& out, bool
     if (found->kind == msa::Kind::type_alias) {
         const auto parameters { parameters_of(*found) };
         if (!parameters.empty()) {
+            // A decltype among its arguments: what that is, F1 does not evaluate.
+            if (std::ranges::any_of(args, [](const std::string& a) { return a.find("decltype") != std::string::npos; })) return false;
             // An alias template: in a dependent type, itself and its arguments as written; otherwise
             // what it names, its parameters the arguments.
             const bool depends { std::ranges::any_of(args, [&](const std::string& a) { return dependent(derived(type, a)); }) };
@@ -272,14 +275,18 @@ DeclaredType Resolver::declared(std::size_t i) {
     out.type = type_text(syntax_, d, returns);
     const auto uncertain = [&](std::string why, bool type_too) {
         out.templates_certain = false;
-        out.pointer_certain = out.pointer;   // a `*` written is one
+        // A pointer the declarator writes is one (not a `*` inside a function type's parameters).
+        const std::string written_type { bare(out.type) };
+        out.pointer_certain = !out.type.empty() && (written_type.ends_with('*') || written_type.ends_with("*const")) &&
+                              written_type.find("::*") == std::string::npos;
+        if (out.pointer_certain) out.pointer = true;
         if (type_too) out.type_certain = false;
         out.why = std::move(why);
     };
     // A structured binding's group (`auto [a, b] = e;`): what the whole is deduced to be.
     if (d.name.starts_with('[')) {
         uncertain("deduced", true);
-        if (const auto whole = binding_group(i, 0)) {
+        if (const auto whole = binding_group(i, 0); whole && !whole->through_template) {
             std::vector<std::string> templates;
             bool pointer { false };
             if (collect(*whole, templates, pointer)) {
@@ -291,9 +298,18 @@ DeclaredType Resolver::declared(std::size_t i) {
         return out;
     }
     if (placeholder(d) && d.kind != msa::Kind::parameter) {
-        // A deduced type: its text is not F1's to print; what it names is, when F1 deduces it.
+        // A deduced type: its text is not F1's to print; what it names is, when F1 deduces it -- not
+        // in a template, where an initializer that depends on its parameters leaves it undeduced.
         uncertain("deduced", true);
-        if (!returns) {
+        bool in_template { false };
+        for (auto a = d.parent; a >= 0 && !in_template; a = ds_[static_cast<std::size_t>(a)].parent)
+            in_template = !parameters_of(target_of(a)).empty();
+        // A generic lambda's body is a template's too: an `auto` parameter visible where it is.
+        for (std::size_t j { 0 }; j < i && !in_template && d.in_lambda; ++j) {
+            const auto& p = ds_[j];
+            in_template = p.kind == msa::Kind::parameter && p.in_lambda && placeholder(p) && p.name_token < d.name_token && p.visible_end >= d.name_token;
+        }
+        if (!returns && !in_template) {
             if (const auto deduced = typed(target_of(static_cast<std::int32_t>(i))); deduced && !deduced->through_template) {
                 std::vector<std::string> templates;
                 bool pointer { false };
@@ -332,8 +348,33 @@ DeclaredType Resolver::declared(std::size_t i) {
             }
         }
     }
+    // `T x[] = { a, b, c }`: the bound its initializer gives, as Clang prints it (`T[3]`).
+    if (const auto open = out.type.find("[]"); open != std::string::npos) {
+        std::size_t k { d.declarator_end };
+        if (is(k, Kind::equal)) ++k;
+        if (!is(k, Kind::l_brace)) {
+            uncertain("deduced", true);   // a string literal's length, or no initializer
+            return out;
+        }
+        std::size_t elements { 0 };
+        bool any { false };
+        int nesting { 0 };
+        for (std::size_t j { k + 1 }; j < t_.size(); ++j) {
+            if (nesting == 0 && is(j, Kind::r_brace)) break;
+            if (is(j, Kind::l_paren) || is(j, Kind::l_square) || is(j, Kind::l_brace)) ++nesting;
+            else if (is(j, Kind::r_paren) || is(j, Kind::r_square) || is(j, Kind::r_brace)) --nesting;
+            if (nesting == 0 && is(j, Kind::comma)) {
+                if (any) ++elements;
+                any = false;
+            } else {
+                any = true;
+            }
+        }
+        if (any) ++elements;
+        out.type.replace(open, 2, std::format("[{}]", elements));
+    }
     std::vector<std::string> templates;
-    bool pointer { d.pointer };
+    bool pointer { false };   // what the canonical type holds (a `*` in a function type's parameters is none)
     if (!collect(written, templates, pointer)) {
         uncertain("unknown", false);
         return out;

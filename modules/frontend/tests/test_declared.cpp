@@ -97,5 +97,41 @@ int main() {
             << (of("shapes::area") && of("shapes::area")->parameters ? std::format("{}", *of("shapes::area")->parameters) : std::string { "none" });
     };
 
+    "names and types as Clang has them: friends, local classes, unnamed ones, arrays, pointers"_test = [] {
+        const std::string_view source {
+            "namespace ns {\n"
+            "struct P {\n"
+            "    int x;\n"
+            "    friend bool operator<(const P& a, const P& b) { return a.x < b.x; }\n"
+            "};\n"
+            "void f(int n) {\n"
+            "    auto g = [](int lambdas) { return lambdas; };\n"
+            "    struct Local { int field; };\n"
+            "    struct { int c; } unnamed;\n"
+            "}\n"
+            "const int table[] = { 1, 2, 3, };\n"
+            "int (*callbacks[])(int) = { nullptr };\n"
+            "struct S { int m; };\n"
+            "int S::* member;\n"
+            "void (*handler)(int*);\n"
+            "}\n"
+        };
+        const auto facts = f::facts(f::parse(source), f::Imported {});
+        const auto of = [&](std::string_view name) -> const mcxx::msa::fact::Declaration* {
+            for (const auto& d : facts.declarations)
+                if (d.qualified_name == name) return &d;
+            return nullptr;
+        };
+        using K = mcxx::msa::Kind;
+        expect(of("ns::operator<") != nullptr && of("ns::operator<")->kind == K::function) << "a friend is its class's namespace's";
+        expect(of("a") != nullptr && of("ns::P::a") == nullptr) << "and its parameters are its own";
+        expect(of("ns::f(int)::Local::field") != nullptr) << "a local class is named with its function's parameters, not a lambda's";
+        expect(of("ns::f(int)::(unnamed struct)::c") != nullptr) << "an unnamed struct";
+        expect(of("ns::table") != nullptr && of("ns::table")->type == "const int[3]") << "the bound its initializer gives: " << (of("ns::table") ? of("ns::table")->type : "none");
+        expect(of("ns::member") != nullptr && !of("ns::member")->pointer && of("ns::member")->type == "int S::*")
+            << "a member pointer is no pointer: " << (of("ns::member") ? of("ns::member")->type : "none");
+        expect(of("ns::handler") != nullptr && of("ns::handler")->pointer) << "a pointer to a function is one";
+    };
+
     return report();
 }

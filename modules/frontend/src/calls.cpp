@@ -47,7 +47,7 @@ std::optional<std::vector<std::string>> Resolver::function_parameters(const Targ
     std::vector<std::string> out;
     for (std::size_t j { static_cast<std::size_t>(f.declaration) + 1 }; j < ds_.size(); ++j) {
         const auto& p = ds_[j];
-        if (p.parent != f.declaration || p.kind != msa::Kind::parameter) continue;
+        if (p.parent != f.declaration || p.kind != msa::Kind::parameter || p.in_lambda) continue;
         std::string type { type_text(syntax_, p) };
         if (type.empty()) return std::nullopt;
         // A default argument: an `=` after its declarator, before the `,` or `)` that ends it.
@@ -164,6 +164,50 @@ bool Resolver::accepts(const std::string& parameter, const Typed& where, const A
     case Argument::Sort::unknown: break;
     }
     return true;
+}
+
+std::optional<Target> Resolver::chosen_by_arguments(const std::vector<Target>& candidates, std::size_t name) {
+    const auto close { opening_forward(name + 1) };
+    if (!close) return std::nullopt;
+    // Its arguments' names come after it: resolved here first, the state of the name being resolved
+    // kept aside.
+    {
+        const bool overloaded { overloaded_ }, placeholder { deduced_placeholder_ }, known { object_known_ };
+        auto candidates { std::move(overload_candidates_) };
+        for (std::size_t j { name + 2 }; j < *close; ++j) {
+            if (resolved_[j] || !is(j, Kind::raw_identifier) || t_[j].expanded || keyword(t_[j].spelling)) continue;
+            if (j > 0 && (word(j - 1, "goto") || word(j - 1, "operator"))) continue;
+            if (auto target = resolve(j)) resolved_[j] = std::move(*target);
+        }
+        overloaded_ = overloaded;
+        deduced_placeholder_ = placeholder;
+        object_known_ = known;
+        overload_candidates_ = std::move(candidates);
+    }
+    const auto args { arguments(name + 1, *close, 0) };
+    std::optional<Target> chosen;
+    for (const auto& candidate : candidates) {
+        const auto params { function_parameters(candidate) };
+        if (!params) return std::nullopt;   // one whose parameters are not known: no choice
+        std::vector<Parameter> templates;
+        if (candidate.declaration >= 0) templates = parameters_of(candidate);
+        else if (candidate.imported >= 0)
+            for (const auto& written : imported_.declarations[static_cast<std::size_t>(candidate.imported)].template_parameters) templates.push_back(parameter_of(written));
+        const bool variadic { std::ranges::any_of(*params, [](const std::string& p) { return p.find("...") != std::string::npos; }) ||
+                              (candidate.imported >= 0 && imported_.declarations[static_cast<std::size_t>(candidate.imported)].c_variadic) ||
+                              (candidate.declaration >= 0 && ds_[static_cast<std::size_t>(candidate.declaration)].c_variadic) };
+        const auto required = static_cast<std::size_t>(std::ranges::count_if(*params, [](const std::string& p) { return !p.ends_with(" ="); }));
+        if (args.size() < required || (args.size() > params->size() && !variadic)) continue;
+        const Typed where { {}, candidate.declaration >= 0 ? ds_[static_cast<std::size_t>(candidate.declaration)].name_token : 0,
+                            candidate.declaration >= 0 ? std::string {} : scope_of(candidate.qualified), candidate.declaration < 0, {}, nullptr };
+        bool fits { true };
+        for (std::size_t i { 0 }; i < args.size() && i < params->size() && fits; ++i) fits = accepts((*params)[i], where, args[i], templates);
+        if (!fits) continue;
+        // Declarations of one function (a declaration and its definition) are one choice.
+        if (chosen && chosen->qualified != candidate.qualified) return std::nullopt;
+        if (!chosen) chosen = candidate;
+    }
+    return chosen;
 }
 
 std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open, std::size_t close, const Typed* object, int depth) {

@@ -85,7 +85,7 @@ msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>*
                 const auto& known = (*types)[i];
                 if (known.type_certain) f.type = known.type;
                 if (known.templates_certain) f.templates = known.templates;
-                if (known.pointer_certain) f.pointer = f.pointer || known.pointer;
+                if (known.pointer_certain) f.pointer = known.pointer;
                 f.bases = known.bases;
                 f.template_parameters = known.template_parameters;
                 f.parameters = known.parameters;

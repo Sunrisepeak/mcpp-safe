@@ -775,7 +775,8 @@ private:
         bool function { false };   // its (innermost) declarator-id takes a parameter list
         bool nested { false };
         bool pointer { false };    // a ptr-operator: * & && ^ or class::*
-        bool star { false };       // a `*` (or `^`, `::*`) among them: a pointer, not only a reference
+        bool star { false };       // a `*` (or `^`) among them: a pointer, not only a reference
+        bool member { false };     // a `class::*` among them: a member pointer (no raw pointer, as Clang has it)
         bool array { false };      // its declarator-id is followed by [ ]
         std::size_t params { static_cast<std::size_t>(-1) };   // the `(` of its parameter list
     };
@@ -853,7 +854,7 @@ private:
                 }
                 if (member) {
                     d.pointer = true;
-                    d.star = true;
+                    d.member = true;
                     i_ = k + 1;
                     continue;
                 }
@@ -874,10 +875,11 @@ private:
                 if (is(i_, Kind::r_paren)) ++i_;
                 inner.nested = true;
                 const bool inner_function { inner.function };
-                const bool outer_star { d.star };
+                const bool outer_star { d.star }, outer_member { d.member };
                 suffixes(scope, inner, true, void_type);
                 inner.function = inner_function || (!inner.pointer && inner.function);
                 inner.star = inner.star || outer_star;
+                inner.member = inner.member || outer_member;
                 return inner;
             }
         }
@@ -1099,7 +1101,10 @@ private:
             std::optional<std::size_t> end_before;   // the declaration's last token, when not the last one read
             // The declaration first (what its body holds is its own), its last token once read.
             std::int32_t index { -1 };
-            const bool recorded { d.ok && !friend_ };
+            // A friend function is its class's enclosing namespace's, as Clang has it (not in the
+            // outline); a friend variable or type is nothing here.
+            const bool friend_function { friend_ && d.ok && d.function && scope.context == Context::class_ && scope.parent >= 0 };
+            const bool recorded { d.ok && (!friend_ || friend_function) };
             if (recorded) {
                 msa::Kind kind { msa::Kind::variable };
                 const bool member { scope.context == Context::class_ || (!d.id.qualifiers.empty() && !namespaces_.contains(d.id.qualifiers.back())) };
@@ -1114,7 +1119,11 @@ private:
                 std::string spelled { d.id.spelled };
                 // A class template's constructor and destructor are named with its parameters (`S<T>`).
                 if ((kind == msa::Kind::constructor || kind == msa::Kind::destructor) && d.id.qualifiers.empty()) spelled += scope.template_arguments;
-                index = record(kind, std::move(spelled), d.id.last, begin, i_ > 0 ? i_ - 1 : 0, scope, !function, scope.listed, join(d.id.qualifiers));
+                if (friend_function) kind = msa::Kind::function;
+                const Scope outer { friend_function ? Scope { Context::name_space, {}, out_.declarations[static_cast<std::size_t>(scope.parent)].parent, false, scope.exported }
+                                                    : scope };
+                index = record(kind, std::move(spelled), d.id.last, begin, i_ > 0 ? i_ - 1 : 0, outer, !function, outer.listed && !friend_function,
+                               join(d.id.qualifiers));
                 auto& made = out_.declarations[static_cast<std::size_t>(index)];
                 made.pointer = sp.pointer || d.star;
                 made.c_array = (d.array || sp.c_array) && !function;
@@ -1357,6 +1366,14 @@ private:
                     continue;
                 }
             }
+            if (boundary && contexts.back() && word(k, "using") && identifier(k + 1) && is(attributes(k + 2), Kind::equal)) {
+                // using X = type; -- a local alias, as a namespace-scope one is read
+                i_ = k;
+                using_declaration(Scope { Context::block, {}, owner, false, false }, k);
+                k = i_;
+                boundary = true;
+                continue;
+            }
             if (boundary && contexts.back() && word(k, "using")) {   // using namespace n; using n::x;
                 using_names(owner, k);
             }
@@ -1470,6 +1487,8 @@ private:
                 std::size_t b { j };
                 while (b < to && !is(b, Kind::l_brace) && !is(b, Kind::semi) && !is(b, Kind::r_paren) && !is(b, Kind::comma)) {
                     if (is(b, Kind::l_paren) || is(b, Kind::l_square)) b = balanced(b);
+                    // A return type's template arguments (`-> std::expected<void, E>`): their `,` is theirs.
+                    else if (is(b, Kind::less) && b > j && identifier(b - 1) && angle(b) != b) b = angle(b);
                     else ++b;
                 }
                 if (is(b, Kind::l_brace)) {
@@ -1584,7 +1603,7 @@ private:
             // condition, an initializer (`if (T x = e)`, `{e}`), an init-statement's `;` (a `(e)` only
             // there), a range-for's `:`; in a catch, the `)`. A reference is initialized, except a
             // catch's. So `if (a && b)` and `a & b;` are expressions, not declarations of references.
-            const bool reference { d.pointer && !d.star };
+            const bool reference { d.pointer && !d.star && !d.member };
             const bool initialized { is(i_, Kind::equal) || is(i_, Kind::l_brace) || is(i_, Kind::l_paren) || is(i_, Kind::colon) };
             bool ends { false };
             switch (parens) {

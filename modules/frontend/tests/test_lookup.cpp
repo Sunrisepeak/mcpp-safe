@@ -287,6 +287,40 @@ int main() {
         expect(at(3, 50) == "nlohmann::basic_json::is_object") << "value(key, default) gives the default's type: " << at(3, 50);
     };
 
+    "a call's arguments choose among functions of more than one scope"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type, std::vector<std::string> parameters, std::vector<std::string> templates = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            d.parameters = std::move(parameters);
+            d.template_parameters = std::move(templates);
+            d.exported = true;
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = { decl("std", K::namespace_, {}, {}), decl("std::locale", K::class_, {}, {}),
+                                  decl("std::tolower", K::function, "_CharT", { "_CharT", "const locale &" }, { "class _CharT" }),
+                                  decl("tolower", K::function, "int", { "int" }) };
+        const std::string_view source {
+            "namespace ns {\n"
+            "struct A {}; struct B {};\n"
+            "int to_json(const A& a);\n"
+            "namespace { int to_json(const B& b) { return 0; } }\n"
+            "int use(A a, B b, char c) { return to_json(a) + to_json(b) + std::tolower(c); }\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source), imported);
+        const auto at = [&](std::uint32_t line, std::uint32_t column) {
+            const auto it = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column } && r.certain; });
+            return it == references.end() ? std::string { "not resolved" } : it->target;
+        };
+        expect(at(4, 35) == "ns::to_json") << "an A: the enclosing namespace's: " << at(4, 35);
+        expect(at(4, 48) == "ns::(anonymous namespace)::to_json") << "a B: the unnamed namespace's: " << at(4, 48);
+        expect(at(4, 66) == "tolower") << "one argument: the C library's: " << at(4, 66);
+    };
+
     "a range-for over a json value gives json values"_test = [] {
         using K = mcxx::msa::Kind;
         const auto decl = [](std::string qualified, K kind, std::string type = {}) {
@@ -338,8 +372,8 @@ int main() {
         const auto named = [&](std::uint32_t line, std::uint32_t column) {
             return std::ranges::any_of(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column } && r.certain; });
         };
-        expect(!named(3, 19)) << "to_json: the enclosing namespace's and the unnamed one's";
-        expect(!named(3, 39)) << "std::tolower: std's and the C library's";
+        expect(!named(3, 19)) << "to_json: the enclosing namespace's and the unnamed one's, their parameters not known";
+        expect(!named(3, 39)) << "std::tolower: std's and the C library's, their parameters not known";
         expect(named(4, 21)) << "a function with no overload elsewhere is answered";
     };
 

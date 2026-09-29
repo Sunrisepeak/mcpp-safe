@@ -323,6 +323,21 @@ std::optional<std::string> declarator_text(const Tokens& t, std::string base) {
             k = close_of(t, k);
             continue;
         }
+        // A member pointer: `C::*`, `ns::C::*`, printed as written.
+        {
+            std::size_t j { k };
+            std::string cls;
+            while (j + 1 < t.size() && t[j].kind == Kind::raw_identifier && is(t, j + 1, Kind::coloncolon)) {
+                cls += std::string { t[j].spelling } + "::";
+                j += 2;
+            }
+            if (!cls.empty() && is(t, j, Kind::star)) {
+                append_operator(ops, cls + "*");
+                k = j + 1;
+                while (word(t, k, "const") || word(t, k, "volatile")) ops += t[k++].spelling;
+                continue;
+            }
+        }
         break;
     }
     // A nested declarator: `(*)`, `(&)` around what is inside, then this level's suffixes.
@@ -385,7 +400,8 @@ std::optional<std::string> declarator_text(const Tokens& t, std::string base) {
     }
     std::string out { base };
     if (!ops.empty()) append_operator(out, ops);
-    if (!suffix.empty() && suffix.front() == '(') out += " ";
+    // A function type: `void (int)`, but `int *(int)` -- a pointer or reference return type is followed at once.
+    if (!suffix.empty() && suffix.front() == '(' && !out.ends_with('*') && !out.ends_with('&')) out += " ";
     out += suffix;
     if (pack) out += "...";
     return out;
@@ -414,6 +430,12 @@ std::string type_of(const Tokens& t) {
             continue;
         }
         break;
+    }
+    // `T C::*`: the class and its `::` are the member pointer's, the declarator's.
+    {
+        std::size_t q { k };
+        while (q >= 2 && is(t, q - 1, Kind::coloncolon) && t[q - 2].kind == Kind::raw_identifier) q -= 2;
+        if (q < k && q > 0 && is(t, k, Kind::star)) k = q;
     }
     const auto base { base_of(t.subspan(0, k)) };
     if (!base) return {};
@@ -502,7 +524,12 @@ std::string type_text(const Syntax& syntax, const Declaration& d, bool return_ty
     text += base->text;
     auto declared { declarator_text(declarator, text) };
     if (!declared) return {};
-    if (constexpr_const && outer_pointer && !declared->ends_with("const")) *declared += "const";
+    // The pointer itself is const: `const char *const`, before an array's bound (`const char *const[3]`).
+    if (constexpr_const && outer_pointer && !declared->ends_with("const")) {
+        const auto bracket = declared->find('[');
+        if (bracket == std::string::npos) *declared += "const";
+        else if (declared->substr(0, bracket).ends_with('*')) declared->insert(bracket, "const");
+    }
     return *declared;
 }
 

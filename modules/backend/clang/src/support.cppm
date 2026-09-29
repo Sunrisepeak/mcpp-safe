@@ -3,6 +3,10 @@
 module;
 
 #include <clang/Basic/Diagnostic.h>
+
+namespace clang {
+class NamedDecl;
+}
 #include <llvm/Support/thread.h>
 
 #include <condition_variable>
@@ -126,6 +130,12 @@ bool write_file_atomic(const std::string& path, std::string_view data);
 // Arguments the backend adds to every compile: its own builtin headers, and every comment kept
 // (hover shows plain `//` comments too).
 std::vector<std::string> backend_arguments(const std::string& resourceDirectory);
+
+// Qualified names without inline namespaces ("std::vector", "nlohmann::basic_json"), as MC3 names
+// declarations and MSA its entities: what a rule and a configuration write, whatever ABI namespace a
+// library versions itself with (`nlohmann::json_abi_v3_12_0`). An unnamed namespace is
+// `(anonymous namespace)`; an unnamed class, union or enum `(unnamed struct)`, without its place.
+std::string plain_name(const cl::NamedDecl* d);
 
 // Diagnostics of a compile, kept as text: a module interface that fails is reported by module.
 class CollectingConsumer : public cl::DiagnosticConsumer {

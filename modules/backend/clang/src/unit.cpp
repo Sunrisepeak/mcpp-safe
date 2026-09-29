@@ -268,7 +268,7 @@ msa::Entity build_entity(const cl::Decl* d) {
     e.kind = kind_of(d);
     if (const auto* nd = llvm::dyn_cast<cl::NamedDecl>(d)) {
         e.name = nd->getNameAsString();
-        e.qualified_name = nd->getQualifiedNameAsString();
+        e.qualified_name = plain_name(nd);   // as MC3 names it: no inline namespace (nlohmann's ABI one either)
     }
     {
         std::string text;

@@ -123,8 +123,35 @@ std::optional<Typed> Resolver::deduce(std::size_t i, int depth) {
 
 std::optional<Typed> Resolver::initializer_type(std::size_t begin, std::size_t end, int depth) {
     if (begin > end || end >= t_.size()) return std::nullopt;
-    // A lambda: its closure type, a class of its own that names nothing.
-    if (is(begin, Kind::l_square) && !is(begin + 1, Kind::l_square)) return Typed { "(lambda)", begin, {}, false, {}, nullptr };
+    // A lambda: its closure type, a class of its own that names nothing -- unless it is called at once
+    // (`[&]() -> std::string { ... }()`), which gives what it returns: its trailing return type.
+    if (is(begin, Kind::l_square) && !is(begin + 1, Kind::l_square)) {
+        std::size_t k { begin };
+        int nesting { 0 };
+        for (; k <= end; ++k) {   // the captures' `]`
+            if (is(k, Kind::l_square)) ++nesting;
+            else if (is(k, Kind::r_square) && --nesting == 0) break;
+        }
+        std::size_t arrow { 0 }, body { 0 };
+        for (std::size_t j { k + 1 }; j <= end; ++j) {
+            if (is(j, Kind::l_paren) && arrow == 0) {
+                if (const auto close = opening_forward(j)) j = *close;
+                continue;
+            }
+            if (is(j, Kind::arrow) && arrow == 0) arrow = j;
+            if (is(j, Kind::l_brace)) {
+                body = j;
+                break;
+            }
+        }
+        const auto body_end { body != 0 ? opening_forward(body) : std::nullopt };
+        const bool called { body_end && *body_end < end && is(*body_end + 1, Kind::l_paren) && opening_forward(*body_end + 1) == end };
+        if (!called) return Typed { "(lambda)", begin, {}, false, {}, nullptr };
+        if (arrow == 0) return std::nullopt;   // its return type is deduced from its body
+        const std::string returned { type_text(std::span { t_ }.subspan(arrow + 1, body - arrow - 1)) };
+        if (returned.empty()) return std::nullopt;
+        return Typed { returned, arrow + 1, {}, false, {}, nullptr };
+    }
     // An operator between operands at the top: not an expression F1 types (its last operand's type
     // is not the whole's).
     const auto operand_end = [&](std::size_t k) {
@@ -225,8 +252,19 @@ std::optional<Typed> Resolver::range_element(const Typed& written) {
     static constexpr std::string_view sequences[] { "std::vector", "std::array", "std::span", "std::deque", "std::list", "std::set",
                                                      "std::unordered_set", "std::initializer_list", "std::multiset", "std::forward_list" };
     static constexpr std::string_view maps[] { "std::map", "std::unordered_map", "std::multimap", "std::flat_map" };
-    if (std::ranges::contains(sequences, *cls) && !args.empty()) return derived(type, args[0]);
-    if (std::ranges::contains(maps, *cls) && args.size() >= 2) return derived(type, std::format("std::pair<const {}, {}>", args[0], args[1]));
+    // An associative container's element: its class is right, but Clang's type keeps libc++'s node
+    // sugar (`__get_node_value_type_t`), which MC3's templates list names.
+    static constexpr std::string_view associative[] { "std::set", "std::unordered_set", "std::multiset" };
+    if (std::ranges::contains(sequences, *cls) && !args.empty()) {
+        auto element { derived(type, args[0]) };
+        element.through_template = std::ranges::contains(associative, *cls);
+        return element;
+    }
+    if (std::ranges::contains(maps, *cls) && args.size() >= 2) {
+        auto element { derived(type, std::format("std::pair<const {}, {}>", args[0], args[1])) };
+        element.through_template = true;
+        return element;
+    }
     // A json value's elements are json values (nlohmann's iter_impl gives a reference to one).
     if (*cls == "nlohmann::basic_json") return type;
     // A directory's iterators give its entries ([fs.class.directory.iterator]).
@@ -334,6 +372,18 @@ std::optional<std::size_t> Resolver::opening(std::size_t close) const {
     for (std::size_t k { close + 1 }; k-- > 0;) {
         if (is(k, close_kind)) ++depth;
         else if (is(k, open_kind) && --depth == 0) return k;
+    }
+    return std::nullopt;
+}
+
+std::optional<std::size_t> Resolver::opening_forward(std::size_t open) const {
+    if (!is(open, Kind::l_paren) && !is(open, Kind::l_square) && !is(open, Kind::l_brace)) return std::nullopt;
+    const Kind open_kind { t_[open].kind };
+    const Kind close_kind { is(open, Kind::l_paren) ? Kind::r_paren : is(open, Kind::l_brace) ? Kind::r_brace : Kind::r_square };
+    int depth { 0 };
+    for (std::size_t k { open }; k < t_.size(); ++k) {
+        if (is(k, open_kind)) ++depth;
+        else if (is(k, close_kind) && --depth == 0) return k;
     }
     return std::nullopt;
 }

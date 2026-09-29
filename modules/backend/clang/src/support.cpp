@@ -272,4 +272,21 @@ void CollectingConsumer::HandleDiagnostic(cl::DiagnosticsEngine::Level level, co
     errors.push_back(where + std::string { message.str() });
 }
 
+std::string plain_name(const cl::NamedDecl* d) {
+    // An unnamed namespace is `(anonymous namespace)`, as in its members' names: the plain style would
+    // give it `(anonymous)` as its own name, and so to everything's container in it.
+    if (const auto* ns = llvm::dyn_cast<cl::NamespaceDecl>(d); ns != nullptr && ns->isAnonymousNamespace()) {
+        const auto* parent = llvm::dyn_cast<cl::NamedDecl>(cl::Decl::castFromDeclContext(ns->getParent()));
+        const std::string prefix { parent != nullptr ? plain_name(parent) : std::string {} };
+        return prefix.empty() ? std::string { "(anonymous namespace)" } : prefix + "::(anonymous namespace)";
+    }
+    cl::PrintingPolicy policy { d->getASTContext().getLangOpts() };
+    policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
+    policy.AnonymousTagNameStyle = llvm::to_underlying(cl::PrintingPolicy::AnonymousTagMode::Plain);
+    std::string out;
+    llvm::raw_string_ostream os { out };
+    d->printQualifiedName(os, policy);
+    return out;
+}
+
 } // namespace mcxx::clang_backend
