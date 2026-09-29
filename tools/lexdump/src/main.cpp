@@ -11,7 +11,7 @@
 // T1, facts(syntax)), one JSON object: {"declarations": [...]} with MC3's members, as `mcxx-probe
 // --facts` prints the Clang backend's (tools/checks/declsdiff.py, M2.1).
 // mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
-// parsed every time; the process ending is the pass (A1.7.3). Prints the counts.
+// parsed every time, its outline and its facts taken; the process ending is the pass (A1.7.3). Prints the counts.
 // mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best.
 // mcxx-lexdump --directives FILE: the file's directive lines, as the lexer finds them (not in a raw
 // string or a comment), less #error, #warning and the #defines and #undefs after its last #include,
@@ -299,7 +299,7 @@ int fuzz(int rounds, int argc, char** argv) {
         "requires", "decltype(", "->", "...", "friend", "typedef", "extern \"C\"", "[[", "]]", "&&", "*", "\n",
     };
     std::mt19937_64 random { 20260929 };
-    std::size_t parses { 0 }, declarations { 0 };
+    std::size_t parses { 0 }, declarations { 0 }, facts { 0 };
     for (int i { 3 }; i < argc; ++i) {
         const std::string text { read(argv[i]) };
         for (int r { 0 }; r < rounds; ++r) {
@@ -318,10 +318,12 @@ int fuzz(int rounds, int argc, char** argv) {
             }
             const auto parsed = mcxx::frontend::parse(mutated, { .file = argv[i] });
             declarations += mcxx::frontend::symbols(parsed).size();
+            // And the facts the editor's quick gates read on every edit: types as text among them.
+            facts += mcxx::frontend::facts(parsed).declarations.size();
             ++parses;
         }
     }
-    std::println("{{\"parses\":{},\"symbols\":{}}}", parses, declarations);
+    std::println("{{\"parses\":{},\"symbols\":{},\"facts\":{}}}", parses, declarations, facts);
     return 0;
 }
 

@@ -44,6 +44,11 @@ struct Declaration {
     bool inline_namespace { false };
     bool va_list { false };            // its type is va_list: an array or a pointer, as the target has it
     bool in_lambda { false };          // declared in a lambda: a parameter, an init-capture, in its body
+    // Its type's tokens (indices into Syntax::pp.tokens), for its type as text (type_text()): the
+    // decl-specifiers [specifiers_begin, specifiers_end), the declarator [declarator_begin,
+    // declarator_end) with the declarator-id [id_begin, id_end) among them (an empty one: abstract).
+    // All zero where it has no type written (a namespace, a class, a structured binding).
+    std::uint32_t specifiers_begin { 0 }, specifiers_end { 0 }, declarator_begin { 0 }, declarator_end { 0 }, id_begin { 0 }, id_end { 0 };
     // Its [[mcpp::allow("ids", "reason")]] waivers (MC1 §7).
     std::vector<std::pair<std::string, std::string>> allows;
 };
@@ -579,7 +584,9 @@ private:
             const std::size_t type_start { i_ };
             const Scope type_scope { Context::block, {}, scope.parent, false, false };
             const Specifiers sp { specifiers(type_scope, type_start) };
+            const std::size_t specifiers_end { i_ };
             const Declarator d { declarator(type_scope) };
+            const std::size_t declarator_end { i_ };
             const std::pair flags { sp.pointer || d.star, sp.c_array || d.array };
             aliases_.insert_or_assign(std::string { tok(id).spelling }, flags);
             skip_statement_end();
@@ -588,6 +595,7 @@ private:
             const std::int32_t index { record(msa::Kind::type_alias, std::string { tok(id).spelling }, selection, begin, i_ - 1, scope, true, scope.listed, {}) };
             out_.declarations[static_cast<std::size_t>(index)].pointer = flags.first;
             out_.declarations[static_cast<std::size_t>(index)].c_array = flags.second;
+            typed(index, type_start, specifiers_end, specifiers_end, declarator_end, d);
             if (is(i_, Kind::semi)) ++i_;
             return;
         }
@@ -1084,7 +1092,9 @@ private:
     }
 
     void simple_declaration(const Scope& scope, std::size_t begin) {
+        const std::size_t specifiers_begin { i_ };
         const Specifiers sp { specifiers(scope, begin) };
+        const std::size_t specifiers_end { i_ };
         const bool typedef_ { sp.typedef_ }, static_ { sp.static_ }, friend_ { sp.friend_ }, void_ { sp.void_ };
         const std::int32_t made_class { sp.made_class };
         if (at_end(i_)) return;
@@ -1134,6 +1144,7 @@ private:
                 made.c_array = (d.array || sp.c_array) && !function;
                 made.va_list = sp.va_list && !d.pointer && !function;
                 if (typedef_) aliases_.insert_or_assign(d.id.spelled, std::pair { made.pointer, made.c_array });
+                typed(index, specifiers_begin, specifiers_end, declarator_start, i_, d);
             }
             // What a body or an initializer holds belongs to this declaration, or (a friend's) to the scope.
             const std::int32_t owner { recorded ? index : scope.parent };
@@ -1254,6 +1265,21 @@ private:
         out_.constructs.push_back({ what, static_cast<std::uint32_t>(first), static_cast<std::uint32_t>(last), owner, std::move(detail), std::move(to), array });
     }
 
+    // Where a declaration's type is written: its decl-specifiers and its declarator.
+    void typed(std::int32_t index, std::size_t specifiers_begin, std::size_t specifiers_end, std::size_t declarator_begin, std::size_t declarator_end,
+               const Declarator& d) {
+        if (index < 0) return;
+        auto& made = out_.declarations[static_cast<std::size_t>(index)];
+        made.specifiers_begin = static_cast<std::uint32_t>(specifiers_begin);
+        made.specifiers_end = static_cast<std::uint32_t>(specifiers_end);
+        made.declarator_begin = static_cast<std::uint32_t>(declarator_begin);
+        made.declarator_end = static_cast<std::uint32_t>(declarator_end);
+        if (d.ok) {
+            made.id_begin = static_cast<std::uint32_t>(d.id.begin);
+            made.id_end = static_cast<std::uint32_t>(d.id.end);
+        }
+    }
+
     std::string text_of(std::size_t from, std::size_t to) const {
         std::string out;
         for (std::size_t k { from }; k < to && k < t_.size(); ++k) {
@@ -1285,6 +1311,7 @@ private:
             } else if (!(end == k + 1 && word(k, "void")) && end > k) {
                 i_ = k;
                 const Specifiers sp { specifiers(scope, k) };
+                const std::size_t specifiers_end { std::min(i_, end) };
                 // An unnamed one is where its name would be, as Clang places it: the token after its
                 // declarator (a `,`, the `)`, a default argument's `=`).
                 std::size_t name_token { std::min(i_, end) };
@@ -1297,6 +1324,7 @@ private:
                 std::size_t last { std::min(i_, end) > k ? std::min(i_, end) - 1 : k };
                 if (is(i_, Kind::equal) && i_ < end) scan(i_ + 1, end, owner, false);
                 const std::int32_t index { record(msa::Kind::parameter, d.ok ? d.id.spelled : std::string {}, name_token, k, last, scope, true, false, {}) };
+                typed(index, k, specifiers_end, specifiers_end, std::min(i_, end), d);
                 auto& made = out_.declarations[static_cast<std::size_t>(index)];
                 made.pointer = sp.pointer || d.star;
                 made.c_array = d.array || sp.c_array;
@@ -1507,6 +1535,7 @@ private:
         i_ = k;
         const Scope scope { Context::block, {}, owner, false, false };
         const Specifiers sp { specifiers(scope, k) };
+        const std::size_t specifiers_end { i_ };
         if (!sp.type || sp.friend_ || i_ >= limit) {
             i_ = saved;
             return false;
@@ -1559,6 +1588,7 @@ private:
                 return true;
             }
             const std::int32_t index { record(sp.typedef_ ? msa::Kind::type_alias : msa::Kind::variable, d.id.spelled, d.id.last, k, i_ - 1, scope, true, false, {}) };
+            typed(index, k, specifiers_end, start, i_, d);
             out_.declarations[static_cast<std::size_t>(index)].pointer = sp.pointer || d.star;
             out_.declarations[static_cast<std::size_t>(index)].c_array = d.array || sp.c_array;
             out_.declarations[static_cast<std::size_t>(index)].va_list = sp.va_list && !d.pointer;
