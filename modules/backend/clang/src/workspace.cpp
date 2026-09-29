@@ -481,6 +481,11 @@ std::vector<std::string> derived_arguments(const msa::Command& command) {
     return clang_backend::normalize(absolute);
 }
 
+std::map<std::string, std::int64_t> census(const msa::Unit& unit) {
+    const auto* impl = dynamic_cast<const clang_backend::UnitImpl*>(&unit);
+    return impl != nullptr ? impl->census() : std::map<std::string, std::int64_t> {};
+}
+
 std::optional<msa::Command> inferred_command(std::span<const msa::Command> commands, std::string_view file) {
     std::map<std::string, msa::Command, std::less<>> byFile;
     for (const auto& c : commands) byFile.emplace(c.file, c);

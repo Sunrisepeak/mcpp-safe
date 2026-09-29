@@ -13,8 +13,9 @@ main = "src/main.cpp"
 openkal-llvm-runtime.workspace = true
 mcxx-base  = { path = "../../modules/base" }
 mcxx-msa   = { path = "../../modules/msa" }
-mcxx-backend = { path = "../../modules/backend" }
+mcxx-backend = { path = "../../modules/backend/semantic" }
 mcxx-lsp   = { path = "../../modules/lsp" }
+mcxx-plugin-wire = { path = "../../modules/plugin/wire" }   # --facts: MC3 JSON
 
 [dependencies.nlohmann]
 json.workspace = true

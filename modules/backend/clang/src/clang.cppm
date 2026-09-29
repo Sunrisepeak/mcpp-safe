@@ -32,4 +32,9 @@ std::vector<std::string> derived_arguments(const msa::Command& command);
 // common directory, then the same extension), with the file swapped in.
 std::optional<msa::Command> inferred_command(std::span<const msa::Command> commands, std::string_view file);
 
+// A unit's own declarations counted straight off Clang's AST, by Clang's declaration kind names
+// ("Var", "ParmVar", "CXXMethod", ...): the reference MSA's T1 facts are checked against (A0.4.3,
+// tools/checks/facts.py). Empty for a unit this backend did not parse.
+std::map<std::string, std::int64_t> census(const msa::Unit& unit);
+
 } // namespace mcxx::backend::clang

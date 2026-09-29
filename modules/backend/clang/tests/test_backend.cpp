@@ -197,6 +197,7 @@ int main() {
                                  "union U { int i; float f; };\n"
                                  "struct P { int a; };\n"
                                  "int trace(const char* format, ...);\n"
+                                 "using Callback = void (*)(int level);\n"
                                  "int sum(int* p, int n) {\n"
                                  "    int arr[LIMIT] = {};\n"
                                  "    std::vector<int> v;\n"
@@ -234,6 +235,8 @@ int main() {
         // The stand-in vector has a trivial constructor: `v` is as indeterminate as `pt`.
         expect(indeterminate == std::vector<std::string> { "v", "x", "pt" }) << std::format("{}: `P zero {{}}` is value-initialized, a static is zero-initialized", indeterminate);
         expect(std::ranges::count_if(f.declarations, [](const auto& d) { return d.c_variadic; }) == 1);
+        expect(std::ranges::none_of(f.declarations, [](const auto& d) { return d.qualified_name == "level"; }))
+            << "a parameter written in a function type is the type's, not a declaration of the file (MC3 §4.2)";
         expect(std::ranges::count_if(f.uses, [](const auto& u) { return u.construct == "asm"; }) == 1);
         std::vector<std::string> errors, warnings;
         for (const auto& d : unit->diagnostics()) (d.severity == msa::Severity::error ? errors : warnings).push_back(d.code);

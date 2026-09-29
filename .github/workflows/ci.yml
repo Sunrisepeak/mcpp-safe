@@ -95,6 +95,8 @@ jobs:
           MCXX_BINARY="$mcxx" MCXX_CLANG_HEADERS="$headers" "$XLINGS_HOME/bin/xlings" install mcxx:mcxx@0.1.0 -y
           python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
           python3 tools/checks/selfhost.py --work "$HOME/c-mcppls"
+          probe=$(realpath "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)")
+          python3 tools/checks/facts.py --corpus "$HOME/c-mcppls" --probe "$probe" --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 2
       - name: mcxx compose, end to end; the same plugin built with GCC 16 out of process
         run: |
           set -euo pipefail

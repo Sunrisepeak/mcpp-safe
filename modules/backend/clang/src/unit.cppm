@@ -560,6 +560,9 @@ public:
 
     // MC3 v0 facts of the file's own code (defined in :facts).
     const msa::fact::Facts& facts() const override;
+    // The file's own declarations counted by Clang's kind names, straight off the AST (A0.4.3's
+    // reference: a clang::RecursiveASTVisitor with Clang's defaults, not MSA's collector).
+    std::map<std::string, std::int64_t> census() const;
 
     // For completion: the parse this snapshot came from, used exclusively.
     template <class F>

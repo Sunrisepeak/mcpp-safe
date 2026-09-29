@@ -1,15 +1,18 @@
 // mcxx-probe: drive mcxx.lsp over libmc++'s backend from the command line.
 //
-//   mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...
+//   mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] FILE [LINE:COL METHOD]...
 //
 // Loads DIR/compile_commands.json, opens FILE, waits for its parse, prints its diagnostics, then
 // for each LINE:COL METHOD (1-based line and column, e.g. 12:5 hover) prints the service's answer.
-// With --index it also waits for the program index before asking.
+// With --index it also waits for the program index before asking; with --facts it prints the file's
+// MC3 facts, every kind, as JSON on standard output (specs/mc3-facts.md §4.11); with --census, the
+// declarations counted straight off Clang's AST by Clang's kind names (tools/checks/facts.py).
 import std;
 import nlohmann.json;
 import mcxx.msa;
 import mcxx.backend;
 import mcxx.lsp;
+import mcxx.plugin.wire;
 
 using Json = nlohmann::json;
 
@@ -49,6 +52,8 @@ double seconds_since(std::chrono::steady_clock::time_point t) { return std::chro
 int main(int argc, char** argv) {
     std::string db, resource, cache, file;
     bool index { false };
+    bool facts { false };
+    bool census { false };
     std::vector<std::pair<std::string, std::string>> asks;
     for (int i { 1 }; i < argc; ++i) {
         const std::string a { argv[i] };
@@ -56,6 +61,8 @@ int main(int argc, char** argv) {
         else if (a == "--resource" && i + 1 < argc) resource = argv[++i];
         else if (a == "--cache" && i + 1 < argc) cache = argv[++i];
         else if (a == "--index") index = true;
+        else if (a == "--facts") facts = true;
+        else if (a == "--census") census = true;
         else if (file.empty()) file = a;
         else if (i + 1 < argc) {
             asks.emplace_back(a, argv[i + 1]);
@@ -63,7 +70,7 @@ int main(int argc, char** argv) {
         }
     }
     if (db.empty() || file.empty()) {
-        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] FILE [LINE:COL METHOD]...");
+        std::println(std::cerr, "usage: mcxx-probe --db DIR --resource DIR --cache DIR [--index] [--facts] [--census] FILE [LINE:COL METHOD]...");
         return 2;
     }
     const auto started = std::chrono::steady_clock::now();
@@ -92,6 +99,12 @@ int main(int argc, char** argv) {
     service.open(uri, read(path), 1);
     const auto unit = service.unit(uri, true);
     std::println(std::cerr, "[{:7.2f}] parsed: {} occurrences", seconds_since(started), unit ? unit->occurrences().size() : 0);
+    if (facts && unit) std::println("{}", mcxx::plugin::wire::facts_to_json(unit->facts(), path, unit->module_name()).dump());
+    if (census && unit) {
+        Json counts = Json::object();
+        for (const auto& [kind, n] : mcxx::backend::census(*unit)) counts[kind] = n;
+        std::println("{}", Json { { "census", counts } }.dump());
+    }
     if (index) {
         while (true) {
             const auto s = workspace->status();

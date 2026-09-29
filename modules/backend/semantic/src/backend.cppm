@@ -19,4 +19,8 @@ std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) 
 // MC5 §6: what a unit's command says about its program, whichever form it came in.
 std::vector<std::string> derived_arguments(const msa::Command& command) { return clang::derived_arguments(command); }
 
+// A unit's declarations counted straight off the backend's AST, by its own kind names: a check's
+// reference, not an API to build on (A0.4.3).
+std::map<std::string, std::int64_t> census(const msa::Unit& unit) { return clang::census(unit); }
+
 } // namespace mcxx::backend

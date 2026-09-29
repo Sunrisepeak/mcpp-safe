@@ -4,6 +4,7 @@ module;
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/Attr.h>
 #include <clang/AST/DynamicRecursiveASTVisitor.h>
+#include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/StmtCXX.h>
 #include <clang/Lex/MacroInfo.h>
@@ -222,6 +223,11 @@ public:
 
     bool VisitNamedDecl(cl::NamedDecl* d) override {
         if (!wants(fact::Kinds::declarations)) return true;
+        // A parameter of a function; one written in a function type inside another declaration
+        // (`std::function<void(int level)>`) is part of that type (MC3 §4.2).
+        if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d);
+            parm != nullptr && !llvm::isa<cl::FunctionDecl, cl::BlockDecl, cl::ObjCMethodDecl>(parm->getDeclContext()))
+            return true;
         if (!llvm::isa<cl::VarDecl, cl::FieldDecl, cl::FunctionDecl, cl::TypedefNameDecl, cl::RecordDecl, cl::EnumDecl, cl::NamespaceDecl>(d)) return true;
         if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d); record && !record->isThisDeclarationADefinition()) return true;
         fact::Declaration decl;
@@ -555,6 +561,45 @@ fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kind
     }
     base::trace::count("facts.units");
     return facts;
+}
+
+namespace {
+
+// A0.4.3's reference count: Clang's own visitor, its defaults (no implicit code, no template
+// instantiations), each declaration by Clang's kind name. What makes a declaration the file's is
+// the only rule shared with MSA: its location is in the main file, it is not implicit, and a
+// parameter belongs to a function.
+class Census final : public cl::RecursiveASTVisitor<Census> {
+public:
+    explicit Census(const cl::SourceManager& sm) : sm_ { sm } {}
+    std::map<std::string, std::int64_t> counts;
+
+    bool TraverseDecl(cl::Decl* d) {
+        if (d != nullptr && !llvm::isa<cl::TranslationUnitDecl>(d) && (d->isImplicit() || !sm_.isInMainFile(sm_.getExpansionLoc(d->getLocation()))))
+            return true;
+        return cl::RecursiveASTVisitor<Census>::TraverseDecl(d);
+    }
+    bool VisitNamedDecl(cl::NamedDecl* d) {
+        if (const auto* p = llvm::dyn_cast<cl::ParmVarDecl>(d); p && !llvm::isa<cl::FunctionDecl, cl::BlockDecl>(p->getDeclContext())) return true;
+        if (const auto* r = llvm::dyn_cast<cl::RecordDecl>(d); r && !r->isThisDeclarationADefinition()) return true;
+        ++counts[d->getDeclKindName()];
+        return true;
+    }
+
+private:
+    const cl::SourceManager& sm_;
+};
+
+} // namespace
+
+std::map<std::string, std::int64_t> UnitImpl::census() const {
+    return pool_->run([&] {
+        std::lock_guard lock { mutex_ };
+        if (!ast_) return std::map<std::string, std::int64_t> {};
+        Census census { ast_->getSourceManager() };
+        census.TraverseDecl(ast_->getASTContext().getTranslationUnitDecl());
+        return std::move(census.counts);
+    });
 }
 
 // UnitImpl::facts: computed once, on the Workspace's Clang stack.

@@ -4,6 +4,8 @@
 |---|---|
 | `probe/` | `mcxx-probe`：用编译数据库驱动 libmc++ 的服务，方便开发和排查：`mcxx-probe --db 目录 --resource 目录 --cache 目录 [--index] 文件 [行:列 方法]...`。会打印计数器，支持 `MCXX_LOG` / `MCXX_TRACE` |
 | `conformance/` | `mcxx-conformance`：运行 `conformance/gates` 的门禁 fixture，统计每个特性的精确率和召回率，可输出 JSON |
+| `checks/corpus.py` | 语料检查（A0.5.1）：已构建语料的每个单元分别用 mcxx 和不含 MC++ 的 clang 23.1（llvm-clang-dev 的 `driver-smoke`）做 `-fsyntax-only`。要求 mcxx 零错误，编译器诊断和 clang 完全相同；MC++ 自己的诊断单独计数，不参与比较 |
+| `checks/facts.py` | T1 事实对照 Clang AST（A0.4.3）：语料自身的每个源文件，MSA 的声明（`mcxx-probe --facts`）和直接从 Clang AST 统计的声明（`--census`，Clang 自己的 RecursiveASTVisitor）按种类逐项相等 |
 | `checks/toolchain.py` | mcxx 作为 mcpp 的工具链（V0.6，MC5 §7）：用未经修改的 mcpp 和 `llvm@23.1.0-mcxx`（`xpkgs/` 的包）构建并运行一个模块程序，并确认代码是 clang 23.1 编译的 |
 | `checks/selfhost.py` | 自举（A0.5.3）：C-mcppls（mcpp-language-server 377d222）用 mcxx 作为工具链构建，并通过它自己的 `mcpp test`。json-brace-init 在语料里设为 warn：语料里有两处真实的这类问题 |
 | `payload/payload.py` | 不经过 xlings，直接组装 mcxx 的 llvm 族 payload（与 `xpkgs/pkgs/m/mcxx.lua` 的布局相同） |

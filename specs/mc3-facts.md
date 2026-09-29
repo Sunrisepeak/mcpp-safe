@@ -51,7 +51,7 @@ Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill eve
 
 ### 4.2 Declaration
 
-One per variable, field, parameter, function, type alias, class, union, enum and namespace the file's own code declares, excluding implicit declarations. <a id="MC3-4.2-1"></a><sup>MC3-4.2-1</sup>
+One per variable, field, parameter, function, type alias, class, union, enum and namespace the file's own code declares, excluding implicit declarations, declarations in a body the compiler writes (`= default`) and template instantiations (a template counts once, as written); a parameter is a function's, not one written in a function type inside another declaration (`std::function<void(int level)>`). <a id="MC3-4.2-1"></a><sup>MC3-4.2-1</sup>
 
 | Member | Type | Description |
 |---|---|---|
