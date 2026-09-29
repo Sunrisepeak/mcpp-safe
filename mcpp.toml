@@ -89,8 +89,8 @@ ldflags = ["-Wl,--error-limit=0", "-Wl,-pie", "-Wl,-z,pack-relative-relocs", "-W
 openkal-llvm-runtime = "0.15.2"
 # The C library, from speak-agent's fork: dlopen in a static program (MC4's in-process plugins,
 # `library =`). Named here, at the root, so it settles the graph: openkal-llvm-runtime asks for
-# ^0.19.2 by version, and the root's git declaration wins (0.19.5 satisfies it).
-openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.5" }
+# ^0.19.2 by version, and the root's git declaration wins (0.19.6 satisfies it).
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.6" }
 mcxx-driver            = { path = "modules/driver" }       # everything the driver does; this package only links plugins into it
 # MC++'s standard plugins, statically composed into this program (V0.5: no dlopen); `mcxx compose`
 # builds a package's compiler with its own static plugins added (MC4 §3, A0.6.1).
