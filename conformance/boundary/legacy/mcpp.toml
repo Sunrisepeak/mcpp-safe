@@ -1,0 +1,10 @@
+# A package with no dialect: what its interface exposes is its own business, until a safe module imports it.
+[package]
+name    = "boundary-legacy"
+version = "0.1.0"
+
+[targets.boundary-legacy]
+kind = "lib"
+
+[lib]
+path = "src/legacy.cppm"

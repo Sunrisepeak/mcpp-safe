@@ -24,3 +24,7 @@ c-array = "allow"
 [package.metadata.mcxx.namespaces."app::ffi"]
 raw-pointers = "allow"
 c-varargs = "allow"
+
+[package.metadata.mcxx.imports."vendor.zlib"]
+allow = ["c-array", "raw-pointers"]
+reason = "zlib's C interface, wrapped in app::compress"

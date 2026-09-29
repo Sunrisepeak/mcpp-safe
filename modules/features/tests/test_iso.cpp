@@ -145,6 +145,45 @@ int main() {
         expect(w.diagnostics.empty() && w.waived.size() == 1 && w.waived[0].reason == "a state machine");
     };
 
+    "what an import brings in across a dialect boundary is found at the import, at the importer's level (M1.2)"_test = [] {
+        fact::Facts f;
+        fact::Import im { { at(0), "" } };
+        im.module = "legacy";
+        fact::Import::Interface legacy { "legacy", true, {}, { { "c-array", "allow" } }, {} };
+        auto table = declaration(3, "legacy::Table");
+        table.c_array = table.exported = true;
+        table.type = "int[16]";
+        auto word = declaration(4, "legacy::Word");
+        word.is_union = word.exported = true;
+        legacy.exported = { table, word, table };
+        fact::Import::Interface trusted { "safe.lib", true, { "safe" }, { { "c-array", "deny" } }, { table } };
+        im.interfaces = { legacy, trusted, { "gone", false, {}, {}, {} } };
+        f.imports.push_back(im);
+        const auto result = run(f, "[package.metadata.mcxx]\nprofile = \"safe\"\n");
+        // What crosses from legacy (not from safe.lib, whose own dialect denies C arrays), and what is not
+        // known of `gone`: every feature the importer denies that reads imports.
+        expect(codes(result) == std::vector<std::string> { "c-array", "c-array", "union", "union", "c-varargs" }) << std::format("{}", codes(result));
+        expect(result.diagnostics.size() == 5 && result.diagnostics[0].range == at(0) && result.diagnostics[0].message.contains("`legacy::Table` (`int[16]`), and 1 more")
+               && result.diagnostics[0].message.contains("`import legacy [[mcpp::allow(\"c-array\")]];`"))
+            << (result.diagnostics.empty() ? "" : result.diagnostics[0].message);
+        expect(result.diagnostics.size() == 5 && result.diagnostics[1].message.contains("no MC2 interface of gone")) << "not known is not allowed";
+        const auto allowed = run(f, "[package.metadata.mcxx]\nprofile = \"safe\"\n[package.metadata.mcxx.features]\nunion = \"allow\"\n");
+        expect(codes(allowed) == std::vector<std::string> { "c-array", "c-array", "c-varargs" }) << "the importer's level decides";
+        fact::Facts waived { f };
+        waived.suppressions.push_back({ { at(0), "" }, { "c-array", "union", "c-varargs" }, "", "import legacy", "wrapped" });
+        const auto w = run(waived, "[package.metadata.mcxx]\nprofile = \"safe\"\n");
+        expect(w.diagnostics.empty() && w.waived.size() == 5) << "the import's waiver, audited";
+    };
+
+    "an import's allowance in the manifest is read, and an id nobody declares is reported"_test = [&] {
+        const auto c = config("[package.metadata.mcxx.imports.\"legacy\"]\nallow = [\"c-array\", \"c-arry\"]\nreason = \"a C library\"\n"
+                              "[package.metadata.mcxx.imports.\"broken\"]\nreason = \"no list\"\n");
+        expect(c.imports.size() == 2 && c.imports.at("legacy").ids == std::vector<std::string> { "c-array", "c-arry" } && c.imports.at("legacy").reason == "a C library");
+        expect(c.problems.size() == 1 && c.problems[0].contains("allow")) << std::format("{}", c.problems);
+        const auto plan = features::make_plan(c);
+        expect(std::ranges::count_if(plan.problems, [](const auto& p) { return p.contains("c-arry"); }) == 1);
+    };
+
     "what a configuration names and nobody provides is reported"_test = [&] {
         const auto result = run(facts, "[package.metadata.mcxx]\nprofile = \"saef\"\n[package.metadata.mcxx.features]\ngotoo = \"deny\"\n");
         expect(result.diagnostics.size() == 2) << result.diagnostics.size();

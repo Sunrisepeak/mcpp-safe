@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC5 |
-| Version | 0.1.1 |
+| Version | 0.2.0 |
 | Status | Draft |
 | Schema | [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json) |
 | Examples | [`examples/mc5-version.json`](examples/mc5-version.json) |
@@ -54,7 +54,7 @@ The command lines a build system is expected to use, and that the conformance of
 
 ## 5. `mcxx version`
 
-`mcxx version` prints one line, `mcxx <version> (clang <compiler version>)`. `mcxx version --json` prints an object that MUST validate against [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json): `mcxx` (its version), `compiler` (`name`, `version`), `specifications` (the versions of MC1, MC3, MC4 and MC5 it implements, and the MC4 protocol versions it speaks) and `providers` (the names of the active providers, MC4 §4). <a id="MC5-5-1"></a><sup>MC5-5-1</sup>
+`mcxx version` prints one line, `mcxx <version> (clang <compiler version>)`. `mcxx version --json` prints an object that MUST validate against [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json): `mcxx` (its version), `compiler` (`name`, `version`), `specifications` (the versions of MC1, MC2, MC3, MC4 and MC5 it implements, and the MC4 protocol versions it speaks) and `providers` (the names of the active providers, MC4 §4). <a id="MC5-5-1"></a><sup>MC5-5-1</sup>
 
 ## 6. Arguments of a unit in the semantic services
 

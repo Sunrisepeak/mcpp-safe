@@ -76,6 +76,7 @@ mcxx::ifc::Interface sample() {
     d.back().type = "const char[9] \"\\\n\t\x01 é";   // every kind of character an argument must carry
     d.push_back(decl(Kind::function, "operator\"\"_kb", r(31, 0, 31, 40), r(31, 5, 31, 18)));
     d.push_back(decl(Kind::parameter, "", r(31, 19, 31, 37), r(31, 37, 31, 37)));   // unnamed
+    unit.reexports = { "app:detail", "base" };
     return unit;
 }
 
@@ -96,6 +97,7 @@ int main() {
         expect(back->declarations.size() == unit.declarations.size());
         expect(back->module == "app:part" && back->source == unit.source && back->target == unit.target && back->cplusplus == 202302);
         expect(back->dialect == unit.dialect) << "profiles, feature levels and namespace levels (A1.1.4)";
+        expect(back->reexports == unit.reexports) << "what an importer also sees (MC2 1.1)";
         expect(!back->internal);
     };
 
@@ -157,6 +159,31 @@ int main() {
         expect(std::filesystem::last_write_time(path) == first);
         const auto back = mcxx::ifc::load(path);
         expect(back.has_value() && back->declarations.size() == sample().declarations.size());
+        std::filesystem::remove_all(dir);
+    };
+
+    "an interface is found beside its BMI, or kept in the store by the BMI's content"_test = [] {
+        const auto dir = std::filesystem::temp_directory_path() / std::format("mcxx-ifc-store-{}", std::random_device {}());
+        std::filesystem::create_directories(dir / "build" / "pcm.cache");
+        std::filesystem::create_directories(dir / "elsewhere");
+        mcxx::ifc::use_store((dir / "store").string());
+        const std::string bmi { (dir / "build/pcm.cache/app-part.pcm").string() };
+        std::ofstream { bmi, std::ios::binary } << "not really a BMI, but bytes to hash";
+        expect(!mcxx::ifc::save(mcxx::ifc::path_for(bmi), sample()).has_value());
+        const auto beside = mcxx::ifc::interface_for(bmi);
+        expect(beside != nullptr && beside->module == "app:part");
+        mcxx::ifc::note_written(bmi, mcxx::ifc::path_for(bmi));
+        mcxx::ifc::publish();
+        // A build that copied the BMI (mcpp's caches) has nothing beside it: the store has it.
+        const std::string copied { (dir / "elsewhere/app-part.pcm").string() };
+        std::filesystem::copy_file(bmi, copied);
+        std::string why;
+        const auto kept = mcxx::ifc::interface_for(copied, &why);
+        expect(kept != nullptr && kept->declarations.size() == sample().declarations.size()) << why;
+        const std::string other { (dir / "elsewhere/other.pcm").string() };
+        std::ofstream { other, std::ios::binary } << "a BMI no mcxx wrote an interface for";
+        expect(mcxx::ifc::interface_for(other, &why) == nullptr && why.contains("none kept")) << why;
+        mcxx::ifc::use_store({});
         std::filesystem::remove_all(dir);
     };
 

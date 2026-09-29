@@ -125,6 +125,8 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 | `suppressions` | `[[mcpp::allow("id, id2", "理由")]]`，范围是所在声明的整体范围，豁免因此和 Clang 路径一致 |
 | `macros`、`includes` | 来自预处理 |
 
+另外，`import_annotations(text)` 读出导入上的 `[[mcpp::allow(...)]]`（M1.2），`blank_import_annotations` 把它们换成空格、位置不变：Clang 不接受导入上的属性，宿主在 Clang 读文件之前用它。导入带进来什么要看对方的 BMI 和 `.ifc`，这一层读不到，所以快速门禁里 `imports` 不算作需要的事实，由解析后的结果补上。
+
 **门禁 fixture**：`mcxx-conformance --frontend`。由本前端取事实、同一个门禁引擎判定，13 个特性给出的发现和 fixture 完全一致：
 
 - asm、c-array、c-varargs、const-cast、exceptions、goto、include、macros、new-delete、raw-pointers、reinterpret-cast、rtti、union。

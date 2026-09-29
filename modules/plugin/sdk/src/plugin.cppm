@@ -241,6 +241,16 @@ const Feature* find_feature(std::string_view id);   // the active provider's
 // The facts inside a range (an attribute's declaration): what an attribute's rule reads (MC4 §2).
 msa::fact::Facts subtree(const msa::fact::Facts& facts, const msa::Range& range);
 
+// A dialect boundary (M1.2): what the file's imports bring in, as the imported modules' MC2 interfaces
+// say (fact::Import), that exhibits `feature` -- one finding per import, at the import: the first such
+// exported declaration and how many more. A module whose own dialect denies `feature` gated it itself
+// (what it exposes anyway it waived, and its audit says so), so what it brings in does not cross. A
+// module whose interface was not read may bring in anything: that is a finding too, "not known". The
+// finding is `feature`'s, so its level is the importer's, and `[[mcpp::allow("feature")]]` on the
+// import waives it. `what` names the thing ("a C array"); `exhibits` says whether a declaration is one.
+void report_imports(const msa::fact::Facts& facts, std::string_view feature, std::string_view what,
+                    const std::function<bool(const msa::fact::Declaration&)>& exhibits, std::vector<Finding>& out);
+
 // Every active filter in order, each over the previous one's text; a replacement that changes the
 // length or the line breaks is refused (reported, and that filter's output dropped).
 Filtered apply_source_filters(const SourceContext& context, std::string_view text);
@@ -493,7 +503,50 @@ msa::fact::Facts subtree(const msa::fact::Facts& facts, const msa::Range& range)
     copy(facts.includes, out.includes);
     copy(facts.suppressions, out.suppressions);
     copy(facts.attributes, out.attributes);
+    copy(facts.imports, out.imports);
     return out;
+}
+
+void report_imports(const msa::fact::Facts& facts, std::string_view feature, std::string_view what,
+                    const std::function<bool(const msa::fact::Declaration&)>& exhibits, std::vector<Finding>& out) {
+    for (const auto& im : facts.imports) {
+        const msa::fact::Declaration* first { nullptr };
+        std::string_view from;
+        std::size_t more { 0 };
+        std::vector<std::string_view> unknown;
+        for (const auto& in : im.interfaces) {
+            if (!in.found) {
+                unknown.push_back(in.module);
+                continue;
+            }
+            if (in.level(feature) == "deny") continue;
+            for (const auto& d : in.exported) {
+                if (!exhibits(d)) continue;
+                if (first == nullptr) {
+                    first = &d;
+                    from = in.module;
+                } else {
+                    ++more;
+                }
+            }
+        }
+        const std::string through { from.empty() || from == im.module ? std::string {} : std::format(" (through {})", from) };
+        if (first != nullptr)
+            out.push_back({ std::string { feature }, im.range,
+                            std::format("import of {} brings in {} across its dialect: `{}`{}{}{}", im.module, what, first->qualified_name,
+                                        first->type.empty() ? std::string {} : std::format(" (`{}`)", first->type), through,
+                                        more == 0 ? std::string {} : std::format(", and {} more", more)),
+                            im.container });
+        if (!unknown.empty()) {
+            std::string names;
+            for (const auto n : unknown) names += std::format("{}{}", names.empty() ? "" : ", ", n);
+            out.push_back({ std::string { feature }, im.range,
+                            std::format("import of {}: no MC2 interface of {} was found beside its BMI or in the store, so whether it brings in {} "
+                                        "is not known; build it with mcxx",
+                                        im.module, names, what),
+                            im.container });
+        }
+    }
 }
 
 const Feature* find_feature(std::string_view id) {

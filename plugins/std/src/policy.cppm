@@ -29,10 +29,10 @@ private:
         plugin::Feature { .id = std::string { RAW_POINTERS }, .category = plugin::Category::policy, .layer = "decl",
                           .summary = "a declaration whose type holds a raw pointer",
                           .fix = "use a reference, std::unique_ptr, std::shared_ptr, std::span or an index",
-                          .needs = msa::fact::Kinds::declarations },
+                          .needs = msa::fact::Kinds::declarations | msa::fact::Kinds::imports },
         plugin::Feature { .id = std::string { STD_VECTOR }, .category = plugin::Category::library, .layer = "decl",
                           .summary = "std::vector (a library-control sample)", .fix = "use the container the configuration names",
-                          .needs = msa::fact::Kinds::declarations | msa::fact::Kinds::declaration_types },
+                          .needs = msa::fact::Kinds::declarations | msa::fact::Kinds::declaration_types | msa::fact::Kinds::imports },
     };
 };
 
@@ -48,6 +48,11 @@ void Rules::check(const plugin::Context& context, std::vector<plugin::Finding>& 
         if (vector && std::ranges::find(d.templates, "std::vector") != d.templates.end())
             out.push_back({ std::string { STD_VECTOR }, d.name, std::format("`{}` uses std::vector (`{}`)", d.qualified_name, d.type), d.container });
     }
+    // What an import brings in from a module whose dialect does not deny it (M1.2).
+    if (pointers) plugin::report_imports(context.facts, RAW_POINTERS, "a raw pointer", [](const auto& d) { return d.pointer; }, out);
+    if (vector)
+        plugin::report_imports(context.facts, STD_VECTOR, "std::vector",
+                               [](const auto& d) { return std::ranges::find(d.templates, "std::vector") != d.templates.end(); }, out);
 }
 
 plugin::Registration<Rules> registration;

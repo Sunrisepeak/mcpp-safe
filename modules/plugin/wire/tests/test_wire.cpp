@@ -59,6 +59,19 @@ fact::Facts every_kind() {
     a.declaration = "app::kernel";
     a.kind = msa::Kind::function;
     f.attributes.push_back(a);
+    fact::Import im { { at(12), "" } };
+    im.module = "legacy";
+    im.name = at(12);
+    im.exported = true;
+    fact::Import::Interface in;
+    in.module = "legacy";
+    in.found = true;
+    in.profiles = { "safe" };
+    in.levels = { { "c-array", "allow" }, { "raw-pointers", "warn" } };
+    in.exported.push_back(d);
+    im.interfaces.push_back(in);
+    im.interfaces.push_back({ "legacy:detail", false, {}, {}, {} });
+    f.imports.push_back(im);
     return f;
 }
 
@@ -85,6 +98,9 @@ int main() {
         expect(back->declarations[0].kind == msa::Kind::type_alias && first["declarations"][0]["kind"] == "type-alias");
         expect(back->casts[0].to_scalar && back->includes[0].global_module_fragment && back->certainty == msa::Certainty::unknown);
         expect(back->attributes.size() == 1 && back->attributes[0].arguments == std::vector<std::string> { "gpu", "3" });
+        expect(back->imports.size() == 1 && back->imports[0].exported && back->imports[0].interfaces.size() == 2);
+        expect(back->imports[0].interfaces[0].level("raw-pointers") == "warn" && back->imports[0].interfaces[0].exported[0].c_array);
+        expect(!back->imports[0].interfaces[1].found);
     };
 
     "reading is strict: a missing or mistyped member is an error that names it"_test = [] {
@@ -101,7 +117,12 @@ int main() {
         Json old = j;
         old["mc3-version"] = "0.1.0";
         old.erase("attributes");
+        old.erase("imports");
+        for (auto& d : old["declarations"]) d.erase("local");
         expect(wire::facts_from_json(old).has_value()) << "an MC3 0.1.0 document still reads";
+        Json nested = j;
+        nested["imports"][0]["interfaces"][0]["exported"][0].erase("entity");
+        expect(!wire::facts_from_json(nested) && wire::facts_from_json(nested).error().contains("facts.imports[0].interfaces[0].exported[0].entity"));
         Json version = j;
         version["mc3-version"] = "9.0.0";
         expect(!wire::facts_from_json(version));

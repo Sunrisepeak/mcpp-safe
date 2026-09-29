@@ -1,0 +1,10 @@
+# profile safe, and raw pointers denied too: what a legacy interface exposes must be marked at the import.
+[package]
+name    = "boundary-app"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "safe"
+
+[package.metadata.mcxx.features]
+raw-pointers = "deny"

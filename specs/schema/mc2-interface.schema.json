@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc2-interface.schema.json",
-  "title": "MC2 1.0.0: a module unit's interface, as read back from the .ifc beside its BMI (mcxx-probe --read-ifc)",
+  "title": "MC2 1.1.0: a module unit's interface, as read back from the .ifc beside its BMI (mcxx-probe --read-ifc)",
   "type": "object",
   "required": [
     "module",
@@ -10,6 +10,7 @@
     "target",
     "cplusplus",
     "dialect",
+    "reexports",
     "declarations"
   ],
   "additionalProperties": false,
@@ -69,6 +70,13 @@
           "description": "The levels the package sets for namespaces: namespace, then feature id."
         }
       }
+    },
+    "reexports": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The modules the unit re-exports (export import), by full name (MC2 1.1.0)."
     },
     "declarations": {
       "type": "array",

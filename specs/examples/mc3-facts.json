@@ -1,5 +1,5 @@
 {
-  "mc3-version": "0.3.0",
+  "mc3-version": "0.4.0",
   "path": "/work/app/src/buffer.cppm",
   "module": "app.buffer",
   "certainty": "certain",
@@ -10,7 +10,8 @@
     "pointer-arithmetic",
     "includes",
     "suppressions",
-    "declaration-types"
+    "declaration-types",
+    "imports"
   ],
   "declarations": [
     {
@@ -211,5 +212,79 @@
     }
   ],
   "suppressions": [],
-  "attributes": []
+  "attributes": [],
+  "imports": [
+    {
+      "range": {
+        "begin": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 3,
+          "column": 13
+        }
+      },
+      "container": "",
+      "module": "legacy",
+      "name": {
+        "begin": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 13
+        }
+      },
+      "exported": false,
+      "interfaces": [
+        {
+          "module": "legacy",
+          "found": true,
+          "profiles": [],
+          "levels": {
+            "c-array": "allow",
+            "raw-pointers": "allow"
+          },
+          "exported": [
+            {
+              "range": {
+                "begin": {
+                  "line": 2,
+                  "column": 0
+                },
+                "end": {
+                  "line": 2,
+                  "column": 30
+                }
+              },
+              "container": "legacy",
+              "name": {
+                "begin": {
+                  "line": 2,
+                  "column": 5
+                },
+                "end": {
+                  "line": 2,
+                  "column": 12
+                }
+              },
+              "entity": "c:@N@legacy@F@address#&1I#",
+              "qualified-name": "legacy::address",
+              "kind": "function",
+              "type": "long *",
+              "templates": [],
+              "exported": true,
+              "c-array": false,
+              "pointer": true,
+              "union": false,
+              "c-variadic": false,
+              "local": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

@@ -1,6 +1,7 @@
 # conformance：一致性测试
 
 - `gates/`：门禁 fixture（下文）。
+- `boundary/`：跨模块的方言边界（M1.2，A1.2.1、A1.2.2），见 `boundary/README.md`，由 `tools/checks/boundary.py` 编译和检查。
 - `ifc/dialect/`：MC2 的方言 fixture（A1.1.4）：一个包设了 profile、包级别、模块级别和命名空间级别；每个模块单元的 `.ifc` 读回的方言必须等于 `expected.json`，并且列出目录里的每一个特性。由 `tools/checks/ifc.py` 编译和检查。
 - `traceability.json`：`specs/` 中每条规范要求（`MC<n>-<节>-<序号>`）对应的证据，由 `tools/checks/specs.py` 检查（见 `specs/README.md`）。
 

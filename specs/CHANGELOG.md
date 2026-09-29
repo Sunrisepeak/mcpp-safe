@@ -2,6 +2,23 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC1 0.3.0, MC2 1.1.0, MC3 0.4.0: the dialect boundary across imports (M1.2)
+
+- **MC3** 0.4.0: the kind `imports` (§4.13) -- each import of a named module, and what it brings in as
+  the modules' MC2 interfaces say (itself and what it re-exports): their dialects and exported T1
+  declarations, read from the .ifc, never from a source. Readers take 0.3.0 and older documents,
+  which have none.
+- **MC2** 1.1.0: `mcxx::reexport` (what an importer also sees); §7, a BMI's interface is also kept in
+  a store under the SHA-256 of the BMI's bytes, and a reader that finds none beside a BMI (a build
+  copied it, as mcpp's caches do) reads the store's. Readers take 1.0.0 files.
+- **MC1** 0.3.0: a waiver on an import, `import m [[mcpp::allow("id")]];` (blanked before Clang reads
+  the file), and the manifest's form, `[package.metadata.mcxx.imports."m"] allow = [...]`, for a build
+  tool whose scanner does not take an attribute on an import (§5, §7). The catalog's `mc1-version`.
+- **MC5** 0.2.0: `mcxx version --json` names MC2's version too. A successful compile keeps the
+  interfaces it wrote in MC2's store (MC2 §7).
+- **MC4**: `report_imports`, the SDK's helper with which a feature's rule finds what crosses into
+  the file at an import from a module whose own dialect does not deny it. Protocol version stays 1.
+
 ## 2026-09-29 — MC2 1.0.0: module interfaces in the IFC format
 
 - **MC2** (new): beside every BMI a compile writes, `X.ifc` in IFC format 0.43 -- the unit's T1

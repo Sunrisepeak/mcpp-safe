@@ -249,6 +249,15 @@ Scan scan(std::string_view text) {
                 token = lexer.next();
                 continue;
             }
+            // `import m [[attributes]];`: MC++'s annotation of an import (mcpp::allow, M1.2) is still the import.
+            if (!name.empty() && token.kind == Token::Kind::punct && token.text == "[") {
+                int brackets { 0 };
+                do {
+                    if (token.kind == Token::Kind::punct && token.text == "[") ++brackets;
+                    else if (token.kind == Token::Kind::punct && token.text == "]") --brackets;
+                    token = lexer.next();
+                } while (brackets > 0 && token.kind != Token::Kind::end);
+            }
             if (!name.empty() && token.kind == Token::Kind::punct && token.text == ";") {
                 if (std::ranges::find(result.imports, name) == result.imports.end()) {
                     result.imports.push_back(name);

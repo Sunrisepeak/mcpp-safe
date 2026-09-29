@@ -1,5 +1,5 @@
 {
-    "mc1-version": "0.2.0",
+    "mc1-version": "0.3.0",
     "providers": [
         {
             "name": "mc++.iso",
@@ -64,7 +64,8 @@
                 }
             ],
             "needs": [
-                "declarations"
+                "declarations",
+                "imports"
             ],
             "requires-declaration": "",
             "replaces": false,
@@ -111,7 +112,8 @@
             ],
             "needs": [
                 "declarations",
-                "uses"
+                "uses",
+                "imports"
             ],
             "requires-declaration": "",
             "replaces": false,
@@ -251,7 +253,8 @@
             "profiles": [],
             "needs": [
                 "declarations",
-                "declaration-types"
+                "declaration-types",
+                "imports"
             ],
             "requires-declaration": "",
             "replaces": false,
@@ -338,7 +341,8 @@
             "fix": "use a reference, std::unique_ptr, std::shared_ptr, std::span or an index",
             "profiles": [],
             "needs": [
-                "declarations"
+                "declarations",
+                "imports"
             ],
             "requires-declaration": "",
             "replaces": false,
@@ -426,7 +430,8 @@
                 }
             ],
             "needs": [
-                "declarations"
+                "declarations",
+                "imports"
             ],
             "requires-declaration": "",
             "replaces": false,

@@ -208,7 +208,8 @@ cl::ParsedAttrInfoRegistry::Add<ClaimedAttrInfo> claimed_registration { "mcxx-cl
 // file whose package gates nothing costs a manifest lookup (cached), no walk.
 class GateConsumer final : public cl::ASTConsumer {
 public:
-    GateConsumer(cl::CompilerInstance& ci, std::vector<plugin::Finding> filtered) : ci_ { ci }, filtered_ { std::move(filtered) } {}
+    GateConsumer(cl::CompilerInstance& ci, std::vector<plugin::Finding> filtered, std::vector<msa::fact::Suppression> import_waivers)
+        : ci_ { ci }, filtered_ { std::move(filtered) }, import_waivers_ { std::move(import_waivers) } {}
 
     void HandleTranslationUnit(cl::ASTContext& ctx) override {
         if (gates_suppressed || ci_.getDiagnostics().hasFatalErrorOccurred()) return;
@@ -240,6 +241,7 @@ public:
 private:
     cl::CompilerInstance& ci_;
     std::vector<plugin::Finding> filtered_;   // the source filters' findings (an extension's uses)
+    std::vector<msa::fact::Suppression> import_waivers_;   // `import m [[mcpp::allow("id")]];` (M1.2)
 
     // The active rules over the file's facts, at the levels its configuration gives.
     void check(cl::ASTContext& ctx, const std::string& path, const features::Plan& planned) {
@@ -267,6 +269,17 @@ private:
             base::trace::Span collect { "gates", "facts", path };
             facts = facts_of(ctx, &ci_.getPreprocessor(), selection.needs);
         }
+        facts.suppressions.insert(facts.suppressions.end(), import_waivers_.begin(), import_waivers_.end());
+        // The manifest's allowances for imports (MC1 §5): a waiver over each import of the module.
+        for (const auto& im : facts.imports)
+            if (const auto it = plan->config.imports.find(im.module); it != plan->config.imports.end()) {
+                msa::fact::Suppression s;
+                s.range = im.range;
+                s.ids = it->second.ids;
+                s.declaration = std::format("import {} ({})", im.module, fs::path { plan->config.manifest }.filename().generic_string());
+                s.reason = it->second.reason;
+                facts.suppressions.push_back(std::move(s));
+            }
         base::trace::Span rules { "gates", "rules", path };
         const features::Result result { features::evaluate({ path, module, facts }, *plan, selection, filtered_) };
         rules.note(std::format("{} rules", plan->catalog->rules.size()));
@@ -375,7 +388,8 @@ protected:
         // when it was precompiled. Gating the AST read back would report every finding twice (MC5-3-3).
         for (const auto& input : ci.getFrontendOpts().Inputs)
             if (input.getKind().getFormat() == cl::InputKind::Precompiled) return std::make_unique<cl::ASTConsumer>();
-        return std::make_unique<GateConsumer>(ci, filter_main_file(ci));
+        auto filtered = filter_main_file(ci);
+        return std::make_unique<GateConsumer>(ci, std::move(filtered), strip_import_annotations(ci));
     }
     bool ParseArgs(const cl::CompilerInstance&, const std::vector<std::string>&) override { return true; }
     ActionType getActionType() override { return AddAfterMainAction; }
@@ -419,7 +433,9 @@ msa::Workspace::Quick quick_gates(const std::string& path, std::string_view text
     // The features the reading decides: those decided from the kinds it fills.
     std::set<std::string, std::less<>> decided;
     for (const auto& entry : plan->catalog->features) {
-        const auto needs = std::to_underlying(entry.feature->needs);
+        // What an import brings in needs the imported BMIs (MC3 §4.13): not known before the parse, whose
+        // findings replace these. The rest of such a feature is decided here all the same.
+        const auto needs = std::to_underlying(entry.feature->needs) & ~std::to_underlying(msa::fact::Kinds::imports);
         if (needs != 0 && (needs & ~std::to_underlying(facts.collected)) == 0) decided.insert(entry.feature->id);
     }
     const std::string module { syntax.pp.module.name + (syntax.pp.module.partition.empty() ? "" : ":" + syntax.pp.module.partition) };

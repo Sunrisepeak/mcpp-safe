@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc1-config.schema.json",
-  "title": "MC1 0.1.0: [package.metadata.mcxx], read as JSON",
+  "title": "MC1 0.3.0: [package.metadata.mcxx], read as JSON",
   "type": "object",
   "$defs": {
     "level": {
@@ -151,6 +151,32 @@
           }
         ]
       }
+    },
+    "imports": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_.]*(:[A-Za-z_][A-Za-z0-9_.]*)?$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "allow"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "allow": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/feature-id"
+            },
+            "minItems": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "MC1 0.3.0: what an import of a module may bring in across the dialect boundary, waived over every import of it in the package (\u00a77)."
     }
   }
 }

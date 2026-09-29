@@ -71,6 +71,7 @@ import mcxx.msa;
 import mcxx.graph;
 import mcxx.base;
 import :support;
+import :ifc;
 
 namespace mcxx::clang_backend {
 
@@ -419,7 +420,9 @@ private:
         instance.createDiagnostics(&consumer, false);
         auto collector = std::make_shared<cl::DependencyCollector>();
         instance.addDependencyCollector(collector);
-        cl::GenerateReducedModuleInterfaceAction action;
+        // The interface beside the BMI (MC2), for an importer's parse to read: written to the BMI's
+        // final name, which the BMI takes once it is built.
+        InterfaceAction action { std::make_unique<cl::GenerateReducedModuleInterfaceAction>(), file, pcm };
         const auto started = std::chrono::steady_clock::now();
         const bool ok { instance.ExecuteAction(action) && !instance.getDiagnostics().hasErrorOccurred() };
         const auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();

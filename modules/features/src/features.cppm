@@ -17,6 +17,10 @@
 //   [package.metadata.mcxx.namespaces."app::detail"]  # a namespace and those inside it
 //   reinterpret-cast = "allow"
 //
+//   [package.metadata.mcxx.imports."legacy"]          # what an import may bring in (M1.2)
+//   allow = ["c-array", "raw-pointers"]
+//   reason = "the C library, wrapped"
+//
 // A declaration waives with [[mcpp::allow("id")]] or [[mcpp::allow("id", "why")]]. Precedence, the
 // most specific first: declaration > namespace > module > package > profiles > the feature's
 // default. Every waiver is recorded (audit); a feature that is not waivable stays what it is.
@@ -49,6 +53,15 @@ struct PluginEntry {
     bool is_static() const { return command.empty(); }
 };
 
+// `[package.metadata.mcxx.imports."legacy"]  allow = ["c-array"]  reason = "..."`: what an import of the
+// module may bring in across the dialect boundary (M1.2), in every file of the package. The manifest's
+// form of `import legacy [[mcpp::allow("c-array")]];`, for a build tool whose own scanner does not take
+// an attribute on an import (mcpp's). Recorded in the audit like any waiver.
+struct ImportAllowance {
+    std::vector<std::string> ids;
+    std::string reason;
+};
+
 struct Config {
     std::string manifest;                  // the mcpp.toml it was read from ("" = none found)
     std::vector<PluginEntry> plugins;
@@ -56,6 +69,7 @@ struct Config {
     LevelMap package;
     std::map<std::string, LevelMap, std::less<>> modules;
     std::map<std::string, LevelMap, std::less<>> namespaces;
+    std::map<std::string, ImportAllowance, std::less<>> imports;   // by module name, as imported ("m", "m:p")
     std::vector<std::string> problems;     // what could not be read: told as warnings, never ignored
 };
 

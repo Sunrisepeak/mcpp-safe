@@ -75,11 +75,11 @@ Rules::Rules()
           feature("const-cast", "[expr.const.cast]", "expr", K::casts,
                   "a const_cast: writing to a const object through it is undefined",
                   "make the object mutable where it is declared, or copy it", SAFE),
-          feature("union", "[class.union]", "decl", K::declarations,
+          feature("union", "[class.union]", "decl", K::declarations | K::imports,
                   "a union: reading a member that is not the active one is undefined", "use std::variant", SAFE),
-          feature("c-array", "[dcl.array]", "decl", K::declarations,
+          feature("c-array", "[dcl.array]", "decl", K::declarations | K::imports,
                   "a C array: unchecked bounds, and it decays to a pointer", "use std::array or std::vector", SAFE),
-          feature("c-varargs", "[dcl.fct] [cstdarg.syn]", "decl", K::declarations | K::uses,
+          feature("c-varargs", "[dcl.fct] [cstdarg.syn]", "decl", K::declarations | K::uses | K::imports,
                   "a C variadic function (`...`) or va_arg: a wrong type read is undefined",
                   "use a variadic template, std::initializer_list or std::span", SAFE),
           feature("uninitialized", "[dcl.init.general] [basic.indet]", "decl", K::initializations,
@@ -136,6 +136,10 @@ void Rules::check(const plugin::Context& context, std::vector<plugin::Finding>& 
         if (union_ && d.is_union) add("union", d, d.name, std::format("`{}` is a union", d.qualified_name));
         if (varargs && d.c_variadic) add("c-varargs", d, d.name, std::format("`{}` takes C varargs (`...`)", d.qualified_name));
     }
+    // What an import brings in from a module whose dialect does not deny it (M1.2).
+    if (c_array) plugin::report_imports(facts, "c-array", "a C array", [](const auto& d) { return d.c_array; }, out);
+    if (union_) plugin::report_imports(facts, "union", "a union", [](const auto& d) { return d.is_union; }, out);
+    if (varargs) plugin::report_imports(facts, "c-varargs", "a C variadic function", [](const auto& d) { return d.c_variadic; }, out);
     if (context.wants("uninitialized"))
         for (const auto& i : facts.initializations)
             if (i.indeterminate) add("uninitialized", i, i.name, std::format("`{}` (`{}`) is not initialized", i.variable, i.type));

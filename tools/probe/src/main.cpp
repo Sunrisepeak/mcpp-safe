@@ -114,6 +114,7 @@ int read_ifc(const std::string& path) {
     doc["target"] = unit->target;
     doc["cplusplus"] = unit->cplusplus;
     doc["dialect"] = Json { { "profiles", unit->dialect.profiles }, { "features", features }, { "namespaces", namespaces } };
+    doc["reexports"] = unit->reexports;
     doc["declarations"] = declarations_json(unit->declarations, unit->source, unit->module);
     std::println("{}", doc.dump());
     return 0;

@@ -38,6 +38,7 @@
 | **源码过滤器**（`SourceFilter`） | 在解析之前拿到原文和目标平台（`Target`），可以返回一份等长、换行不变的替换，宿主会检查这一点。也可以把自己扩展特性的使用报告成发现 | `[[mcpp::cfg]]`（报告 `ext:cfg`） |
 | **profile**（`Profile`） | 一组级别的名字：可以包含别的 profile，可以给一整个类别定级别，也可以按 id 给任何 provider 的特性定级别。特性也可以通过 `Feature::profiles` 自己加入某个 profile | `safe`、`modules`、`strict`、`portable`、`acme.device` |
 | **属性**（`AttributeSpec`） | 认领 `[[ns::name]]`：编译器接受它，每一处使用记为 MC3 事实（`fact::Attribute`：名字、参数、所在声明）；规则用 `plugin::subtree` 取得这个声明范围内的事实 | `[[acme::hot]]`（`plugins/examples/device`） |
+| **方言边界**（`report_imports`） | 规则判断导入带进来的东西：对方接口（MC2 `.ifc`）导出的声明里，对方方言不禁止、却表现出这个特性的，在导入处报一条；接口读不到时报"无法得知"。特性的 `needs` 加上 `imports` | `c-array`、`union`、`c-varargs`、`raw-pointers`、`lib:std.vector` |
 | **区域**（`AttributeSpec::region`） | 指定了 profile 的属性：在它所在的声明范围内，这个 profile 的级别更严时就用它的（MC1 §6） | `[[acme::device]]`：范围内禁止异常、RTTI、new/delete |
 
 ### 特性的类别：全部对插件开放

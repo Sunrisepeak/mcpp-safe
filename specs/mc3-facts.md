@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.3.0 |
+| Version | 0.4.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -49,6 +49,7 @@ Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill eve
 | `includes` | §4.9 | T2 |
 | `suppressions` | §4.10 | waivers (MC1 §7) |
 | `attributes` | §4.12 | the attributes providers claim (MC4 §2), where they are written (0.2.0) |
+| `imports` | §4.13 | the named modules the file imports, and what their MC2 interfaces say they bring in (0.4.0) |
 
 ### 4.2 Declaration
 
@@ -101,8 +102,12 @@ One per variable or member initialized by an initializer the file writes, and on
 
 ### 4.11 The JSON form
 
-A facts document is an object with `mc3-version` (`"0.3.0"`; a reader also takes `"0.2.0"`, whose declarations have no `local`, and `"0.1.0"`, which has no `attributes` either), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
+A facts document is an object with `mc3-version` (`"0.4.0"`; a reader also takes `"0.3.0"`, which has no `imports`, `"0.2.0"`, whose declarations have no `local` either, and `"0.1.0"`, which has no `attributes` either), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`, `imports`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
 
 ### 4.12 Attribute
 
 One per use of an attribute a provider claims (MC4 §2) on a declaration of the file: `name` (as claimed, `acme::hot`), `arguments` (as written; a string literal's contents without its quotes), `name-range` (where the attribute is written), and the declaration it is on: `entity`, `declaration` (qualified name), `kind`. Its `range` is the declaration's: what the attribute reaches. <a id="MC3-4.12-1"></a><sup>MC3-4.12-1</sup>
+
+### 4.13 Import
+
+One per import of a named module in the file's own code (`import m;`, `import :p;`, `export import m;`; not a header unit, not a module implementation unit's implicit import of its interface): `module` (its full name, `m` or `m:p`), `name` (where the name is written), `exported`, and `interfaces`: what the import brings in, as the modules' MC2 interfaces say -- the module first, then every module it re-exports (MC2 `mcxx::reexport`), each once. Each: `module`, `found` (its interface was read), and when found its dialect -- `profiles`, `levels` (feature id to level, for code in the module) -- and `exported`, its exported T1 declarations as §4.2 has them; their ranges are in that module's file. <a id="MC3-4.13-1"></a><sup>MC3-4.13-1</sup> A backend MUST read them from the interfaces, never from the modules' sources: the .ifc beside the BMI the compile imported, or the one kept for that BMI's content (MC2 §7). <a id="MC3-4.13-2"></a><sup>MC3-4.13-2</sup> An import's `range` is the declaration's; MC1's waiver on an import (MC1 §7) covers it. This is the one fact whose content is another module's: the boundary a rule decides on is at the import, in the file (MC4 `report_imports`).

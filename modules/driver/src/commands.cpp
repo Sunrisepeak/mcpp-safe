@@ -17,6 +17,7 @@ import mcxx.plugin.host;
 import mcxx.features;
 import mcxx.serve;
 import mcxx.backend;
+import mcxx.ifc;
 
 namespace mcxx::driver {
 
@@ -348,6 +349,17 @@ int check_database(std::vector<std::string> rest, const char* self) {
     return errors > 0 ? 1 : 0;
 }
 
+namespace {
+
+// A compile that ended well: the interfaces it wrote beside its BMIs are kept in the store under
+// the BMIs' content too (MC2), for a build that copies a BMI elsewhere (mcpp's caches).
+int compiled(int status) {
+    if (status == 0) mcxx::ifc::publish();
+    return status;
+}
+
+} // namespace
+
 int run(int argc, char** argv, std::vector<std::string> composed, std::string composition) {
     namespace compiler = mcxx::backend::compiler;
     plugin::host::set_composed(std::move(composed));
@@ -357,12 +369,12 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
         ~Flush() { mcxx::base::trace::flush(); }
     } flush;
     // Re-invoked by the compiler itself (-cc1, -cc1as): the compiler, whole.
-    if (argc > 1 && std::string_view { argv[1] }.starts_with("-cc1")) return compiler::run(argc, argv);
+    if (argc > 1 && std::string_view { argv[1] }.starts_with("-cc1")) return compiled(compiler::run(argc, argv));
     // Named as a compiler: the compiler, whole -- by the package's composed compiler when the
     // package declares static plugins this one was not composed with (MC4-3-4).
     if (!compiler::mode_for_name(base_name(argv[0])).empty()) {
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
-        return compiler::run(argc, argv);
+        return compiled(compiler::run(argc, argv));
     }
     if (argc < 2) {
         usage();
@@ -372,7 +384,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
     std::vector<std::string> rest(argv + 2, argv + argc);
     if (command == "c++" || command == "cc" || command == "check")
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
-    if (command == "c++" || command == "cc") return compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest));
+    if (command == "c++" || command == "cc") return compiled(compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest)));
     if (command == "check") {
         if (!rest.empty() && (rest.front() == "-p" || rest.front().starts_with("-p="))) return check_database(std::move(rest), argv[0]);
         rest.push_back("-fsyntax-only");
@@ -405,9 +417,9 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             const std::string full { compiler::version() };   // "clang 23.1.0"
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
-            std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.2.0\","
-                         "\"mc3\":\"0.3.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.1.1\",\"mc6\":1}},\"providers\":[{}]}}",
-                         VERSION, json_string(clang), providers);
+            std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.3.0\","
+                         "\"mc2\":\"{}\",\"mc3\":\"0.4.0\",\"mc4\":\"0.2.0\",\"mc4-protocols\":[1],\"mc5\":\"0.2.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         VERSION, json_string(clang), mcxx::ifc::MC2_VERSION, providers);
             return 0;
         }
         std::println("mcxx {} ({})", VERSION, compiler::version());

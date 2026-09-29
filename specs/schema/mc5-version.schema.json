@@ -36,6 +36,7 @@
       "type": "object",
       "required": [
         "mc1",
+        "mc2",
         "mc3",
         "mc4",
         "mc4-protocols",
@@ -44,6 +45,9 @@
       "additionalProperties": false,
       "properties": {
         "mc1": {
+          "type": "string"
+        },
+        "mc2": {
           "type": "string"
         },
         "mc3": {

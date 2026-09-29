@@ -34,7 +34,9 @@ module;
 #include <clang/Index/IndexSymbol.h>
 #include <clang/Index/IndexingAction.h>
 #include <clang/Index/IndexingOptions.h>
+#include <clang/Lex/HeaderSearch.h>
 #include <clang/Lex/Lexer.h>
+#include <clang/Lex/ModuleMap.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Lex/PreprocessorOptions.h>
 #include <clang/Sema/CodeCompleteConsumer.h>
@@ -75,6 +77,7 @@ module mcxx.backend.clang:facts;
 import mcxx.msa;
 import mcxx.graph;
 import mcxx.base;
+import mcxx.ifc;
 import :support;
 import :unit;
 
@@ -558,6 +561,71 @@ void collect_includes(cl::ASTContext& ctx, fact::Facts& facts) {
     }
 }
 
+// A module's BMI, as this compile loaded it ("" when it came from no file).
+std::string bmi_of(const cl::Module* m) {
+    if (m == nullptr) return {};
+    const cl::ModuleFileName* file { m->getASTFileName() };
+    if (file == nullptr || file->str().empty()) return {};
+    std::error_code ec;
+    return normalize_path(fs::absolute(file->str().str(), ec).generic_string());
+}
+
+// The file's imports of named modules, and what each brings in as the modules' MC2 interfaces say
+// -- the .ifc beside each BMI, or the store's copy -- following their re-exports: never a source
+// (M1.2, A1.2.2). A module is found by name among those this compile loaded.
+std::vector<fact::Import> imports_of(cl::ASTContext& ctx, const cl::Preprocessor* pp) {
+    std::vector<fact::Import> out;
+    const auto& sm = ctx.getSourceManager();
+    const cl::FileID main { sm.getMainFileID() };
+    const auto range_of = [&](cl::SourceRange r) { return source_range(sm, ctx.getLangOpts(), r, main); };
+    const auto loaded = [&](std::string_view name) -> const cl::Module* {
+        if (pp == nullptr) return nullptr;
+        return pp->getHeaderSearchInfo().getModuleMap().findModule(llvm::StringRef { name.data(), name.size() });
+    };
+    const auto visit = [&](const cl::ImportDecl* d, bool exported) {
+        const cl::Module* m { d->getImportedModule() };
+        if (d->isImplicit() || m == nullptr || !m->isNamedModule() || !sm.isInMainFile(sm.getExpansionLoc(d->getLocation()))) return;
+        fact::Import im;
+        im.range = range_of(d->getSourceRange()).value_or(Range {});
+        im.container = {};
+        im.module = m->getFullModuleName();
+        const auto locs = d->getIdentifierLocs();
+        if (!locs.empty()) {
+            const auto first = range_of({ locs.front(), locs.front() });
+            const auto last = range_of({ locs.back(), locs.back() });
+            if (first && last) im.name = { first->begin, last->end };
+        }
+        im.exported = exported;
+        std::vector<std::string> todo { im.module };
+        std::set<std::string> seen;
+        for (std::size_t i { 0 }; i < todo.size(); ++i) {
+            if (!seen.insert(todo[i]).second) continue;
+            fact::Import::Interface in;
+            in.module = todo[i];
+            const cl::Module* mod { i == 0 ? m : loaded(todo[i]) };
+            const std::string bmi { bmi_of(mod) };
+            const auto unit = bmi.empty() ? nullptr : ifc::interface_for(bmi);
+            if (unit) {
+                in.found = true;
+                in.profiles = unit->dialect.profiles;
+                for (const auto& f : unit->dialect.features) in.levels.emplace_back(f.id, f.level);
+                for (const auto& decl : unit->declarations)
+                    if (decl.exported) in.exported.push_back(decl);
+                for (const auto& r : unit->reexports) todo.push_back(r);
+            }
+            im.interfaces.push_back(std::move(in));
+        }
+        out.push_back(std::move(im));
+    };
+    for (const cl::Decl* d : ctx.getTranslationUnitDecl()->decls()) {
+        if (const auto* import = llvm::dyn_cast<cl::ImportDecl>(d)) visit(import, false);
+        else if (const auto* e = llvm::dyn_cast<cl::ExportDecl>(d))
+            for (const cl::Decl* inner : e->decls())
+                if (const auto* import = llvm::dyn_cast<cl::ImportDecl>(inner)) visit(import, true);
+    }
+    return out;
+}
+
 } // namespace
 
 // What the file's own code declares and does: the kinds in `needs` (a gate asks for what its
@@ -573,6 +641,7 @@ fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kind
         collector.TraverseDecl(ctx.getTranslationUnitDecl());
     }
     if (fact::contains(needs, fact::Kinds::includes)) collect_includes(ctx, facts);
+    if (fact::contains(needs, fact::Kinds::imports)) facts.imports = imports_of(ctx, pp);
     if (pp != nullptr && fact::contains(needs, fact::Kinds::macros)) {
         const auto& sm = ctx.getSourceManager();
         const cl::FileID main { sm.getMainFileID() };

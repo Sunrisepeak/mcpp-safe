@@ -1,0 +1,23 @@
+# profile safe with raw pointers denied, as app/; what `import legacy` brings in is allowed here, in the
+# manifest -- the form a build tool whose own scanner does not take an attribute on an import (mcpp's)
+# builds. Built by mcpp with mcxx as its toolchain (tools/checks/boundary.py --toolchain).
+[package]
+name    = "boundary-manifest"
+version = "0.1.0"
+
+[targets.boundary-manifest]
+kind = "bin"
+main = "src/main.cpp"
+
+[dependencies]
+boundary-legacy = { path = "../legacy" }
+
+[package.metadata.mcxx]
+profile = "safe"
+
+[package.metadata.mcxx.features]
+raw-pointers = "deny"
+
+[package.metadata.mcxx.imports."legacy"]
+allow = ["c-array", "c-varargs", "raw-pointers", "union"]
+reason = "the C logging library, wrapped in main"

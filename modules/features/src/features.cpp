@@ -117,6 +117,34 @@ Config parse_config(std::string_view manifest_text, std::string manifest_path) {
             read_levels(table.as_table(), (*into)[name], std::format("{}.{}.\"{}\"", where, key, name), config.problems);
         }
     }
+    if (const auto it = mcxx->find("imports"); it != mcxx->end()) {
+        if (!it->second.is_table()) config.problems.push_back(where + ": imports is not a table");
+        else
+            for (const auto& [name, value] : it->second.as_table()) {
+                const std::string at { std::format("{}.imports.\"{}\"", where, name) };
+                if (!value.is_table()) {
+                    config.problems.push_back(at + " is not a table");
+                    continue;
+                }
+                ImportAllowance allowance;
+                bool listed { false };
+                for (const auto& [key, v] : value.as_table()) {
+                    if (key == "allow" && v.is_array()) {
+                        listed = true;
+                        for (const auto& id : v.as_array()) {
+                            if (id.is_string()) allowance.ids.push_back(id.as_string());
+                            else config.problems.push_back(at + ": allow holds something that is not a feature id");
+                        }
+                    } else if (key == "reason" && v.is_string()) {
+                        allowance.reason = v.as_string();
+                    } else {
+                        config.problems.push_back(std::format("{}: {} is not something an import's entry has (allow, reason)", at, key));
+                    }
+                }
+                if (!listed) config.problems.push_back(at + ": allow, the list of feature ids, is missing");
+                config.imports.emplace(name, std::move(allowance));
+            }
+    }
     return config;
 }
 
@@ -211,6 +239,10 @@ Plan make_plan(Config config) {
     check_ids(catalog, c.package, where + ".features", plan.problems);
     for (const auto& [name, levels] : c.modules) check_ids(catalog, levels, std::format("{}.modules.\"{}\"", where, name), plan.problems);
     for (const auto& [name, levels] : c.namespaces) check_ids(catalog, levels, std::format("{}.namespaces.\"{}\"", where, name), plan.problems);
+    for (const auto& [name, allowance] : c.imports)
+        for (const auto& id : allowance.ids)
+            if (catalog.find(id) == nullptr)
+                plan.problems.push_back(std::format("{}.imports.\"{}\": `{}` is not a feature any linked provider declares", where, name, id));
 
     plan.wanted.resize(catalog.rules.size());
     plan.gates.reserve(catalog.features.size());
@@ -357,9 +389,12 @@ Result evaluate(const plugin::Context& context, const Plan& plan, const Selectio
             continue;
         }
         std::string message { std::format("{} [{}]", finding.message, feature.id) };
-        if (!feature.fix.empty()) message += std::format("; {}", feature.fix);
-        message += waiver != nullptr ? std::format("; {} cannot be waived", feature.id)
-                                     : std::format("; to allow it here, [[mcpp::allow(\"{}\")]] on the declaration", feature.id);
+        // At an import (M1.2): what crosses is waived on the import, `import m [[mcpp::allow("id")]];`.
+        const auto import = std::ranges::find(context.facts.imports, finding.range, &msa::fact::Import::range);
+        if (!feature.fix.empty() && import == context.facts.imports.end()) message += std::format("; {}", feature.fix);
+        message += waiver != nullptr                      ? std::format("; {} cannot be waived", feature.id)
+                   : import != context.facts.imports.end() ? std::format("; to allow it here, `import {} [[mcpp::allow(\"{}\")]];`", import->module, feature.id)
+                                                           : std::format("; to allow it here, [[mcpp::allow(\"{}\")]] on the declaration", feature.id);
         result.diagnostics.push_back({ finding.range, level == Level::deny ? msa::Severity::error : msa::Severity::warning, std::move(message),
                                        feature.id, "MC++ feature gate", {} });
     }
@@ -384,7 +419,7 @@ std::string catalog_json(const plugin::Catalog& catalog) {
             for (const auto& item : items) out += (out.empty() ? "" : ",") + json_string(item);
             return "[" + out + "]";
         };
-        std::string out { "{\"mc1-version\":\"0.2.0\",\"providers\":[" };
+        std::string out { "{\"mc1-version\":\"0.3.0\",\"providers\":[" };
         for (std::size_t i { 0 }; i < catalog.providers.size(); ++i) {
             const auto* p = catalog.providers[i].provider;
             out += std::format("{}{{\"name\":{},\"origin\":\"{}\",\"kind\":\"{}\"}}", i ? "," : "", json_string(p->name()), origin(p), kind(p));

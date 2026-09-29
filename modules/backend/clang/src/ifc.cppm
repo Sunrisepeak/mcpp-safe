@@ -10,10 +10,14 @@ module;
 #include <clang/Basic/SourceManager.h>
 #include <clang/Basic/TargetInfo.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendOptions.h>
+#include <clang/Frontend/MultiplexConsumer.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <clang/Lex/Preprocessor.h>
 
 #include <chrono>
+#include <filesystem>
 #include <cstdint>
 #include <format>
 #include <memory>
@@ -30,6 +34,7 @@ import mcxx.base;
 import mcxx.plugin;
 import mcxx.features;
 import mcxx.ifc;
+import mcxx.frontend;
 import :support;
 import :facts;
 
@@ -68,31 +73,113 @@ ifc::Dialect dialect_of(const features::Plan& plan, std::string_view module) {
     return dialect;
 }
 
-// At the end of a compile of a module unit that writes a BMI, and only if it has no error: X.ifc
-// beside X.pcm, unless it already says the same. A file that cannot be written is a warning: the
-// build has what it asked for, and an importer that needs the file says it is missing.
-void write_interface(cl::CompilerInstance& ci, cl::ASTContext& ctx, const std::string& path, const features::Plan& plan) {
-    const cl::Module* m { ctx.getCurrentNamedModule() };
-    if (m == nullptr || ci.getDiagnostics().hasErrorOccurred()) return;
-    const std::string bmi { bmi_output(ci) };
-    if (bmi.empty()) return;
-    base::trace::Span span { "ifc", "write", path, std::chrono::milliseconds { 200 } };
+// MC++'s annotations of the main file's imports, `import m [[mcpp::allow("id")]];` (M1.2): blanked
+// before Clang reads the file -- Clang refuses an attribute on an import -- and returned as waivers over
+// their import declarations. Every position stays where it was.
+std::vector<msa::fact::Suppression> strip_import_annotations(cl::CompilerInstance& ci) {
+    auto& sm = ci.getSourceManager();
+    const cl::FileID main { sm.getMainFileID() };
+    if (main.isInvalid()) return {};
+    const auto entry = sm.getFileEntryRefForID(main);
+    const auto buffer = sm.getBufferOrNone(main);
+    if (!entry || !buffer) return {};
+    const std::string_view text { buffer->getBuffer().data(), buffer->getBuffer().size() };
+    if (!text.contains("mcpp::allow") || !text.contains("import")) return {};
+    const auto annotations = frontend::import_annotations(text);
+    if (annotations.empty()) return {};
+    sm.overrideFileContents(*entry, llvm::MemoryBuffer::getMemBufferCopy(frontend::blank_import_annotations(text, annotations), buffer->getBufferIdentifier()));
+    std::vector<msa::fact::Suppression> out;
+    for (const auto& a : annotations) {
+        msa::fact::Suppression s;
+        s.range = a.range;
+        s.ids = a.ids;
+        s.declaration = "import " + a.module;
+        s.reason = a.reason;
+        out.push_back(std::move(s));
+    }
+    return out;
+}
+
+// The unit's interface: its T1 declarations, its dialect, what it re-exports (`export import`).
+ifc::Interface interface_of(cl::CompilerInstance& ci, cl::ASTContext& ctx, const cl::Module& m, const std::string& path, const features::Plan& plan) {
     ifc::Interface unit;
-    unit.module = m->getFullModuleName();
-    unit.internal = m->Kind == cl::Module::ModulePartitionImplementation;
+    unit.module = m.getFullModuleName();
+    unit.internal = m.Kind == cl::Module::ModulePartitionImplementation;
     unit.source = path;
     unit.target = ci.getTarget().getTriple().str();
     unit.cplusplus = cplusplus_of(ci.getLangOpts());
     unit.dialect = dialect_of(plan, unit.module);
     unit.declarations = ifc::interface_declarations(facts_of(ctx, &ci.getPreprocessor(), msa::fact::Kinds::declarations | msa::fact::Kinds::declaration_types));
-    const std::string out { ifc::path_for(bmi) };
+    for (const auto& e : m.Exports)
+        if (const cl::Module* x = static_cast<cl::Module*>(e.first); x != nullptr && x->isNamedModule()) unit.reexports.push_back(x->getFullModuleName());
+    return unit;
+}
+
+// Writes the unit's interface to `out`; false (with a warning) when it cannot.
+bool save_interface(cl::CompilerInstance& ci, cl::ASTContext& ctx, const std::string& path, const features::Plan& plan, const std::string& out) {
+    const cl::Module* m { ctx.getCurrentNamedModule() };
+    if (m == nullptr || ci.getDiagnostics().hasErrorOccurred()) return false;
+    base::trace::Span span { "ifc", "write", path, std::chrono::milliseconds { 200 } };
+    const ifc::Interface unit { interface_of(ci, ctx, *m, path, plan) };
     if (const auto error = ifc::save(out, unit)) {
         auto& diags = ci.getDiagnostics();
         diags.Report(diags.getCustomDiagID(cl::DiagnosticsEngine::Warning, "%0 [mcxx-ifc]")) << *error;
-        return;
+        return false;
     }
     span.note(std::format("{} declarations", unit.declarations.size()));
     base::trace::count("ifc.written");
+    return true;
 }
+
+// At the end of a compile of a module unit that writes a BMI, and only if it has no error: X.ifc
+// beside X.pcm, unless it already says the same; and, once the compile has succeeded, a copy in the
+// store under the BMI's content (the driver calls ifc::publish). A file that cannot be written is a
+// warning: the build has what it asked for, and an importer that needs the file says it is missing.
+void write_interface(cl::CompilerInstance& ci, cl::ASTContext& ctx, const std::string& path, const features::Plan& plan) {
+    const std::string bmi { bmi_output(ci) };
+    if (bmi.empty()) return;
+    const std::string out { ifc::path_for(bmi) };
+    if (!save_interface(ci, ctx, path, plan, out)) return;
+    std::error_code ec;
+    ifc::note_written(normalize_path(fs::absolute(bmi, ec).generic_string()), normalize_path(fs::absolute(out, ec).generic_string()));
+}
+
+// libmc++'s own BMI builds (the editor's, `mcxx check -p`'s): the interface beside the BMI they
+// write, so an importer's parse finds it there.
+class InterfaceWriter final : public cl::ASTConsumer {
+public:
+    InterfaceWriter(cl::CompilerInstance& ci, std::string path, std::string bmi) : ci_ { ci }, path_ { std::move(path) }, bmi_ { std::move(bmi) } {}
+    void HandleTranslationUnit(cl::ASTContext& ctx) override {
+        if (ci_.getDiagnostics().hasErrorOccurred()) return;
+        (void)save_interface(ci_, ctx, path_, *features::plan_for(path_), ifc::path_for(bmi_));
+    }
+
+private:
+    cl::CompilerInstance& ci_;
+    std::string path_;
+    std::string bmi_;
+};
+
+// A module build that also writes the interface beside `bmi`.
+class InterfaceAction final : public cl::WrapperFrontendAction {
+public:
+    InterfaceAction(std::unique_ptr<cl::FrontendAction> wrapped, std::string path, std::string bmi)
+        : cl::WrapperFrontendAction { std::move(wrapped) }, path_ { std::move(path) }, bmi_ { std::move(bmi) } {}
+
+protected:
+    std::unique_ptr<cl::ASTConsumer> CreateASTConsumer(cl::CompilerInstance& ci, llvm::StringRef in) override {
+        (void)strip_import_annotations(ci);   // no gates here: only what Clang must not see
+        std::vector<std::unique_ptr<cl::ASTConsumer>> both;
+        auto wrapped = cl::WrapperFrontendAction::CreateASTConsumer(ci, in);
+        if (!wrapped) return nullptr;
+        both.push_back(std::move(wrapped));
+        both.push_back(std::make_unique<InterfaceWriter>(ci, path_, bmi_));
+        return std::make_unique<cl::MultiplexConsumer>(std::move(both));
+    }
+
+private:
+    std::string path_;
+    std::string bmi_;
+};
 
 } // namespace mcxx::clang_backend

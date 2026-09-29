@@ -37,6 +37,9 @@ int main() {
         expect(c.modules.size() == 2 && c.modules.at("app.legacy") == features::LevelMap { { "goto", Level::allow }, { "c-array", Level::warn } });
         expect(c.modules.at("app.legacy:io") == features::LevelMap { { "c-array", Level::allow } });
         expect(c.namespaces.size() == 1 && c.namespaces.at("app::ffi") == features::LevelMap { { "raw-pointers", Level::allow }, { "c-varargs", Level::allow } });
+        expect(c.imports.size() == 1 && c.imports.at("vendor.zlib").ids == std::vector<std::string> { "c-array", "raw-pointers" }
+               && c.imports.at("vendor.zlib").reason.contains("zlib"));
+        expect(c.problems.empty()) << std::format("{}", c.problems);
     };
 
     "keys this version does not define are ignored, not errors"_test = [] {

@@ -188,5 +188,26 @@ module :private;
         expect(f::preprocess("#bogus\n").diagnostics.size() == 1);
     };
 
+    "an import's [[mcpp::allow]] is read, and blanked for Clang with every position kept (M1.2)"_test = [] {
+        const std::string text { "export module app;\n"
+                                 "import legacy [[mcpp::allow(\"c-array, raw-pointers\", \"a C library\")]];\n"
+                                 "export import app.io:detail [[mcpp::allow(\"union\")]];\n"
+                                 "import :part [[mcpp::allow(\"c-varargs\")]];\n"
+                                 "import other [[deprecated]];\n"
+                                 "import plain;\n"
+                                 "#define X import fake [[mcpp::allow(\"goto\")]];\n"
+                                 "// import commented [[mcpp::allow(\"goto\")]];\n" };
+        const auto a = f::import_annotations(text);
+        expect(fatal(a.size() == 3)) << a.size();
+        expect(a[0].module == "legacy" && a[0].ids == std::vector<std::string> { "c-array", "raw-pointers" } && a[0].reason == "a C library");
+        expect(a[0].range.begin == mcxx::msa::Position { 1, 0 } && a[0].range.end.line == 1);
+        expect(a[1].module == "app.io:detail" && a[1].ids == std::vector<std::string> { "union" } && a[1].range.begin == mcxx::msa::Position { 2, 0 })
+            << "export import: the declaration from `export`";
+        expect(a[2].module == ":part" && a[2].reason.empty());
+        const std::string blank { f::blank_import_annotations(text, a) };
+        expect(blank.size() == text.size() && std::ranges::count(blank, '\n') == std::ranges::count(text, '\n'));
+        expect(blank.contains("import legacy ") && !blank.contains("c-array") && blank.contains("[[deprecated]]") && blank.contains("fake [[mcpp::allow"));
+    };
+
     return report();
 }

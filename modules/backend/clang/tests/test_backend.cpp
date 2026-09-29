@@ -248,6 +248,41 @@ int main() {
     };
 
 
+    "a safe module importing what its dialect denies is told so at the import, or waives it there (M1.2)"_test = [] {
+        Program p { "boundary" };
+        std::filesystem::create_directories(p.root / "legacy");
+        std::filesystem::create_directories(p.root / "app");
+        std::ofstream { p.root / "legacy/mcpp.toml" } << "[package]\nname = \"legacy\"\nversion = \"0.1.0\"\n";
+        std::ofstream { p.root / "app/mcpp.toml" } << "[package]\nname = \"app\"\nversion = \"0.1.0\"\n[package.metadata.mcxx]\nprofile = \"safe\"\n"
+                                                      "[package.metadata.mcxx.features]\nraw-pointers = \"deny\"\n";
+        p.file("legacy/legacy.cppm", "export module legacy;\nexport int* address();\nexport using Table = int[3];\nexport int sum(int n, ...);\n"
+                                     "int hidden[4];\n");
+        const std::string plain_text { "import legacy;\nint use() { return 0; }\n" };
+        const std::string plain { p.file("app/plain.cpp", plain_text) };
+        const std::string waived_text { "import legacy [[mcpp::allow(\"c-array, raw-pointers, c-varargs\", \"a C library\")]];\nint use2() { return 0; }\n" };
+        const std::string waived { p.file("app/waived.cpp", waived_text) };
+        auto w = workspace_for(p);
+        auto u = w->parse(plain, plain_text, 1);
+        expect(fatal(u != nullptr));
+        std::vector<std::string> errors;
+        for (const auto& d : u->diagnostics())
+            if (d.severity == msa::Severity::error) {
+                errors.push_back(d.code);
+                expect(d.range.begin.line == 0 && d.message.contains("import of legacy brings in")) << d.message;
+            }
+        std::ranges::sort(errors);
+        expect(errors == std::vector<std::string> { "c-array", "c-varargs", "raw-pointers" }) << std::format("{}", errors);
+        const auto& imports = u->facts().imports;
+        expect(imports.size() == 1 && imports[0].module == "legacy" && imports[0].interfaces.size() == 1 && imports[0].interfaces[0].found);
+        expect(imports.size() == 1 && std::ranges::none_of(imports[0].interfaces[0].exported, [](const auto& d) { return d.qualified_name == "hidden"; }))
+            << "what the module does not export does not cross";
+        auto v = w->parse(waived, waived_text, 1);
+        expect(fatal(v != nullptr));
+        std::vector<std::string> left;
+        for (const auto& d : v->diagnostics()) left.push_back(std::format("{} {}", d.code, d.message));
+        expect(left.empty()) << std::format("waived on the import, and Clang never sees the attribute: {}", left);
+    };
+
     "an editor's parse of an interface writes no .ifc: only a compile that writes a BMI does (MC2-2-1)"_test = [] {
         Program p { "noifc" };
         const std::string text { "export module lonely;\nexport int lonely_value() { return 1; }\n" };

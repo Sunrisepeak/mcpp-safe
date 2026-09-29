@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC1 |
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft |
 | Schemas | [`schema/mc1-config.schema.json`](schema/mc1-config.schema.json), [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json), [`schema/mc1-audit.schema.json`](schema/mc1-audit.schema.json) |
 | Examples | [`examples/mc1-config.toml`](examples/mc1-config.toml) with [`examples/mc1-config.json`](examples/mc1-config.json), [`examples/mc1-catalog.json`](examples/mc1-catalog.json), [`examples/mc1-audit.jsonl`](examples/mc1-audit.jsonl) |
@@ -111,6 +111,10 @@ goto = "allow"
 
 [package.metadata.mcxx.namespaces."app::detail"]  # a namespace's levels (and those inside it)
 reinterpret-cast = "allow"
+
+[package.metadata.mcxx.imports."legacy"]          # what an import of a module may bring in (§7)
+allow = ["c-array", "raw-pointers"]
+reason = "the C library, wrapped"
 ```
 
 | Key | Type | Description |
@@ -119,8 +123,9 @@ reinterpret-cast = "allow"
 | `features` | table: id → level | The package's levels. |
 | `modules` | table: module name → (id → level) | A named module's levels. A partition `m:p` takes `m`'s, and then its own if `m:p` is listed. <a id="MC1-5-2"></a><sup>MC1-5-2</sup> |
 | `namespaces` | table: qualified name → (id → level) | A namespace's levels; they apply to the namespaces nested in it. <a id="MC1-5-3"></a><sup>MC1-5-3</sup> |
+| `imports` | table: module name → { `allow`: id[], `reason`: string } | A waiver over every import of the module in the package's files (§7, 0.3.0). |
 
-A compiler MUST report, as a warning and never silently ignore: a value that is not a level; a feature id that no provider it has declares; a profile that no provider defines and no feature joins; a `profile` that is neither a string nor a list of strings. <a id="MC1-5-4"></a><sup>MC1-5-4</sup> Other keys of `[package.metadata.mcxx]` are reserved for later versions and SHOULD be ignored. <a id="MC1-5-5"></a><sup>MC1-5-5</sup>
+A compiler MUST report, as a warning and never silently ignore: a value that is not a level; a feature id that no provider it has declares (in `imports` too); an `imports` entry without `allow`; a profile that no provider defines and no feature joins; a `profile` that is neither a string nor a list of strings. <a id="MC1-5-4"></a><sup>MC1-5-4</sup> Other keys of `[package.metadata.mcxx]` are reserved for later versions and SHOULD be ignored. <a id="MC1-5-5"></a><sup>MC1-5-5</sup>
 
 ## 6. Which level applies
 
@@ -141,6 +146,8 @@ A declaration waives gates with the attribute `[[mcpp::allow("id")]]`, `[[mcpp::
 - A waiver of a feature that is not waivable MUST NOT change its level; the diagnostic says that it cannot be waived. <a id="MC1-7-3"></a><sup>MC1-7-3</sup>
 - A waiver that names an id no provider declares MUST be reported as a warning at the attribute. <a id="MC1-7-4"></a><sup>MC1-7-4</sup>
 - Every finding a waiver waives MUST be recorded as a waiver (§8); a waiver is never silent. <a id="MC1-7-5"></a><sup>MC1-7-5</sup>
+
+An import brings in what another module's interface exposes (MC3 §4.13), and a feature's rule may find it at the import (MC4 `report_imports`): what crosses a dialect boundary. Such a finding is waived on the import: `import legacy [[mcpp::allow("c-array, raw-pointers", "reason")]];` -- the same arguments as on a declaration, its range the import declaration -- or, for a build tool whose own dependency scanner does not take an attribute on an import (mcpp's), by the package's `imports` table (§5), over every import of that module in the package. A compiler MUST accept both, and MUST NOT pass the attribute on an import to a compiler that refuses it (Clang does: it is blanked, every position kept). <a id="MC1-7-6"></a><sup>MC1-7-6</sup> The audit names the waiver `import legacy`, and `import legacy (mcpp.toml)` for the table's.
 
 ## 8. Audit
 

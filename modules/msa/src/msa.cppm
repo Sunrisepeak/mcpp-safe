@@ -377,6 +377,30 @@ struct Suppression : Place {
     std::string reason;               // an optional second form: [[mcpp::allow("id", "reason")]]
 };
 
+// An import of a named module (`import m;`, `export import m:p;`) in the file's own code, and what it
+// brings in as the modules' MC2 interfaces say -- the .ifc beside each BMI, never their sources: the
+// module and every module it re-exports, each with its dialect and its exported declarations. Their
+// declarations' ranges are in their own files. A dialect boundary is decided from these (M1.2).
+struct Import : Place {
+    std::string module;               // as named: "legacy", "app:part"
+    Range name;                       // the module's name as written
+    bool exported { false };          // `export import`
+    struct Interface {
+        std::string module;
+        bool found { false };         // its interface was read; otherwise nothing below is known
+        std::vector<std::string> profiles;                        // its dialect: the profiles
+        std::vector<std::pair<std::string, std::string>> levels;  // and each feature's level for code in it
+        std::vector<Declaration> exported;                        // its exported T1 declarations
+        // The level its own dialect gives `feature` ("" when it does not say: unknown to its catalog).
+        std::string_view level(std::string_view feature) const {
+            for (const auto& [id, l] : levels)
+                if (id == feature) return l;
+            return {};
+        }
+    };
+    std::vector<Interface> interfaces;   // the module first, then what it re-exports
+};
+
 // The kinds of facts, as a set: what a feature is decided from (plugin::Feature::needs), and so
 // what a host asks a backend to collect. A file whose gates need none of them is not walked.
 enum class Kinds : std::uint32_t {
@@ -396,7 +420,8 @@ enum class Kinds : std::uint32_t {
     // flag marks (c_array, pointer) and `templates` is empty.
     declaration_types = 1u << 10,
     attributes = 1u << 11,
-    all = (1u << 12) - 1,
+    imports = 1u << 12,
+    all = (1u << 13) - 1,
 };
 constexpr Kinds operator|(Kinds a, Kinds b) { return static_cast<Kinds>(std::to_underlying(a) | std::to_underlying(b)); }
 constexpr Kinds& operator|=(Kinds& a, Kinds b) { return a = a | b; }
@@ -410,6 +435,7 @@ inline constexpr std::pair<Kinds, std::string_view> KIND_NAMES[] {
     { Kinds::macros, "macros" },               { Kinds::uses, "uses" },
     { Kinds::includes, "includes" },           { Kinds::suppressions, "suppressions" },
     { Kinds::declaration_types, "declaration-types" }, { Kinds::attributes, "attributes" },
+    { Kinds::imports, "imports" },
 };
 std::vector<std::string_view> names(Kinds set) {
     std::vector<std::string_view> out;
@@ -437,6 +463,7 @@ struct Facts {
     std::vector<Include> includes;
     std::vector<Suppression> suppressions;
     std::vector<Attribute> attributes;
+    std::vector<Import> imports;
 };
 
 } // namespace fact

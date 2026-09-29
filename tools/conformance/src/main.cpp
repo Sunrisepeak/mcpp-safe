@@ -194,7 +194,10 @@ int main(int argc, char** argv) {
                                      msa::fact::Kinds::allocations | msa::fact::Kinds::casts | msa::fact::Kinds::uses | msa::fact::Kinds::suppressions;
             const auto decided = [&](std::string_view id) {
                 const auto* f = mcxx::plugin::find_feature(id);
-                return f != nullptr && f->needs != msa::fact::Kinds::none && (std::to_underlying(f->needs) & ~std::to_underlying(covered)) == 0;
+                // What an import brings in needs BMIs (MC3 §4.13), which no syntax-level reading has: the
+                // rest of such a feature is what the front end decides.
+                const auto needs = std::to_underlying(f != nullptr ? f->needs : msa::fact::Kinds::none) & ~std::to_underlying(msa::fact::Kinds::imports);
+                return f != nullptr && needs != 0 && (needs & ~std::to_underlying(covered)) == 0;
             };
             const auto partial = [&](std::string_view id) {
                 const auto* f = mcxx::plugin::find_feature(id);

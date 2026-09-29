@@ -22,6 +22,13 @@ int main() {
         expect(implPart.provides_interface()) << "an implementation partition is importable by its module";
     };
 
+    "an import with attributes is an import (M1.2)"_test = [] {
+        const auto s = scan("module;\nexport module app;\nimport legacy [[mcpp::allow(\"c-array, raw-pointers\", \"why\")]];\n"
+                            "export import :part [[mcpp::allow(\"union\")]];\nimport plain;\n");
+        expect(s.imports == std::vector<std::string> { "legacy", "app:part", "plain" });
+        expect(s.exported_imports == std::vector<std::string> { "app:part" });
+    };
+
     "what is not a declaration"_test = [] {
         const auto s = scan("// import x;\n/* export module y; */\nconst char* s = \"import z;\";\n"
                             "auto r = R\"(import w;)\";\nnamespace n { import v; }\n#define M import u;\nint import_count;\n");

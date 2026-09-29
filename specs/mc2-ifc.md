@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC2 |
-| Version | 1.0.0 |
+| Version | 1.1.0 |
 | Status | Draft |
 | Schema | [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) (an interface as read back) |
 | Examples | [`examples/mc2-interface.json`](examples/mc2-interface.json) (`conformance/ifc/dialect`'s `dialect.ifc`, read back) |
@@ -77,24 +77,33 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 
 | Item | Arguments | Says |
 |---|---|---|
-| `mcxx::mc2` | the MC2 version (`"1.0.0"`) | the file is MC2's; exactly one |
+| `mcxx::mc2` | the MC2 version (`"1.1.0"`) | the file is MC2's; exactly one |
 | `mcxx::target` | the target triple | the compile's target (absent when unknown) |
 | `mcxx::profile` | a profile | one per profile of the unit's package (MC1 §4), in order |
 | `mcxx::feature` | a feature id, a level | one per feature of the catalog the unit was compiled with: its level for code in the module, before any namespace's or declaration's (MC1 §6) |
 | `mcxx::namespace_feature` | a namespace, a feature id, a level | one per level the package sets for a namespace (MC1 §6) |
+| `mcxx::reexport` | a module's full name (`m`, `m:p`) | one per module the unit re-exports (`export import`): what an importer of the unit also sees (1.1.0) |
 
 ## 6. Reading
 
 - A reader MUST reject a file whose signature, format version or content hash is not §2's, and any offset or index outside the file; it MUST NOT end the process on a malformed file. <a id="MC2-6-1"></a><sup>MC2-6-1</sup>
-- A reader of MC2 1.x MUST reject a file without exactly one `mcxx::mc2` whose major version is 1, a dialect item or an MC2 attribute it does not know, and a declaration whose sort is not its kind's (§3). <a id="MC2-6-2"></a><sup>MC2-6-2</sup>
+- A reader of MC2 1.x MUST reject a file without exactly one `mcxx::mc2` whose major version is 1, a dialect item or an MC2 attribute it does not know, and a declaration whose sort is not its kind's (§3). <a id="MC2-6-2"></a><sup>MC2-6-2</sup> A 1.1 reader reads 1.0 files, which have no `mcxx::reexport`.
 - Read back, the declarations MUST equal the unit's T1 declarations item by item and field by field, in the facts' order (their `local` is false). <a id="MC2-6-3"></a><sup>MC2-6-3</sup>
 
-## 7. The JSON form
+## 7. Finding a BMI's interface
 
-`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id) and `declarations` as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
+A build may copy a BMI where nothing beside it is copied: mcpp's build caches keep the BMIs of dependencies and of `std`, and a later build of another project gets a copy of the BMI alone. So the interface is also kept by the BMI's content:
 
-## 8. Rationale
+- A compile that wrote an interface beside a BMI and then ended without an error MUST keep a copy of it in the store, named by the SHA-256 of the BMI's bytes (`<store>/<64 hex digits>.ifc`). The store is `$MCXX_IFC_STORE`, else `$XDG_CACHE_HOME/mcxx/ifc`, else `~/.cache/mcxx/ifc`; a host may name its own. <a id="MC2-7-1"></a><sup>MC2-7-1</sup>
+- A reader looking for the interface of a BMI MUST read the file beside it, and when there is none, the store's copy for the BMI's content. When neither exists the interface is not known, which is not the same as empty (MC3 §4.13). <a id="MC2-7-2"></a><sup>MC2-7-2</sup> A BMI's digest may be remembered by its path, size and modification time (`<store>/by-path/`), so that a large BMI (`std`) is read whole once.
+
+## 8. The JSON form
+
+`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id), `reexports` and `declarations` as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
+
+## 9. Rationale
 
 - **Why attributes, not IFC's vendor extensions.** IFC 0.43's vendor sorts are the SDK's own (`VendorSort` is MSVC's structured exception handling), and its reader stops at a `DeclSort::VendorExtension` declaration ("unexpected decl") and at a partition name it does not know. Attributes are standard IFC that every reader accepts and skips; MC2's live in the `mcxx::` namespace, which is MC2's vendor extension. The acceptance item (A1.1.4) names the dialect's place "VendorExtension" in that sense.
 - **Why the SDK's structures but not its reader.** The layout is the SDK's by construction (its structures are used to write). Its reader asserts on a malformed file, and its assertion ends the process (`ifc_assert` calls `exit`), which a compiler or an editor reading another module's file cannot allow; MC2's reader checks every offset instead. The SDK's `ifc-printer` is the independent check that the files are IFC (`tools/checks/ifc.py`).
+- **Why a store by content, not a path.** A copied BMI keeps its bytes and loses its neighbours; its content is what identifies it (two builds of one source with different options give different BMIs and different interfaces). Hashing a BMI costs a read of it, once per path, size and time.
 - **Why types as text.** MC3 gives types as text; IFC's type graph (`type.*`, `expr.*`) is a larger encoding that a later MC2 version fills when a reader needs it (M2.2, `import std;` through IFC).

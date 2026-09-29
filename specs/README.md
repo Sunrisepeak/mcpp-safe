@@ -4,11 +4,11 @@
 
 | 规范 | 标题 | 版本 | 状态 | Schema |
 |---|---|---|---|---|
-| [MC1](mc1-features.md) | 特性注册表、profile 与门禁 | 0.2.0 | 草案 | [config](schema/mc1-config.schema.json)、[catalog](schema/mc1-catalog.schema.json)、[audit](schema/mc1-audit.schema.json) |
-| [MC2](mc2-ifc.md) | IFC 格式的模块接口：T1 声明与方言 | 1.0.0（IFC 0.43） | 草案 | [interface](schema/mc2-interface.schema.json) |
-| [MC3](mc3-facts.md) | MSA：位置、certainty、事实 | 0.3.0 | 草案 | [facts](schema/mc3-facts.schema.json) |
+| [MC1](mc1-features.md) | 特性注册表、profile 与门禁（含导入处的豁免） | 0.3.0 | 草案 | [config](schema/mc1-config.schema.json)、[catalog](schema/mc1-catalog.schema.json)、[audit](schema/mc1-audit.schema.json) |
+| [MC2](mc2-ifc.md) | IFC 格式的模块接口：T1 声明、方言、再导出；按 BMI 内容保存的副本 | 1.1.0（IFC 0.43） | 草案 | [interface](schema/mc2-interface.schema.json) |
+| [MC3](mc3-facts.md) | MSA：位置、certainty、事实（含导入带进来的接口） | 0.4.0 | 草案 | [facts](schema/mc3-facts.schema.json) |
 | [MC4](mc4-plugins.md) | 插件：provider、扩展点（规则、源码过滤器、profile、属性、区域）、组合、进程外协议 | 0.2.0（协议版本 1） | 草案 | [protocol](schema/mc4-protocol.schema.json) |
-| [MC5](mc5-driver.md) | `mcxx` 驱动与工具链契约 | 0.1.1 | 草案 | [version](schema/mc5-version.schema.json) |
+| [MC5](mc5-driver.md) | `mcxx` 驱动与工具链契约 | 0.2.0 | 草案 | [version](schema/mc5-version.schema.json) |
 | [MC6](mc6-serve.md) | `mcxx serve`：作为进程的语义服务 | 1 | 草案 | [requests](schema/mc6-requests.schema.json) |
 
 ## 各规范之间的关系

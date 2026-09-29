@@ -33,6 +33,23 @@ msa::fact::Facts facts(const Preprocessed& pp);
 // certain.
 msa::fact::Facts facts(const Syntax& syntax);
 
+// `import m [[mcpp::allow("id, id", "reason")]];` (and `export import`): MC++'s annotation of an import
+// that brings in what the importer's dialect restricts (M1.2). No attribute appertains to an import in
+// Clang, which refuses a known one there, so a host blanks the attribute-specifier (`blank`, the bytes
+// [begin, end)) before Clang reads the file, and keeps what it said as a waiver over the declaration.
+// Only a specifier every attribute of which is `mcpp::allow` with string literals is one.
+struct ImportAnnotation {
+    std::string module;             // as written: "legacy", "m:part", ":part"
+    msa::Range range;               // the declaration, `export` or `import` to `;`
+    std::uint32_t begin { 0 };      // the attribute-specifier-seq's bytes
+    std::uint32_t end { 0 };
+    std::vector<std::string> ids;
+    std::string reason;
+};
+std::vector<ImportAnnotation> import_annotations(std::string_view text);
+// `text` with the annotations' bytes as spaces (line breaks kept): every position stays.
+std::string blank_import_annotations(std::string_view text, std::span<const ImportAnnotation> annotations);
+
 } // namespace mcxx::frontend
 
 namespace mcxx::frontend {
@@ -179,6 +196,115 @@ msa::fact::Facts facts(const Syntax& syntax) {
         case W::va_arg: out.uses.push_back({ { r, at }, "va_arg", {} }); break;
         }
     }
+    return out;
+}
+
+namespace {
+
+// A string literal's contents, if it is a plain one without escapes worth reading (feature ids,
+// reasons): its quotes taken off.
+std::optional<std::string> literal_text(std::string_view text, const Token& t) {
+    if (t.kind != Kind::string_literal) return std::nullopt;
+    const std::string s { spelling(text, t) };
+    if (s.size() < 2 || s.front() != '"' || s.back() != '"') return std::nullopt;
+    return s.substr(1, s.size() - 2);
+}
+
+} // namespace
+
+std::vector<ImportAnnotation> import_annotations(std::string_view text) {
+    std::vector<ImportAnnotation> out;
+    const auto tokens = lex(text);
+    const auto word = [&](std::size_t i, std::string_view w) {
+        return i < tokens.size() && tokens[i].kind == Kind::raw_identifier && text.substr(tokens[i].begin, tokens[i].end - tokens[i].begin) == w;
+    };
+    const auto is = [&](std::size_t i, Kind k) { return i < tokens.size() && tokens[i].kind == k; };
+    const auto position = [&](const Token& t) { return msa::Position { t.line - 1, t.column - 1 }; };
+    bool directive { false };
+    for (std::size_t i { 0 }; i < tokens.size(); ++i) {
+        if (tokens[i].start_of_line) directive = tokens[i].kind == Kind::hash;
+        if (directive || !word(i, "import")) continue;
+        // A declaration: first on its line, or after `export`, `;` or a brace.
+        const bool exported { i > 0 && word(i - 1, "export") };
+        const std::size_t first { exported ? i - 1 : i };
+        if (!(tokens[first].start_of_line || (first > 0 && (is(first - 1, Kind::semi) || is(first - 1, Kind::r_brace) || is(first - 1, Kind::l_brace)))))
+            continue;
+        std::size_t j { i + 1 };
+        std::string named;
+        if (is(j, Kind::colon)) {
+            named = ":";
+            ++j;
+        }
+        while (is(j, Kind::raw_identifier)) {
+            named.append(text.substr(tokens[j].begin, tokens[j].end - tokens[j].begin));
+            ++j;
+            if (is(j, Kind::period) && is(j + 1, Kind::raw_identifier)) {
+                named += '.';
+                ++j;
+            } else if (is(j, Kind::colon) && !named.starts_with(":") && is(j + 1, Kind::raw_identifier)) {
+                named += ':';
+                ++j;
+            } else {
+                break;
+            }
+        }
+        if (named.empty() || named == ":" || !is(j, Kind::l_square) || !is(j + 1, Kind::l_square)) continue;
+        // [[ mcpp::allow("...", "...") , ... ]] and nothing else.
+        ImportAnnotation a;
+        a.module = named;
+        a.begin = tokens[j].begin;
+        std::size_t k { j + 2 };
+        bool ok { true };
+        while (ok) {
+            if (!(word(k, "mcpp") && is(k + 1, Kind::coloncolon) && word(k + 2, "allow") && is(k + 3, Kind::l_paren))) {
+                ok = false;
+                break;
+            }
+            k += 4;
+            std::vector<std::string> args;
+            while (ok) {
+                const auto value = k < tokens.size() ? literal_text(text, tokens[k]) : std::nullopt;
+                if (!value) {
+                    ok = false;
+                    break;
+                }
+                args.push_back(*value);
+                ++k;
+                if (is(k, Kind::comma)) ++k;
+                else break;
+            }
+            if (!ok || !is(k, Kind::r_paren) || args.empty() || args.size() > 2) {
+                ok = false;
+                break;
+            }
+            ++k;
+            for (auto id : std::views::split(std::string_view { args[0] }, ',')) {
+                std::string_view v { id.begin(), id.end() };
+                while (!v.empty() && v.front() == ' ') v.remove_prefix(1);
+                while (!v.empty() && v.back() == ' ') v.remove_suffix(1);
+                if (!v.empty()) a.ids.emplace_back(v);
+            }
+            if (args.size() == 2) a.reason = args[1];
+            if (is(k, Kind::comma)) {
+                ++k;
+                continue;
+            }
+            break;
+        }
+        if (!ok || !is(k, Kind::r_square) || !is(k + 1, Kind::r_square) || !is(k + 2, Kind::semi)) continue;
+        a.end = tokens[k + 1].end;
+        a.range = { position(tokens[first]), { tokens[k + 2].line - 1, tokens[k + 2].column } };
+        out.push_back(std::move(a));
+        i = k + 2;
+    }
+    return out;
+}
+
+std::string blank_import_annotations(std::string_view text, std::span<const ImportAnnotation> annotations) {
+    std::string out { text };
+    for (const auto& a : annotations)
+        for (std::uint32_t b { a.begin }; b < a.end && b < out.size(); ++b)
+            if (out[b] != '\n' && out[b] != '\r') out[b] = ' ';
     return out;
 }
 

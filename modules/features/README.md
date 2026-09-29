@@ -56,6 +56,10 @@ goto = "allow"
 
 [package.metadata.mcxx.namespaces."app::detail"]    # 一个命名空间及其内部的命名空间
 reinterpret-cast = "allow"
+
+[package.metadata.mcxx.imports."legacy"]            # 导入 legacy 时允许它带进来的东西（M1.2）
+allow = ["c-array", "raw-pointers"]
+reason = "C 库，已经包装"
 ```
 
 级别有三档：`allow`、`warn`、`deny`（也可以写 `off`、`warning`、`error`）。下面这些都会作为警告报出，不会被静默忽略：
@@ -74,6 +78,15 @@ reinterpret-cast = "allow"
 - 每一次豁免都记入 `Result::waived`；设置 `MCXX_AUDIT=<文件>` 时，每次豁免追加一行 JSON：特性、文件、行列、所在声明、原因。
 - 不可豁免的特性（`Feature::waivable = false`）即使写了豁免也照样报错，并说明它不可豁免。
 - 豁免中写了没有任何 provider 声明过的 id，会报警告并给出位置。
+
+## 跨模块的方言边界（M1.2）
+
+一个模块导入另一个模块时，对方接口导出的东西会随导入进入这个文件。事实 `imports`（MC3 §4.13）给出每个导入带进来的接口：对方和它再导出的模块各自的方言、导出的 T1 声明，全部读自对方的 `.ifc`（MC2），不读源码。`c-array`、`union`、`c-varargs`（mc++.iso）和 `raw-pointers`、`lib:std.vector`（mc++.policy）的规则用 SDK 的 `plugin::report_imports` 在导入处报出：
+
+- 对方导出了这个特性的东西，而对方自己的方言并不禁止它（禁止的话，它自己就门禁过了，漏出来的是它审计过的豁免）；
+- 对方的接口读不到（旁边和 store 里都没有）：带进来什么无法得知，同样是这个特性的发现。
+
+发现属于这个特性，所以级别是导入方的。豁免写在导入上：`import legacy [[mcpp::allow("c-array, raw-pointers", "原因")]];`（宿主在 Clang 读文件之前把这个属性换成空格，Clang 不接受导入上的属性），或者写在 manifest 的 `[package.metadata.mcxx.imports."legacy"]` 里——mcpp 自己的依赖扫描不认导入上的属性，用 mcpp 构建时用这种写法。两种都进审计。
 
 ## 计划（Plan）与开销
 

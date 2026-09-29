@@ -10,9 +10,9 @@ libmc++ 两个可以出现 Clang 的包之一（见 `../README.md` 的边界规�
 | `support.cppm` | `:support` | 在 16 MiB 的独立栈上运行 Clang（openkal 的线程栈固定为 256 KiB）、`ClangPool`、命令参数规范化、共享常量 |
 | `store.cppm` | `:store` | 模块接口（BMI）：按依赖顺序构建，按内容缓存；编辑器缓冲覆盖；失败根因 |
 | `unit.cppm` | `:unit` | 解析一个文件：诊断、出现位置、符号、实体 |
-| `facts.cppm` | `:facts` | MC3 v0 事实：遍历主文件 AST（声明、初始化和未初始化的局部变量、强制转换、new/delete、指针运算、goto、throw/try/typeid/asm/va_arg、`[[mcpp::allow]]`），宏和 `#include` 来自预处理器和源码管理器。只收集要求的种类（`fact::Kinds`） |
+| `facts.cppm` | `:facts` | MC3 事实（`imports` 按编译加载的 BMI 读对方的 `.ifc`，顺着再导出）：遍历主文件 AST（声明、初始化和未初始化的局部变量、强制转换、new/delete、指针运算、goto、throw/try/typeid/asm/va_arg、`[[mcpp::allow]]`），宏和 `#include` 来自预处理器和源码管理器。只收集要求的种类（`fact::Kinds`） |
 | `gate.cppm` | `:gate` | `[[mcpp::allow]]` 属性；Clang 静态插件：解析前运行源码过滤器，解析后运行门禁规则 |
-| `ifc.cppm` | `:ifc` | MC2：模块单元写出 BMI 且没有错误时，在 BMI 旁边写 `.ifc`（T1 声明和方言，`mcxx.ifc`） |
+| `ifc.cppm` | `:ifc` | MC2：模块单元写出 BMI 且没有错误时，在 BMI 旁边写 `.ifc`（T1 声明、方言、再导出，`mcxx.ifc`），并登记给 store；libmc++ 自己构建 BMI 时也写（`InterfaceAction`）；导入上的 `[[mcpp::allow]]` 在 Clang 读文件前换成空格，变成对这个导入的豁免 |
 | `completion.cppm` | `:completion` | 代码补全、签名帮助 |
 | `index.cppm` | `:index` | 后台构建的程序索引 |
 | `workspace.cpp` | 实现单元 | `msa::Workspace` 的实现 |

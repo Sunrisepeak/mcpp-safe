@@ -14,7 +14,7 @@ export namespace mcxx::plugin::wire {
 using Json = nlohmann::json;
 
 inline constexpr int PROTOCOL { 1 };
-inline constexpr std::string_view MC3_VERSION { "0.3.0" };   // 0.3.0 adds a declaration's `local`, 0.2.0 attributes; older documents are read too
+inline constexpr std::string_view MC3_VERSION { "0.4.0" };   // 0.4.0 adds imports, 0.3.0 a declaration's `local`, 0.2.0 attributes; older documents are read too
 
 template <class T>
 using Read = std::expected<T, std::string>;
@@ -211,6 +211,40 @@ void read_list(const Json& doc, std::string_view key, std::vector<T>& out, std::
     }
 }
 
+Json declaration_json(const fact::Declaration& d) {
+    Json x = place(d);
+    x["name"] = to_json(d.name);
+    x["entity"] = d.entity;
+    x["qualified-name"] = d.qualified_name;
+    x["kind"] = kind_name(d.kind);
+    x["type"] = d.type;
+    x["templates"] = d.templates;
+    x["exported"] = d.exported;
+    x["c-array"] = d.c_array;
+    x["pointer"] = d.pointer;
+    x["union"] = d.is_union;
+    x["c-variadic"] = d.c_variadic;
+    x["local"] = d.local;
+    return x;
+}
+
+void read_declaration(Reader& r, fact::Declaration& d) {
+    d.name = r.range("name");
+    d.entity = r.str("entity");
+    d.qualified_name = r.str("qualified-name");
+    const std::string kind { r.str("kind") };
+    if (const auto k = kind_from(kind)) d.kind = *k;
+    else r.fail(std::format("{}.kind: `{}` is not a kind of declaration", r.where, kind));
+    d.type = r.str("type");
+    d.templates = r.strings("templates");
+    d.exported = r.flag("exported");
+    d.c_array = r.flag("c-array");
+    d.pointer = r.flag("pointer");
+    d.is_union = r.flag("union");
+    d.c_variadic = r.flag("c-variadic");
+    d.local = r.j.contains("local") && r.flag("local");   // 0.1.0 and 0.2.0 documents have none: false
+}
+
 } // namespace
 
 Json to_json(const msa::Range& range) {
@@ -242,22 +276,7 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
     j["certainty"] = f.certainty == msa::Certainty::certain ? "certain" : "unknown";
     j["collected"] = kinds_json(f.collected);
     Json& decls = j["declarations"] = Json::array();
-    for (const auto& d : f.declarations) {
-        Json x = place(d);
-        x["name"] = to_json(d.name);
-        x["entity"] = d.entity;
-        x["qualified-name"] = d.qualified_name;
-        x["kind"] = kind_name(d.kind);
-        x["type"] = d.type;
-        x["templates"] = d.templates;
-        x["exported"] = d.exported;
-        x["c-array"] = d.c_array;
-        x["pointer"] = d.pointer;
-        x["union"] = d.is_union;
-        x["c-variadic"] = d.c_variadic;
-        x["local"] = d.local;
-        decls.push_back(std::move(x));
-    }
+    for (const auto& d : f.declarations) decls.push_back(declaration_json(d));
     Json& inits = j["initializations"] = Json::array();
     for (const auto& i : f.initializations) {
         Json x = place(i);
@@ -346,13 +365,36 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
         x["kind"] = kind_name(a.kind);
         attributes.push_back(std::move(x));
     }
+    Json& imports = j["imports"] = Json::array();
+    for (const auto& i : f.imports) {
+        Json x = place(i);
+        x["module"] = i.module;
+        x["name"] = to_json(i.name);
+        x["exported"] = i.exported;
+        Json& interfaces = x["interfaces"] = Json::array();
+        for (const auto& in : i.interfaces) {
+            Json levels = Json::object();
+            for (const auto& [id, level] : in.levels) levels[id] = level;
+            Json exported = Json::array();
+            for (const auto& d : in.exported) exported.push_back(declaration_json(d));
+            Json y = Json::object();
+            y["module"] = in.module;
+            y["found"] = in.found;
+            y["profiles"] = in.profiles;
+            y["levels"] = std::move(levels);
+            y["exported"] = std::move(exported);
+            interfaces.push_back(std::move(y));
+        }
+        imports.push_back(std::move(x));
+    }
     return j;
 }
 
 Read<fact::Facts> facts_from_json(const Json& j) {
     if (!j.is_object()) return std::unexpected("facts is not an object");
-    if (!j.contains("mc3-version") || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.2.0" && j["mc3-version"] != "0.1.0"))
-        return std::unexpected(std::format("facts are not MC3 {} (nor 0.2.0, 0.1.0)", MC3_VERSION));
+    if (!j.contains("mc3-version")
+        || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.3.0" && j["mc3-version"] != "0.2.0" && j["mc3-version"] != "0.1.0"))
+        return std::unexpected(std::format("facts are not MC3 {} (nor 0.3.0, 0.2.0, 0.1.0)", MC3_VERSION));
     fact::Facts f;
     std::string error;
     Reader top { j, "facts", {} };
@@ -365,22 +407,7 @@ Read<fact::Facts> facts_from_json(const Json& j) {
         else top.fail(std::format("facts.collected: `{}` is not a kind of facts", name));
     }
     if (!top.ok()) return std::unexpected(top.error);
-    read_list(j, "declarations", f.declarations, error, [](Reader& r, fact::Declaration& d) {
-        d.name = r.range("name");
-        d.entity = r.str("entity");
-        d.qualified_name = r.str("qualified-name");
-        const std::string kind { r.str("kind") };
-        if (const auto k = kind_from(kind)) d.kind = *k;
-        else r.fail(std::format("{}.kind: `{}` is not a kind of declaration", r.where, kind));
-        d.type = r.str("type");
-        d.templates = r.strings("templates");
-        d.exported = r.flag("exported");
-        d.c_array = r.flag("c-array");
-        d.pointer = r.flag("pointer");
-        d.is_union = r.flag("union");
-        d.c_variadic = r.flag("c-variadic");
-        d.local = r.flag("local");   // 0.1.0 and 0.2.0 documents have none: false
-    });
+    read_list(j, "declarations", f.declarations, error, [](Reader& r, fact::Declaration& d) { read_declaration(r, d); });
     read_list(j, "initializations", f.initializations, error, [](Reader& r, fact::Initialization& i) {
         i.name = r.range("name");
         i.entity = r.str("entity");
@@ -441,6 +468,42 @@ Read<fact::Facts> facts_from_json(const Json& j) {
             const std::string kind { r.str("kind") };
             if (const auto k = kind_from(kind)) a.kind = *k;
             else r.fail(std::format("{}.kind: `{}` is not a kind of declaration", r.where, kind));
+        });
+    if (j.contains("imports"))   // documents before MC3 0.4.0 have none
+        read_list(j, "imports", f.imports, error, [](Reader& r, fact::Import& i) {
+            i.module = r.str("module");
+            i.name = r.range("name");
+            i.exported = r.flag("exported");
+            const Json* list { r.at("interfaces") };
+            if (list == nullptr) return;
+            if (!list->is_array()) return r.fail(std::format("{}.interfaces is not a list", r.where));
+            for (std::size_t k { 0 }; k < list->size(); ++k) {
+                Reader ir { (*list)[k], std::format("{}.interfaces[{}]", r.where, k), {} };
+                fact::Import::Interface in;
+                in.module = ir.str("module");
+                in.found = ir.flag("found");
+                in.profiles = ir.strings("profiles");
+                if (const Json* levels = ir.at("levels"); levels != nullptr) {
+                    if (!levels->is_object()) ir.fail(std::format("{}.levels is not an object", ir.where));
+                    else
+                        for (auto it = levels->begin(); it != levels->end(); ++it) {
+                            if (!it.value().is_string()) ir.fail(std::format("{}.levels.{} is not a string", ir.where, it.key()));
+                            else in.levels.emplace_back(it.key(), it.value().get<std::string>());
+                        }
+                }
+                if (const Json* exported = ir.at("exported"); exported != nullptr && exported->is_array()) {
+                    for (std::size_t d { 0 }; d < exported->size(); ++d) {
+                        Reader dr { (*exported)[d], std::format("{}.exported[{}]", ir.where, d), {} };
+                        fact::Declaration decl;
+                        read_place(dr, decl);
+                        read_declaration(dr, decl);
+                        if (!dr.ok()) ir.fail(dr.error);
+                        in.exported.push_back(std::move(decl));
+                    }
+                } else ir.fail(std::format("{}.exported is missing or not a list", ir.where));
+                if (!ir.ok()) return r.fail(ir.error);
+                i.interfaces.push_back(std::move(in));
+            }
         });
     if (!error.empty()) return std::unexpected(error);
     return f;

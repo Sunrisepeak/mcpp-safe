@@ -35,6 +35,9 @@
       "safe"
     ]
   },
+  "reexports": [
+    "dialect:part"
+  ],
   "declarations": [
     {
       "c-array": false,

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc3-facts.schema.json",
-  "title": "MC3 0.3.0: the facts of one file, in JSON",
+  "title": "MC3 0.4.0: the facts of one file, in JSON",
   "type": "object",
   "required": [
     "mc3-version",
@@ -69,7 +69,8 @@
         "includes",
         "suppressions",
         "declaration-types",
-        "attributes"
+        "attributes",
+        "imports"
       ]
     },
     "declaration": {
@@ -531,6 +532,88 @@
           ]
         }
       }
+    },
+    "import": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "module",
+        "name",
+        "exported",
+        "interfaces"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.]*(:[A-Za-z_][A-Za-z0-9_.]*)?$"
+        },
+        "name": {
+          "$ref": "#/$defs/range"
+        },
+        "exported": {
+          "type": "boolean"
+        },
+        "interfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/interface"
+          },
+          "description": "The module first, then every module it re-exports, as their MC2 interfaces say."
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "required": [
+        "module",
+        "found",
+        "profiles",
+        "levels",
+        "exported"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "module": {
+          "type": "string"
+        },
+        "found": {
+          "type": "boolean",
+          "description": "Its interface was read; otherwise nothing else is known."
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "levels": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "allow",
+              "warn",
+              "deny"
+            ]
+          },
+          "description": "Each feature's level for code in the module, by id."
+        },
+        "exported": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/declaration"
+          },
+          "description": "Its exported T1 declarations; their ranges are in its own file."
+        }
+      }
     }
   },
   "properties": {
@@ -538,7 +621,8 @@
       "enum": [
         "0.1.0",
         "0.2.0",
-        "0.3.0"
+        "0.3.0",
+        "0.4.0"
       ]
     },
     "path": {
@@ -625,6 +709,13 @@
       "items": {
         "$ref": "#/$defs/attribute"
       }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/import"
+      },
+      "description": "MC3 0.4.0; documents before it have none."
     }
   }
 }

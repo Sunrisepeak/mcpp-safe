@@ -24,7 +24,7 @@ import mcxx.msa;
 
 export namespace mcxx::ifc {
 
-inline constexpr std::string_view MC2_VERSION { "1.0.0" };
+inline constexpr std::string_view MC2_VERSION { "1.1.0" };   // 1.1.0 adds re-exports; 1.0.0 files are read too
 inline constexpr std::uint8_t IFC_MAJOR { 0 };
 inline constexpr std::uint8_t IFC_MINOR { 43 };
 
@@ -58,6 +58,7 @@ struct Interface {
     std::uint32_t cplusplus { 202302 };  // __cplusplus of the compile
     Dialect dialect;
     std::vector<msa::fact::Declaration> declarations;   // T1: what is not local, in the facts' order
+    std::vector<std::string> reexports;                 // `export import`: the modules an importer also sees ("m:part")
 };
 
 // The declarations of a unit's facts that an interface carries: those that are not local.
@@ -72,6 +73,23 @@ std::string path_for(std::string_view bmi);
 // its time when nothing changed). An error, or nothing.
 std::optional<std::string> save(const std::string& path, const Interface& unit);
 std::expected<Interface, std::string> load(const std::string& path);
+
+// ---- Finding an interface from a BMI --------------------------------------------------------------
+//
+// Beside it, or -- for a BMI a build copied from elsewhere (mcpp's build caches keep a BMI, not what is
+// beside it) -- in the store, where the compile that wrote an interface keeps a copy under the
+// SHA-256 of its BMI's bytes: $MCXX_IFC_STORE, else $XDG_CACHE_HOME/mcxx/ifc, else ~/.cache/mcxx/ifc.
+
+std::string store_directory();
+// A host's own store (mcppls keeps one in its cache), in place of the default; "" : the default again.
+void use_store(std::string directory);
+// Called by the compile that wrote `ifc` beside `bmi`; publish() -- once the compile has succeeded
+// and the BMI is in place -- keeps a copy of each in the store.
+void note_written(std::string bmi, std::string ifc);
+void publish();
+// The interface of the module whose BMI is `bmi`: read once per BMI (its size and time), shared. Null
+// when there is none, or it cannot be read (`error` says which).
+std::shared_ptr<const Interface> interface_for(const std::string& bmi, std::string* error = nullptr);
 
 // Item by item: where two lists of declarations differ, field by field ("declaration 3 (a::f): type
 // `int *` != `int*`"), at most `limit` of them.
@@ -504,6 +522,7 @@ public:
             for (const auto& p : unit_.dialect.profiles) items.push_back(called("profile", { p }));
             for (const auto& f : unit_.dialect.features) items.push_back(called("feature", { f.id, f.level }));
             for (const auto& ns : unit_.dialect.namespaces) items.push_back(called("namespace_feature", { ns.name, ns.feature, ns.level }));
+            for (const auto& m : unit_.reexports) items.push_back(called("reexport", { m }));
             sym::AttributeDir dir {};
             clear(dir);
             dir.attr = tuple(items);
@@ -848,6 +867,7 @@ public:
                 else if (name == "profile" && arity(1)) unit.dialect.profiles.push_back(args[0]);
                 else if (name == "feature" && arity(2)) unit.dialect.features.push_back({ args[0], args[1] });
                 else if (name == "namespace_feature" && arity(3)) unit.dialect.namespaces.push_back({ args[0], args[1], args[2] });
+                else if (name == "reexport" && arity(1)) unit.reexports.push_back(args[0]);
                 else return fail(std::format("unknown dialect item mcxx::{} with {} arguments", name, args.size()));
             }
         }
@@ -1057,6 +1077,168 @@ std::vector<std::string> differences(std::span<const msa::fact::Declaration> exp
         for (const auto& [member, name] : FLAGS) field(name, e.*member, a.*member, flag);
     }
     return out;
+}
+
+namespace {
+
+std::string hex(const sdk::SHA256Hash& hash) {
+    std::string out;
+    const auto* bytes = reinterpret_cast<const unsigned char*>(hash.value.data());
+    for (std::size_t i { 0 }; i < sizeof hash.value; ++i) out += std::format("{:02x}", bytes[i]);
+    return out;
+}
+
+std::optional<std::string> sha256_of_file(const std::string& path) {
+    std::ifstream in { path, std::ios::binary };
+    if (!in) return std::nullopt;
+    std::vector<char> data { std::istreambuf_iterator<char> { in }, {} };
+    const auto* first = reinterpret_cast<const std::byte*>(data.data());
+    return hex(sdk::hash_bytes(first, first + data.size()));
+}
+
+std::string sha256_of_text(std::string_view text) {
+    const auto* first = reinterpret_cast<const std::byte*>(text.data());
+    return hex(sdk::hash_bytes(first, first + text.size()));
+}
+
+struct Stamp {
+    std::uintmax_t size { 0 };
+    std::int64_t time { 0 };
+    bool operator==(const Stamp&) const = default;
+};
+
+std::optional<Stamp> stamp_of(const std::string& path) {
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(path, ec);
+    if (ec) return std::nullopt;
+    const auto time = std::filesystem::last_write_time(path, ec);
+    if (ec) return std::nullopt;
+    return Stamp { size, static_cast<std::int64_t>(time.time_since_epoch().count()) };
+}
+
+bool copy_atomically(const std::string& from, const std::string& to) {
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path { to }.parent_path(), ec);
+    const std::string tmp { to + ".tmp" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id())) };
+    std::filesystem::copy_file(from, tmp, std::filesystem::copy_options::overwrite_existing, ec);
+    if (ec) return false;
+    std::filesystem::rename(tmp, to, ec);
+    if (ec) std::filesystem::remove(tmp, ec);
+    return !ec;
+}
+
+// A BMI's SHA-256, remembered by its path, size and time in the store (by-path/), so a BMI is read
+// whole once, not at every importer's compile.
+std::optional<std::string> bmi_digest(const std::string& bmi, const Stamp& stamp) {
+    const std::string memo { store_directory() + "/by-path/" + sha256_of_text(bmi) };
+    if (std::ifstream in { memo }; in) {
+        Stamp kept;
+        std::string digest;
+        if (in >> kept.size >> kept.time >> digest && kept == stamp && digest.size() == 64) return digest;
+    }
+    auto digest = sha256_of_file(bmi);
+    if (!digest) return std::nullopt;
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path { memo }.parent_path(), ec);
+    const std::string tmp { memo + ".tmp" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id())) };
+    if (std::ofstream out { tmp }; out) out << stamp.size << ' ' << stamp.time << ' ' << *digest << '\n';
+    std::filesystem::rename(tmp, memo, ec);
+    if (ec) std::filesystem::remove(tmp, ec);
+    return digest;
+}
+
+std::mutex& written_lock() {
+    static std::mutex m;
+    return m;
+}
+std::vector<std::pair<std::string, std::string>>& written() {
+    static std::vector<std::pair<std::string, std::string>> w;
+    return w;
+}
+
+} // namespace
+
+std::mutex& store_lock() {
+    static std::mutex m;
+    return m;
+}
+std::string& chosen_store() {
+    static std::string s;
+    return s;
+}
+
+void use_store(std::string directory) {
+    std::lock_guard lock { store_lock() };
+    chosen_store() = std::move(directory);
+}
+
+std::string store_directory() {
+    {
+        std::lock_guard lock { store_lock() };
+        if (!chosen_store().empty()) return chosen_store();
+    }
+    if (const char* s = std::getenv("MCXX_IFC_STORE"); s != nullptr && *s != '\0') return s;
+    if (const char* x = std::getenv("XDG_CACHE_HOME"); x != nullptr && *x != '\0') return std::string { x } + "/mcxx/ifc";
+    if (const char* h = std::getenv("HOME"); h != nullptr && *h != '\0') return std::string { h } + "/.cache/mcxx/ifc";
+    return (std::filesystem::temp_directory_path() / "mcxx-ifc").string();
+}
+
+void note_written(std::string bmi, std::string ifc) {
+    std::lock_guard lock { written_lock() };
+    written().emplace_back(std::move(bmi), std::move(ifc));
+}
+
+void publish() {
+    std::vector<std::pair<std::string, std::string>> done;
+    {
+        std::lock_guard lock { written_lock() };
+        done.swap(written());
+    }
+    for (const auto& [bmi, ifc] : done) {
+        const auto stamp = stamp_of(bmi);
+        if (!stamp) continue;   // the compile did not leave its BMI (an error after the interface was written)
+        if (const auto digest = bmi_digest(bmi, *stamp)) {
+            const std::string kept { store_directory() + "/" + *digest + ".ifc" };
+            if (!std::filesystem::exists(kept)) (void)copy_atomically(ifc, kept);
+        }
+    }
+}
+
+std::shared_ptr<const Interface> interface_for(const std::string& bmi, std::string* error) {
+    struct Entry {
+        Stamp stamp;
+        std::shared_ptr<const Interface> unit;
+        std::string error;
+    };
+    static std::mutex lock;
+    static std::unordered_map<std::string, Entry> cache;
+    const auto stamp = stamp_of(bmi);
+    if (!stamp) {
+        if (error) *error = std::format("no BMI at {}", bmi);
+        return nullptr;
+    }
+    {
+        std::lock_guard guard { lock };
+        if (const auto it = cache.find(bmi); it != cache.end() && it->second.stamp == *stamp) {
+            if (error) *error = it->second.error;
+            return it->second.unit;
+        }
+    }
+    Entry entry { *stamp, nullptr, {} };
+    std::string path { path_for(bmi) };
+    if (!std::filesystem::exists(path)) {
+        path.clear();
+        if (const auto digest = bmi_digest(bmi, *stamp)) {
+            const std::string kept { store_directory() + "/" + *digest + ".ifc" };
+            if (std::filesystem::exists(kept)) path = kept;
+        }
+    }
+    if (path.empty()) entry.error = std::format("no {} beside {}, and none kept for it in {}", std::filesystem::path { path_for(bmi) }.filename().string(), bmi, store_directory());
+    else if (auto unit = load(path)) entry.unit = std::make_shared<const Interface>(std::move(*unit));
+    else entry.error = unit.error();
+    if (error) *error = entry.error;
+    std::lock_guard guard { lock };
+    return (cache[bmi] = std::move(entry)).unit;
 }
 
 } // namespace mcxx::ifc

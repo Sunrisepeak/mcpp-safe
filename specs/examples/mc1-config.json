@@ -24,5 +24,14 @@
       "raw-pointers": "allow",
       "c-varargs": "allow"
     }
+  },
+  "imports": {
+    "vendor.zlib": {
+      "allow": [
+        "c-array",
+        "raw-pointers"
+      ],
+      "reason": "zlib's C interface, wrapped in app::compress"
+    }
   }
 }
