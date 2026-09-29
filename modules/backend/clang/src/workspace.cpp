@@ -353,6 +353,16 @@ private:
         if (options_.changed) options_.changed();
     }
 
+    Quick quick(const std::string& path, std::string_view text) override {
+        std::optional<msa::Command> command;
+        {
+            std::lock_guard lock { mutex_ };
+            if (const auto it = commands_.find(path); it != commands_.end()) command = it->second;
+            else command = infer_command(commands_, path);
+        }
+        return quick_gates(path, text, command ? &*command : nullptr);
+    }
+
     // The command, the module interfaces and the flags one parse of `path` needs.
     std::optional<Prepared> prepare_(const std::string& path, const std::string& text, msa::Cancel cancel) {
         std::optional<msa::Command> command;

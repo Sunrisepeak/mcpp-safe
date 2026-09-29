@@ -91,6 +91,7 @@ struct Preprocessed {
     std::vector<std::pair<std::uint32_t, std::uint32_t>> skipped;   // the lines of each group not taken
     std::vector<Diagnostic> diagnostics;     // the reasons for `certain` false are notes here
     bool certain { true };
+    std::string target;                      // whose predefined macros (PreprocessOptions::target)
     std::deque<std::string> storage;         // spellings no file byte has
 };
 
@@ -1357,6 +1358,7 @@ Preprocessed preprocess(std::string_view text, const PreprocessOptions& options)
         table = slot.get();
     }
     Preprocessed out;
+    out.target = options.target;
     Preprocessor pp { text, options, out, table };
     pp.run();
     return out;

@@ -73,4 +73,9 @@ std::string path_to_uri(std::string_view path);
 Json to_lsp(const msa::Range& range, std::string_view text);
 msa::Position from_lsp(const Json& position, std::string_view text);
 
+// An outline as LSP's DocumentSymbol[] (the answer to textDocument/documentSymbol), positions in
+// UTF-16 for `text`; and an MSA kind as LSP's SymbolKind.
+Json document_symbols(const std::vector<msa::Symbol>& symbols, std::string_view text);
+int symbol_kind(msa::Kind kind);
+
 } // namespace mcxx::lsp

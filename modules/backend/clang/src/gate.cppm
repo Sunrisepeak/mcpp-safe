@@ -84,6 +84,7 @@ import mcxx.base;
 import mcxx.plugin;
 import mcxx.features;
 import mcxx.plugin.host;
+import mcxx.frontend;
 import :support;
 import :unit;
 import :facts;
@@ -371,6 +372,51 @@ protected:
 
 cl::FrontendPluginRegistry::Add<GateAction> gate_registration { "mcxx-gates", "MC++ feature gates: the built-in ISO controls and the plugins linked in" };
 
+// The target MC++'s front end has predefined macros for, from a command's --target.
+std::string frontend_target(std::string_view target) {
+    if (target.empty()) return "x86_64-unknown-linux-gnu";
+    if (target.find("windows") != std::string_view::npos || target.find("msvc") != std::string_view::npos || target.find("mingw") != std::string_view::npos)
+        return "x86_64-pc-windows-msvc";
+    if (target.find("apple") != std::string_view::npos || target.find("darwin") != std::string_view::npos || target.find("macos") != std::string_view::npos)
+        return "aarch64-apple-darwin";
+    return "x86_64-unknown-linux-gnu";
+}
+
 } // namespace
+
+msa::Workspace::Quick quick_gates(const std::string& path, std::string_view text, const msa::Command* command) {
+    msa::Workspace::Quick out;
+    const auto plan = features::plan_for(path);
+    if (!plan || !plan->gated) return out;
+    frontend::PreprocessOptions options;
+    options.file = path;
+    std::string target;
+    if (command != nullptr) {
+        const auto& a = command->arguments;
+        for (std::size_t i { 1 }; i < a.size(); ++i) {
+            const std::string_view x { a[i] };
+            if ((x == "-D" || x == "-U") && i + 1 < a.size()) (x == "-D" ? options.defines : options.undefines).push_back(a[++i]);
+            else if (x.starts_with("-D") && x.size() > 2) options.defines.emplace_back(x.substr(2));
+            else if (x.starts_with("-U") && x.size() > 2) options.undefines.emplace_back(x.substr(2));
+            else if (x.starts_with("--target=")) target = x.substr(9);
+            else if (x == "-target" && i + 1 < a.size()) target = a[++i];
+        }
+    }
+    options.target = frontend_target(target);
+    const auto syntax = frontend::parse(text, options);
+    const auto facts = frontend::facts(syntax);
+    // The features the reading decides: those decided from the kinds it fills.
+    std::set<std::string, std::less<>> decided;
+    for (const auto& entry : plan->catalog->features) {
+        const auto needs = std::to_underlying(entry.feature->needs);
+        if (needs != 0 && (needs & ~std::to_underlying(facts.collected)) == 0) decided.insert(entry.feature->id);
+    }
+    const std::string module { syntax.pp.module.name + (syntax.pp.module.partition.empty() ? "" : ":" + syntax.pp.module.partition) };
+    const plugin::Context context { path, module, facts };
+    for (auto& d : features::evaluate(context, *plan).diagnostics)
+        if (decided.contains(d.code)) out.diagnostics.push_back(std::move(d));
+    out.features.assign(decided.begin(), decided.end());
+    return out;
+}
 
 } // namespace mcxx::clang_backend

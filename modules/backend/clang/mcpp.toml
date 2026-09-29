@@ -19,6 +19,7 @@ mcxx-graph    = { path = "../../graph" }
 mcxx-plugin   = { path = "../../plugin/sdk" }
 mcxx-features = { path = "../../features" }
 mcxx-plugin-host = { path = "../../plugin/host" }   # out-of-process plugins, the composed set
+mcxx-frontend = { path = "../../frontend" }         # MC++'s own front end: quick gate findings (Workspace::quick)
 
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).

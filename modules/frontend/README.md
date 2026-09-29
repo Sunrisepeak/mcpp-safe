@@ -15,7 +15,7 @@
 | `:predefined` | 三个目标（linux-x64、macos-arm64、windows-x64）的预定义宏，**生成的**：`gen/predefined.py` 跑 `mcxx c++ -target T -std=c++23 -dM -E` |
 | `:preprocess` | 预处理：条件编译、文件自己的宏（`#`、`##`、`__VA_ARGS__`、`__VA_OPT__`、GNU 的 `, ## __VA_ARGS__`）、`#include` 记录、模块声明和 import 的识别 |
 | `:syntax` | 声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
-| `mcxx.frontend` | 上面几部分，再加 `facts(pp)`：MC3 的 `macros` 和 `includes` 事实，形状和 Clang 后端给的一样 |
+| `mcxx.frontend` | 上面几部分，再加 `facts(pp)` 和 `facts(syntax)`：MC3 事实，形状和 Clang 后端给的一样（见下文"事实与快速门禁"） |
 
 ```cpp
 import mcxx.frontend;
@@ -112,6 +112,26 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 | A1.7.2 一致率 ≥ 99.9% | C-mcppls：4725/4725 个符号一致（100%）。C-mcpp：宿主给出头文件的宏时（`--header-macros`，gtest 的 `TEST` 展开成类），18880/18880 一致（100%）；不给时，测试以外的 198 个文件是 99.942% |
 | A1.7.3 模糊测试 | `mcxx-lexdump --fuzz 1000`：随机截断，或插入随机 token 和字节。C-mcppls 253 000 次、C-mcpp 334 000 次，没有崩溃，每次都给出大纲；调试构建另做 25 300 次 |
 | A1.7.4 冷启动解析 ≤ 2 s（4 核） | C-mcppls 整个语料（252 个文件，2.6 MB）单线程 0.15–0.25 s（release，词法、预处理、解析全算） |
+
+## 事实与快速门禁（M1.8）
+
+`facts(syntax)` 给出语法层就能读出的 MC3 事实，容器和限定名的算法和 Clang 后端一样（省略 inline namespace）：
+
+| 种类 | 内容 |
+|---|---|
+| `declarations` | 包括函数的参数和局部变量。`pointer`、`c-array`、`c-variadic`、`union` 按写出来的判断：类型模板实参里的 `*`、声明符里的 `*`、`[ ]`、`, ...`。本文件里的别名会展开；导入模块导出的别名由宿主通过 `Known::aliases` 传入（`exported_aliases()` 取自接口文件）。`va_list` 按目标区分：x86-64 Linux 上是数组，macOS 和 Windows 上是指针 |
+| `gotos`、`allocations`、`uses` | `goto`、`new`/`delete`（带 `[]`）、`throw`/`try`/`typeid`/`asm`/`va_arg`，函数体、初始化器、lambda 里都算 |
+| `casts` | 只有具名转换（`static_cast` 等四个）。C 风格和函数式转换要知道类型，这里不给 |
+| `suppressions` | `[[mcpp::allow("id, id2", "理由")]]`，范围是所在声明的整体范围，豁免因此和 Clang 路径一致 |
+| `macros`、`includes` | 来自预处理 |
+
+**门禁 fixture**：`mcxx-conformance --frontend`。由本前端取事实、同一个门禁引擎判定，13 个特性给出的发现和 fixture 完全一致：
+
+- asm、c-array、c-varargs、const-cast、exceptions、goto、include、macros、new-delete、raw-pointers、reinterpret-cast、rtti、union。
+
+另有 C 风格转换（9 处）、按位重解释的 C 风格转换（3 处）"没有类型就看不到"，属于预期；没有误报。
+
+**快速门禁（A1.8.3）**：`msa::Workspace::quick(path, text)`，Clang 后端用本前端实现。编辑器里每次修改，`mcxx.lsp` 的 Service 立刻（在解析之前）发布本前端判定的那些特性的发现，同时带上上次解析的其他诊断；这个版本解析完成后，再由完整的诊断取代。`mcxx serve` 端到端测试（`modules/serve` 的 test_serve）：一次修改同时加入 goto、new/delete、reinterpret_cast、写出的 `*` 声明符和宏，五类发现在 4 ms 后到达（调试构建；要求 ≤ 100 ms）。mcppls 的 mcxx 引擎用的就是这个 Service。
 
 ## 不依赖 Clang（A1.6.3）
 

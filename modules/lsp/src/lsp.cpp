@@ -43,31 +43,6 @@ std::optional<std::string> read_text(const std::string& path) {
 
 // ---- kinds ---------------------------------------------------------------------------------
 
-int symbol_kind(msa::Kind kind) {
-    using K = msa::Kind;
-    switch (kind) {
-    case K::module: return 2;
-    case K::namespace_:
-    case K::namespace_alias: return 3;
-    case K::class_: return 5;
-    case K::method:
-    case K::conversion: return 6;
-    case K::field: return 8;
-    case K::constructor:
-    case K::destructor: return 9;
-    case K::enum_: return 10;
-    case K::concept_: return 11;
-    case K::function: return 12;
-    case K::variable:
-    case K::parameter: return 13;
-    case K::enumerator: return 22;
-    case K::struct_:
-    case K::union_: return 23;
-    case K::type_alias: return 5;
-    case K::template_parameter: return 26;
-    default: return 13;
-    }
-}
 
 int completion_kind(msa::Kind kind) {
     using K = msa::Kind;
@@ -202,6 +177,49 @@ std::string hover_markdown(const msa::Entity& e) {
 
 } // namespace
 
+int symbol_kind(msa::Kind kind) {
+    using K = msa::Kind;
+    switch (kind) {
+    case K::module: return 2;
+    case K::namespace_:
+    case K::namespace_alias: return 3;
+    case K::class_: return 5;
+    case K::method:
+    case K::conversion: return 6;
+    case K::field: return 8;
+    case K::constructor:
+    case K::destructor: return 9;
+    case K::enum_: return 10;
+    case K::concept_: return 11;
+    case K::function: return 12;
+    case K::variable:
+    case K::parameter: return 13;
+    case K::enumerator: return 22;
+    case K::struct_:
+    case K::union_: return 23;
+    case K::type_alias: return 5;
+    case K::template_parameter: return 26;
+    default: return 13;
+    }
+}
+
+Json document_symbols(const std::vector<msa::Symbol>& symbols, std::string_view text) {
+    std::function<Json(const msa::Symbol&)> convert = [&](const msa::Symbol& symbol) {
+        Json out { { "name", symbol.name }, { "kind", symbol_kind(symbol.kind) }, { "range", to_lsp(symbol.range, text) },
+                   { "selectionRange", to_lsp(symbol.selection, text) } };
+        if (!symbol.detail.empty()) out["detail"] = symbol.detail;
+        if (!symbol.children.empty()) {
+            Json children = Json::array();
+            for (const auto& c : symbol.children) children.push_back(convert(c));
+            out["children"] = std::move(children);
+        }
+        return out;
+    };
+    Json out = Json::array();
+    for (const auto& symbol : symbols) out.push_back(convert(symbol));
+    return out;
+}
+
 std::string uri_to_path(std::string_view uri) {
     if (auto path = base::uri_to_path(uri)) return *path;
     return std::string { uri };
@@ -295,6 +313,42 @@ struct Service::State {
             diagnostics.push_back(std::move(item));
         }
         if (notify) notify("textDocument/publishDiagnostics", Json { { "uri", doc.uri }, { "version", unit.version() }, { "diagnostics", std::move(diagnostics) } });
+    }
+
+    // The backend's syntax-level reading of the document's text as it is now, published at once and
+    // without a version (A1.8.3): its gate findings, with the last parse's other diagnostics, until
+    // this version's parse publishes its own. Called without the lock held.
+    void publish_quick(const Document& doc) {
+        std::string path, text;
+        std::int64_t version { 0 };
+        std::shared_ptr<const msa::Unit> last;
+        {
+            std::lock_guard lock { mutex };
+            path = doc.path;
+            text = doc.text;
+            version = doc.version;
+            last = doc.unit;
+        }
+        const auto quick = workspace.quick(path, text);
+        if (quick.features.empty()) return;
+        Json diagnostics = Json::array();
+        const auto add = [&](const msa::Diagnostic& d, std::string_view in) {
+            Json item { { "range", to_lsp(d.range, in) }, { "severity", static_cast<int>(d.severity) }, { "source", "mcxx" }, { "message", d.message } };
+            if (!d.code.empty()) item["code"] = d.code;
+            diagnostics.push_back(std::move(item));
+        };
+        for (const auto& d : quick.diagnostics) add(d, text);
+        if (last && last->version() < version)
+            for (const auto& d : last->diagnostics())
+                if (!std::ranges::contains(quick.features, d.code)) add(d, last->text());
+        {
+            // This version's parse published first: its diagnostics are the answer.
+            std::lock_guard lock { mutex };
+            if (doc.unit && doc.unit->version() >= version) return;
+        }
+        // No `version`: these are not a parse's answer for this version of the text (a host that waits
+        // for the version's diagnostics waits on), only what is known at once.
+        if (notify) notify("textDocument/publishDiagnostics", Json { { "uri", doc.uri }, { "diagnostics", std::move(diagnostics) } });
     }
 
     void schedule(const std::shared_ptr<Document>& doc) {
@@ -398,19 +452,24 @@ Json Service::capabilities() {
 }
 
 void Service::open(const std::string& uri, std::string text, std::int64_t version) {
-    std::lock_guard lock { state_->mutex };
-    auto& doc = state_->documents[uri];
-    if (!doc) doc = std::make_shared<Document>();
-    doc->uri = uri;
-    doc->path = uri_to_path(uri);
-    doc->text = std::move(text);
-    doc->version = version;
-    doc->open = true;
-    state_->schedule(doc);
+    std::shared_ptr<Document> scheduled;
+    {
+        std::lock_guard lock { state_->mutex };
+        auto& doc = state_->documents[uri];
+        if (!doc) doc = std::make_shared<Document>();
+        doc->uri = uri;
+        doc->path = uri_to_path(uri);
+        doc->text = std::move(text);
+        doc->version = version;
+        doc->open = true;
+        state_->schedule(doc);
+        scheduled = doc;
+    }
+    state_->publish_quick(*scheduled);
 }
 
 void Service::change(const std::string& uri, const Json& changes, std::int64_t version) {
-    std::lock_guard lock { state_->mutex };
+    std::unique_lock lock { state_->mutex };
     const auto it = state_->documents.find(uri);
     if (it == state_->documents.end()) return;
     auto& doc = *it->second;
@@ -435,6 +494,9 @@ void Service::change(const std::string& uri, const Json& changes, std::int64_t v
     }
     doc.version = version;
     state_->schedule(it->second);
+    const auto scheduled = it->second;
+    lock.unlock();
+    state_->publish_quick(*scheduled);
 }
 
 void Service::close(const std::string& uri) {
@@ -662,22 +724,7 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
         return out;
     }
 
-    if (method == "textDocument/documentSymbol") {
-        std::function<Json(const msa::Symbol&)> convert = [&](const msa::Symbol& symbol) {
-            Json out { { "name", symbol.name }, { "kind", symbol_kind(symbol.kind) }, { "range", to_lsp(symbol.range, text) },
-                       { "selectionRange", to_lsp(symbol.selection, text) } };
-            if (!symbol.detail.empty()) out["detail"] = symbol.detail;
-            if (!symbol.children.empty()) {
-                Json children = Json::array();
-                for (const auto& c : symbol.children) children.push_back(convert(c));
-                out["children"] = std::move(children);
-            }
-            return out;
-        };
-        Json out = Json::array();
-        for (const auto& symbol : unit->symbols()) out.push_back(convert(symbol));
-        return out;
-    }
+    if (method == "textDocument/documentSymbol") return document_symbols(unit->symbols(), text);
 
     if (method == "textDocument/semanticTokens/full") {
         Json data = Json::array();

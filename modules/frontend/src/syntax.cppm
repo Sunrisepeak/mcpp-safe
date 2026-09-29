@@ -33,17 +33,53 @@ struct Declaration {
     std::uint32_t name_token { 0 };    // indices into Syntax::pp.tokens
     std::uint32_t first_token { 0 };
     std::uint32_t last_token { 0 };
+    bool pointer { false };            // its type holds a `*`: its declarator's, or one in a template argument
+    bool c_array { false };            // its declarator is an array's (`x[3]`)
+    bool c_variadic { false };         // a function with a C `...` parameter
+    bool inline_namespace { false };
+    bool va_list { false };            // its type is va_list: an array or a pointer, as the target has it
+    // Its [[mcpp::allow("ids", "reason")]] waivers (MC1 §7).
+    std::vector<std::pair<std::string, std::string>> allows;
+};
+
+// What code does that the gates look at, found by its tokens: inside functions' bodies and
+// initializers (MC3's gotos, allocations, named casts, uses).
+struct Construct {
+    enum class What : std::uint8_t { goto_, new_, delete_, cast, throw_, try_, typeid_, asm_, va_arg };
+    What what { What::goto_ };
+    std::uint32_t first_token { 0 };
+    std::uint32_t last_token { 0 };
+    std::int32_t owner { -1 };    // the declaration it is in (a function, a variable), or -1
+    std::string detail;           // goto: the label ("*" computed); new, delete: the type; cast: its kind; typeid: the operand
+    std::string to;               // cast: the type in its <>
+    bool array { false };         // new[], delete[]
 };
 
 struct Syntax {
     Preprocessed pp;
     std::vector<std::uint32_t> line_starts;
-    std::vector<Declaration> declarations;   // in the order they are written
+    // In the order they are written; parameters and a function's local variables among them (a
+    // function's children, not in an outline).
+    std::vector<Declaration> declarations;
+    std::vector<Construct> constructs;
     std::vector<Diagnostic> diagnostics;     // where the parser could not follow the code, and skipped
 };
 
+// What a host knows that the file's text does not say: the aliases the modules it imports export,
+// by name, and whether their types hold a pointer, are arrays (`export using Buf = int[16];`).
+struct Known {
+    struct Alias {
+        bool pointer { false };
+        bool c_array { false };
+    };
+    std::map<std::string, Alias, std::less<>> aliases;
+};
+
 // The file's declarations. The text must outlive the result (tokens view it).
-Syntax parse(std::string_view text, const PreprocessOptions& options = {});
+Syntax parse(std::string_view text, const PreprocessOptions& options = {}, const Known& known = {});
+
+// The aliases a module interface exports (for Known::aliases of its importers).
+std::map<std::string, Known::Alias, std::less<>> exported_aliases(const Syntax& syntax);
 
 // The outline, as MSA's Unit::symbols() has it: the listed declarations, each namespace's, class's and
 // enum's own inside it.
@@ -51,6 +87,12 @@ std::vector<msa::Symbol> symbols(const Syntax& syntax);
 
 // A position (MC3: 0-based line, UTF-8 bytes) of a byte of the text.
 msa::Position position(const Syntax& syntax, std::uint32_t offset);
+
+// The ranges Clang gives a declaration: its name, and the whole of it (symbols() uses them).
+msa::Range selection_range(const Syntax& syntax, const Declaration& d);
+msa::Range whole_range(const Syntax& syntax, const Declaration& d);
+// The range of tokens [first, last], as Clang gives an expression's or a statement's.
+msa::Range token_range(const Syntax& syntax, std::uint32_t first, std::uint32_t last);
 
 } // namespace mcxx::frontend
 
@@ -69,10 +111,19 @@ constexpr std::string_view TYPE_KEYWORDS[] {
     "__unsigned",
 };
 constexpr std::string_view OPERATORS_WORDS[] { "new", "delete", "co_await" };
+// Words that start a statement that is not a declaration.
+constexpr std::string_view STATEMENTS[] {
+    "return", "delete", "throw", "case", "default", "goto", "break", "continue", "co_return", "co_yield", "co_await", "new", "else", "do", "if",
+    "for", "while", "switch", "try", "catch", "static_assert", "sizeof", "this", "using", "typedef", "asm", "__asm__", "__asm", "operator",
+    "alignof", "noexcept", "requires", "true", "false", "nullptr", "typeid",
+};
+constexpr std::string_view CASTS[] { "static_cast", "dynamic_cast", "const_cast", "reinterpret_cast" };
 
 class Parser {
 public:
-    Parser(Syntax& out) : out_ { out }, t_ { out.pp.tokens } {}
+    Parser(Syntax& out, const Known& known) : out_ { out }, t_ { out.pp.tokens } {
+        for (const auto& [name, a] : known.aliases) aliases_.insert_or_assign(name, std::pair { a.pointer, a.c_array });
+    }
 
     void run() {
         Scope file { Context::file, {}, -1, true, false };
@@ -85,7 +136,7 @@ public:
     }
 
 private:
-    enum class Context : std::uint8_t { file, name_space, class_, enum_ };
+    enum class Context : std::uint8_t { file, name_space, class_, enum_, block };
     struct Scope {
         Context context;
         std::string class_name;   // the class a member belongs to
@@ -110,6 +161,9 @@ private:
     const std::vector<PpToken>& t_;
     std::size_t i_ { 0 };
     std::set<std::string, std::less<>> namespaces_;   // names of the file's namespaces: `ns::f` is not a member
+    std::vector<std::pair<std::string, std::string>> pending_allows_;   // waivers read, for the next declaration
+    std::map<std::string, std::pair<bool, bool>, std::less<>> aliases_;   // this file's aliases: (pointer, array)
+    std::int32_t owner_ { -1 };   // the declaration whose body or initializer is being read
     // The parameters of the template header just read, as its arguments ("<T, N>"), and where it began.
     std::string template_arguments_;
     std::size_t template_begin_ { static_cast<std::size_t>(-1) };
@@ -193,6 +247,23 @@ private:
         return k;
     }
 
+    // Attributes as attributes() skips them, their [[mcpp::allow(...)]] kept for the next declaration.
+    std::size_t waivers(std::size_t k) {
+        const std::size_t end { attributes(k) };
+        for (std::size_t j { k }; j + 5 < end; ++j) {
+            if (!(word(j, "mcpp") && is(j + 1, Kind::coloncolon) && word(j + 2, "allow") && is(j + 3, Kind::l_paren))) continue;
+            std::vector<std::string> strings;
+            for (std::size_t a { j + 4 }; a < end && !is(a, Kind::r_paren); ++a)
+                if (is_string(tok(a).kind)) {
+                    const std::string_view q { tok(a).spelling };
+                    const auto open = q.find('"');
+                    strings.emplace_back(q.substr(open + 1, q.rfind('"') - open - 1));
+                }
+            if (!strings.empty()) pending_allows_.emplace_back(strings[0], strings.size() > 1 ? strings[1] : std::string {});
+        }
+        return end;
+    }
+
     // Attributes and their kin: [[...]], alignas(...), __attribute__((...)), __declspec(...).
     std::size_t attributes(std::size_t k) const {
         for (;;) {
@@ -233,6 +304,7 @@ private:
         d.name_token = static_cast<std::uint32_t>(name_token);
         d.first_token = static_cast<std::uint32_t>(first);
         d.last_token = static_cast<std::uint32_t>(last);
+        d.allows = std::exchange(pending_allows_, {});
         out_.declarations.push_back(std::move(d));
         return static_cast<std::int32_t>(out_.declarations.size() - 1);
     }
@@ -379,7 +451,7 @@ private:
     }
 
     void declaration(const Scope& scope, std::optional<std::size_t> first = std::nullopt) {
-        const std::size_t start { attributes(i_) };
+        const std::size_t start { waivers(i_) };
         i_ = start;
         const std::size_t begin { first.value_or(start) };
         if (at_end(i_) || is(i_, Kind::r_brace)) return;
@@ -406,6 +478,7 @@ private:
             return declaration(scope);
         }
         if (w == "extern" && word(i_ + 1, "template")) return skip_statement();
+        if (w == "asm" || w == "__asm__") add_construct(Construct::What::asm_, i_, i_, scope.parent);
         if (w == "static_assert" || w == "_Static_assert" || w == "asm" || w == "__asm__") return skip_statement();
         if ((w == "public" || w == "private" || w == "protected") && is(i_ + 1, Kind::colon)) {
             i_ += 2;
@@ -415,7 +488,8 @@ private:
     }
 
     void name_space(const Scope& scope, std::size_t begin) {
-        if (word(i_, "inline")) ++i_;
+        const bool inline_first { word(i_, "inline") };
+        if (inline_first) ++i_;
         ++i_;   // namespace
         i_ = attributes(i_);
         // namespace name = qualified-name;
@@ -431,15 +505,17 @@ private:
         }
         // namespace a::b::inline c { ... }: one namespace in the other; each starts where its name's
         // part starts (its `::`), all end at the `}`.
-        std::vector<std::pair<std::size_t, std::size_t>> parts;   // (first token, name token)
+        std::vector<std::tuple<std::size_t, std::size_t, bool>> parts;   // (first token, name token, inline)
         std::size_t part_begin { begin };
+        bool inline_part { inline_first };
         while (identifier(i_)) {
-            parts.emplace_back(part_begin, i_);
+            parts.emplace_back(part_begin, i_, inline_part);
             ++i_;
             if (!is(i_, Kind::coloncolon)) break;
             part_begin = i_;
             ++i_;
-            if (word(i_, "inline")) ++i_;
+            inline_part = word(i_, "inline");
+            if (inline_part) ++i_;
         }
         i_ = attributes(i_);
         if (!is(i_, Kind::l_brace)) {
@@ -455,9 +531,10 @@ private:
             made.push_back(record(msa::Kind::namespace_, {}, begin, begin, begin, scope, true, false, {}));
             inner.parent = made.back();
         }
-        for (const auto& [first, id] : parts) {
+        for (const auto& [first, id, inline_] : parts) {
             namespaces_.emplace(tok(id).spelling);
             made.push_back(record(msa::Kind::namespace_, std::string { tok(id).spelling }, id, first, first, inner, true, inner.listed, {}));
+            out_.declarations.back().inline_namespace = inline_;
             inner.parent = made.back();
         }
         block(inner);
@@ -470,10 +547,19 @@ private:
         if (identifier(i_) && (is(attributes(i_ + 1), Kind::equal))) {
             const std::size_t id { i_ };
             i_ = attributes(i_ + 1) + 1;
+            // The type: specifiers and an abstract declarator (`void (*)(int)`, `int[16]`).
+            const std::size_t type_start { i_ };
+            const Scope type_scope { Context::block, {}, scope.parent, false, false };
+            const Specifiers sp { specifiers(type_scope, type_start) };
+            const Declarator d { declarator(type_scope) };
+            const std::pair flags { sp.pointer || d.star, sp.c_array || d.array };
+            aliases_.insert_or_assign(std::string { tok(id).spelling }, flags);
             skip_statement_end();
             // An alias template's name, as Clang places it, is its `using`.
             const std::size_t selection { template_begin_ == begin ? id - 1 : id };
-            record(msa::Kind::type_alias, std::string { tok(id).spelling }, selection, begin, i_ - 1, scope, true, scope.listed, {});
+            const std::int32_t index { record(msa::Kind::type_alias, std::string { tok(id).spelling }, selection, begin, i_ - 1, scope, true, scope.listed, {}) };
+            out_.declarations[static_cast<std::size_t>(index)].pointer = flags.first;
+            out_.declarations[static_cast<std::size_t>(index)].c_array = flags.second;
             if (is(i_, Kind::semi)) ++i_;
             return;
         }
@@ -589,7 +675,7 @@ private:
         const bool is_enum { key == "enum" };
         ++i_;
         if (is_enum && (word(i_, "class") || word(i_, "struct"))) ++i_;
-        i_ = attributes(i_);
+        i_ = waivers(i_);
         Name n;
         if (identifier(i_) || is(i_, Kind::coloncolon)) {
             n = name(i_);
@@ -676,13 +762,17 @@ private:
         bool ok { false };
         bool function { false };   // its (innermost) declarator-id takes a parameter list
         bool nested { false };
-        bool pointer { false };
+        bool pointer { false };    // a ptr-operator: * & && ^ or class::*
+        bool star { false };       // a `*` (or `^`, `::*`) among them: a pointer, not only a reference
+        bool array { false };      // its declarator-id is followed by [ ]
+        std::size_t params { static_cast<std::size_t>(-1) };   // the `(` of its parameter list
     };
 
     // What a parenthesized list after a declarator-id holds: parameters (a function) or an
     // expression (a variable's initializer)? The tokens decide; a type is not known.
     bool parameters(std::size_t open, const Scope& scope, const Name& id, bool void_type) const {
         const std::size_t close { balanced(open) - 1 };
+        if (scope.context == Context::block) return false;   // a local's direct initializer
         if (close == open + 1) return true;   // ()
         if (void_type || scope.context == Context::class_ || !id.qualifiers.empty() || id.op || id.destructor || id.conversion) return true;
         std::size_t k { attributes(open + 1) };
@@ -723,6 +813,7 @@ private:
             i_ = attributes(i_);
             if (is(i_, Kind::star) || is(i_, Kind::amp) || is(i_, Kind::ampamp) || is(i_, Kind::caret)) {
                 d.pointer = true;
+                d.star = d.star || is(i_, Kind::star) || is(i_, Kind::caret);
                 ++i_;
                 while (word(i_, "const") || word(i_, "volatile") || word(i_, "__restrict") || word(i_, "__restrict__") || word(i_, "restrict") ||
                        word(i_, "_Nonnull") || word(i_, "_Nullable"))
@@ -750,6 +841,7 @@ private:
                 }
                 if (member) {
                     d.pointer = true;
+                    d.star = true;
                     i_ = k + 1;
                     continue;
                 }
@@ -770,8 +862,10 @@ private:
                 if (is(i_, Kind::r_paren)) ++i_;
                 inner.nested = true;
                 const bool inner_function { inner.function };
+                const bool outer_star { d.star };
                 suffixes(scope, inner, true, void_type);
                 inner.function = inner_function || (!inner.pointer && inner.function);
+                inner.star = inner.star || outer_star;
                 return inner;
             }
         }
@@ -794,12 +888,16 @@ private:
         for (;;) {
             if (is(i_, Kind::l_paren)) {
                 if (first && !outer && !parameters(i_, scope, d.id, void_type)) return;   // an initializer: the caller reads it
-                if (first && !outer) d.function = true;
+                if (first && !outer) {
+                    d.function = true;
+                    d.params = i_;
+                }
                 i_ = balanced(i_);
                 first = false;
                 continue;
             }
             if (is(i_, Kind::l_square) && !is(i_ + 1, Kind::l_square)) {
+                if (first && !outer) d.array = true;
                 i_ = balanced(i_);
                 first = false;
                 continue;
@@ -852,14 +950,39 @@ private:
     }
 
     // decl-specifiers declarator [, declarator]... ; or a function definition.
-    void simple_declaration(const Scope& scope, std::size_t begin) {
+    struct Specifiers {
         bool type { false }, typedef_ { false }, static_ { false }, friend_ { false }, void_ { false };
+        bool pointer { false };   // a `*` in a template argument of the type (outside parentheses), or the type an alias of one
+        bool c_array { false };   // the type an alias (of this file) of an array
+        bool va_list { false };   // the type is va_list: an array or a pointer, by the target
         std::int32_t made_class { -1 };
         bool class_definition { false };
-        // decl-specifiers
+    };
+
+    // Whether tokens [from, to) hold a `*` outside parentheses: a pointer in template arguments.
+    bool star_in(std::size_t from, std::size_t to) const {
+        int parens { 0 };
+        for (std::size_t k { from }; k < to && k < t_.size(); ++k) {
+            if (is(k, Kind::l_paren)) ++parens;
+            else if (is(k, Kind::r_paren)) --parens;
+            else if (parens == 0 && is(k, Kind::star)) return true;
+        }
+        return false;
+    }
+
+    // decl-specifiers, from i_: the flags they set, i_ past them.
+    Specifiers specifiers(const Scope& scope, std::size_t begin) {
+        Specifiers sp;
+        auto& type = sp.type;
+        auto& typedef_ = sp.typedef_;
+        auto& static_ = sp.static_;
+        auto& friend_ = sp.friend_;
+        auto& void_ = sp.void_;
+        auto& made_class = sp.made_class;
+        auto& class_definition = sp.class_definition;
         for (;;) {
-            i_ = attributes(i_);
-            if (at_end(i_)) return;
+            i_ = waivers(i_);
+            if (at_end(i_)) return sp;
             const std::string_view w { identifier(i_) ? tok(i_).spelling : std::string_view {} };
             if (any_word(i_, SPECIFIERS)) {
                 typedef_ = typedef_ || w == "typedef";
@@ -897,6 +1020,7 @@ private:
             if (w == "typename") {
                 ++i_;
                 const Name n { name(i_) };
+                if (n.ok) sp.pointer = sp.pointer || star_in(n.begin, n.end);
                 i_ = n.ok ? n.end : i_ + 1;
                 type = true;
                 continue;
@@ -911,12 +1035,27 @@ private:
                     is(n.end, Kind::l_square)) {
                     break;   // `x;`, `x = 1;`: no type written (an error, or a macro's)
                 }
+                sp.pointer = sp.pointer || star_in(n.begin, n.end);
+                // An alias this file declared: what its type holds, this one does.
+                if (const auto a = aliases_.find(n.spelled); a != aliases_.end() && n.qualifiers.empty()) {
+                    sp.pointer = sp.pointer || a->second.first;
+                    sp.c_array = sp.c_array || a->second.second;
+                }
+                sp.va_list = sp.va_list || n.spelled == "__builtin_va_list" || n.spelled == "va_list" || n.spelled == "__gnuc_va_list";
                 i_ = n.end;
                 type = true;
                 continue;
             }
             break;
         }
+        return sp;
+    }
+
+    void simple_declaration(const Scope& scope, std::size_t begin) {
+        const Specifiers sp { specifiers(scope, begin) };
+        const bool typedef_ { sp.typedef_ }, static_ { sp.static_ }, friend_ { sp.friend_ }, void_ { sp.void_ };
+        const std::int32_t made_class { sp.made_class };
+        if (at_end(i_)) return;
         if (made_class >= 0 && is(i_, Kind::semi)) {   // class S { ... };
             ++i_;
             return;
@@ -925,7 +1064,6 @@ private:
             ++i_;
             return;
         }
-        (void)class_definition;
         // declarators
         for (bool first_declarator { true };; first_declarator = false) {
             const std::size_t declarator_start { i_ };
@@ -941,8 +1079,37 @@ private:
             const bool function { d.function };
             bool body { false };
             std::optional<std::size_t> end_before;   // the declaration's last token, when not the last one read
+            // The declaration first (what its body holds is its own), its last token once read.
+            std::int32_t index { -1 };
+            const bool recorded { d.ok && !friend_ };
+            if (recorded) {
+                msa::Kind kind { msa::Kind::variable };
+                const bool member { scope.context == Context::class_ || (!d.id.qualifiers.empty() && !namespaces_.contains(d.id.qualifiers.back())) };
+                if (typedef_) kind = msa::Kind::type_alias;
+                else if (function) {
+                    const std::string_view owner { !d.id.qualifiers.empty() ? std::string_view { d.id.qualifiers.back() } : std::string_view { scope.class_name } };
+                    if (d.id.destructor) kind = msa::Kind::destructor;
+                    else if (d.id.conversion) kind = msa::Kind::conversion;
+                    else if (!owner.empty() && d.id.spelled == owner && (scope.context == Context::class_ || !d.id.qualifiers.empty())) kind = msa::Kind::constructor;
+                    else kind = member ? msa::Kind::method : msa::Kind::function;
+                } else if (scope.context == Context::class_ && !static_) kind = msa::Kind::field;
+                std::string spelled { d.id.spelled };
+                // A class template's constructor and destructor are named with its parameters (`S<T>`).
+                if ((kind == msa::Kind::constructor || kind == msa::Kind::destructor) && d.id.qualifiers.empty()) spelled += scope.template_arguments;
+                index = record(kind, std::move(spelled), d.id.last, begin, i_ > 0 ? i_ - 1 : 0, scope, !function, scope.listed, join(d.id.qualifiers));
+                auto& made = out_.declarations[static_cast<std::size_t>(index)];
+                made.pointer = sp.pointer || d.star;
+                made.c_array = (d.array || sp.c_array) && !function;
+                made.va_list = sp.va_list && !d.pointer && !function;
+                if (typedef_) aliases_.insert_or_assign(d.id.spelled, std::pair { made.pointer, made.c_array });
+            }
+            // What a body or an initializer holds belongs to this declaration, or (a friend's) to the scope.
+            const std::int32_t owner { recorded ? index : scope.parent };
+            if (function && d.params != static_cast<std::size_t>(-1)) parameters_of(d.params, owner, recorded ? index : -1);
             if (function) {
+                const std::size_t tail { i_ };
                 function_tail();
+                if (recorded && star_in(tail, i_)) out_.declarations[static_cast<std::size_t>(index)].pointer = true;   // -> T*
                 if (is(i_, Kind::equal)) {
                     // = 0, = default, = delete ["why"]: in a declaration's range, not in an out-of-line
                     // definition's (`S::S() = default;` ends at its `)`), as Clang has them.
@@ -951,21 +1118,24 @@ private:
                     skip_statement_end(true);
                 } else if (is(i_, Kind::colon) && !typedef_) {   // a constructor's initializers, then the body
                     ++i_;
-                    initializers();
+                    initializers(owner);
                     body = true;
                 } else if (word(i_, "try")) {
+                    add_construct(Construct::What::try_, i_, i_, owner);
                     ++i_;
                     if (is(i_, Kind::colon)) {
                         ++i_;
-                        initializers();
-                    } else if (is(i_, Kind::l_brace)) i_ = balanced(i_);
+                        initializers(owner);
+                    } else if (is(i_, Kind::l_brace)) i_ = compound(i_, owner);
                     while (word(i_, "catch") && is(i_ + 1, Kind::l_paren)) {
-                        i_ = balanced(i_ + 1);
-                        if (is(i_, Kind::l_brace)) i_ = balanced(i_);
+                        const std::size_t close { balanced(i_ + 1) };
+                        try_local(i_ + 2, owner, close - 1, true);
+                        i_ = close;
+                        if (is(i_, Kind::l_brace)) i_ = compound(i_, owner);
                     }
                     body = true;
                 } else if (is(i_, Kind::l_brace)) {
-                    i_ = balanced(i_);
+                    i_ = compound(i_, owner);
                     body = true;
                 }
             } else {
@@ -980,27 +1150,19 @@ private:
                 }
                 if (is(i_, Kind::equal)) {
                     ++i_;
+                    const std::size_t from { i_ };
                     initializer();
+                    scan(from, i_, owner, false);
                 } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {
+                    const std::size_t from { i_ };
                     i_ = balanced(i_);
+                    scan(from, i_, owner, false);
                 }
             }
-            if (d.ok && !friend_) {
-                msa::Kind kind { msa::Kind::variable };
-                const bool member { scope.context == Context::class_ || (!d.id.qualifiers.empty() && !namespaces_.contains(d.id.qualifiers.back())) };
-                if (typedef_) kind = msa::Kind::type_alias;
-                else if (function) {
-                    const std::string_view owner { !d.id.qualifiers.empty() ? std::string_view { d.id.qualifiers.back() } : std::string_view { scope.class_name } };
-                    if (d.id.destructor) kind = msa::Kind::destructor;
-                    else if (d.id.conversion) kind = msa::Kind::conversion;
-                    else if (!owner.empty() && d.id.spelled == owner && (scope.context == Context::class_ || !d.id.qualifiers.empty())) kind = msa::Kind::constructor;
-                    else kind = member ? msa::Kind::method : msa::Kind::function;
-                } else if (scope.context == Context::class_ && !static_) kind = msa::Kind::field;
-                const std::size_t last { end_before.value_or(i_ > 0 ? i_ - 1 : 0) };
-                std::string spelled { d.id.spelled };
-                // A class template's constructor and destructor are named with its parameters (`S<T>`).
-                if ((kind == msa::Kind::constructor || kind == msa::Kind::destructor) && d.id.qualifiers.empty()) spelled += scope.template_arguments;
-                record(kind, std::move(spelled), d.id.last, begin, last, scope, body || !function, scope.listed, join(d.id.qualifiers));
+            if (recorded) {
+                auto& made = out_.declarations[static_cast<std::size_t>(index)];
+                close(index, end_before.value_or(i_ > 0 ? i_ - 1 : 0));
+                made.definition = body || !function;
             }
             if (body) {
                 // A function definition ends the declaration (a `;` after it is an empty one).
@@ -1026,13 +1188,18 @@ private:
     void initializer() { skip_statement_end(true); }
 
     // A constructor's member initializers, then its body.
-    void initializers() {
+    void initializers(std::int32_t owner) {
+        const std::size_t from { i_ };
         while (i_ < t_.size()) {
             if (is(i_, Kind::l_brace)) {
                 // The body, unless this brace initializes the name before it.
                 const bool initializes { i_ > 0 && (identifier(i_ - 1) || is(i_ - 1, Kind::greater) || is(i_ - 1, Kind::greatergreater)) };
+                if (!initializes) {
+                    scan(from, i_, owner, false);
+                    i_ = compound(i_, owner);
+                    return;
+                }
                 i_ = balanced(i_);
-                if (!initializes) return;
                 continue;
             }
             if (is(i_, Kind::l_paren)) {
@@ -1044,8 +1211,288 @@ private:
                 i_ = after == i_ ? i_ + 1 : after;
                 continue;
             }
-            if (is(i_, Kind::semi) || is(i_, Kind::r_brace)) return;
+            if (is(i_, Kind::semi) || is(i_, Kind::r_brace)) break;
             ++i_;
+        }
+        scan(from, i_, owner, false);
+    }
+
+    void add_construct(Construct::What what, std::size_t first, std::size_t last, std::int32_t owner, std::string detail = {}, std::string to = {},
+                       bool array = false) {
+        out_.constructs.push_back({ what, static_cast<std::uint32_t>(first), static_cast<std::uint32_t>(last), owner, std::move(detail), std::move(to), array });
+    }
+
+    std::string text_of(std::size_t from, std::size_t to) const {
+        std::string out;
+        for (std::size_t k { from }; k < to && k < t_.size(); ++k) {
+            if (!out.empty() && t_[k].leading_space) out += ' ';
+            out += t_[k].spelling;
+        }
+        return out;
+    }
+
+    // A function's parameters, (open) to its `)`: each a declaration of it; `...` makes it C variadic.
+    void parameters_of(std::size_t open, std::int32_t owner, std::int32_t function) {
+        const std::size_t saved { i_ };
+        const std::size_t close { balanced(open) - 1 };
+        std::size_t k { open + 1 };
+        const Scope scope { Context::block, {}, owner, false, false };
+        while (k < close) {
+            // The parameter's tokens, to a top-level `,` (template arguments' commas are theirs).
+            std::size_t end { k };
+            while (end < close && !is(end, Kind::comma)) {
+                if (is(end, Kind::l_paren) || is(end, Kind::l_square) || is(end, Kind::l_brace)) end = balanced(end);
+                else if (is(end, Kind::less) && end > k && (identifier(end - 1) || is(end - 1, Kind::greater))) {
+                    const std::size_t after { angle(end) };
+                    end = after == end ? end + 1 : after;
+                } else ++end;
+            }
+            end = std::min(end, close);
+            if (end == k + 1 && is(k, Kind::ellipsis)) {
+                if (function >= 0) out_.declarations[static_cast<std::size_t>(function)].c_variadic = true;
+            } else if (!(end == k + 1 && word(k, "void")) && end > k) {
+                i_ = k;
+                const Specifiers sp { specifiers(scope, k) };
+                std::size_t name_token { i_ < end ? i_ : end - 1 };
+                Declarator d;
+                if (i_ < end) {
+                    d = declarator(scope);
+                    if (d.ok) name_token = d.id.last;
+                    else name_token = std::min(i_, end) > k ? std::min(i_, end) - 1 : k;
+                }
+                // Its default argument is not in its range.
+                std::size_t last { std::min(i_, end) > k ? std::min(i_, end) - 1 : k };
+                if (is(i_, Kind::equal) && i_ < end) scan(i_ + 1, end, owner, false);
+                const std::int32_t index { record(msa::Kind::parameter, d.ok ? d.id.spelled : std::string {}, name_token, k, last, scope, true, false, {}) };
+                auto& made = out_.declarations[static_cast<std::size_t>(index)];
+                made.pointer = sp.pointer || d.star;
+                made.c_array = d.array || sp.c_array;
+                made.va_list = sp.va_list && !d.pointer;
+            }
+            k = end + 1;
+        }
+        i_ = saved;
+    }
+
+    // A compound statement at `open` (a function's body, a lambda's): its local declarations and the
+    // constructs in it. Past its `}`.
+    std::size_t compound(std::size_t open, std::int32_t owner) {
+        const std::size_t close { balanced(open) };
+        scan(open, close, owner, true);
+        return close;
+    }
+
+    // The constructs in tokens [from, to), and, where statements are (`statements`, or inside a
+    // lambda's body), the local declarations.
+    void scan(std::size_t from, std::size_t to, std::int32_t owner, bool statements) {
+        const std::size_t saved { i_ };
+        std::vector<bool> contexts { statements };   // per brace: statements inside, or an initializer list
+        bool boundary { false };                     // at a statement's start
+        std::size_t control_close { static_cast<std::size_t>(-1) };   // the `)` of if/for/while/switch: a statement follows
+        bool lambda_body_next { false };
+        for (std::size_t k { from }; k < to && k < t_.size();) {
+            const PpToken& t = t_[k];
+            // Local declarations, at a statement's start.
+            if (boundary && contexts.back() && t.kind == Kind::raw_identifier && !any_word(k, STATEMENTS)) {
+                if (is(k + 1, Kind::colon) && !is(k + 1, Kind::coloncolon)) {   // a label
+                    k += 2;
+                    continue;
+                }
+                if (try_local(k, owner, to, false)) {
+                    k = i_;
+                    boundary = is(k - 1, Kind::semi) || is(k - 1, Kind::r_brace);
+                    if (is(k, Kind::semi)) {
+                        ++k;
+                        boundary = true;
+                    }
+                    continue;
+                }
+            }
+            if (boundary && (word(k, "case") || word(k, "default"))) {   // case e: / default:
+                std::size_t j { k + 1 };
+                while (j < to && !(is(j, Kind::colon))) j = is(j, Kind::l_paren) ? balanced(j) : j + 1;
+                k = j + 1;
+                continue;
+            }
+            // Constructs.
+            if (t.kind == Kind::raw_identifier) {
+                const std::string_view w { t.spelling };
+                const bool after_operator { k > 0 && word(k - 1, "operator") };
+                if (w == "goto") {
+                    const bool computed { is(k + 1, Kind::star) };
+                    add_construct(Construct::What::goto_, k, computed ? k + 2 : k + 1, owner, computed ? "*" : std::string { tok(k + 1).spelling });
+                } else if (w == "new" && !after_operator) {
+                    std::size_t j { k + 1 };
+                    if (is(j, Kind::l_paren)) j = balanced(j);   // placement
+                    const std::size_t type_from { j };
+                    if (is(j, Kind::l_paren)) j = balanced(j);   // new (T)
+                    else {
+                        while (j < to && (identifier(j) || is(j, Kind::coloncolon))) {
+                            ++j;
+                            if (is(j, Kind::less)) {
+                                const std::size_t after { angle(j) };
+                                if (after == j) break;
+                                j = after;
+                            }
+                        }
+                        while (is(j, Kind::star) || is(j, Kind::amp)) ++j;
+                    }
+                    add_construct(Construct::What::new_, k, j > k + 1 ? j - 1 : k, owner, text_of(type_from, j), {}, is(j, Kind::l_square));
+                } else if (w == "delete" && !after_operator && !(k > 0 && is(k - 1, Kind::equal))) {
+                    const bool array { is(k + 1, Kind::l_square) && is(k + 2, Kind::r_square) };
+                    add_construct(Construct::What::delete_, k, array ? k + 2 : k, owner, {}, {}, array);
+                } else if (std::ranges::contains(CASTS, w) && is(k + 1, Kind::less)) {
+                    const std::size_t after { angle(k + 1) };
+                    const std::size_t close { is(after, Kind::l_paren) ? balanced(after) - 1 : after - 1 };
+                    add_construct(Construct::What::cast, k, close, owner, std::string { w }, after > k + 1 ? text_of(k + 2, after - 1) : std::string {});
+                } else if (w == "throw" && !(k > 0 && is(k - 1, Kind::r_paren) && false)) {
+                    // `throw` in a dynamic exception specification (`throw()`) is not an expression.
+                    if (!(is(k + 1, Kind::l_paren) && k > 0 && (is(k - 1, Kind::r_paren) || word(k - 1, "const") || word(k - 1, "noexcept"))))
+                        add_construct(Construct::What::throw_, k, k, owner);
+                } else if (w == "try" && is(k + 1, Kind::l_brace)) {
+                    add_construct(Construct::What::try_, k, k, owner);
+                } else if (w == "typeid" && is(k + 1, Kind::l_paren)) {
+                    const std::size_t close { balanced(k + 1) };
+                    add_construct(Construct::What::typeid_, k, close - 1, owner, text_of(k + 2, close - 1));
+                } else if ((w == "asm" || w == "__asm__" || w == "__asm") && (is(k + 1, Kind::l_paren) || word(k + 1, "volatile") || word(k + 1, "__volatile__"))) {
+                    add_construct(Construct::What::asm_, k, k, owner);
+                } else if ((w == "va_arg" || w == "__builtin_va_arg") && is(k + 1, Kind::l_paren)) {
+                    add_construct(Construct::What::va_arg, k, balanced(k + 1) - 1, owner);
+                }
+                // if (...), for (...), while (...), switch (...), catch (...): a declaration may start
+                // right inside; a statement follows the `)`.
+                if ((w == "if" || w == "for" || w == "while" || w == "switch" || w == "catch") && (is(k + 1, Kind::l_paren) || (w == "if" && word(k + 1, "constexpr")))) {
+                    std::size_t open { k + 1 };
+                    if (word(open, "constexpr")) ++open;
+                    if (is(open, Kind::l_paren)) {
+                        control_close = balanced(open) - 1;
+                        if (!word(open + 1, "const") || true) try_local(open + 1, owner, control_close, true);
+                        // What try_local did not take is read on, token by token.
+                        k = std::max(open + 1, std::min(i_, control_close));
+                        if (i_ <= open + 1) k = open + 1;
+                        boundary = false;
+                        continue;
+                    }
+                }
+                if (w == "else" || w == "do") {
+                    boundary = true;
+                    ++k;
+                    continue;
+                }
+            }
+            // A lambda: [captures] <T> (parameters) specifiers { body }.
+            if (t.kind == Kind::l_square && !is(k + 1, Kind::l_square) &&
+                !(k > from && (identifier(k - 1) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) || is(k - 1, Kind::greater) ||
+                               is_string(tok(k - 1).kind)))) {
+                std::size_t j { balanced(k) };
+                if (is(j, Kind::less)) {
+                    const std::size_t after { angle(j) };
+                    if (after != j) j = after;
+                }
+                if (is(j, Kind::l_paren)) {
+                    parameters_of(j, owner, -1);
+                    j = balanced(j);
+                }
+                // Up to the body: mutable, constexpr, noexcept(...), attributes, -> type, requires ...
+                std::size_t b { j };
+                while (b < to && !is(b, Kind::l_brace) && !is(b, Kind::semi) && !is(b, Kind::r_paren) && !is(b, Kind::comma)) {
+                    if (is(b, Kind::l_paren) || is(b, Kind::l_square)) b = balanced(b);
+                    else ++b;
+                }
+                if (is(b, Kind::l_brace)) {
+                    lambda_body_next = true;
+                    k = b;
+                    continue;
+                }
+                k = j;
+                boundary = false;
+                continue;
+            }
+            if (t.kind == Kind::l_brace) {
+                // A block where statements are, or a lambda's body; otherwise a braced initializer.
+                const bool block { lambda_body_next || (contexts.back() && (boundary || (k > 0 && (is(k - 1, Kind::r_paren) || word(k - 1, "else") ||
+                                                                                                      word(k - 1, "do") || word(k - 1, "try"))))) };
+                contexts.push_back(block);
+                lambda_body_next = false;
+                boundary = block;
+                ++k;
+                continue;
+            }
+            if (t.kind == Kind::r_brace) {
+                if (contexts.size() > 1) contexts.pop_back();
+                boundary = contexts.back();
+                ++k;
+                continue;
+            }
+            if (t.kind == Kind::semi) {
+                boundary = contexts.back();
+                ++k;
+                continue;
+            }
+            if (k == control_close) {
+                boundary = true;
+                control_close = static_cast<std::size_t>(-1);
+                ++k;
+                continue;
+            }
+            boundary = false;
+            ++k;
+        }
+        i_ = saved;
+    }
+
+    // A local declaration at `k`: T x, T* p = e, auto [..] aside. Records it (and the constructs in
+    // its initializers) and leaves i_ after its declarators (at the `;`, `)` or `:`); false, i_
+    // unchanged, when the tokens are not one. `in_parens`: in the ( ) of if/for/while/switch/catch.
+    bool try_local(std::size_t k, std::int32_t owner, std::size_t limit, bool in_parens) {
+        const std::size_t saved { i_ };
+        if (k >= limit || any_word(k, STATEMENTS)) return false;
+        i_ = k;
+        const Scope scope { Context::block, {}, owner, false, false };
+        const Specifiers sp { specifiers(scope, k) };
+        if (!sp.type || sp.friend_ || i_ >= limit) {
+            i_ = saved;
+            return false;
+        }
+        bool any { false };
+        for (;;) {
+            const std::size_t start { i_ };
+            const Declarator d { declarator(scope) };
+            const bool ends { is(i_, Kind::equal) || is(i_, Kind::semi) || is(i_, Kind::comma) || is(i_, Kind::l_brace) || is(i_, Kind::l_paren) ||
+                              (in_parens && (is(i_, Kind::colon) || is(i_, Kind::r_paren))) };
+            if (!d.ok || !d.id.qualifiers.empty() || d.id.op || d.id.destructor || !ends || d.function || i_ > limit) {
+                if (!any) {
+                    i_ = saved;
+                    return false;
+                }
+                i_ = start;
+                return true;
+            }
+            const std::int32_t index { record(sp.typedef_ ? msa::Kind::type_alias : msa::Kind::variable, d.id.spelled, d.id.last, k, i_ - 1, scope, true, false, {}) };
+            out_.declarations[static_cast<std::size_t>(index)].pointer = sp.pointer || d.star;
+            out_.declarations[static_cast<std::size_t>(index)].c_array = d.array || sp.c_array;
+            out_.declarations[static_cast<std::size_t>(index)].va_list = sp.va_list && !d.pointer;
+            any = true;
+            // Its initializer.
+            if (is(i_, Kind::equal)) {
+                const std::size_t from { i_ + 1 };
+                ++i_;
+                while (i_ < limit && !is(i_, Kind::semi) && !is(i_, Kind::comma) && !(in_parens && (is(i_, Kind::r_paren) || is(i_, Kind::colon)))) {
+                    if (is(i_, Kind::l_paren) || is(i_, Kind::l_square) || is(i_, Kind::l_brace)) i_ = balanced(i_);
+                    else ++i_;
+                }
+                scan(from, i_, owner, false);
+            } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {
+                const std::size_t from { i_ };
+                i_ = balanced(i_);
+                scan(from, i_, owner, false);
+            }
+            close(index, i_ - 1);
+            if (is(i_, Kind::comma) && !in_parens) {
+                ++i_;
+                continue;
+            }
+            return true;
         }
     }
 
@@ -1081,14 +1528,21 @@ private:
 
 } // namespace
 
-Syntax parse(std::string_view text, const PreprocessOptions& options) {
+Syntax parse(std::string_view text, const PreprocessOptions& options, const Known& known) {
     Syntax out;
     out.pp = preprocess(text, options);
     out.line_starts.push_back(0);
     for (std::uint32_t i { 0 }; i < text.size(); ++i)
         if (text[i] == '\n' || (text[i] == '\r' && (i + 1 == text.size() || text[i + 1] != '\n'))) out.line_starts.push_back(i + 1);
-    Parser parser { out };
+    Parser parser { out, known };
     parser.run();
+    return out;
+}
+
+std::map<std::string, Known::Alias, std::less<>> exported_aliases(const Syntax& syntax) {
+    std::map<std::string, Known::Alias, std::less<>> out;
+    for (const auto& d : syntax.declarations)
+        if (d.kind == msa::Kind::type_alias && d.exported && !d.name.empty()) out.insert_or_assign(d.name, Known::Alias { d.pointer, d.c_array });
     return out;
 }
 
@@ -1098,6 +1552,46 @@ msa::Position position(const Syntax& syntax, std::uint32_t offset) {
     return { line, offset - *(it - 1) };
 }
 
+namespace {
+
+// Positions as Clang gives them: a token in a macro's expansion is where the outermost invocation
+// starts; a name ends its spelled length after its start, a range the length of the file's token at
+// its last token's place (the macro's name, for one an expansion gave) -- on that token's line,
+// however many lines the token spans.
+msa::Position after(const Syntax& syntax, std::uint32_t begin, std::uint32_t length) {
+    const auto p = position(syntax, begin);
+    return { p.line, p.column + length };
+}
+
+msa::Position end_of(const Syntax& syntax, const PpToken& t) {
+    const std::uint32_t length { t.expanded ? t.macro_end - t.at.begin : t.at.end - t.at.begin };
+    return after(syntax, t.at.begin, length);
+}
+
+} // namespace
+
+msa::Range selection_range(const Syntax& syntax, const Declaration& d) {
+    const auto& tokens = syntax.pp.tokens;
+    if (d.name_token >= tokens.size()) return msa::Range { position(syntax, d.name_at.begin), position(syntax, d.name_at.end) };
+    const auto& t = tokens[d.name_token];
+    const std::uint32_t length { t.expanded ? static_cast<std::uint32_t>(t.spelling.size()) : t.at.end - t.at.begin };
+    return msa::Range { position(syntax, t.at.begin), after(syntax, t.at.begin, std::max(1u, length)) };
+}
+
+msa::Range whole_range(const Syntax& syntax, const Declaration& d) {
+    const auto& tokens = syntax.pp.tokens;
+    if (d.last_token >= tokens.size() || d.first_token >= tokens.size()) return msa::Range { position(syntax, d.at.begin), position(syntax, d.at.end) };
+    return msa::Range { position(syntax, tokens[d.first_token].at.begin), end_of(syntax, tokens[d.last_token]) };
+}
+
+msa::Range token_range(const Syntax& syntax, std::uint32_t first, std::uint32_t last) {
+    const auto& tokens = syntax.pp.tokens;
+    if (tokens.empty()) return {};
+    first = std::min<std::uint32_t>(first, static_cast<std::uint32_t>(tokens.size() - 1));
+    last = std::min<std::uint32_t>(std::max(first, last), static_cast<std::uint32_t>(tokens.size() - 1));
+    return msa::Range { position(syntax, tokens[first].at.begin), end_of(syntax, tokens[last]) };
+}
+
 std::vector<msa::Symbol> symbols(const Syntax& syntax) {
     // Children in the order written: a declaration's index is after its parent's.
     std::vector<std::vector<std::size_t>> children(syntax.declarations.size() + 1);
@@ -1105,27 +1599,8 @@ std::vector<msa::Symbol> symbols(const Syntax& syntax) {
         const auto& d = syntax.declarations[i];
         children[static_cast<std::size_t>(d.parent + 1)].push_back(i);
     }
-    // Positions as Clang's outline gives them: a token in a macro's expansion is where the outermost
-    // invocation starts; a name ends its spelled length after its start, a range the length of the
-    // file's token at its last token's place (the macro's name, for one an expansion gave) -- on
-    // that token's line, however many lines the token spans.
-    const auto& tokens = syntax.pp.tokens;
-    const auto after = [&](std::uint32_t begin, std::uint32_t length) {
-        const auto p = position(syntax, begin);
-        return msa::Position { p.line, p.column + length };
-    };
-    const auto selection = [&](const Declaration& d) {
-        if (d.name_token >= tokens.size()) return msa::Range { position(syntax, d.name_at.begin), position(syntax, d.name_at.end) };
-        const auto& t = tokens[d.name_token];
-        const std::uint32_t length { t.expanded ? static_cast<std::uint32_t>(t.spelling.size()) : t.at.end - t.at.begin };
-        return msa::Range { position(syntax, t.at.begin), after(t.at.begin, std::max(1u, length)) };
-    };
-    const auto whole = [&](const Declaration& d) {
-        if (d.last_token >= tokens.size() || d.first_token >= tokens.size()) return msa::Range { position(syntax, d.at.begin), position(syntax, d.at.end) };
-        const auto& t = tokens[d.last_token];
-        const std::uint32_t length { t.expanded ? t.macro_end - t.at.begin : t.at.end - t.at.begin };
-        return msa::Range { position(syntax, tokens[d.first_token].at.begin), after(t.at.begin, length) };
-    };
+    const auto selection = [&](const Declaration& d) { return selection_range(syntax, d); };
+    const auto whole = [&](const Declaration& d) { return whole_range(syntax, d); };
     std::function<void(std::size_t, std::vector<msa::Symbol>&)> walk = [&](std::size_t slot, std::vector<msa::Symbol>& out) {
         for (const auto i : children[slot]) {
             const auto& d = syntax.declarations[i];

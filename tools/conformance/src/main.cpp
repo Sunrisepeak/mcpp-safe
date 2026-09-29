@@ -16,9 +16,10 @@
 // interfaces precompiled, its units checked -- and the gate findings of the two paths, the editor's
 // and the build's, must be the same set (A1.4.2).
 //
-// With --frontend, every file is also read by MC++'s own front end (mcxx.frontend: preprocessed, its
-// MC3 facts taken) and gated from those facts by the same engine: for every feature decided from facts
-// that front end gives (MC3 `macros`, `includes`), the findings must be the fixtures' (A1.6.2).
+// With --frontend, every file is also read by MC++'s own front end (mcxx.frontend: preprocessed, parsed,
+// its MC3 facts taken) and gated from those facts by the same engine: for every feature decided from
+// facts that front end gives, the findings must be the fixtures' (A1.6.2, A1.8.3); for one decided
+// from casts, what it finds must be expected (it sees the named casts, not C-style ones).
 import std;
 import mcxx.msa;
 import mcxx.plugin;
@@ -134,6 +135,7 @@ int main(int argc, char** argv) {
     std::string timings;
     std::size_t driverCompared { 0 };
     std::map<std::string, std::size_t> frontendCompared;   // per feature the front end decides: findings that agreed
+    std::map<std::string, std::size_t> frontendPartial;    // expected findings of cast features it cannot see (C-style casts)
     std::vector<std::string> driverUnreached;   // files the build does not compile: an interface they import has a gate error
     for (auto& [dir, sources] : programs) {
         const auto programStarted = std::chrono::steady_clock::now();
@@ -185,20 +187,35 @@ int main(int argc, char** argv) {
             problems.push_back(std::format("{}:{}: {} was reported where nothing expects it", m.file, m.line + 1, m.feature));
         }
         if (frontend) {
-            // The features MC++'s front end gives the facts for: decided from `macros` and `includes` only.
-            constexpr auto covered = msa::fact::Kinds::macros | msa::fact::Kinds::includes;
+            // The features MC++'s front end gives the facts for: decided from the kinds its reading fills.
+            // Its casts are the named ones only (a C-style cast needs types): for a feature decided from
+            // casts, what it finds must be expected, not everything expected found.
+            constexpr auto covered = msa::fact::Kinds::macros | msa::fact::Kinds::includes | msa::fact::Kinds::declarations | msa::fact::Kinds::gotos |
+                                     msa::fact::Kinds::allocations | msa::fact::Kinds::casts | msa::fact::Kinds::uses | msa::fact::Kinds::suppressions;
             const auto decided = [&](std::string_view id) {
                 const auto* f = mcxx::plugin::find_feature(id);
                 return f != nullptr && f->needs != msa::fact::Kinds::none && (std::to_underlying(f->needs) & ~std::to_underlying(covered)) == 0;
             };
+            const auto partial = [&](std::string_view id) {
+                const auto* f = mcxx::plugin::find_feature(id);
+                return f != nullptr && msa::fact::contains(f->needs, msa::fact::Kinds::casts);
+            };
             std::set<Mark> ours;
+            // What the program's module interfaces export, as a host that has read them passes it.
+            mcxx::frontend::Known known;
+            for (const auto& s : sources) {
+                if (s.extension() != ".cppm") continue;
+                const std::string text { read(s) };
+                for (auto& [name, alias] : mcxx::frontend::exported_aliases(mcxx::frontend::parse(text, { .file = s.generic_string() })))
+                    known.aliases.insert_or_assign(name, alias);
+            }
             for (const auto& s : sources) {
                 const std::string path { s.generic_string() };
                 const std::string rel { fs::relative(s, root).generic_string() };
                 const std::string text { read(s) };
-                const auto pp = mcxx::frontend::preprocess(text, { .file = path });
-                const auto facts = mcxx::frontend::facts(pp);
-                const std::string module { pp.module.name + (pp.module.partition.empty() ? "" : ":" + pp.module.partition) };
+                const auto syntax = mcxx::frontend::parse(text, { .file = path }, known);
+                const auto facts = mcxx::frontend::facts(syntax);
+                const std::string module { syntax.pp.module.name + (syntax.pp.module.partition.empty() ? "" : ":" + syntax.pp.module.partition) };
                 const auto plan = mcxx::features::plan_for(path);
                 if (!plan) continue;
                 const mcxx::plugin::Context context { path, module, facts };
@@ -208,7 +225,8 @@ int main(int argc, char** argv) {
             for (const auto& m : expected) {
                 if (!decided(m.feature)) continue;
                 if (ours.contains(m)) ++frontendCompared[m.feature];
-                else problems.push_back(std::format("{}:{}: MC++'s front end does not give {}", m.file, m.line + 1, m.feature));
+                else if (!partial(m.feature)) problems.push_back(std::format("{}:{}: MC++'s front end does not give {}", m.file, m.line + 1, m.feature));
+                else ++frontendPartial[m.feature];
             }
             for (const auto& m : ours)
                 if (!expected.contains(m)) problems.push_back(std::format("{}:{}: MC++'s front end gives {}, nothing expects it", m.file, m.line + 1, m.feature));
@@ -349,7 +367,10 @@ int main(int argc, char** argv) {
     if (frontend) {
         std::string per;
         for (const auto& [feature, n] : frontendCompared) per += std::format("{}{} {}", per.empty() ? "" : ", ", n, feature);
-        std::println("MC++'s front end: the expected findings of the features it gives the facts for, all given ({})", per);
+        std::string missed;
+        for (const auto& [feature, n] : frontendPartial) missed += std::format("{}{} {}", missed.empty() ? "" : ", ", n, feature);
+        std::println("MC++'s front end: the expected findings of the features it gives the facts for, all given ({}){}", per,
+                     missed.empty() ? std::string {} : std::format("; not seen without types, as expected: {}", missed));
     }
     std::println("{} programs, {} files, {} problems, {:.1f} s", programs.size(), files, problems.size(), total);
     if (!json.empty()) std::ofstream { json } << report;

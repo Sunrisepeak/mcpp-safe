@@ -20,7 +20,8 @@ struct Program {
     std::string file;
     Program() {
         fs::create_directories(root / "src");
-        std::ofstream { root / "mcpp.toml" } << "[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx.features]\ngoto = \"deny\"\n";
+        std::ofstream { root / "mcpp.toml" } << "[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx.features]\ngoto = \"deny\"\n"
+                                                 "new-delete = \"deny\"\nreinterpret-cast = \"deny\"\nraw-pointers = \"deny\"\nmacros = \"deny\"\n";
         file = (root / "src/a.cpp").generic_string();
         std::ofstream { file } << text();
     }
@@ -139,6 +140,43 @@ int main(int argc, char** argv) {
         expect(catalog.has_value() && (*catalog)["mc1-version"] == "0.2.0" && (*catalog)["features"].size() > 15);
         auto symbols = client.request("textDocument/documentSymbol", program.document());
         expect(symbols.has_value() && symbols->is_array() && !symbols->empty()) << "LSP's own requests are the service's";
+    };
+
+    "an edit's syntax-level gate findings arrive within 100 ms, before its parse (A1.8.3)"_test = [&] {
+        // goto, new and delete, reinterpret_cast, a written `*` declarator, a macro: what MC++'s own front
+        // end reads without a parse.
+        const std::string edited { "#define LIMIT 4\nint f(int n) {\n    int* p = new int { n };\n    if (n) goto out;\n"
+                                   "    long a = reinterpret_cast<long>(p);\n    delete p;\n    return 1;\nout:\n    return 0;\n}\n" };
+        Json change = Json::object();
+        change["textDocument"]["uri"] = "file://" + program.file;
+        change["textDocument"]["version"] = 2;
+        Json whole = Json::object();
+        whole["text"] = edited;
+        change["contentChanges"] = Json::array({ whole });
+        const auto sent = std::chrono::steady_clock::now();
+        client.notify("textDocument/didChange", change);
+        const std::set<std::string> wanted { "goto", "new-delete", "reinterpret-cast", "raw-pointers", "macros" };
+        std::chrono::steady_clock::duration took {};
+        std::set<std::string> got;
+        {
+            std::unique_lock lock { seen.mutex };
+            const bool arrived { seen.changed.wait_for(lock, std::chrono::seconds { 10 }, [&] {
+                for (const auto& d : seen.diagnostics) {
+                    // At once, before the parse: published without a version (it is not the version's answer).
+                    got.clear();
+                    for (const auto& x : d.value("diagnostics", Json::array())) got.insert(x.value("code", std::string {}));
+                    if (std::ranges::includes(got, wanted)) {
+                        took = std::chrono::steady_clock::now() - sent;
+                        return true;
+                    }
+                }
+                return false;
+            }) };
+            expect(fatal(arrived)) << "every one of goto, new-delete, reinterpret-cast, raw-pointers, macros";
+        }
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(took).count();
+        std::println(std::cerr, "  the edit's syntax-level findings after {} ms", ms);
+        expect(ms <= 100) << std::format("{} ms", ms);
     };
 
     "killed, the server is started again and told again what it was told"_test = [&] {

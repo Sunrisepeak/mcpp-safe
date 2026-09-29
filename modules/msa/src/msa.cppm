@@ -504,6 +504,20 @@ public:
     virtual std::vector<Location> references(std::string_view entity) const = 0;
     virtual std::vector<Found> find(std::string_view query, std::size_t limit) const = 0;
 
+    // What a syntax-level reading of the text says at once, without a parse (the Clang backend: MC++'s
+    // own front end): the gate findings of the features it decides, and those features -- what an
+    // editor shows until the parse's diagnostics come (A1.8.3). Nothing when the backend has no such
+    // reading, or nothing is gated.
+    struct Quick {
+        std::vector<Diagnostic> diagnostics;
+        std::vector<std::string> features;   // decided here: a parse's findings of these, on an older text, are superseded
+    };
+    virtual Quick quick(const std::string& path, std::string_view text) {
+        (void)path;
+        (void)text;
+        return {};
+    }
+
     // A file the editor changed on disk (not an open buffer): its unit and dependents are stale.
     virtual void file_changed(const std::string& path) = 0;
     // The editor closed the file: its text is the disk's again.
