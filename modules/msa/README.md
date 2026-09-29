@@ -18,3 +18,15 @@
 - **后端信息**：`BackendInfo`（名字、版本、semantic kit 应当使用的 libc++ 版本）。
 
 只依赖 std。它是整个 libmc++ 的共同语言，改动要谨慎：`Unit` 和 `Workspace` 上的每个虚函数，后端和测试里的假实现都要实现。
+
+## 文件
+
+接口单元只声明，定义在实现单元里（MC5 §8）。
+
+| 文件 | 内容 |
+|---|---|
+| `src/msa.cppm` | 主接口：只 `export import` 下面四个分区 |
+| `src/basics.cppm` | `:basics`：位置、范围、Location，certainty，诊断，实体的种类，occurrence 的角色 |
+| `src/entities.cppm` | `:entities`：服务回答用的值——实体、occurrence、符号、补全、签名，以及 workspace 报告自己的（后端、命令、失败、状态） |
+| `src/facts.cppm` | `:facts`：MC3 的事实（`specs/mc3-facts.md`） |
+| `src/service.cppm` | `:service`：后端实现的接口，`Unit` 和 `Workspace` |

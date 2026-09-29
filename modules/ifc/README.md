@@ -57,3 +57,15 @@ mcpp 会把依赖包和 `std` 的 BMI 从它的构建缓存复制进项目，旁
 
 - MC2 1.0 里声明的类型是 MC3 的文本，不是 IFC 的类型图；静态成员函数写成 `Method`。
 - 依赖包的 BMI 如果是 mcpp 从它的构建缓存里恢复的，旁边没有 `.ifc`；导入方从 store 里找（见上）。
+
+## 文件
+
+接口单元只声明，定义在实现单元里（MC5 §8）。
+
+| 文件 | 内容 |
+|---|---|
+| `src/ifc.cppm` | 主接口：`Interface`、`Dialect`，写、读、保存、加载、store、比较的声明 |
+| `src/format.cppm` | `:format`（内部分区）：写和读共用的——MC3 的种类和标志名、每种种类的 IFC sort、属性文本、IFC 构建器、MC2 用到的分区 |
+| `src/writer.cpp` | 写：声明放进 IFC 作用域、属性、方言（§2–§5）；`save` |
+| `src/reader.cpp` | 读，每个偏移都检查（§6）；`load`、`differences` |
+| `src/store.cpp` | 从 BMI 找接口：旁边，或按 BMI 内容在 store 里（§7） |

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC5 |
-| Version | 0.2.0 |
+| Version | 0.3.0 |
 | Status | Draft |
 | Schema | [`schema/mc5-version.schema.json`](schema/mc5-version.schema.json) |
 | Examples | [`examples/mc5-version.json`](examples/mc5-version.json) |
@@ -65,3 +65,12 @@ libmc++'s semantic services (the backend behind mcppls) derive, from a unit's bu
 A build system uses `mcxx` as it uses an LLVM toolchain (V0.6, E-XIM-1): an `llvm`-shaped payload whose `bin/clang++` and `bin/clang` are `mcxx` (§2 selects the mode by name), next to `bin/ld.lld`, the compiler's resource directory (`lib/clang/23`) and the C++ standard library with its module sources. A build system MUST NOT need to know that the compiler is `mcxx` to build with it; it MAY ask `mcxx version --json` to find out. <a id="MC5-7-1"></a><sup>MC5-7-1</sup> With no `--target` and no configuration file, `mcxx` compiles for x86_64-unknown-linux-gnu on x86-64 Linux, whatever C library it itself runs on, as xim's LLVM does; a build tool that passes `--no-default-config` for a native build relies on it. <a id="MC5-7-2"></a><sup>MC5-7-2</sup>
 
 For mcpp, the payload is the xpkg `mcxx:mcxx` of this repository (`xpkgs/pkgs/m/mcxx.lua`), used as `mcpp build --toolchain llvm@23.1.0-mcxx`; mcpp is not changed.
+
+## 8. Module layout (recommended, 0.3.0)
+
+This section is advice to the projects MC++ builds, and the layout this repository keeps.
+
+- A module SHOULD be divided by what its parts are about: a primary interface unit that re-exports interface partitions, one per concern, and the definitions in implementation units (`.cpp`: `module m;`), not in the interface units (`.cppm`), which declare. A source file SHOULD stay under 2000 lines. <a id="MC5-8-1"></a><sup>MC5-8-1</sup>
+- Why: with today's compilers an interface unit's BMI changes when any function body in it changes, and every unit that imports it is compiled again; a body in an implementation unit recompiles that unit alone. A one-file module is the slow case.
+- MC++ plans to make the one-file form as cheap as the divided one: an interface unit's BMI carrying only what an importer needs (a reduced BMI: no non-inline function bodies), and a BMI not written again when those bytes would not change, as MC2 already does for the `.ifc` (MC2-2-4) -- so a build tool that looks at what changed rebuilds importers only when the interface did.
+

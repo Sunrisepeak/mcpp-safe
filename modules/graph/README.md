@@ -6,3 +6,12 @@
 - `Graph`：`provider(module)`、`requires_of`、`closure(roots, &missing)`（依赖在前）、`modules()`、`cycles()`。
 
 `mcxx.backend.clang` 用它确定构建模块接口的顺序，以及诊断该落在哪一个 import 上。测试：`mcpp test -p modules/graph`。
+
+## 文件
+
+接口单元只声明，定义在实现单元里（MC5 §8）。
+
+| 文件 | 内容 |
+|---|---|
+| `src/graph.cppm` | 接口：模块单元的事实、模块图 |
+| `src/scan.cpp` | 实现：扫描模块声明和导入，建图 |

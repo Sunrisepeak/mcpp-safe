@@ -2,6 +2,13 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-29 — MC5 0.3.0: module layout
+
+- **MC5** 0.3.0 (§8, recommended): a module divided by concern -- interface partitions that declare,
+  implementation units that define -- and source files under 2000 lines, because with today's
+  compilers a body in an interface unit rebuilds every importer; and what MC++ plans so that a
+  one-file module builds as fast (a reduced BMI, not rewritten when unchanged).
+
 ## 2026-09-29 — MC2 1.2.0: what an importer reaches (M2.2)
 
 - **MC2** 1.2.0 (§3.1): an interface also carries the unit's reachable declarations -- what its

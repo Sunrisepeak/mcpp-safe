@@ -14,7 +14,7 @@
 
 | 目录 | 包 / 模块 | 内容 | 状态 |
 |---|---|---|---|
-| [`sdk`](sdk/) | `mcxx-plugin` / `mcxx.plugin` | provider 的接口、注册、解析（Catalog）、失败报告（`Context::fail`） | v0 |
+| [`sdk`](sdk/README.md) | `mcxx-plugin` / `mcxx.plugin` | provider 的接口、注册、解析（Catalog）、失败报告（`Context::fail`） | v0 |
 | [`wire`](wire/README.md) | `mcxx-plugin-wire` / `mcxx.plugin.wire` | MC3 事实与 MC4 消息的 JSON 格式 | v0 |
 | [`remote`](remote/README.md) | `mcxx-plugin-remote` / `mcxx.plugin.remote` | 进程外插件的插件一侧：`serve()` | v0（协议 1） |
 | [`host`](host/README.md) | `mcxx-plugin-host` / `mcxx.plugin.host` | 进程外插件的宿主一侧：启动、握手、代理、超时与崩溃隔离；记录组合进来的静态插件 | v0（协议 1） |

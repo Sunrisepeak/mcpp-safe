@@ -3,7 +3,7 @@
 
     tools/checks/lint.py [ROOT...]        default: the repository (src modules plugins tools, manifests)
 
-The rules: clang-exposure, platform-exposure, json-brace-init, direct-output (below).
+The rules: clang-exposure, platform-exposure, json-brace-init, direct-output, file-size (below).
 
 clang-exposure
     Clang and LLVM are named in two packages only: modules/backend/clang and
@@ -27,6 +27,10 @@ direct-output
     the sink), and a bug is looked for with a trace point, not a print. std::cout, std::cerr,
     std::clog, std::print(ln) of a format string, printf, fprintf, puts are errors outside the few
     files whose output they are (OUTPUT_FILES, each with why).
+
+file-size
+    A source file of this repository stays under 2000 lines (MC5-8-1): past it, divide it along its
+    concerns -- an interface partition, an implementation unit. Generated tables are not exempt.
 
 json-brace-init
     `Json x { expr };` (and nlohmann::json, a member's `{ expr }` default) is list-initialization:
@@ -144,7 +148,7 @@ OUTPUT_FILES = {
     "modules/driver/src/commands.cpp": "the mcxx program: its commands' results and a compiler's messages",
     "modules/testing/src/testing.cpp": "the test harness's report",
     "modules/base/src/trace.cpp": "the trace's own sink, standard error when a host installed none",
-    "modules/plugin/remote/src/remote.cppm": "a plugin process's MC4 stream",
+    "modules/plugin/remote/src/remote.cpp": "a plugin process's MC4 stream",
     "plugins/mcpp-tools-safe/src/safe.cppm": "a build rule's errors, which mcpp shows the build's user",
 }
 DIRECT_OUTPUT = re.compile(r'std::(cerr|cout|clog)\b|\bstd::printl?n?\(\s*"|\bf?printf\s*\(|\bputs\s*\(')
@@ -196,6 +200,8 @@ def main() -> int:
                 for n, line in enumerate(lines, 1):
                     if CLANG_INCLUDE.match(line):
                         problems.append(f"{path}:{n}: clang-exposure: Clang/LLVM is named outside modules/backend/clang*\n    {line.strip()}")
+            if len(lines) >= 2000 and path.resolve().as_posix().startswith(str(repo) + "/"):
+                problems.append(f"{path}:1: file-size: {len(lines)} lines; divide it along its concerns (MC5-8-1)")
             if output_checked(path):
                 for n, line in enumerate(code.splitlines(), 1):
                     if DIRECT_OUTPUT.search(line):

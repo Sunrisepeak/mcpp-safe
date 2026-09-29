@@ -13,3 +13,12 @@ int main() { return mcxx::plugin::remote::serve(); }
 - 标准输出上只写协议消息（MC4-6.1-2），日志写到标准错误。
 
 测试：`mcpp test -p modules/plugin/remote`，用字符串流模拟宿主，覆盖握手、版本不匹配、check、filter 和错误。
+
+## 文件
+
+接口单元只声明，定义在实现单元里（MC5 §8）。
+
+| 文件 | 内容 |
+|---|---|
+| `src/remote.cppm` | 接口：`serve()` |
+| `src/remote.cpp` | 实现：标准输入输出上的会话，由进程里注册的 provider 回答 |

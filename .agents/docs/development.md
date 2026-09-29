@@ -76,3 +76,10 @@ fixture 的工作目录（`--workspace-dir`、`--cache-dir`）要放在 mcpp-saf
 | 库不占用标准错误 | 日志交给宿主的回调（`msa::Workspace::Options::log`，带级别和类别）；Clang 自己的输出（例如 "N errors generated."）也关掉了 |
 
 新代码的约定：一个会花时间的操作就包一个 `trace::Span`，失败用 info 级别并写明原因，其余用 debug 级别。
+
+## 5. 代码组织
+
+- 模块按关注点划分：主接口单元只负责 `export import` 各个接口分区，每个分区声明一件事；定义放在实现单元（`.cpp`，`module m;`）里，接口单元只声明。一个文件不超过 2000 行（`lint.py` 的 `file-size` 规则）。这也是 MC5 §8 对 MC++ 项目的建议。
+- 原因：现有编译器下，接口单元里任何一个函数体改动都会让它的 BMI 变化，所有导入它的单元都要重新编译；函数体放在实现单元里，只重新编译那一个单元。MC++ 计划让单文件模块也一样快：BMI 只带导入方需要的（reduced BMI，不含非 inline 函数体），内容不变就不重写（`.ifc` 已经这样做，MC2-2-4），构建工具据此只在接口真的变了时重建导入方。
+- 库代码不直接写标准输出和标准错误（`direct-output` 规则），要说的话走 `mcxx.base` 的 log 和 trace；查问题加 trace 点，不加临时打印。
+

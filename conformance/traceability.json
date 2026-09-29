@@ -6,7 +6,7 @@
    "validate": "MC1 schema rejects a malformed feature id"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2-1)"
   }
  ],
@@ -26,7 +26,7 @@
    "test": "modules/features/tests/test_iso.cpp: every built-in feature is iso, with its stable names"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2-3)"
   }
  ],
@@ -63,7 +63,7 @@
    "test": "modules/features/tests/test_override.cpp: an ISO feature a plugin adds without replacing one, and two providers of one name, are problems"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2.1-1)"
   }
  ],
@@ -72,7 +72,7 @@
    "validate": "MC1 example catalog: library ids start with lib:"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2.1-2)"
   }
  ],
@@ -81,7 +81,7 @@
    "validate": "MC1 example catalog: library ids start with lib:, extension ids with ext:"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2.1-3)"
   }
  ],
@@ -92,7 +92,7 @@
  ],
  "MC1-2.2-1": [
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/names.cpp",
    "contains": "if (name == \"allow\" || name == \"off\") return Level::allow;"
   },
   {
@@ -361,7 +361,7 @@
    "validate": "mcxx: the .ifc's content hash is the SHA-256 of every byte after it"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/format.cppm",
    "contains": "const sdk::SHA256Hash hash { sdk::hash_bytes(file.data() + hashed, file.data() + file.size()) };"
   }
  ],
@@ -378,7 +378,7 @@
    "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/format.cppm",
    "contains": "sdk::DeclSort sort_for(Kind k)"
   }
  ],
@@ -387,7 +387,7 @@
    "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/writer.cpp",
    "contains": "association.trait = called(\"decl\", args);"
   }
  ],
@@ -396,7 +396,7 @@
    "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/format.cppm",
    "contains": "std::string quote(std::string_view s)"
   }
  ],
@@ -415,11 +415,11 @@
  ],
  "MC2-6-2": [
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/reader.cpp",
    "contains": "if (!versioned) return fail(\"no mcxx::mc2 version: not written by MC2\");"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/reader.cpp",
    "contains": "return fail(std::format(\"unknown dialect item mcxx::{} with {} arguments\", name, args.size()));"
   }
  ],
@@ -467,7 +467,7 @@
  ],
  "MC3-3-1": [
   {
-   "script": "modules/msa/src/msa.cppm",
+   "script": "modules/msa/src/basics.cppm",
    "contains": "means \"ask someone else\", never \"no\""
   }
  ],
@@ -606,7 +606,7 @@
    "test": "modules/features/tests/test_override.cpp: an ISO feature a plugin adds without replacing one, and two providers of one name, are problems"
   },
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC4-2-1)"
   }
  ],
@@ -798,7 +798,7 @@
    "test": "modules/backend/clang/tests/test_backend.cpp: a package's out-of-process plugin gates its files; a static plugin not composed in is said"
   },
   {
-   "script": "modules/plugin/host/src/host.cppm",
+   "script": "modules/plugin/host/src/proxy.cpp",
    "contains": "(MC4-3-5)"
   }
  ],
@@ -1084,7 +1084,7 @@
  ],
  "MC4-2-7": [
   {
-   "script": "modules/plugin/sdk/src/plugin.cppm",
+   "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "is claimed by {} and by {}"
   },
   {
@@ -1118,8 +1118,17 @@
    "test": "modules/ifc/tests/test_ifc.cpp: what an importer reaches beyond the unit's own declarations round-trips after them (MC2 1.2)"
   },
   {
-   "script": "modules/ifc/src/ifc.cppm",
+   "script": "modules/ifc/src/writer.cpp",
    "contains": "if (i >= own) flags += flags.empty() ? \"reachable\" : \",reachable\";"
+  }
+ ],
+ "MC5-8-1": [
+  {
+   "script": "tools/checks/lint.py",
+   "contains": "file-size"
+  },
+  {
+   "manual": "Dividing a module by concern is a review question; the line limit is linted (file-size)."
   }
  ]
 }
