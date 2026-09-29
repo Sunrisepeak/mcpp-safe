@@ -1,0 +1,20 @@
+# mcpp-tools-safe -- MC++'s gates as an mcpp build rule, for a program no mcxx compiles (E-PLG-1,
+# A1.5): a build with GCC, or with an LLVM that is not mcxx, runs `mcxx check` on its sources as a
+# blocking `role = "check"` action. The build fails on a gate's error, exactly where mcxx itself would
+# fail it, and the check is incremental (mcpp's stamp: sources unchanged, it does not run again).
+#
+# A rule is consumed only by a build.mcpp (it imports `mcpp`, the build API), so it is not a member of
+# this repository's workspace and compiling it on its own proves nothing: tests/consumer is the test.
+# Requires mcpp >= 2026.8.29.1 (mcpp writes a check's stamp when its command succeeds).
+[package]
+name        = "mcpp-tools-safe"
+version     = "0.1.0"
+description = "MC++'s feature gates (mcxx check) as an mcpp check rule, for builds with other compilers"
+license     = "Apache-2.0"
+platforms   = ["linux", "macos", "windows"]
+
+[targets.mcpp-tools-safe]
+kind = "lib"
+
+[lib]
+path = "src/safe.cppm"

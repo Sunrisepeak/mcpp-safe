@@ -14,6 +14,7 @@ export module mcxx.serve;
 
 import std;
 import nlohmann.json;
+import mcxx.msa;
 
 export namespace mcxx::serve {
 
@@ -32,6 +33,9 @@ struct Options {
 
 // Serves until `exit`: 0 when `shutdown` came first, 1 otherwise (LSP's rule).
 int run(std::istream& in, std::ostream& out, Options options);
+
+// A build database's commands: `path` a compile_commands.json or the directory that holds one.
+std::vector<msa::Command> read_database(const std::string& path);
 
 class Client {
 public:

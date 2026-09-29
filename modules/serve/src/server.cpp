@@ -61,6 +61,18 @@ std::vector<msa::Command> commands_from(const Json& list) {
     return commands;
 }
 
+} // namespace
+
+std::vector<msa::Command> read_database(const std::string& path) {
+    fs::path file { path };
+    if (fs::is_directory(file)) file /= "compile_commands.json";
+    std::ifstream in { file };
+    if (!in) return {};
+    return commands_from(Json::parse(in, nullptr, false));
+}
+
+namespace {
+
 std::string default_cache() {
     const char* home = std::getenv("HOME");
     return (fs::path { home != nullptr ? home : "/tmp" } / ".cache" / "mcxx" / "serve").generic_string();

@@ -16,6 +16,7 @@ import mcxx.plugin;
 import mcxx.plugin.host;
 import mcxx.features;
 import mcxx.serve;
+import mcxx.backend;
 
 namespace mcxx::driver {
 
@@ -286,6 +287,66 @@ std::filesystem::path compose_cache() {
     return std::filesystem::path { home != nullptr ? home : "/tmp" } / ".cache" / "mcxx" / "compose";
 }
 
+// mcxx check -p DB [--cache DIR] [--resource DIR] FILE...: each file as the build database compiles it
+// (whatever compiler the database names: GCC's commands too), parsed by the semantic backend, which
+// builds the module interfaces the files import itself, into the cache, kept between runs. Every gate
+// finding and compiler diagnostic is printed as a compiler prints it; 1 when there is an error (A1.5:
+// a blocking check for a program no mcxx builds).
+int check_database(std::vector<std::string> rest, const char* self) {
+    std::string database, cache, resource;
+    std::vector<std::string> files;
+    for (std::size_t i { 0 }; i < rest.size(); ++i) {
+        const std::string& a { rest[i] };
+        if (a == "-p" && i + 1 < rest.size()) database = rest[++i];
+        else if (a.starts_with("-p=")) database = a.substr(3);
+        else if (a == "--cache" && i + 1 < rest.size()) cache = rest[++i];
+        else if (a == "--resource" && i + 1 < rest.size()) resource = rest[++i];
+        else files.push_back(fs::absolute(a).lexically_normal().generic_string());
+    }
+    auto commands = mcxx::serve::read_database(database);
+    if (commands.empty() || files.empty()) {
+        std::println(std::cerr, "mcxx check: {}", commands.empty() ? std::format("no build database at `{}`", database) : std::string { "no file to check" });
+        return 2;
+    }
+    if (cache.empty()) {
+        const char* home { std::getenv("HOME") };
+        cache = (fs::path { home != nullptr ? home : "/tmp" } / ".cache" / "mcxx" / "check").generic_string();
+    }
+    if (resource.empty()) {   // the compiler's resource directory beside the program (the payload's layout)
+        std::error_code ec;
+        const auto dir = fs::weakly_canonical(fs::path { self }, ec).parent_path();
+        for (const auto& candidate : { dir / "../lib/clang/23", dir / "lib/clang/23" })
+            if (fs::is_directory(candidate, ec)) resource = candidate.lexically_normal().generic_string();
+    }
+    msa::Workspace::Options options;
+    options.cache_directory = cache;
+    options.resource_directory = resource;
+    options.background_index = false;
+    auto workspace = mcxx::backend::make_workspace(std::move(options));
+    workspace->set_commands(std::move(commands));
+    int errors { 0 };
+    for (const auto& file : files) {
+        std::ifstream in { file, std::ios::binary };
+        std::string text { std::istreambuf_iterator<char> { in }, {} };
+        const auto unit = workspace->parse(file, std::move(text), 1);
+        if (!unit) {
+            std::println(std::cerr, "{}: error: the build database has no command for it", file);
+            ++errors;
+            continue;
+        }
+        for (const auto& d : unit->diagnostics()) {
+            if (d.severity != msa::Severity::error && d.severity != msa::Severity::warning) continue;
+            const bool error { d.severity == msa::Severity::error };
+            errors += error ? 1 : 0;
+            std::println(std::cerr, "{}:{}:{}: {}: {}{}", file, d.range.begin.line + 1, d.range.begin.column + 1, error ? "error" : "warning", d.message,
+                         d.code.empty() || plugin::find_feature(d.code) == nullptr || d.message.contains(std::format("[{}]", d.code))
+                             ? std::string {}
+                             : std::format(" [{}]", d.code));
+        }
+    }
+    return errors > 0 ? 1 : 0;
+}
+
 int run(int argc, char** argv, std::vector<std::string> composed, std::string composition) {
     namespace compiler = mcxx::backend::compiler;
     plugin::host::set_composed(std::move(composed));
@@ -312,6 +373,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
     if (command == "c++" || command == "cc") return compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest));
     if (command == "check") {
+        if (!rest.empty() && (rest.front() == "-p" || rest.front().starts_with("-p="))) return check_database(std::move(rest), argv[0]);
         rest.push_back("-fsyntax-only");
         return compiler::run_as("c++", argv[0], std::move(rest));
     }

@@ -1,0 +1,16 @@
+# The test of mcpp-tools-safe: a module program built with GCC, gated by MC++ through the rule. The
+# strict profile denies goto; tools/checks/tools_safe.py builds it clean, with a goto (the build
+# fails at the check), clean again, and a second time unchanged (the check does not run).
+[package]
+name    = "tools-safe-consumer"
+version = "0.1.0"
+
+[package.metadata.mcxx]
+profile = "strict"
+
+[targets.tools-safe-consumer]
+kind = "bin"
+main = "src/main.cpp"
+
+[build-dependencies]
+mcpp-tools-safe = { path = "../..", host-module = true }

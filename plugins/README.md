@@ -16,6 +16,8 @@ MC++ 第一方插件的实现。插件机制本身在 [`modules/plugin`](../modu
 
 [`examples/`](examples/README.md) 是同一个插件包的两种用法：静态组合（`naming`）和进程外（`naming-remote`，可以用 GCC 构建）。
 
-以后还会有：`mcpp-tools-safe`（对非 mcxx 工具链以 blocking check 运行 `mcxx check`，M1.5）和 `gpu`（GPU 区域插件，M3），各自一个目录。
+[`mcpp-tools-safe`](mcpp-tools-safe/README.md) 不是 SDK 插件，而是 mcpp 的构建规则包（模块 `mcxx.check`）。用 GCC 等其他编译器构建时，它把 `mcxx check` 作为 blocking check 动作放进构建（M1.5）。
+
+以后还会有 `gpu`（GPU 区域插件，M3），单独一个目录。
 
 新增一个插件：放进主题相近的目录（新建一个模块单元，并在该包的 lib 根里 `export import` 它），或者新建一个目录。然后在 `tests/` 里只用事实做测试（不依赖 Clang，秒级），再在 `modules/backend/clang/tests` 里加一个经过 Clang 的用例、在 `conformance/gates` 里加正例和反例。

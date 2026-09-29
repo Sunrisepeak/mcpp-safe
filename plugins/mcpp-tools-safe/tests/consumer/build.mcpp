@@ -1,0 +1,13 @@
+import std;
+import mcpp;
+import mcxx.check;
+
+int main() {
+    mcxx::check::options o;
+    // The test names its mcxx (the one just built); a real project declares the toolchain package in
+    // [build-dependencies] and lets the rule find it.
+    if (const char* p = mcpp::env_or("MCXX"); p && *p) o.program = p;
+    // A development mcxx has no Clang resource directory beside it (the payload does).
+    if (const char* r = mcpp::env_or("MCXX_RESOURCE"); r && *r) o.args = { "--resource", r };
+    return mcxx::check::sources(o) ? 0 : 1;
+}
