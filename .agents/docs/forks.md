@@ -12,7 +12,7 @@ every fork, what it carries, and what it would take to merge back (a decision fo
 | `speak-agent/openkal-linux` | mcpplibs/openkal-linux 0.15.0 (9ef9720) | `dlopen` (PR #1; tag 0.16.0) | the two operations; `_start` relocates a `-static-pie` program (relative relocations, `DT_RELR`) and biases the TLS image. | With the spec. |
 | `speak-agent/openkal-windows` | mcpplibs/openkal-windows 0.10.1 (1332fb6) | `dlopen` (PR #1; tag 0.11.0) | the two operations (`VirtualProtect`). | With the spec. |
 | `speak-agent/openkal-macos` | mcpplibs/openkal-macos 0.12.0 (f714a39) | `dlopen` (PR #1; tag 0.13.0) | the two operations (`mprotect`). | With the spec. |
-| `speak-agent/openkal-musl` | mcpplibs/openkal-musl 0.19.2 (20b9268) | `dlopen` (PR #1; tag 0.19.3) | `dlopen`/`dlsym`/`dladdr` in a static program: an ELF loader above openkal (x86_64, aarch64), host-first binding, dynamic TLS, loaded objects in `dl_iterate_phdr`; `examples/dlopen`. mcpp-safe's root names it by git tag (0.19.3 satisfies openkal-llvm-runtime's `^0.19.2`). | With the spec; PE and Mach-O loading not yet. |
+| `speak-agent/openkal-musl` | mcpplibs/openkal-musl 0.19.2 (20b9268) | `dlopen` (PR #1; tags 0.19.3, 0.19.4) | `dlopen`/`dlsym`/`dladdr` in a static program: an ELF loader above openkal (x86_64, aarch64), host-first binding, dynamic TLS, loaded objects in `dl_iterate_phdr`; `examples/dlopen`; 0.19.4: on macOS a constructor that precedes the library's start (libmc++'s plugin registrations) brings it up on first use -- the allocator and per-context state (`examples/early-constructor`). mcpp-safe's root names it by git tag (0.19.4 satisfies openkal-llvm-runtime's `^0.19.2`). | With the spec; PE and Mach-O loading not yet. |
 
 ## Planned
 
