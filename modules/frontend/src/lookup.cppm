@@ -56,6 +56,11 @@ bool scope_kind(msa::Kind k) {
     return k == msa::Kind::namespace_ || k == msa::Kind::class_ || k == msa::Kind::struct_ || k == msa::Kind::union_ || k == msa::Kind::enum_;
 }
 bool class_kind(msa::Kind k) { return k == msa::Kind::class_ || k == msa::Kind::struct_ || k == msa::Kind::union_; }
+// What a name before `::` can be ([basic.lookup.qual]/1): a namespace, a type, a template.
+bool names_scope(msa::Kind k) {
+    return k == msa::Kind::namespace_ || k == msa::Kind::namespace_alias || class_kind(k) || k == msa::Kind::enum_ || k == msa::Kind::type_alias ||
+           k == msa::Kind::template_parameter || k == msa::Kind::concept_;
+}
 bool function_kind(msa::Kind k) {
     return k == msa::Kind::function || k == msa::Kind::method || k == msa::Kind::constructor || k == msa::Kind::destructor ||
            k == msa::Kind::conversion;
@@ -151,6 +156,11 @@ public:
             scopes_[scope_of(d.qualified_name)][std::string { last_component(d.qualified_name) }].push_back(target);
             if (scope_kind(d.kind)) scopes_[d.qualified_name];
             if (d.kind == msa::Kind::namespace_) namespaces_.insert(d.qualified_name);
+            if (class_kind(d.kind)) imported_classes_.insert(d.qualified_name);
+            if (d.kind == msa::Kind::namespace_ && last_component(d.qualified_name) == "(anonymous namespace)") {
+                auto& list = transparent_[scope_of(d.qualified_name)];
+                if (!std::ranges::contains(list, d.qualified_name)) list.push_back(d.qualified_name);
+            }
         }
         // Each token's innermost enclosing scope: a namespace, a class, a function (parents are
         // recorded before what they hold, so a later one is an inner one).
@@ -165,8 +175,12 @@ public:
 
     std::vector<Reference> run() {
         std::vector<char> declares(t_.size(), 0);   // a declaration's own name: not a use
-        for (const auto& d : ds_)
-            if (d.name_token < t_.size() && !d.name.empty()) declares[d.name_token] = 1;
+        for (const auto& d : ds_) {
+            if (d.name_token >= t_.size() || d.name.empty()) continue;
+            declares[d.name_token] = 1;
+            // An alias template's outline is at its `using`; its name is the next token.
+            if (d.kind == msa::Kind::type_alias && word(d.name_token, "using") && d.name_token + 1 < t_.size()) declares[d.name_token + 1] = 1;
+        }
         std::vector<Reference> out;
         // A constructor's name, where it is declared, names its class too (Clang's injected-class-name).
         std::vector<std::int32_t> constructor_of(t_.size(), -1);
@@ -220,6 +234,7 @@ private:
     std::unordered_map<std::string, std::vector<std::int32_t>> locals_;
     std::set<std::string, std::less<>> namespaces_;
     std::map<std::string, std::int32_t, std::less<>> classes_;
+    std::set<std::string, std::less<>> imported_classes_;   // the classes the imports declare (their members are theirs)
     // An unnamed namespace's members are its enclosing namespace's too ([namespace.unnamed]).
     std::map<std::string, std::vector<std::string>, std::less<>> transparent_;
     std::vector<std::int32_t> enclosing_;
@@ -256,13 +271,13 @@ private:
 
     // A local or a parameter visible at k: declared before it, k within its block (a parameter: its
     // function or lambda); the innermost -- the latest declared -- of those.
-    std::optional<Target> local(std::size_t k, const std::string& n) const {
+    std::optional<Target> local(std::size_t k, const std::string& n, bool scope_only = false) const {
         const auto found = locals_.find(n);
         if (found == locals_.end()) return std::nullopt;
         std::int32_t best { -1 };
         for (const auto i : found->second) {
             const auto& d = ds_[static_cast<std::size_t>(i)];
-            if (d.name_token >= k || d.visible_begin > k) continue;
+            if (d.name_token >= k || d.visible_begin > k || (scope_only && !names_scope(d.kind))) continue;
             std::size_t end { d.visible_end };
             if (end == 0) {
                 // A function's parameter: its function's end; a local of an owner that is not a
@@ -304,25 +319,25 @@ private:
 
     // `n` declared in scope S, as a lookup at k sees it: a namespace's member declared before k (an
     // imported one always); a class's any member, and its bases'.
-    std::optional<Target> in_scope(const std::string& scope, const std::string& n, std::size_t k, int depth = 0) {
+    std::optional<Target> in_scope(const std::string& scope, const std::string& n, std::size_t k, int depth = 0, bool scope_only = false) {
         if (depth > 8) return std::nullopt;
         if (const auto s = scopes_.find(scope); s != scopes_.end()) {
             if (const auto m = s->second.find(n); m != s->second.end()) {
-                const bool is_class { classes_.contains(scope) };
+                const bool is_class { classes_.contains(scope) || imported_classes_.contains(scope) };
                 // A constructor or a destructor is not what a name finds: in its class, the class's
                 // own name is the class (the injected-class-name).
                 for (const auto& target : m->second)
                     if ((is_class || target.declaration < 0 || target.declared_at < k) && target.kind != msa::Kind::constructor &&
-                        target.kind != msa::Kind::destructor)
+                        target.kind != msa::Kind::destructor && (!scope_only || names_scope(target.kind)))
                         return target;
             }
         }
         if (const auto t = transparent_.find(scope); t != transparent_.end())
             for (const auto& unnamed : t->second)
-                if (auto found = in_scope(unnamed, n, k, depth + 1)) return found;
+                if (auto found = in_scope(unnamed, n, k, depth + 1, scope_only)) return found;
         if (const auto c = classes_.find(scope); c != classes_.end()) {
             for (const auto& base : bases_of(c->second))
-                if (auto found = in_scope(base, n, k, depth + 1)) return found;
+                if (auto found = in_scope(base, n, k, depth + 1, scope_only)) return found;
         }
         return std::nullopt;
     }
@@ -395,8 +410,8 @@ private:
             const auto at = rest.find("::");
             const std::string part { rest.substr(0, at) };
             std::optional<Target> found;
-            if (first) found = unqualified(part, k);
-            else found = in_scope(scope, part, t_.size());
+            if (first) found = unqualified(part, k, true);
+            else found = in_scope(scope, part, t_.size(), 0, true);
             if (!found) return std::nullopt;
             if (found->kind == msa::Kind::namespace_alias) {
                 auto aliased { alias_target(*found) };
@@ -423,10 +438,10 @@ private:
 
     // Unqualified lookup of `n` at k: locals, then the scope chain, then using-directives and
     // using-declarations in effect.
-    std::optional<Target> unqualified(const std::string& n, std::size_t k) {
-        if (auto l = local(k, n)) return l;
+    std::optional<Target> unqualified(const std::string& n, std::size_t k, bool scope_only = false) {
+        if (auto l = local(k, n, scope_only)) return l;
         for (const auto& scope : chain_at(k))
-            if (auto found = in_scope(scope, n, k)) return found;
+            if (auto found = in_scope(scope, n, k, 0, scope_only)) return found;
         for (auto u = syntax_.usings.rbegin(); u != syntax_.usings.rend(); ++u) {
             if (u->at >= k) continue;
             if (u->visible_end != 0 && k > u->visible_end) continue;
@@ -436,10 +451,10 @@ private:
             }
             if (u->directive) {
                 for (const auto& scope : nominated(u->name, u->at))
-                    if (auto found = in_scope(scope, n, k)) return found;
+                    if (auto found = in_scope(scope, n, k, 0, scope_only)) return found;
             } else if (last_component(u->name) == n) {
                 if (auto scope = scope_named(scope_of(u->name), u->at))
-                    if (auto found = in_scope(*scope, n, t_.size())) return found;
+                    if (auto found = in_scope(*scope, n, t_.size(), 0, scope_only)) return found;
             }
         }
         return std::nullopt;
@@ -460,7 +475,7 @@ private:
         const std::size_t object { k - 2 };
         if (word(object, "this")) {
             for (const auto& scope : chain_at(k))
-                if (classes_.contains(scope)) return scope;
+                if (classes_.contains(scope) || imported_classes_.contains(scope)) return scope;
             return std::nullopt;
         }
         if (!is(object, Kind::raw_identifier) || !resolved_[object]) return std::nullopt;
@@ -501,7 +516,7 @@ private:
         if (k > 0 && is(k - 1, Kind::coloncolon)) {
             if (k < 2 || !(is(k - 2, Kind::raw_identifier))) {
                 if (k >= 2 && is(k - 2, Kind::greater)) return std::nullopt;   // `T<U>::n`: not followed
-                return in_scope(std::string {}, n, t_.size());                // `::n`
+                return in_scope(std::string {}, n, t_.size(), 0, is(k + 1, Kind::coloncolon));   // `::n`
             }
             const auto& q = resolved_[k - 2];
             if (!q) return std::nullopt;
@@ -519,9 +534,10 @@ private:
                 if (!named) return std::nullopt;
                 scope = *named;
             }
-            return in_scope(scope, n, t_.size());
+            return in_scope(scope, n, t_.size(), 0, is(k + 1, Kind::coloncolon));
         }
-        return unqualified(n, k);
+        // A name before `::` names a namespace, a type or a template ([basic.lookup.qual]/1).
+        return unqualified(n, k, is(k + 1, Kind::coloncolon));
     }
 };
 

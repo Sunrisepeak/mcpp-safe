@@ -69,6 +69,8 @@ def own_side(unit):
             flags.append(a + args[i + 1])
         elif a.startswith("--target="):
             flags += ["--target", a.split("=", 1)[1]]
+        elif a.startswith(("-fmodule-file=", "-fprebuilt-module-path=")):
+            flags.append(a)   # where the imports' BMIs, and so their MC2 interfaces, are (M2.2)
     run = subprocess.run([lexdump, "--references", *flags, unit["file"]], capture_output=True, text=True)
     return json.loads(run.stdout) if run.returncode == 0 and run.stdout.startswith("{") else None
 

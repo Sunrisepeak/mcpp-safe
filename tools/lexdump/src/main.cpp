@@ -24,6 +24,7 @@ import std;
 import mcxx.msa;
 import mcxx.frontend;
 import mcxx.base;
+import mcxx.ifc;
 
 namespace {
 
@@ -192,22 +193,66 @@ int facts(int argc, char** argv) {
 
 // Each name the file writes that MC++'s front end resolves (mcxx.frontend:lookup), as `mcxx-probe
 // --references` prints the Clang backend's (tools/checks/refsdiff.py, M2.1).
+// What the file's imports bring in, from the modules' MC2 interfaces (M2.2), found as Clang finds
+// the modules: `-fmodule-file=m=X.pcm`, or `m.pcm` (`m-p.pcm` for m:p) on a `-fprebuilt-module-path`;
+// the interface beside the BMI or kept for it (mcxx::ifc::interface_for). An implementation unit sees
+// all of its own module's interface and what that imports; an importer, what another module exports
+// and re-exports.
+mcxx::frontend::Imported imported_by(const mcxx::frontend::Syntax& syntax, const std::map<std::string, std::string, std::less<>>& module_files,
+                                     const std::vector<std::string>& prebuilt) {
+    mcxx::frontend::Imported out;
+    const auto& pp = syntax.pp;
+    const std::string own { pp.module.present ? pp.module.name : std::string {} };
+    std::set<std::string> seen;
+    const auto bmi_of = [&](const std::string& name) -> std::string {
+        if (const auto it = module_files.find(name); it != module_files.end()) return it->second;
+        std::string file { name };
+        std::ranges::replace(file, ':', '-');
+        for (const auto& dir : prebuilt)
+            if (std::filesystem::exists(dir + "/" + file + ".pcm")) return dir + "/" + file + ".pcm";
+        return {};
+    };
+    const std::function<void(const std::string&)> add = [&](const std::string& name) {
+        if (name.empty() || name.starts_with('<') || name.starts_with('"') || !seen.insert(name).second) return;
+        const std::string bmi { bmi_of(name) };
+        if (bmi.empty()) return;
+        const auto iface { mcxx::ifc::interface_for(bmi) };
+        if (!iface) return;
+        const bool same_module { !own.empty() && (name == own || name.starts_with(own + ":")) };
+        for (const auto& d : iface->declarations)
+            if (same_module || d.exported) out.declarations.push_back(d);
+        for (const auto& reexported : iface->reexports) add(reexported);
+    };
+    // An implementation unit (`module m;`) imports its module's interface.
+    if (pp.module.present && !pp.module.exported && pp.module.partition.empty()) add(own);
+    for (const auto& import : pp.imports) add(import.name.starts_with(':') ? own + import.name : import.name);
+    return out;
+}
+
 int references(int argc, char** argv) {
     mcxx::frontend::PreprocessOptions options;
     std::string file;
+    std::map<std::string, std::string, std::less<>> module_files;
+    std::vector<std::string> prebuilt;
     for (int i { 2 }; i < argc; ++i) {
         const std::string_view a { argv[i] };
         if (a == "--target" && i + 1 < argc) options.target = argv[++i];
         else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
         else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else if (a.starts_with("-fmodule-file=") && a.find('=', 14) != std::string_view::npos) {
+            const auto rest { a.substr(14) };
+            const auto eq { rest.find('=') };
+            module_files.insert_or_assign(std::string { rest.substr(0, eq) }, std::string { rest.substr(eq + 1) });
+        } else if (a.starts_with("-fprebuilt-module-path=")) prebuilt.emplace_back(a.substr(23));
         else file = a;
     }
     options.file = file;
     const std::string text { read(file) };
     const auto parsed = mcxx::frontend::parse(text, options);
+    const auto imported { imported_by(parsed, module_files, prebuilt) };
     std::string out { "{\"references\":[" };
     bool first { true };
-    for (const auto& r : mcxx::frontend::references(parsed)) {
+    for (const auto& r : mcxx::frontend::references(parsed, imported)) {
         std::string declaration { "null" };
         if (r.declaration >= 0) {
             const auto at = mcxx::frontend::selection_range(parsed, parsed.declarations[static_cast<std::size_t>(r.declaration)]);
