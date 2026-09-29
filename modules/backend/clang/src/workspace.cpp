@@ -473,5 +473,19 @@ std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) 
     return std::make_unique<mcxx::clang_backend::WorkspaceImpl>(std::move(options));
 }
 
+
+std::vector<std::string> derived_arguments(const msa::Command& command) {
+    msa::Command absolute { command };
+    if (!absolute.file.empty() && std::filesystem::path { absolute.file }.is_relative())
+        absolute.file = clang_backend::normalize_path(absolute.file, absolute.directory);
+    return clang_backend::normalize(absolute);
+}
+
+std::optional<msa::Command> inferred_command(std::span<const msa::Command> commands, std::string_view file) {
+    std::map<std::string, msa::Command, std::less<>> byFile;
+    for (const auto& c : commands) byFile.emplace(c.file, c);
+    return clang_backend::infer_command(byFile, std::string { file });
+}
+
 } // namespace mcxx::backend::clang
 

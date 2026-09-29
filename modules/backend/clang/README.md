@@ -36,4 +36,4 @@ libmc++ 两个可以出现 Clang 的包之一（见 `../README.md` 的边界规�
 
 ## 测试
 
-`mcpp test -p modules/backend/clang`（构建约 45 s，运行不到 1 s）：在临时目录生成不用标准库的模块程序，覆盖解析、实体、跨模块跳转、失败根因、缓冲区覆盖、诊断 code、`json-brace-init`、mc++.iso 在 profile strict 下的全部事实（加上插件 `raw-pointers` 的 warn 级别），以及 `[[mcpp::cfg]]`。
+`test_arguments`：一个单元的命令无论以哪种形式进入，得到的参数都相同（MC5-6-2）。`mcpp test -p modules/backend/clang`（构建约 45 s，运行不到 1 s）：在临时目录生成不用标准库的模块程序，覆盖解析、实体、跨模块跳转、失败根因、缓冲区覆盖、诊断 code、`json-brace-init`、mc++.iso 在 profile strict 下的全部事实（加上插件 `raw-pointers` 的 warn 级别），以及 `[[mcpp::cfg]]`。

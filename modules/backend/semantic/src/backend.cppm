@@ -16,4 +16,7 @@ msa::BackendInfo info() { return clang::info(); }
 
 std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) { return clang::make_workspace(std::move(options)); }
 
+// MC5 §6: what a unit's command says about its program, whichever form it came in.
+std::vector<std::string> derived_arguments(const msa::Command& command) { return clang::derived_arguments(command); }
+
 } // namespace mcxx::backend

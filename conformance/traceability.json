@@ -1,8 +1,7 @@
 {
  "$comment": "Rule identifiers of MC1, MC3, MC4 and MC5 (specs/) mapped to evidence (A0.8.1), checked by tools/checks/specs.py. Evidence: validate (a passing check of specs.py, by label prefix; `mcxx ...` checks need --mcxx), test (<file>: <test name>), fixture (a path under the repository), script (a file and a string it contains that enforces the rule), manual (why no automated evidence can exist).",
  "$pending": {
-  "MC5-3-1": "the corpus check on C-mcppls against clang 23.1 -fsyntax-only (A0.5.1)",
-  "MC5-6-2": "the argument-normalization fixture (A0.5.2)"
+  "MC5-3-1": "the corpus check on C-mcppls against clang 23.1 -fsyntax-only (A0.5.1)"
  },
  "MC1-2-1": [
   {
@@ -570,12 +569,18 @@
   {
    "script": "modules/backend/clang/src/support.cppm",
    "contains": "What remains describes the program and is what a cached interface is keyed on"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_arguments.cpp: the program's own arguments, in their order, and nothing the backend decides"
   }
  ],
  "MC5-6-3": [
   {
    "script": "modules/backend/clang/src/support.cppm",
    "contains": "What remains describes the program and is what a cached interface is keyed on"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_arguments.cpp: what changes the program changes the bytes: a value, an order, a flag"
   }
  ],
  "MC3-4.11-2": [
@@ -748,6 +753,17 @@
   {
    "script": "tools/checks/toolchain.py",
    "contains": "mcpp build --toolchain"
+  }
+ ],
+ "MC5-6-2": [
+  {
+   "test": "modules/backend/clang/tests/test_arguments.cpp: a database's compile, a plan's precompilation, a command line: the same bytes"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_arguments.cpp: derived arguments read back from a cache derive to themselves"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_arguments.cpp: a file the build does not list takes its nearest neighbor's program"
   }
  ]
 }
