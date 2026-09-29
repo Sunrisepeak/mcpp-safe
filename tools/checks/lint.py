@@ -200,7 +200,10 @@ def main() -> int:
                 for n, line in enumerate(lines, 1):
                     if CLANG_INCLUDE.match(line):
                         problems.append(f"{path}:{n}: clang-exposure: Clang/LLVM is named outside modules/backend/clang*\n    {line.strip()}")
-            if len(lines) >= 2000 and path.resolve().as_posix().startswith(str(repo) + "/"):
+            # This repository's own files: a fork checked out under forks/ is another repository,
+            # laid out as its upstream lays it out.
+            where = path.resolve().as_posix()
+            if len(lines) >= 2000 and where.startswith(str(repo) + "/") and not where.startswith(str(repo) + "/forks/"):
                 problems.append(f"{path}:1: file-size: {len(lines)} lines; divide it along its concerns (MC5-8-1)")
             if output_checked(path):
                 for n, line in enumerate(code.splitlines(), 1):
