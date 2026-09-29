@@ -1,0 +1,14 @@
+# mcxx-lexdump: MC++'s own lexer over files, one token per line as JSON (tools/checks/lexdiff.py).
+[package]
+name        = "mcxx-lexdump"
+version     = "0.1.0"
+description = "Prints the tokens of MC++'s own lexer (mcxx.frontend.lex), for comparison with Clang's"
+license     = "Apache-2.0"
+
+[targets.mcxx-lexdump]
+kind = "bin"
+main = "src/main.cpp"
+
+[dependencies]
+openkal-llvm-runtime.workspace = true
+mcxx-frontend = { path = "../../modules/frontend" }

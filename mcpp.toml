@@ -34,6 +34,7 @@ members = [
     "modules/plugin/remote",
     "modules/plugin/host",
     "modules/features",
+    "modules/frontend",
     "modules/serve",
     "modules/driver",
     "modules/lsp",
@@ -45,6 +46,7 @@ members = [
     "plugins/libs",
     "tools/probe",
     "tools/conformance",
+    "tools/lexdump",
 ]
 
 # This repository's own package index (rule R2): llvm.clang-dev for mcxx.clang.

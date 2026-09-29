@@ -29,6 +29,7 @@ module;
 #include <clang/Index/IndexSymbol.h>
 #include <clang/Index/IndexingAction.h>
 #include <clang/Index/IndexingOptions.h>
+#include <clang/Basic/LangStandard.h>
 #include <clang/Lex/Lexer.h>
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Lex/PreprocessorOptions.h>
@@ -39,6 +40,7 @@ module;
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/thread.h>
+#include <llvm/TargetParser/Triple.h>
 
 #include <algorithm>
 #include <atomic>
@@ -484,6 +486,56 @@ std::vector<std::string> derived_arguments(const msa::Command& command) {
 std::map<std::string, std::int64_t> census(const msa::Unit& unit) {
     const auto* impl = dynamic_cast<const clang_backend::UnitImpl*>(&unit);
     return impl != nullptr ? impl->census() : std::map<std::string, std::int64_t> {};
+}
+
+std::vector<RawToken> raw_tokens(std::string_view text) {
+    ::clang::LangOptions language;
+    std::vector<std::string> includes;
+    ::clang::LangOptions::setLangDefaults(language, ::clang::Language::CXX, llvm::Triple { "x86_64-unknown-linux-gnu" }, includes,
+                                          ::clang::LangStandard::lang_cxx23);
+    // A buffer Clang may read one past: the lexer wants a NUL at the end.
+    const std::string buffer { text };
+    const auto start = ::clang::SourceLocation::getFromRawEncoding(1);
+    ::clang::Lexer lexer { start, language, buffer.data(), buffer.data(), buffer.data() + buffer.size() };
+    // As -dump-raw-tokens lexes: whitespace kept, so what is not a token (an unterminated comment)
+    // comes back as one, as there; whitespace itself is dropped below.
+    lexer.SetKeepWhitespaceMode(true);
+    std::vector<std::uint32_t> lines { 0 };   // the offset each line starts at
+    for (std::size_t i { 0 }; i < buffer.size(); ++i)
+        if (buffer[i] == '\n' || (buffer[i] == '\r' && (i + 1 == buffer.size() || buffer[i + 1] != '\n'))) lines.push_back(static_cast<std::uint32_t>(i + 1));
+    std::vector<RawToken> out;
+    ::clang::Token token;
+    for (lexer.LexFromRawLexer(token); token.isNot(::clang::tok::eof); lexer.LexFromRawLexer(token)) {
+        const auto begin = token.getLocation().getRawEncoding() - start.getRawEncoding();
+        if (token.is(::clang::tok::unknown)) {
+            // Whitespace (splices and NUL bytes among it) is an unknown token in this mode.
+            const std::string_view spelled { buffer.data() + begin, token.getLength() };
+            const auto space = [](char c) { return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\n' || c == '\r' || c == '\0'; };
+            bool blank { false };
+            for (std::size_t i { 0 }; i < spelled.size(); ++i) {
+                if (spelled[i] == '\\') {   // a splice: a backslash, blanks, a line break
+                    std::size_t k { i + 1 };
+                    while (k < spelled.size() && (spelled[k] == ' ' || spelled[k] == '\t' || spelled[k] == '\v' || spelled[k] == '\f')) ++k;
+                    if (k == spelled.size() || (spelled[k] != '\n' && spelled[k] != '\r')) {
+                        blank = false;
+                        break;
+                    }
+                    i = k;
+                    continue;
+                }
+                blank = space(spelled[i]);
+                if (!blank) break;
+            }
+            if (blank) continue;
+        }
+        const auto line = static_cast<std::uint32_t>(std::ranges::upper_bound(lines, begin) - lines.begin());
+        out.push_back({ .kind = ::clang::tok::getTokenName(token.getKind()),
+                        .begin = begin,
+                        .end = begin + token.getLength(),
+                        .line = line,
+                        .column = begin - lines[line - 1] + 1 });
+    }
+    return out;
 }
 
 std::optional<msa::Command> inferred_command(std::span<const msa::Command> commands, std::string_view file) {

@@ -132,6 +132,25 @@ def manifest_problems(root: pathlib.Path):
     return problems
 
 
+RAW_STRING = re.compile(r'(?<![A-Za-z0-9_])(?:u8|u|U|L)?R"([^()\\ \t\n]{0,16})\(')
+
+
+def blank_raw_strings(text: str) -> str:
+    """The text with every raw string literal's body blanked (line breaks kept): data, not code."""
+    out, at = [], 0
+    for m in RAW_STRING.finditer(text):
+        if m.start() < at:
+            continue
+        close = text.find(")" + m.group(1) + '"', m.end())
+        if close < 0:
+            break
+        out.append(text[at:m.end()])
+        out.append(re.sub(r"[^\n]", " ", text[m.end():close]))
+        at = close
+    out.append(text[at:])
+    return "".join(out)
+
+
 def main() -> int:
     roots = [pathlib.Path(a) for a in sys.argv[1:]]
     repo = pathlib.Path(__file__).resolve().parents[2]
@@ -140,7 +159,7 @@ def main() -> int:
     problems = []
     for root in roots:
         for path in walk(root, {".cpp", ".cppm", ".h", ".hpp"}):
-            lines = path.read_text(errors="replace").splitlines()
+            lines = blank_raw_strings(path.read_text(errors="replace")).splitlines()
             code = "\n".join(strip_comment(line) for line in lines)   # one text, so a literal may span lines
             for m in BRACE_INIT.finditer(code):
                 n = code.count("\n", 0, m.start()) + 1

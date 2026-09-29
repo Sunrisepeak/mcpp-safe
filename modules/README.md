@@ -28,6 +28,7 @@ libmc++ 是 MC++ 的可复用部分。每个目录都是一个独立的 mcpp 包
 | 驱动 | `driver` | 上面各层和两个门面（不含 Clang 头文件） |
 | 门禁与内置 provider | `features`（门禁、`mc++.iso`） | `base`、`msa`、`plugin/sdk` |
 | 服务 | `lsp` | `base`、`msa`、nlohmann.json |
+| 自己的前端 | `frontend` | 只有 `msa`（不依赖 Clang/LLVM） |
 | 门面 | `backend/semantic`、`backend/compiler` | 各自的后端实现（不含 Clang 头文件） |
 | **后端（Clang）** | `backend/clang`、`backend/clang-compiler` | 上面各层，加上 `llvm.*`。**只有这两个包可以出现 Clang** |
 
@@ -48,6 +49,7 @@ libmc++ 是 MC++ 的可复用部分。每个目录都是一个独立的 mcpp 包
 | [`graph`](graph/README.md) | `mcxx.graph` | 按词法扫描模块声明，建立模块图 | — |
 | [`plugin`](plugin/README.md) | `mcxx.plugin`、`.wire`、`.remote`、`.host` | 插件 SDK（MC4）与进程外插件：provider、Catalog、协议 1、故障隔离 | M0.6 |
 | [`serve`](serve/README.md) | `mcxx.serve` | `mcxx serve`（MC6）：LSP 基础协议之上的语义服务，以及带崩溃重启的客户端 | M1.3 |
+| [`frontend`](frontend/README.md) | `mcxx.frontend` | MC++ 自己的前端 F1：和 Clang 逐 token 一致的词法、模块单元的预处理、由此得到的 MC3 事实；不依赖 Clang | M1.6 |
 | [`driver`](driver/README.md) | `mcxx.driver` | mcxx 驱动（MC5）：命令、`mcxx features`、`mcxx compose` | M0.5、M0.6 |
 | [`features`](features/README.md) | `mcxx.features`、`mcxx.features.iso` | 特性门禁（MC1）：配置、profile、作用域、级别、豁免、审计、Plan；内置 provider `mc++.iso`（ISO 特性控制） | M0.3、M0.7 |
 | [`lsp`](lsp/README.md) | `mcxx.lsp` | 基于 MSA 的 LSP 形态服务（MC6），不含传输层 | M1.3 |

@@ -7,7 +7,7 @@
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
-| Implementation | `modules/msa` (the C++ interface `mcxx.msa`), `modules/backend/clang` (`:facts`, over Clang 23.1) |
+| Implementation | `modules/msa` (the C++ interface `mcxx.msa`), `modules/backend/clang` (`:facts`, over Clang 23.1), `modules/frontend` (MC++'s own front end: `macros` and `includes`) |
 | License | Apache-2.0 |
 
 ## Abstract

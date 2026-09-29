@@ -7,6 +7,12 @@
 // With --index it also waits for the program index before asking; with --facts it prints the file's
 // MC3 facts, every kind, as JSON on standard output (specs/mc3-facts.md §4.11); with --census, the
 // declarations counted straight off Clang's AST by Clang's kind names (tools/checks/facts.py).
+//
+//   mcxx-probe --tokens FILE...
+//
+// prints every token the backend's raw lexer finds in each FILE, comments included, one JSON object
+// per line as mcxx-lexdump prints MC++'s own (tools/checks/lexdiff.py); `--tokens --bench N FILE...`
+// lexes them N times and prints bytes, tokens and the best time, as `mcxx-lexdump --bench` does.
 import std;
 import nlohmann.json;
 import mcxx.msa;
@@ -47,9 +53,38 @@ std::string read(const std::string& path) {
 
 double seconds_since(std::chrono::steady_clock::time_point t) { return std::chrono::duration<double>(std::chrono::steady_clock::now() - t).count(); }
 
+std::string quoted(std::string_view s) { return Json(std::string { s }).dump(-1, ' ', false, Json::error_handler_t::replace); }
+
+int tokens(int argc, char** argv) {
+    if (argc > 3 && std::string_view { argv[2] } == "--bench") {
+        std::vector<std::string> texts;
+        std::size_t bytes { 0 };
+        for (int i { 4 }; i < argc; ++i) bytes += texts.emplace_back(read(argv[i])).size();
+        double best { 1e9 };
+        std::size_t count { 0 };
+        for (int r { 0 }; r < std::stoi(argv[3]); ++r) {
+            const auto started = std::chrono::steady_clock::now();
+            count = 0;
+            for (const auto& t : texts) count += mcxx::backend::raw_tokens(t).size();
+            best = std::min(best, seconds_since(started));
+        }
+        std::println("{{\"lexer\":\"clang raw\",\"bytes\":{},\"tokens\":{},\"seconds\":{:.4f},\"mb-per-second\":{:.1f}}}", bytes, count, best,
+                     static_cast<double>(bytes) / best / 1e6);
+        return 0;
+    }
+    for (int i { 2 }; i < argc; ++i) {
+        const auto text = read(argv[i]);
+        for (const auto& t : mcxx::backend::raw_tokens(text))
+            std::println("{{\"file\":{},\"kind\":\"{}\",\"line\":{},\"column\":{},\"text\":{}}}", quoted(argv[i]), t.kind, t.line, t.column,
+                         quoted(std::string_view { text }.substr(t.begin, t.end - t.begin)));
+    }
+    return 0;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
+    if (argc > 1 && std::string_view { argv[1] } == "--tokens") return tokens(argc, argv);
     std::string db, resource, cache, file;
     bool index { false };
     bool facts { false };

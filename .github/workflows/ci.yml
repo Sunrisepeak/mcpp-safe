@@ -68,7 +68,7 @@ jobs:
       - name: Unit tests
         run: |
           set -euo pipefail
-          for member in modules/base modules/graph modules/lsp modules/features modules/plugin/wire modules/plugin/remote modules/plugin/host modules/serve plugins/std plugins/libs modules/backend/clang; do
+          for member in modules/base modules/graph modules/lsp modules/features modules/frontend modules/plugin/wire modules/plugin/remote modules/plugin/host modules/serve plugins/std plugins/libs modules/backend/clang; do
             echo "::group::$member"
             mcpp test -p "$member"
             echo "::endgroup::"
@@ -79,8 +79,15 @@ jobs:
           mcpp build
           mcpp build -p tools/probe
           mcpp build -p tools/conformance
-          "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json --driver "$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")" conformance/gates
-          python3 tools/checks/symbols.py "$(find modules/features/target -type f -name test_iso -path '*/bin/*' | head -1)" --expect-clang "$(find target -type f -name mcxx -path '*/bin/*' | head -1)"
+          mcpp build -p tools/lexdump
+          "$(find tools/conformance/target -type f -name mcxx-conformance -path '*/bin/*' | head -1)" --json gates.json --driver "$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")" --frontend conformance/gates
+          lexdump=$(find tools/lexdump/target -type f -name mcxx-lexdump -path '*/bin/*' | head -1)
+          python3 tools/checks/symbols.py "$(find modules/features/target -type f -name test_iso -path '*/bin/*' | head -1)" "$lexdump" --expect-clang "$(find target -type f -name mcxx -path '*/bin/*' | head -1)"
+          # MC++'s lexer against Clang's (A1.6.1): the edge cases, this repository, Clang's own lexer and headers, libc++.
+          clang_dev=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.3/*/llvm | head -1)
+          python3 tools/checks/lexdiff.py --lexdump "$lexdump" --probe "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)" \
+            modules/frontend/corpus/lex src modules plugins tools "$clang_dev/clang/lib/Lex" "$clang_dev/clang/include" \
+            "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/$LLVM_VERSION/include/c++/v1" --any
           mcxx=$(find target -type f -name mcxx -path '*/bin/*' | head -1)
           "$mcxx" version
           "$mcxx" features
@@ -98,6 +105,10 @@ jobs:
           python3 tools/checks/selfhost.py --work "$HOME/c-mcppls"
           probe=$(realpath "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)")
           python3 tools/checks/facts.py --corpus "$HOME/c-mcppls" --probe "$probe" --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 2
+          # MC++'s preprocessor against Clang's -E (A1.6.2), the headers' macros from Clang as a host would give them.
+          python3 tools/checks/ppdiff.py --lexdump "$(realpath "$(find tools/lexdump/target -type f -name mcxx-lexdump -path '*/bin/*' | head -1)")" \
+            --clang "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/bin/clang++" --root "$HOME/c-mcppls" --header-macros \
+            --db "$(ls -t "$HOME"/c-mcppls/target/*/*/compile_commands.json | head -1)"
       - name: mcxx compose, end to end; the same plugin built with GCC 16 out of process
         run: |
           set -euo pipefail

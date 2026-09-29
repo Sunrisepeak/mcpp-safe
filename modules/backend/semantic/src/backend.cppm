@@ -23,4 +23,9 @@ std::vector<std::string> derived_arguments(const msa::Command& command) { return
 // reference, not an API to build on (A0.4.3).
 std::map<std::string, std::int64_t> census(const msa::Unit& unit) { return clang::census(unit); }
 
+// A text's tokens as the backend's own lexer finds them, comments included: the reference MC++'s
+// frontend lexer is checked against (A1.6.1). Also not an API to build on.
+using RawToken = clang::RawToken;
+std::vector<RawToken> raw_tokens(std::string_view text) { return clang::raw_tokens(text); }
+
 } // namespace mcxx::backend

@@ -1,6 +1,6 @@
 // mcxx-conformance: MC++'s gate fixtures, checked.
 //
-//   mcxx-conformance [--json FILE] [--driver MCXX] [DIR]   default DIR: conformance/gates
+//   mcxx-conformance [--json FILE] [--driver MCXX] [--frontend] [DIR]   default DIR: conformance/gates
 //
 // Every directory with sources is one program (its files compile together; module interfaces are
 // built as its importers need them), under the nearest mcpp.toml's [package.metadata.mcxx]. A line
@@ -15,12 +15,18 @@
 // With --driver, every program is also compiled by that mcxx as a build compiles it -- its module
 // interfaces precompiled, its units checked -- and the gate findings of the two paths, the editor's
 // and the build's, must be the same set (A1.4.2).
+//
+// With --frontend, every file is also read by MC++'s own front end (mcxx.frontend: preprocessed, its
+// MC3 facts taken) and gated from those facts by the same engine: for every feature decided from facts
+// that front end gives (MC3 `macros`, `includes`), the findings must be the fixtures' (A1.6.2).
 import std;
 import mcxx.msa;
 import mcxx.plugin;
 import mcxx.backend;
 import mcxx.plugins.std;
 import mcxx.plugins.libs;
+import mcxx.features;
+import mcxx.frontend;
 
 extern "C" int setenv(const char* name, const char* value, int overwrite);   // POSIX: MCXX_AUDIT for the gates
 extern "C" int unsetenv(const char* name);
@@ -96,11 +102,13 @@ std::string read(const fs::path& p) {
 
 int main(int argc, char** argv) {
     std::string json, driver;
+    bool frontend { false };
     fs::path root { "conformance/gates" };
     for (int i { 1 }; i < argc; ++i) {
         const std::string_view a { argv[i] };
         if (a == "--json" && i + 1 < argc) json = argv[++i];
         else if (a == "--driver" && i + 1 < argc) driver = argv[++i];
+        else if (a == "--frontend") frontend = true;
         else root = a;
     }
     root = fs::absolute(root);
@@ -125,6 +133,7 @@ int main(int argc, char** argv) {
     const auto started = std::chrono::steady_clock::now();
     std::string timings;
     std::size_t driverCompared { 0 };
+    std::map<std::string, std::size_t> frontendCompared;   // per feature the front end decides: findings that agreed
     std::vector<std::string> driverUnreached;   // files the build does not compile: an interface they import has a gate error
     for (auto& [dir, sources] : programs) {
         const auto programStarted = std::chrono::steady_clock::now();
@@ -174,6 +183,35 @@ int main(int argc, char** argv) {
             if (expected.contains(m)) continue;
             ++tally[m.feature].wrong;
             problems.push_back(std::format("{}:{}: {} was reported where nothing expects it", m.file, m.line + 1, m.feature));
+        }
+        if (frontend) {
+            // The features MC++'s front end gives the facts for: decided from `macros` and `includes` only.
+            constexpr auto covered = msa::fact::Kinds::macros | msa::fact::Kinds::includes;
+            const auto decided = [&](std::string_view id) {
+                const auto* f = mcxx::plugin::find_feature(id);
+                return f != nullptr && f->needs != msa::fact::Kinds::none && (std::to_underlying(f->needs) & ~std::to_underlying(covered)) == 0;
+            };
+            std::set<Mark> ours;
+            for (const auto& s : sources) {
+                const std::string path { s.generic_string() };
+                const std::string rel { fs::relative(s, root).generic_string() };
+                const std::string text { read(s) };
+                const auto pp = mcxx::frontend::preprocess(text, { .file = path });
+                const auto facts = mcxx::frontend::facts(pp);
+                const std::string module { pp.module.name + (pp.module.partition.empty() ? "" : ":" + pp.module.partition) };
+                const auto plan = mcxx::features::plan_for(path);
+                if (!plan) continue;
+                const mcxx::plugin::Context context { path, module, facts };
+                for (const auto& d : mcxx::features::evaluate(context, *plan).diagnostics)
+                    if (decided(d.code)) ours.insert({ rel, d.range.begin.line, d.code });
+            }
+            for (const auto& m : expected) {
+                if (!decided(m.feature)) continue;
+                if (ours.contains(m)) ++frontendCompared[m.feature];
+                else problems.push_back(std::format("{}:{}: MC++'s front end does not give {}", m.file, m.line + 1, m.feature));
+            }
+            for (const auto& m : ours)
+                if (!expected.contains(m)) problems.push_back(std::format("{}:{}: MC++'s front end gives {}, nothing expects it", m.file, m.line + 1, m.feature));
         }
         if (!driver.empty()) {
             // The build's path: interfaces precompiled (the gates run where a source is parsed), in
@@ -307,6 +345,11 @@ int main(int argc, char** argv) {
     if (!driver.empty()) {
         std::println("the build (mcxx c++) and the editor: {} gate findings compared, the same", driverCompared);
         for (const auto& u : driverUnreached) std::println("  not compiled by the build (an interface it imports has a gate error): {}", u);
+    }
+    if (frontend) {
+        std::string per;
+        for (const auto& [feature, n] : frontendCompared) per += std::format("{}{} {}", per.empty() ? "" : ", ", n, feature);
+        std::println("MC++'s front end: the expected findings of the features it gives the facts for, all given ({})", per);
     }
     std::println("{} programs, {} files, {} problems, {:.1f} s", programs.size(), files, problems.size(), total);
     if (!json.empty()) std::ofstream { json } << report;

@@ -1,0 +1,22 @@
+# MC++'s own front end (plan P4, M1.6 onward), beside the Clang backend and without it: F1 is the
+# lexer and phase 4 for a module unit. No Clang, no LLVM (the clang-exposure rule): what it knows it
+# knows on its own, and it is checked against Clang (tools/checks/lexdiff.py, ppdiff.py). It is an
+# MSA front end, so it depends on mcxx.msa (which names no compiler).
+[package]
+name        = "mcxx-frontend"
+version     = "0.1.0"
+description = "MC++'s own C++ front end: lexing and preprocessing (F1)"
+license     = "Apache-2.0"
+
+[targets.mcxx-frontend]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+mcxx-msa = { path = "../msa" }
+
+[dev-dependencies]
+mcxx-testing = { path = "../testing" }
+
+[lib]
+path = "src/frontend.cppm"
