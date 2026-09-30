@@ -45,8 +45,11 @@ if binaries:
         comment = subprocess.run(["readelf", "-p", ".comment", str(binaries[-1])], capture_output=True, text=True).stdout
         check("its code was compiled by clang 23.1 (mcxx)", "clang version 23.1.0" in comment, comment[:300])
     elif compiler:
-        # PE and Mach-O objects keep no .comment: the compiler the build ran says what it is.
-        version = subprocess.run([compiler.group(1).strip('"'), "--version"], capture_output=True, text=True).stdout
+        # PE and Mach-O objects keep no .comment: the compiler the build ran (the payload's, checked
+        # above) says what it is -- run from mcpp's store, not from build.ninja's spelling of it
+        # (ninja escapes a drive's colon).
+        payload = pathlib.Path.home() / ".mcpp/registry/data/xpkgs/xim-x-llvm" / toolchain.split("@")[1] / "bin" / ("clang++.exe" if windows else "clang++")
+        version = subprocess.run([str(payload), "--version"], capture_output=True, text=True).stdout
         check("its code was compiled by clang 23.1 (mcxx)", "clang version 23.1.0" in version, version[:300])
 print(f"\n{failures} failed")
 sys.exit(1 if failures else 0)
