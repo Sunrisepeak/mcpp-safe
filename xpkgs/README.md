@@ -22,7 +22,7 @@ macOS 和 Windows 上（E-XIM-3）步骤相同，`MCXX_BINARY` 是为该平台�
 
 - 配置文件里的 `--target` 取自 xim:llvm 自己的 `clang++ -dumpmachine`（macOS 上是 `arm64-apple-darwin…`，Windows 上是 `x86_64-pc-windows-msvc`，mcpp 在那里就是为 MSVC 构建的），不是 mcxx 自己构建时的 MinGW 目标。mcpp 只在 Linux 上绕过配置文件（`--no-default-config`，见下文），在 macOS 和 Windows 上读它，所以这个目标起作用。
 - macOS 上 mcxx 是复制过去再 ad hoc 签名的（在别处构建的程序不签名在 arm64 上启动不了），其余名字链接到它。
-- Windows 上 payload 的目录是 junction、文件是硬链接（不能链接时复制），都不需要特权；卸载或重装时先解除这些 junction，删除永远不会进到 xim:llvm 的 payload 里。登记到 `xim-x-llvm/23.1.0-mcxx` 的也是 junction。
+- Windows 上 payload 的目录是 junction、文件是硬链接（不能链接时复制），都不需要特权；卸载或重装时先解除这些 junction，删除永远不会进到 xim:llvm 的 payload 里。登记到 `xim-x-llvm/23.1.0-mcxx` 的也是 junction。payload 里的工具另有一个不带 `.exe` 的名字（同一个文件的硬链接）：LLVM 在 openkal 的 Windows 目标上按 Linux 构建，按名字找要启动的程序（`-fuse-ld=lld` 的 `lld-link`）时不加扩展名。
 
 CI（`.github/workflows/ci.yml` 的 `mcxx-cross` 和 `xpkg`）在 Linux 上交叉构建两个平台的 mcxx，在 windows-2022 和 macos-14 上用 xlings 安装它、用 mcpp 构建并运行一个模块程序。
 

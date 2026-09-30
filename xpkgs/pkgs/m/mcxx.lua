@@ -166,6 +166,12 @@ local function assemble_windows(dir, llvm, mcxx, headers, target)
         "Get-ChildItem -LiteralPath \"$L/bin\" | Where-Object { $_.Name -like 'clang-scan-deps*' -or -not ($_.Name -like 'clang*' -or $_.Name -like '*.cfg') } |",
         "  ForEach-Object { Link $_.FullName (Join-Path \"$D/bin\" $_.Name) }",
         "Get-ChildItem -LiteralPath \"$L/lib\" | Where-Object { $_.Name -ne 'clang' } | ForEach-Object { Link $_.FullName (Join-Path \"$D/lib\" $_.Name) }",
+        -- The tools clang's driver starts (lld-link for -fuse-ld=lld) also by their names without .exe:
+        -- LLVM, built as for Linux on openkal's Windows target, looks a program up by the name alone and
+        -- adds no extension, so it found no lld-link beside itself and could not start the bare name.
+        -- Found, it is started by that full path, which CreateProcessW runs as the image it is.
+        "Get-ChildItem -LiteralPath \"$L/bin\" -Filter *.exe | Where-Object { $_.Name -like 'clang-scan-deps*' -or -not ($_.Name -like 'clang*') } |",
+        "  ForEach-Object { Link $_.FullName (Join-Path \"$D/bin\" $_.BaseName) }",
         "Copy-Item -Recurse -LiteralPath $H -Destination \"$D/lib/clang/$V/include\"",
         "$G = Join-Path $H '../../../../llvm-generated/clang-lib/Headers'",
         "if (Test-Path -LiteralPath $G) { Copy-Item -Path \"$G/*\" -Destination \"$D/lib/clang/$V/include/\" }",
