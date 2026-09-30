@@ -15,13 +15,16 @@ kind = "lib"
 
 [dependencies]
 openkal-llvm-runtime = "0.15.2"
-openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.7" }   # as the root: a `-p` graph of its own (tests) is not settled by it
 mcxx-msa    = { path = "../../modules/msa" }
 mcxx-plugin = { path = "../../modules/plugin/sdk" }
 
 [dev-dependencies]
 mcxx-testing  = { path = "../../modules/testing" }
 mcxx-features = { path = "../../modules/features" }
+# Its tests' C library, as the root names it: `mcpp test -p` makes this package the root of a graph the
+# root's declaration does not settle (upstream's 0.19.2 cannot start for a constructor on macOS). A
+# test-only edge: a package depending on this one is not handed a git declaration to clash with.
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.7" }
 
 [lib]
 path = "src/std.cppm"
