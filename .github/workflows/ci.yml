@@ -37,7 +37,8 @@ jobs:
   test:
     name: unit tests and the probe (linux-x64)
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    # A cold run (a new llvm.clang-dev: Clang's objects built again) takes about three hours.
+    timeout-minutes: 240
     defaults:
       run:
         shell: bash
@@ -49,8 +50,10 @@ jobs:
             https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
           echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
       # The package store and mcpp's own build cache: Clang's objects (llvm.clang-dev) are built once
-      # for a version and flags, then reused by every run.
-      - uses: actions/cache@v4
+      # for a version and flags, then reused by every run. Saved once the unit tests have built them,
+      # not at the job's end: a run cancelled or out of time after that still leaves them to the next.
+      - uses: actions/cache/restore@v4
+        id: cache
         with:
           path: |
             ~/.mcpp/registry/data/xpkgs
@@ -73,6 +76,13 @@ jobs:
             mcpp test -p "$member"
             echo "::endgroup::"
           done
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.mcpp/registry/data/xpkgs
+            ~/.mcpp/build-cache
+          key: ${{ steps.cache.outputs.cache-primary-key }}
       - name: The mcxx driver and the probe
         run: |
           set -euo pipefail
