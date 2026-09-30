@@ -325,6 +325,11 @@ void ModuleStore::build_(const std::string& module) {
     for (const auto& [name, path] : dependencies) args.push_back("-fmodule-file=" + name + "=" + path);
     const std::string tmp { pcm + ".building" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id())) };
     args.insert(args.end(), { "-x", "c++-module", "--precompile", file, "-o", tmp });
+    if (base::trace::enabled("modules", base::trace::Level::debug)) {
+        std::string joined;
+        for (const auto& a : args) joined += " " + a;
+        base::trace::debug("modules", "Building module {} from {} with {}'s command in {}:{}", module, file, command.file, command.directory, joined);
+    }
 
     std::vector<const char*> argv;
     for (const auto& a : args) argv.push_back(a.c_str());
