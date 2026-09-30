@@ -349,7 +349,9 @@ void ModuleStore::build_(const std::string& module) {
 
     for (const auto& extra : backend_arguments(resourceDirectory_)) args.push_back(extra);
     for (const auto& [name, path] : dependencies) args.push_back("-fmodule-file=" + name + "=" + path);
-    const std::string tmp { pcm + ".building" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id())) };
+    // Built under a name of its own and renamed: two processes sharing the cache may build the same
+    // interface at once, and a name from the thread's id alone was the same in both.
+    const std::string tmp { pcm + ".building" + unique_suffix() };
     args.insert(args.end(), { "-x", "c++-module", "--precompile", file, "-o", tmp });
     if (base::trace::enabled("modules", base::trace::Level::debug)) {
         std::string joined;

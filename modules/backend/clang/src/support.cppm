@@ -126,6 +126,11 @@ std::vector<std::string> normalize(const msa::Command& command);
 std::optional<msa::Command> infer_command(const std::map<std::string, msa::Command, std::less<>>& commands, const std::string& file);
 std::string hex_digest(std::string_view data);
 std::optional<std::string> read_file(const std::string& path);
+// A name no other thread writes, in this process or another: a cache directory is shared by the
+// processes of a session (mcppls' server and its MCP server; a check's parallel probes), and a thread's
+// id alone repeats across processes (openkal-musl's getpid is 1 in every one).
+std::string unique_suffix();
+// Written whole or not at all: to a name of its own first (unique_suffix), then renamed.
 bool write_file_atomic(const std::string& path, std::string_view data);
 // Arguments the backend adds to every compile: its own builtin headers, and every comment kept
 // (hover shows plain `//` comments too).

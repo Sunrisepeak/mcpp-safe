@@ -54,6 +54,7 @@ module;
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <random>
 #include <set>
 #include <shared_mutex>
 #include <sstream>
@@ -236,8 +237,16 @@ std::optional<std::string> read_file(const std::string& path) {
     return std::move(text).str();
 }
 
+std::string unique_suffix() {
+    static const std::string process { [] {
+        std::random_device device;
+        return std::format("{:08x}{:08x}", device(), device());
+    }() };
+    return process + "-" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id()));
+}
+
 bool write_file_atomic(const std::string& path, std::string_view data) {
-    const std::string tmp { path + ".tmp" + std::to_string(std::hash<std::thread::id> {}(std::this_thread::get_id())) };
+    const std::string tmp { path + ".tmp" + unique_suffix() };
     {
         std::ofstream out { tmp, std::ios::binary | std::ios::trunc };
         if (!out) return false;
