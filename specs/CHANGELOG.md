@@ -2,6 +2,14 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-30 — MC2 1.6.1: what std takes from the C library
+
+- **MC2** 1.6.1 (§3): an exported using-declaration an included file writes whose name is not what
+  it names, and that names one declaration (not an overload set), is among the reachable
+  declarations, as a using-declaration: libc++'s std module's `using std::uint64_t;` names the C
+  library's `::uint64_t`, which the interface reached before without the name `std` gives it.
+  Nothing new to read: a 1.6.0 reader reads it.
+
 ## 2026-09-30 — MC3 0.8.0, MC2 1.6.0: enumerators and namespace aliases
 
 - **MC3** 0.8.0 (§4.2): enumerators, namespace aliases and using-declarations are declarations too;

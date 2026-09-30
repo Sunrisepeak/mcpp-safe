@@ -176,6 +176,12 @@ if corpus:
               "std::errc::invalid_argument", "std::optional::value", "std::map::find"]
     check(f"std's interface reaches what its exported using-declarations name ({len(reached)} declarations): {', '.join(wanted[:4])}, ...",
           bool(std_read) and all(w in reached for w in wanted), f"{std_ifc}: missing {[w for w in wanted if w not in reached]}")
+    # A name std gives what the C library declares (`using std::uint64_t;`, which is `::uint64_t`): a
+    # using-declaration naming it, beside the C library's own (MC2 1.6.0).
+    renamed = {d["qualified-name"]: d.get("type") for d in (std_read or {}).get("reachable", []) if d["kind"] == "using-declaration"}
+    check(f"std's interface names what it takes from the C library under std ({len(renamed)} using-declarations): std::uint64_t, std::memcpy",
+          renamed.get("std::uint64_t") == "uint64_t" and renamed.get("std::memcpy") == "memcpy" and "uint64_t" in reached and "std::vector" not in renamed,
+          f"{std_ifc}: {[(k, v) for k, v in renamed.items()][:5]}")
     # MC2-3.1-1: what a unit's OWN exported using-declarations name. A unit that imports std sees std's
     # exported using-declarations in its context too; they are std's interface's to carry, not every
     # importer's (each C-mcppls interface once carried std's whole reachable set, about 4 MB).

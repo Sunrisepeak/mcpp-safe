@@ -837,6 +837,15 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
             if (d->isFromASTFile()) continue;
             if (const auto* u = llvm::dyn_cast<cl::UsingDecl>(d); u != nullptr && u->isInExportDeclContext()) {
                 for (const auto* shadow : u->shadows()) add(shadow->getTargetDecl(), 0);
+                // One an included file writes whose name is not what it names (libc++'s std module:
+                // `using std::uint64_t;`, which is `::uint64_t`): the name is an importer's too, a
+                // using-declaration (MC2 1.6.1) -- when it names one declaration: an overload set's
+                // (`std::floor`, `::floor` and `std::__math::floor`) is not one `type` to follow. The
+                // main file's own are its declarations (MC3 0.8.0).
+                if (!ctx.getSourceManager().isInMainFile(u->getLocation()) && u->shadow_size() == 1 && seen.insert(u).second) {
+                    fact::Declaration decl { describe(ctx, u, true) };
+                    if (!decl.type.empty() && decl.type != decl.qualified_name) push(u);
+                }
             } else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d); alias != nullptr && alias->isInExportDeclContext()) {
                 named_by(alias->getUnderlyingType());
             } else if (const auto* t = llvm::dyn_cast<cl::TypeAliasTemplateDecl>(d); t != nullptr && t->isInExportDeclContext() && t->getTemplatedDecl()) {
