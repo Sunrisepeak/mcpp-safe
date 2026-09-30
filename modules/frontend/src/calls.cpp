@@ -21,6 +21,23 @@ std::string without_default(std::string parameter) {
     return parameter;
 }
 
+// A number's type as a type's text reads once aliases are followed: a builtin word, what libc++ writes
+// std::size_t and std::ptrdiff_t as, or a C library integer typedef F1 does not see the header of.
+bool arithmetic_text(std::string_view text) {
+    if (text.starts_with("decltype(sizeof") || text.starts_with("decltype(static_cast<int *>(nullptr) -")) return true;
+    if (text.starts_with("std::")) text.remove_prefix(5);
+    while (text.starts_with('_')) text.remove_prefix(1);
+    static constexpr std::string_view names[] { "size_t", "ssize_t", "ptrdiff_t", "intptr_t", "uintptr_t", "intmax_t", "uintmax_t" };
+    if (std::ranges::contains(names, text)) return true;
+    // int8_t .. uint64_t, int_least32_t, int_fast16_t
+    std::string_view rest { text };
+    if (rest.starts_with('u')) rest.remove_prefix(1);
+    if (!rest.starts_with("int") || !rest.ends_with("_t")) return false;
+    rest = rest.substr(3, rest.size() - 5);
+    if (rest.starts_with("_least") || rest.starts_with("_fast")) rest.remove_prefix(rest.starts_with("_least") ? 6 : 5);
+    return rest == "8" || rest == "16" || rest == "32" || rest == "64";
+}
+
 // How many arguments a call must give: a parameter with a default argument (` =`) or a pack
 // (`Args &&...`, which may take none) is not one it must.
 std::size_t required_arguments(const std::vector<std::string>& parameters) {
@@ -201,7 +218,7 @@ bool Resolver::accepts(const std::string& parameter, const Typed& where, const A
     const bool pointer { text.ends_with('*') };
     const Typed param { unbound(Typed { text, where.at, where.context, where.imported, {}, where.bindings }) };
     const std::string resolved { bare(param.text) };
-    const bool builtin { !pointer && !resolved.ends_with('*') && arithmetic_word(class_name_of(resolved)) };
+    const bool builtin { !pointer && !resolved.ends_with('*') && (arithmetic_word(class_name_of(resolved)) || arithmetic_text(resolved)) };
     // The class (or enumeration) the parameter names; none for a builtin or a pointer. A parameter
     // F1 cannot resolve at all is unknown: it may take anything.
     const std::optional<std::string> cls { pointer || builtin || resolved.ends_with('*') ? std::nullopt : class_of(param) };
@@ -224,7 +241,9 @@ bool Resolver::accepts(const std::string& parameter, const Typed& where, const A
         const std::string arg_text { bare(arg.text) };
         if (arg_text.ends_with('*')) return pointer || resolved.ends_with('*') || resolved == "bool";
         const auto arg_class { class_of(arg) };
-        if (!arg_class) return true;   // a builtin, or a type F1 cannot tell
+        // A number's type (`std::size_t n`): what a number literal is taken by.
+        if (!arg_class && (arithmetic_word(class_name_of(arg_text)) || arithmetic_text(arg_text))) return builtin || unknown;
+        if (!arg_class) return true;   // a type F1 cannot tell
         if (builtin || pointer || resolved.ends_with('*')) return false;
         if (!cls) return true;
         if (*cls == *arg_class || (string_like(cls) && string_like(arg_class))) return true;
@@ -263,6 +282,7 @@ std::optional<Target> Resolver::chosen_by_arguments(const std::vector<Target>& c
     }
     const auto args { arguments(name + 1, *close, 0) };
     std::optional<Target> chosen;
+    std::vector<std::pair<Target, bool>> fitting;   // each one the arguments fit, and whether it is a template
     for (const auto& candidate : candidates) {
         const auto params { function_parameters(candidate) };
         if (!params) return std::nullopt;   // one whose parameters are not known: no choice
@@ -279,9 +299,21 @@ std::optional<Target> Resolver::chosen_by_arguments(const std::vector<Target>& c
                             candidate.declaration >= 0 ? std::string {} : scope_of(candidate.qualified), candidate.declaration < 0, {}, nullptr };
         bool fits { true };
         for (std::size_t i { 0 }; i < args.size() && i < params->size() && fits; ++i) fits = accepts((*params)[i], where, args[i], templates);
-        if (!fits) continue;
-        // Declarations of one function (a declaration and its definition) are one choice.
+        if (fits) fitting.emplace_back(candidate, !templates.empty());
+    }
+    // A function that is not a template is preferred to a specialization of one that fits as well
+    // ([over.match.best]: path::generic_string() rather than its allocator's template).
+    if (std::ranges::any_of(fitting, [](const auto& f) { return !f.second; })) std::erase_if(fitting, [](const auto& f) { return f.second; });
+    const auto plain = [](std::string type) {   // `reference` and `const_reference` alike, as typed() has them
+        type = bare(std::move(type));
+        for (std::size_t at { type.find("const_") }; at != std::string::npos; at = type.find("const_")) type.erase(at, 6);
+        return type;
+    };
+    for (const auto& [candidate, templated] : fitting) {
+        // Declarations of one function (a declaration and its definition) are one choice; overloads
+        // that fit alike but return differently are not (which one the compiler takes, F1 does not say).
         if (chosen && chosen->qualified != candidate.qualified) return std::nullopt;
+        if (chosen && plain(chosen->type) != plain(candidate.type)) return std::nullopt;
         if (!chosen) chosen = candidate;
     }
     return chosen;
@@ -314,6 +346,7 @@ std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open
         args = arguments(open, close, depth);
         have_args = true;
         std::vector<const Target*> viable;
+        std::vector<std::pair<const Target*, bool>> fitting;   // each one the arguments fit, and whether it is a template
         for (const auto& candidate : set) {
             const auto params { function_parameters(candidate) };
             if (!params) return std::nullopt;   // an overload whose parameters are not known: no choice
@@ -330,8 +363,13 @@ std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open
                                 object != nullptr ? bindings_for(*object, scope_of(candidate.qualified)) : nullptr };
             bool fits { true };
             for (std::size_t i { 0 }; i < args.size() && i < params->size() && fits; ++i) fits = accepts((*params)[i], where, args[i], templates);
-            if (fits && !std::ranges::any_of(viable, [&](const Target* v) { return plain(v->type) == plain(candidate.type); })) viable.push_back(&candidate);
+            if (fits) fitting.emplace_back(&candidate, !templates.empty());
         }
+        // A function that is not a template is preferred to a template's specialization that fits as
+        // well ([over.match.best]: path::generic_string() rather than its allocator's template).
+        if (std::ranges::any_of(fitting, [](const auto& f) { return !f.second; })) std::erase_if(fitting, [](const auto& f) { return f.second; });
+        for (const auto& [candidate, templated] : fitting)
+            if (!std::ranges::any_of(viable, [&](const Target* v) { return plain(v->type) == plain(candidate->type); })) viable.push_back(candidate);
         if (viable.size() != 1) return std::nullopt;
         chosen = viable.front();
     }

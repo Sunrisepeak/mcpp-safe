@@ -15,7 +15,8 @@ Changes to the specifications in this directory. Each specification is versioned
   own enumerators are no longer repeated among its reachable declarations; an exported namespace
   alias an included file writes is reachable (libc++'s `std::views`), and so is a private or
   protected member type alias of a reachable class (libc++'s `directory_entry::_Path`, which
-  `path()` returns). `mcxx::import`: the unit's other imports, which a unit of its module that
+  `path()` returns), and so are the members of a class template's partial specializations when it only
+  declares its primary (libc++'s `std::optional::reset()` is `__optional_destruct_base`'s). `mcxx::import`: the unit's other imports, which a unit of its module that
   imports it sees too ([module.import]/7). 1.0-1.5 files are read as before.
 
 ## 2026-09-30 — MC3 0.7.0, MC2 1.5.0: parameters

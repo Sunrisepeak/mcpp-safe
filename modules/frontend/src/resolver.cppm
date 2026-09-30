@@ -299,6 +299,8 @@ private:
     // What a body's first `return` (not a nested lambda's, not a local class's) gives: a lambda's
     // deduced return type.
     std::optional<Typed> first_return(std::size_t body, std::size_t end, int depth);
+    // Whether the range [begin, end] is `... | std::views::split(d)` or `std::views::split(r, d)`.
+    bool splits(std::size_t begin, std::size_t end) const;
     // What calling the object named at `name` gives: a lambda's closure's return type, a
     // std::function's R.
     std::optional<Typed> called(std::size_t name, int depth);

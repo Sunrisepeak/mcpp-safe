@@ -439,12 +439,13 @@ int main() {
             "    auto joined = s + \"x\";\n"
             "    auto under = p / \"x\";\n"
             "    auto either = b ? s : std::string {};\n"
-            "    return joined.size() + under.native() + either.size();\n"
+            "    return joined.size() + under.native() + either.size() + (p / \"y\").native();\n"
             "}\n"
         };
         const auto references = f::references(f::parse(source));
         for (const auto [line, column, target] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view>> {
-                 { 9, 18, "std::basic_string::size" }, { 9, 33, "std::filesystem::path::native" }, { 9, 51, "std::basic_string::size" } }) {
+                 { 9, 18, "std::basic_string::size" }, { 9, 33, "std::filesystem::path::native" }, { 9, 51, "std::basic_string::size" },
+                 { 9, 70, "std::filesystem::path::native" } }) {
             const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
             expect(at != references.end() && at->target == target) << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target);
         }
@@ -485,6 +486,28 @@ int main() {
         const auto references = f::references(f::parse(source));
         const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 57 }; });
         expect(at != references.end() && at->target == "a::f") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
+    "a range-for over views::split gives subranges"_test = [] {
+        const std::string_view source {
+            "namespace std::ranges { template <class I> struct subrange { I begin() const; }; }\n"
+            "int use(const char* text) { int n = 0; for (auto line : text | std::views::split(' ')) n += line.begin() != nullptr; return n; }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 97 }; });
+        expect(at != references.end() && at->target == "std::ranges::subrange::begin") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
+    "a number's variable is taken as a number is: set<unsigned long>::insert(n) is the value_type one"_test = [] {
+        const std::string_view source {
+            "namespace std { template <class A, class B> struct pair { A first; B second; }; template <class T> struct initializer_list { };\n"
+            "template <class K> struct set { using value_type = K; struct iterator { }; struct node_type { }; struct insert_return_type { bool inserted; };\n"
+            "void insert(initializer_list<value_type> l); pair<iterator, bool> insert(const value_type& v); insert_return_type insert(node_type&& n); }; }\n"
+            "int use(std::set<unsigned long>& s, unsigned long n) { return s.insert(n).second; }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 3, 74 }; });
+        expect(at != references.end() && at->target == "std::pair::second") << (at == references.end() ? std::string { "not resolved" } : at->target);
     };
 
     "a trailing return type's names are looked up as a type's, not as members"_test = [] {

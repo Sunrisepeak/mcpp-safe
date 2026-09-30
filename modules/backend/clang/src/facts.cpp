@@ -764,6 +764,10 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
     std::set<const cl::Decl*> seen;
     const auto push = [&](const cl::NamedDecl* d) {
         fact::Declaration decl { describe(ctx, d, true) };
+        // A member of a partial specialization (a template defined only by its partial specializations
+        // has theirs): named under the template, as a reference to it names it.
+        if (const auto* part = llvm::dyn_cast<cl::ClassTemplatePartialSpecializationDecl>(d->getDeclContext()))
+            decl.qualified_name = plain_name(part->getSpecializedTemplate()) + "::" + d->getNameAsString();
         decl.exported = true;
         decl.local = false;
         out.push_back(std::move(decl));
@@ -789,20 +793,31 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
         }
         const auto* record = llvm::dyn_cast<cl::CXXRecordDecl>(d);
         const auto* def = record != nullptr ? record->getDefinition() : nullptr;
-        if (def == nullptr) return;
-        // What it inherits reaches an importer too: its bases (MC2 1.3.0), with their members.
-        for (const auto& base : def->bases())
-            if (const auto* named = base_class(base.getType())) add(named, depth + 1);
-        for (const auto* member : def->decls()) {
-            const auto* nd = llvm::dyn_cast<cl::NamedDecl>(member);
-            if (nd == nullptr || nd->isImplicit()) continue;
-            // A private or protected member is not an importer's, but a type alias among them is what a
-            // public member's type may be written with (libc++'s `const _Path& directory_entry::path()`).
-            const bool hidden { nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected };
-            if (hidden && !llvm::isa<cl::TypedefNameDecl>(nd)) continue;
-            if (llvm::isa<cl::FieldDecl, cl::CXXMethodDecl, cl::CXXRecordDecl, cl::EnumDecl, cl::TypedefNameDecl, cl::FunctionTemplateDecl, cl::ClassTemplateDecl,
-                          cl::VarDecl, cl::TypeAliasTemplateDecl, cl::VarTemplateDecl>(nd))
-                add(nd, depth + 1);
+        // Its definition; a class template's only declared, its partial specializations' (libc++'s
+        // `__optional_destruct_base<_Tp, bool>`, where std::optional's reset() is; `__atomic_base`).
+        std::vector<const cl::CXXRecordDecl*> bodies;
+        if (def != nullptr) bodies.push_back(def);
+        else if (record != nullptr && record->getDescribedClassTemplate() != nullptr) {
+            llvm::SmallVector<cl::ClassTemplatePartialSpecializationDecl*, 4> parts;
+            record->getDescribedClassTemplate()->getPartialSpecializations(parts);
+            for (const auto* part : parts)
+                if (part->getDefinition() != nullptr) bodies.push_back(part->getDefinition());
+        }
+        for (const auto* body : bodies) {
+            // What it inherits reaches an importer too: its bases (MC2 1.3.0), with their members.
+            for (const auto& base : body->bases())
+                if (const auto* named = base_class(base.getType())) add(named, depth + 1);
+            for (const auto* member : body->decls()) {
+                const auto* nd = llvm::dyn_cast<cl::NamedDecl>(member);
+                if (nd == nullptr || nd->isImplicit()) continue;
+                // A private or protected member is not an importer's, but a type alias among them is what
+                // a public member's type may be written with (libc++'s `const _Path& directory_entry::path()`).
+                const bool hidden { nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected };
+                if (hidden && !llvm::isa<cl::TypedefNameDecl>(nd)) continue;
+                if (llvm::isa<cl::FieldDecl, cl::CXXMethodDecl, cl::CXXRecordDecl, cl::EnumDecl, cl::TypedefNameDecl, cl::FunctionTemplateDecl,
+                              cl::ClassTemplateDecl, cl::VarDecl, cl::TypeAliasTemplateDecl, cl::VarTemplateDecl>(nd))
+                    add(nd, depth + 1);
+            }
         }
     };
     // What an exported alias of the unit names, when another unit declares it: `using Spec =

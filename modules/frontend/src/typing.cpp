@@ -118,7 +118,15 @@ std::optional<Typed> Resolver::deduce(std::size_t i, int depth) {
             }
             if (last > k + 2) out = initializer_type(k + 2, last - 1, depth + 1);
         } else if (end > k + 1) {
-            if (auto range = initializer_type(k + 1, end - 1, depth + 1)) out = range_element(*range);
+            if (splits(k + 1, end - 1)) {
+                // `r | std::views::split(d)`: its elements are subranges of r ([range.split.view]); which
+                // specialization, Clang's sugar says (not listed as certain).
+                Typed element { "std::ranges::subrange", k + 1, {}, false, {}, nullptr };
+                element.through_template = true;
+                out = element;
+            } else if (auto range = initializer_type(k + 1, end - 1, depth + 1)) {
+                out = range_element(*range);
+            }
         }
     } else if (k < t_.size() && (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren))) {
         // The initializer's last token: before the `;` that ends the declaration, inside the
@@ -540,6 +548,20 @@ std::optional<Typed> Resolver::called(std::size_t name, int depth) {
     return derived(unbound(*object), returned);
 }
 
+bool Resolver::splits(std::size_t begin, std::size_t end) const {
+    // The last top-level `|`'s right side, or the whole: `[std::][ranges::]views::split` called.
+    std::size_t from { begin };
+    for (int nesting { 0 }; std::size_t k : std::views::iota(begin, end + 1)) {
+        if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) ++nesting;
+        else if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) --nesting;
+        else if (nesting == 0 && is(k, Kind::pipe)) from = k + 1;
+    }
+    std::size_t k { from };
+    if (word(k, "std") && is(k + 1, Kind::coloncolon)) k += 2;
+    if (word(k, "ranges") && is(k + 1, Kind::coloncolon)) k += 2;
+    return word(k, "views") && is(k + 1, Kind::coloncolon) && word(k + 2, "split") && is(k + 3, Kind::l_paren);
+}
+
 std::optional<Typed> Resolver::first_return(std::size_t body, std::size_t end, int depth) {
     if (depth > 8) return std::nullopt;
     for (std::size_t k { body + 1 }; k < end; ++k) {
@@ -681,12 +703,9 @@ std::optional<Typed> Resolver::expression_type(std::size_t end, int depth) {
             }
             return result;
         }
-        // `(x)`: what is inside; `(*x)`: what x points to.
-        if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > 0) {
-            auto inner { expression_type(end - 1, depth + 1) };
-            if (inner && is(*open + 1, Kind::star) && *open + 2 < end) return pointee(*inner);
-            return inner;
-        }
+        // `(x)`: what is inside, as an initializer is typed (`(*x)`, `(p / "x")`, `(a ? b : c)`).
+        if (!is(callee, Kind::raw_identifier) && !is(callee, Kind::greater) && !is(callee, Kind::r_square) && !is(callee, Kind::r_paren) && end > *open + 1)
+            return initializer_type(*open + 1, end - 1, depth + 1);
         return std::nullopt;
     }
     if (is(end, Kind::r_square)) {
