@@ -36,7 +36,9 @@ struct DeclaredType {
     std::string why;
 };
 
-// One per declaration of the file (Syntax::declarations' order).
+// One per declaration of the file (Syntax::declarations' order), then one per using of it
+// (Syntax::usings' order): a using-declaration's `type` is the qualified name of what it names (MC3
+// 0.8.0), a using-directive's nothing.
 std::vector<DeclaredType> declared_types(const Syntax& syntax, const Imported& imported = {});
 
 // Where MC3 has a declaration's name: its selection range, an alias template's at its name (its

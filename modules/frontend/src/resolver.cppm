@@ -60,6 +60,9 @@ struct Typed {
 struct Bindings {
     std::string owner;
     std::map<std::string, Typed, std::less<>> by_name;
+    // The specialization they are for, as its object's type was written (`std::map<K, V>`): what a
+    // member type named `iterator` among them iterates.
+    std::optional<Typed> specialization;
 };
 
 // A template parameter, as MC3 0.6.0 writes one ("class T", "class ...Ts", "class A = std::allocator<T>",
@@ -81,6 +84,12 @@ public:
     Resolver(const Syntax& syntax, const Imported& imported);
 
     std::vector<Reference> run();
+    // After run(): what may be written at a member access or a qualification being typed at `at`.
+    std::optional<std::vector<Member>> members_at(msa::Position at);
+    // What the using-declaration Syntax::usings[u] names: its qualified name (MC3 0.8.0).
+    std::optional<std::string> using_target(std::size_t u);
+    // What an imported using-declaration names (MC3 0.8.0's `type`), as in_scope() would find it.
+    std::optional<Target> through_using(const Target& using_, int depth, bool scope_only);
 
     // A declaration's type (MC3's `type`, `templates`, `pointer`), after run().
     DeclaredType declared(std::size_t i);
@@ -199,7 +208,7 @@ private:
     static bool iterator_name(std::string_view text);
 
     // A type written `C::iterator` (`const_iterator`, ...): an iterator of C.
-    static Typed iterator_of(Typed type);
+    Typed iterator_of(Typed type) const;
 
     // Whether a type's text is a placeholder (`auto`, `decltype(auto)`), however qualified.
     static bool placeholder_text(std::string_view type);
@@ -287,6 +296,12 @@ private:
     std::optional<Lambda> lambda_at(std::size_t introducer, std::size_t limit) const;
     // Whether the `[` at j begins a lambda: not a subscript's, an attribute's, `operator[]`'s, `new T[n]`'s, `delete[]`'s.
     bool introduces_lambda(std::size_t j) const;
+    // What a body's first `return` (not a nested lambda's, not a local class's) gives: a lambda's
+    // deduced return type.
+    std::optional<Typed> first_return(std::size_t body, std::size_t end, int depth);
+    // What calling the object named at `name` gives: a lambda's closure's return type, a
+    // std::function's R.
+    std::optional<Typed> called(std::size_t name, int depth);
 
     // What a `return` at k returns: the innermost lambda's trailing return type it is in, or its
     // function's declared return type. Nothing when that is deduced.
@@ -323,6 +338,9 @@ private:
     std::vector<Argument> arguments(std::size_t open, std::size_t close, int depth);
     // How many there are, told apart as arguments() tells them; whether one of `candidates` takes as many.
     std::size_t argument_count(std::size_t open, std::size_t close) const;
+    // The type of the parameter a call's argument at `open` (a braced list: `f({ .n = 1 })`,
+    // `v.push_back({ ... })`) initializes, when every overload that takes the call has one there.
+    std::optional<Typed> argument_type(std::size_t open);
     bool takes(const std::vector<Target>& candidates, std::size_t count) const;
 
     // Of the functions `candidates` a call at `name` (its `(` next) names, the one its arguments fit,

@@ -133,6 +133,7 @@ msa::Kind kind_of(const cl::Decl* d) {
     }
     if (llvm::isa<cl::NamespaceDecl>(d)) return msa::Kind::namespace_;
     if (llvm::isa<cl::NamespaceAliasDecl>(d)) return msa::Kind::namespace_alias;
+    if (llvm::isa<cl::UsingDecl>(d)) return msa::Kind::using_declaration;
     if (const auto* r = llvm::dyn_cast<cl::RecordDecl>(d)) return r->isUnion() ? msa::Kind::union_ : r->isStruct() ? msa::Kind::struct_ : msa::Kind::class_;
     if (llvm::isa<cl::EnumDecl>(d)) return msa::Kind::enum_;
     if (llvm::isa<cl::EnumConstantDecl>(d)) return msa::Kind::enumerator;

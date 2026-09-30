@@ -338,6 +338,75 @@ int main() {
         }
     };
 
+    "a namespace's class named ...iterator gives what its own operator-> gives"_test = [] {
+        const std::string_view source {
+            "namespace fsx { struct entry { int path() const; }; struct recursive_directory_iterator { const entry* operator->() const; }; }\n"
+            "int use(fsx::recursive_directory_iterator it) { return it->path(); }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 59 }; });
+        expect(at != references.end() && at->target == "fsx::entry::path") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
+    "a structured binding's iterator, a template-id's construction, a braced range's element"_test = [] {
+        const std::string_view source {
+            "struct Item { int id; };\n"
+            "namespace std { template <class A, class B> struct pair { A first; B second; };\n"
+            "template <class K, class V> struct map { struct iterator {}; pair<iterator, bool> try_emplace(const K& k, const V& v); };\n"
+            "template <class T> struct optional { T* operator->(); }; }\n"
+            "int use(std::map<int, Item>& m, Item a, Item b) {\n"
+            "    auto [pos, added] = m.try_emplace(1, a);\n"
+            "    auto o = std::optional<Item>(a);\n"
+            "    int n = pos->second.id + o->id;\n"
+            "    for (auto* p : { &a, &b }) n += p->id;\n"
+            "    return n;\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto [line, column, target] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view>> { { 7u, 17u, "std::pair::second" }, { 7u, 24u, "Item::id" }, { 7u, 32u, "Item::id" }, { 8u, 39u, "Item::id" } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            expect(at != references.end() && at->target == target) << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "an immediately invoked lambda gives what its first return gives, not a nested lambda's"_test = [] {
+        const std::string_view source {
+            "struct Item { int id; };\n"
+            "int use() { const auto t = [&] { auto f = [] { return 0; }; if (f()) return Item { 1 }; return Item { 2 }; }(); return t.id; }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 121 }; });
+        expect(at != references.end() && at->target == "Item::id") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
+    "a closure's call gives what its lambda returns, a std::function's its R"_test = [] {
+        const std::string_view source {
+            "struct Item { int id; };\n"
+            "namespace std { template <class F> struct function { }; }\n"
+            "struct Holder { std::function<Item()> make; };\n"
+            "int use(Holder h) { auto build = [](int n) { return Item { n }; }; return build(1).id + h.make().id; }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto column : { 83u, 97u }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 3, column }; });
+            expect(at != references.end() && at->target == "Item::id") << std::format("{} {}", column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "a designated initializer a call's argument writes names its parameter type's member"_test = [] {
+        const std::string_view source {
+            "struct Item { int id; };\n"
+            "namespace std { template <class T> struct vector { using value_type = T; void push_back(const value_type& v); }; }\n"
+            "void take(int n, Item i);\n"
+            "void add(std::vector<Item>& items, int n) { items.push_back({ .id = n }); take(n, { .id = 2 }); }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto column : { 63u, 85u }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 3, column }; });
+            expect(at != references.end() && at->target == "Item::id") << std::format("{} {}", column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
     "a local class's member hides a local around it; `return [x = e]` declares x; `struct s` names a type"_test = [] {
         using K = mcxx::msa::Kind;
         const std::string_view source {
@@ -408,6 +477,16 @@ int main() {
         expect(at != references.end() && at->target == "mcpp::build::runner_lookup::classify") << (at == references.end() ? std::string { "not resolved" } : at->target);
     };
 
+    "a using-declaration an unnamed namespace holds is met in its enclosing namespace"_test = [] {
+        const std::string_view source {
+            "namespace a { int f(int); }\n"
+            "namespace b { namespace { using a::f; } int g() { return f(1); } }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, 57 }; });
+        expect(at != references.end() && at->target == "a::f") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
     "a trailing return type's names are looked up as a type's, not as members"_test = [] {
         using K = mcxx::msa::Kind;
         const std::string_view source {
@@ -447,6 +526,68 @@ int main() {
         };
         expect(declared_at(4, 44) == std::pair<std::uint32_t, std::uint32_t> { 4, 15 }) << "the same namespace: the first alias";
         expect(declared_at(5, 34) == std::pair<std::uint32_t, std::uint32_t> { 6, 17 }) << "another namespace: its own alias";
+    };
+
+    "an imported namespace alias names the namespace its type says (MC3 0.8.0)"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = { decl("app", K::namespace_), decl("std", K::namespace_), decl("std::filesystem", K::namespace_),
+                                  decl("std::filesystem::exists", K::function, "bool"), decl("app::fs", K::namespace_alias, "std::filesystem"),
+                                  decl("app::Level", K::enum_), decl("app::Level::notice", K::enumerator, "app::Level") };
+        const auto references = f::references(f::parse("namespace app { int f() { fs::exists(); return static_cast<int>(Level::notice); } }\n"), imported);
+        for (const auto [column, target] : std::vector<std::pair<std::uint32_t, std::string_view>> {
+                 { 26, "app::fs" }, { 30, "std::filesystem::exists" }, { 71, "app::Level::notice" } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 0, column }; });
+            expect(at != references.end() && at->target == target) << std::format("{} {}", column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "a name another unit's using-declaration brings in is what it names (MC3 0.8.0)"_test = [] {
+        using K = mcxx::msa::Kind;
+        const auto decl = [](std::string qualified, K kind, std::string type = {}) {
+            mcxx::msa::fact::Declaration d;
+            d.qualified_name = std::move(qualified);
+            d.kind = kind;
+            d.type = std::move(type);
+            return d;
+        };
+        f::Imported imported;
+        imported.declarations = { decl("app", K::namespace_), decl("app::detail", K::namespace_), decl("app::detail::Option", K::struct_),
+                                  decl("app::detail::Option::width", K::field, "int"), decl("app::Option", K::using_declaration, "app::detail::Option") };
+        const auto references = f::references(f::parse("int use(app::Option o) { return o.width; }\n"), imported);
+        for (const auto [column, target] : std::vector<std::pair<std::uint32_t, std::string_view>> {
+                 { 13, "app::detail::Option" }, { 34, "app::detail::Option::width" } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 0, column }; });
+            expect(at != references.end() && at->target == target) << std::format("{} {}", column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "what may follow a member access or a qualification being typed: the class's members and its bases', the scope's"_test = [] {
+        const std::string header {
+            "namespace shapes { struct Point { int x; int y; }; struct Circle : Point { Circle(); int radius; int area() const; }; int count; }\n"
+            "int use(shapes::Circle c, shapes::Circle* p, int n) {\n"
+        };
+        const auto names_at = [&](std::string_view line, std::uint32_t column) -> std::optional<std::vector<std::string>> {
+            const std::string source { header + std::string { line } + "\n    return 0;\n}\n" };
+            const auto members { f::members_at(f::parse(source), {}, mcxx::msa::Position { 2, column }) };
+            if (!members) return std::nullopt;
+            std::vector<std::string> names;
+            for (const auto& m : *members) names.push_back(m.name);
+            std::ranges::sort(names);
+            return names;
+        };
+        using V = std::vector<std::string>;
+        expect(names_at("    c.", 6) == V { "area", "radius", "x", "y" }) << "an object's class and its base; no constructor";
+        expect(names_at("    p->ra", 9) == V { "area", "radius", "x", "y" }) << "through a pointer, a name begun";
+        expect(names_at("    shapes::", 12) == V { "Circle", "Point", "count" }) << "a namespace";
+        expect(names_at("    n.", 6) == std::nullopt) << "not a class: nothing to say";
     };
 
     "a range-for over a json value gives json values"_test = [] {

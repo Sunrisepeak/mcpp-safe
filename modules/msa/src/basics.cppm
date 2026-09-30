@@ -74,6 +74,7 @@ enum class Kind {
     template_parameter,
     macro,
     label,
+    using_declaration,   // MC3 0.8.0: `using ns::name;` -- last, so a plugin built before it reads the others alike
 };
 
 std::string_view to_string(Kind kind) {
@@ -100,6 +101,7 @@ std::string_view to_string(Kind kind) {
     case Kind::template_parameter: return "template parameter";
     case Kind::macro: return "macro";
     case Kind::label: return "label";
+    case Kind::using_declaration: return "using declaration";
     }
     return "unknown";
 }

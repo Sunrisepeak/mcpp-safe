@@ -139,6 +139,7 @@ std::string_view kind_word(msa::Kind kind) {
     case K::namespace_alias: return "namespace-alias";
     case K::module: return "module";
     case K::macro: return "macro";
+    case K::using_declaration: return "using";
     default: return "symbol";
     }
 }

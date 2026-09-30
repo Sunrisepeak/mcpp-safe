@@ -79,6 +79,10 @@ int main() {
             "template <class T, class A = Point, unsigned N = 3, class... Rest> struct Box { T value; };\n"
             "template <class T> using Boxed = Box<T>;\n"
             "int area(const Circle& c, int scale = 1);\n"
+            "enum class Level { notice, error };\n"
+            "namespace geometry = shapes;\n"
+            "namespace detail { struct Hidden { int v; }; }\n"
+            "using detail::Hidden;\n"
             "}\n"
         };
         const auto facts = f::facts(f::parse(source), f::Imported {});
@@ -95,6 +99,16 @@ int main() {
         expect(of("shapes::Boxed")->template_parameters == V { "class T" });
         expect(of("shapes::area") != nullptr && of("shapes::area")->parameters == V { "const Circle &", "int =" }) << "MC3 0.7.0's parameters: "
             << (of("shapes::area") && of("shapes::area")->parameters ? std::format("{}", *of("shapes::area")->parameters) : std::string { "none" });
+        // MC3 0.8.0: an enumerator's type is its enumeration, a namespace alias's the namespace it names.
+        expect(of("shapes::Level::error") != nullptr && of("shapes::Level::error")->kind == mcxx::msa::Kind::enumerator &&
+               of("shapes::Level::error")->type == "shapes::Level" && of("shapes::Level::error")->exported);
+        expect(of("shapes::geometry") != nullptr && of("shapes::geometry")->kind == mcxx::msa::Kind::namespace_alias &&
+               of("shapes::geometry")->type == "shapes")
+            << (of("shapes::geometry") ? of("shapes::geometry")->type : std::string { "none" });
+        // A using-declaration's: what it names.
+        expect(of("shapes::Hidden") != nullptr && of("shapes::Hidden")->kind == mcxx::msa::Kind::using_declaration &&
+               of("shapes::Hidden")->type == "shapes::detail::Hidden" && of("shapes::Hidden")->exported)
+            << (of("shapes::Hidden") ? of("shapes::Hidden")->type : std::string { "none" });
     };
 
     "names and types as Clang has them: friends, local classes, unnamed ones, arrays, pointers"_test = [] {

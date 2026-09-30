@@ -123,6 +123,7 @@ public:
             for (const auto& f : unit_.dialect.features) items.push_back(called("feature", { f.id, f.level }));
             for (const auto& ns : unit_.dialect.namespaces) items.push_back(called("namespace_feature", { ns.name, ns.feature, ns.level }));
             for (const auto& m : unit_.reexports) items.push_back(called("reexport", { m }));
+            for (const auto& m : unit_.imports) items.push_back(called("import", { m }));
             sym::AttributeDir dir {};
             clear(dir);
             dir.attr = tuple(items);

@@ -67,10 +67,12 @@ bool Resolver::iterator_name(std::string_view text) {
     return last.ends_with("iterator");
 }
 
-Typed Resolver::iterator_of(Typed type) {
+Typed Resolver::iterator_of(Typed type) const {
     const std::string text { bare(type.text) };
     const auto at = text.rfind("::");
-    if (at != std::string::npos && iterator_name(text) && at > 0) type.iterating = text.substr(0, at);
+    // A container's member iterator (`std::vector<T>::iterator`), not a class of a namespace whose
+    // name ends so (`std::filesystem::directory_iterator`: its own operators say what it gives).
+    if (at != std::string::npos && iterator_name(text) && at > 0 && !namespaces_.contains(text.substr(0, at))) type.iterating = text.substr(0, at);
     return type;
 }
 
@@ -106,8 +108,18 @@ std::optional<Typed> Resolver::deduce(std::size_t i, int depth) {
                 --depth_parens;
             }
         }
-        if (end > k + 1)
+        // `for (auto* x : { &a, &b })`: an initializer list's elements, its first one's type.
+        if (end > k + 3 && is(k + 1, Kind::l_brace) && opening_forward(k + 1) == end - 1) {
+            std::size_t last { k + 2 };
+            for (int nesting { 0 }; last < end - 1; ++last) {
+                if (is(last, Kind::l_paren) || is(last, Kind::l_square) || is(last, Kind::l_brace)) ++nesting;
+                else if (is(last, Kind::r_paren) || is(last, Kind::r_square) || is(last, Kind::r_brace)) --nesting;
+                else if (nesting == 0 && is(last, Kind::comma)) break;
+            }
+            if (last > k + 2) out = initializer_type(k + 2, last - 1, depth + 1);
+        } else if (end > k + 1) {
             if (auto range = initializer_type(k + 1, end - 1, depth + 1)) out = range_element(*range);
+        }
     } else if (k < t_.size() && (is(k, Kind::equal) || is(k, Kind::l_brace) || is(k, Kind::l_paren))) {
         // The initializer's last token: before the `;` that ends the declaration, inside the
         // braces or parentheses that are the initializer.
@@ -129,7 +141,8 @@ std::optional<Typed> Resolver::initializer_type(std::size_t begin, std::size_t e
         const auto lambda { lambda_at(begin, end) };
         const bool called { lambda && lambda->end < end && is(lambda->end + 1, Kind::l_paren) && opening_forward(lambda->end + 1) == end };
         if (!called) return Typed { "(lambda)", begin, {}, false, {}, nullptr };
-        if (lambda->arrow == 0) return std::nullopt;   // its return type is deduced from its body
+        // Its return type deduced from its body: its first `return`'s expression's (every one has it).
+        if (lambda->arrow == 0) return first_return(lambda->body, lambda->end, depth);
         const std::string returned { type_text(std::span { t_ }.subspan(lambda->arrow + 1, lambda->body - lambda->arrow - 1)) };
         if (returned.empty()) return std::nullopt;
         return Typed { returned, lambda->arrow + 1, {}, false, {}, nullptr };
@@ -236,7 +249,17 @@ std::optional<Typed> Resolver::binding_type(std::size_t i, int depth) {
     const auto cls { class_of(type) };
     if (!cls) return std::nullopt;
     const auto args { arguments_of(text) };
-    if ((*cls == "std::pair" || *cls == "std::tuple") && place < args.size()) return derived(type, bare(args[place]));
+    if ((*cls == "std::pair" || *cls == "std::tuple") && place < args.size()) {
+        const Typed element { derived(type, bare(args[place])) };
+        // `auto [it, added] = m.try_emplace(k, v)`: the container's `iterator`, of the object's type.
+        const std::string text { bare(element.text) };
+        if (element.iterating.empty() && iterator_name(text) && text.find("::") == std::string::npos && whole->bindings &&
+            whole->bindings->specialization) {
+            const Typed& container { *whole->bindings->specialization };
+            return Typed { element.text, container.at, container.context, container.imported, bare(container.text), container.bindings };
+        }
+        return element;
+    }
     if (*cls == "std::array" && !args.empty()) return derived(type, bare(args[0]));
     if (const auto c = classes_.find(*cls); c != classes_.end()) {
         std::size_t n { 0 };
@@ -351,7 +374,7 @@ std::optional<Typed> Resolver::pointee(const Typed& written) {
     if (!written.iterating.empty()) {
         const Typed container { written.iterating, written.at, written.context, written.imported, {}, written.bindings };
         if (const auto cls = class_of(container); cls && *cls == "nlohmann::basic_json") return container;
-        return range_element(container);
+        if (auto element = range_element(container)) return element;
     }
     const Typed type { unbound(written) };
     std::string text { bare(type.text) };
@@ -482,6 +505,68 @@ std::optional<Resolver::Lambda> Resolver::lambda_at(std::size_t k, std::size_t l
     return std::nullopt;
 }
 
+std::optional<Typed> Resolver::called(std::size_t name, int depth) {
+    const auto object { expression_type(name, depth + 1) };
+    if (!object) return std::nullopt;
+    // A lambda's closure: its trailing return type, or what its body's first `return` gives.
+    if (object->text == "(lambda)" && is(object->at, Kind::l_square)) {
+        const auto lambda { lambda_at(object->at, t_.size() - 1) };
+        if (!lambda) return std::nullopt;
+        if (lambda->arrow == 0) return first_return(lambda->body, lambda->end, depth + 1);
+        const std::string returned { type_text(std::span { t_ }.subspan(lambda->arrow + 1, lambda->body - lambda->arrow - 1)) };
+        if (returned.empty()) return std::nullopt;
+        return Typed { returned, lambda->arrow + 1, {}, false, {}, nullptr };
+    }
+    // `std::function<R(A...)>`: an R.
+    const auto cls { class_of(*object) };
+    if (!cls || (*cls != "std::function" && *cls != "std::move_only_function" && *cls != "std::copyable_function")) return std::nullopt;
+    const auto args { arguments_of(bare(unbound(*object).text)) };
+    if (args.empty()) return std::nullopt;
+    std::string signature { args.front() };
+    int nesting { 0 };
+    std::size_t open { std::string::npos };
+    for (std::size_t i { 0 }; i < signature.size(); ++i) {
+        if (signature[i] == '<') ++nesting;
+        else if (signature[i] == '>') --nesting;
+        else if (signature[i] == '(' && nesting == 0) {
+            open = i;
+            break;
+        }
+    }
+    if (open == std::string::npos) return std::nullopt;
+    std::string returned { signature.substr(0, open) };
+    while (!returned.empty() && returned.back() == ' ') returned.pop_back();
+    if (returned.empty() || returned == "void") return std::nullopt;
+    return derived(unbound(*object), returned);
+}
+
+std::optional<Typed> Resolver::first_return(std::size_t body, std::size_t end, int depth) {
+    if (depth > 8) return std::nullopt;
+    for (std::size_t k { body + 1 }; k < end; ++k) {
+        // Not a nested lambda's, nor a local class's member function's.
+        if (introduces_lambda(k))
+            if (const auto inner = lambda_at(k, end)) {
+                k = inner->end;
+                continue;
+            }
+        if (is(k, Kind::l_brace) && k >= 2 && (word(k - 2, "struct") || word(k - 2, "class") || word(k - 2, "union")))
+            if (const auto close = opening_forward(k)) {
+                k = *close;
+                continue;
+            }
+        if (!word(k, "return") || is(k + 1, Kind::semi) || is(k + 1, Kind::l_brace)) continue;
+        std::size_t last { k + 1 };
+        for (int nesting { 0 }; last < end; ++last) {
+            if (is(last, Kind::l_paren) || is(last, Kind::l_square) || is(last, Kind::l_brace)) ++nesting;
+            else if (is(last, Kind::r_paren) || is(last, Kind::r_square) || is(last, Kind::r_brace)) --nesting;
+            else if (nesting == 0 && is(last, Kind::semi)) break;
+        }
+        if (last >= end) return std::nullopt;
+        return initializer_type(k + 1, last - 1, depth + 1);
+    }
+    return std::nullopt;
+}
+
 bool Resolver::introduces_lambda(std::size_t j) const {
     if (!is(j, Kind::l_square) || is(j + 1, Kind::l_square) || j == 0) return false;
     const std::size_t p { j - 1 };
@@ -568,6 +653,9 @@ std::optional<Typed> Resolver::expression_type(std::size_t end, int depth) {
                 return Typed { std::format("{}<{}>", maker, argument), less, {}, false };
             }
             if (resolved_[less - 1] && function_kind(resolved_[less - 1]->kind)) return typed(*resolved_[less - 1], depth + 1);
+            // `T<A>(...)`: a construction, a T<A> (`std::optional<Manifest>(m)`).
+            if (resolved_[less - 1] && (class_kind(resolved_[less - 1]->kind) || resolved_[less - 1]->kind == msa::Kind::type_alias))
+                return type_named_before(*open);
             return std::nullopt;
         }
         if (is(callee, Kind::raw_identifier) && !keyword(t_[callee].spelling)) {
@@ -575,6 +663,8 @@ std::optional<Typed> Resolver::expression_type(std::size_t end, int depth) {
             const auto& c = *resolved_[callee];
             // `T(...)`: a T.
             if (class_kind(c.kind) || c.kind == msa::Kind::type_alias) return type_named_before(*open);
+            // An object called: a lambda's closure, a std::function.
+            if (c.kind == msa::Kind::variable || c.kind == msa::Kind::field || c.kind == msa::Kind::parameter) return called(callee, depth);
             if (!function_kind(c.kind)) return std::nullopt;
             const auto object = objects_.find(callee);
             auto result { call_typed(c, *open, end, object != objects_.end() ? &object->second : nullptr, depth + 1) };
@@ -770,6 +860,7 @@ std::shared_ptr<const Bindings> Resolver::bindings_for(const Typed& written, con
     const auto args { arguments_of(bare(type.text)) };
     auto bindings { std::make_shared<Bindings>() };
     bindings->owner = owner;
+    bindings->specialization = type;
     // Where a default is read: an imported template's are written fully qualified; the file's own
     // where its template is.
     const auto own = classes_.find(owner);

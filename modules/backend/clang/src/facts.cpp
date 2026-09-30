@@ -257,6 +257,28 @@ fact::Declaration describe(const cl::ASTContext& ctx, const cl::NamedDecl* d, bo
     // Inside a function's body: a local variable, or a local class and what it declares.
     decl.local = !llvm::isa<cl::ParmVarDecl>(d) && d->getParentFunctionOrMethod() != nullptr;
     cl::QualType type;
+    // An enumerator's type is its enumeration, a namespace alias's the namespace it names: each by
+    // the qualified name this specification gives it (MC3 0.8.0).
+    if (const auto* enumerator = llvm::dyn_cast<cl::EnumConstantDecl>(d)) {
+        if (const auto* enumeration = llvm::dyn_cast<cl::EnumDecl>(enumerator->getDeclContext()); enumeration && types)
+            decl.type = plain_name(enumeration);
+        return decl;
+    }
+    if (const auto* alias = llvm::dyn_cast<cl::NamespaceAliasDecl>(d)) {
+        if (const auto* named = alias->getNamespace(); named && types) decl.type = plain_name(named);
+        return decl;
+    }
+    // A using-declaration's is what it names, by its qualified name (`mcpplibs::cmdline::detail::Option`
+    // for `using detail::Option;`): what an importer finds through the name it introduces.
+    if (const auto* using_ = llvm::dyn_cast<cl::UsingDecl>(d)) {
+        if (types)
+            for (const auto* shadow : using_->shadows())
+                if (const auto* target = shadow->getTargetDecl()) {
+                    decl.type = plain_name(target);
+                    break;
+                }
+        return decl;
+    }
     if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d)) type = parm->getOriginalType();
     else if (const auto* value = llvm::dyn_cast<cl::ValueDecl>(d)) type = value->getType();
     else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d)) type = alias->getUnderlyingType();
@@ -357,7 +379,12 @@ public:
         if (const auto* parm = llvm::dyn_cast<cl::ParmVarDecl>(d);
             parm != nullptr && !llvm::isa<cl::FunctionDecl, cl::BlockDecl, cl::ObjCMethodDecl>(parm->getDeclContext()))
             return true;
-        if (!llvm::isa<cl::VarDecl, cl::FieldDecl, cl::FunctionDecl, cl::TypedefNameDecl, cl::RecordDecl, cl::EnumDecl, cl::NamespaceDecl>(d)) return true;
+        if (!llvm::isa<cl::VarDecl, cl::FieldDecl, cl::FunctionDecl, cl::TypedefNameDecl, cl::RecordDecl, cl::EnumDecl, cl::EnumConstantDecl, cl::NamespaceDecl,
+                       cl::NamespaceAliasDecl, cl::UsingDecl>(d))
+            return true;
+        // An inheriting constructor's using-declaration (`using Base::Base;`) names no member of its own.
+        if (const auto* using_ = llvm::dyn_cast<cl::UsingDecl>(d); using_ && using_->getDeclName().getNameKind() == cl::DeclarationName::CXXConstructorName)
+            return true;
         if (const auto* record = llvm::dyn_cast<cl::RecordDecl>(d); record && !record->isThisDeclarationADefinition()) return true;
         // Types as text only when asked for, or for a declaration a flag marks: the text is what
         // costs (a gate over C arrays pays for the arrays' types, not for every variable's).
@@ -768,22 +795,43 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
             if (const auto* named = base_class(base.getType())) add(named, depth + 1);
         for (const auto* member : def->decls()) {
             const auto* nd = llvm::dyn_cast<cl::NamedDecl>(member);
-            if (nd == nullptr || nd->isImplicit() || nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected) continue;
+            if (nd == nullptr || nd->isImplicit()) continue;
+            // A private or protected member is not an importer's, but a type alias among them is what a
+            // public member's type may be written with (libc++'s `const _Path& directory_entry::path()`).
+            const bool hidden { nd->getAccess() == cl::AS_private || nd->getAccess() == cl::AS_protected };
+            if (hidden && !llvm::isa<cl::TypedefNameDecl>(nd)) continue;
             if (llvm::isa<cl::FieldDecl, cl::CXXMethodDecl, cl::CXXRecordDecl, cl::EnumDecl, cl::TypedefNameDecl, cl::FunctionTemplateDecl, cl::ClassTemplateDecl,
                           cl::VarDecl, cl::TypeAliasTemplateDecl, cl::VarTemplateDecl>(nd))
                 add(nd, depth + 1);
         }
     };
-    // The unit's exported using-declarations, and its own exported enumerations (in classes too). Its
-    // own: what it imports is in its context too (a unit that imports std sees std's exported
-    // using-declarations there), and is that module's interface's to carry, not every importer's.
+    // What an exported alias of the unit names, when another unit declares it: `using Spec =
+    // pm::Spec;` makes pm::Spec's members an importer's to use (MC2 1.6.0). Not std's: every importer
+    // reads std's interface itself, and carrying it again is what made every interface megabytes.
+    const auto named_by = [&](cl::QualType type) {
+        const cl::NamedDecl* named { base_class(type) };
+        if (named == nullptr) named = type->getAsEnumDecl();
+        if (named != nullptr && named->isFromASTFile() && !plain_name(named).starts_with("std::")) add(named, 0);
+    };
+    // The unit's exported using-declarations and aliases (in classes too). Its own: what it imports is
+    // in its context too (a unit that imports std sees std's exported using-declarations there), and
+    // is that module's interface's to carry, not every importer's. Its own enumerators are its
+    // declarations (MC3 0.8.0).
     std::function<void(const cl::DeclContext*)> walk = [&](const cl::DeclContext* dc) {
         for (const auto* d : dc->decls()) {
             if (d->isFromASTFile()) continue;
             if (const auto* u = llvm::dyn_cast<cl::UsingDecl>(d); u != nullptr && u->isInExportDeclContext()) {
                 for (const auto* shadow : u->shadows()) add(shadow->getTargetDecl(), 0);
-            } else if (const auto* e = llvm::dyn_cast<cl::EnumDecl>(d); e != nullptr && e->isInExportDeclContext() && !e->isImplicit()) {
-                enumerators(e);
+            } else if (const auto* alias = llvm::dyn_cast<cl::TypedefNameDecl>(d); alias != nullptr && alias->isInExportDeclContext()) {
+                named_by(alias->getUnderlyingType());
+            } else if (const auto* t = llvm::dyn_cast<cl::TypeAliasTemplateDecl>(d); t != nullptr && t->isInExportDeclContext() && t->getTemplatedDecl()) {
+                named_by(t->getTemplatedDecl()->getUnderlyingType());
+            } else if (const auto* alias = llvm::dyn_cast<cl::NamespaceAliasDecl>(d); alias != nullptr && alias->isInExportDeclContext() &&
+                                                                                 !ctx.getSourceManager().isInMainFile(alias->getLocation())) {
+                // An exported namespace alias an included file writes (libc++'s std module:
+                // `namespace views = ranges::views;` in its std/ranges.inc): the main file's own are its
+                // declarations (MC3 0.8.0).
+                if (seen.insert(alias).second) push(alias);
             } else if (const auto* r = llvm::dyn_cast<cl::CXXRecordDecl>(d); r != nullptr && r->isInExportDeclContext() && r->isThisDeclarationADefinition()) {
                 walk(r);
             } else if (llvm::isa<cl::NamespaceDecl, cl::ExportDecl, cl::LinkageSpecDecl>(d)) {

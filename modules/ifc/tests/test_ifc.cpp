@@ -74,9 +74,15 @@ mcxx::ifc::Interface sample() {
     d.push_back(decl(Kind::namespace_, "app::detail", r(26, 4, 30, 5), r(26, 14, 26, 20), "app"));
     d.push_back(decl(Kind::variable, "app::detail::quoted", r(27, 8, 27, 60), r(27, 20, 27, 26), "app::detail"));
     d.back().type = "const char[9] \"\\\n\t\x01 é";   // every kind of character an argument must carry
+    // A namespace alias (MC2 1.6.0, MC3 0.8.0): a barren declaration, its type the namespace it names.
+    d.push_back(decl(Kind::namespace_alias, "app::fs", r(30, 6, 30, 38), r(30, 16, 30, 18), "app"));
+    d.back().type = "std::filesystem";
+    d.push_back(decl(Kind::using_declaration, "app::Hidden", r(30, 40, 30, 60), r(30, 53, 30, 59), "app"));   // MC3 0.8.0 too
+    d.back().type = "app::detail::Hidden";
     d.push_back(decl(Kind::function, "operator\"\"_kb", r(31, 0, 31, 40), r(31, 5, 31, 18)));
     d.push_back(decl(Kind::parameter, "", r(31, 19, 31, 37), r(31, 37, 31, 37)));   // unnamed
     unit.reexports = { "app:detail", "base" };
+    unit.imports = { "app:impl", "config" };   // MC2 1.6.0
     return unit;
 }
 
@@ -98,6 +104,7 @@ int main() {
         expect(back->module == "app:part" && back->source == unit.source && back->target == unit.target && back->cplusplus == 202302);
         expect(back->dialect == unit.dialect) << "profiles, feature levels and namespace levels (A1.1.4)";
         expect(back->reexports == unit.reexports) << "what an importer also sees (MC2 1.1)";
+        expect(back->imports == unit.imports) << "what a unit of its module also sees (MC2 1.6)";
         expect(!back->internal);
     };
 

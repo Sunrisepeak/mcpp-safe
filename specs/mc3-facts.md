@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.7.0 |
+| Version | 0.8.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -53,15 +53,15 @@ Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill eve
 
 ### 4.2 Declaration
 
-One per variable, field, parameter, function, type alias, class, union, enum and namespace the file's own code declares, excluding implicit declarations, declarations in a body the compiler writes (`= default`) and template instantiations (a template counts once, as written); a parameter is a function's, not one written in a function type inside another declaration (`std::function<void(int level)>`). <a id="MC3-4.2-1"></a><sup>MC3-4.2-1</sup>
+One per variable, field, parameter, function, type alias, class, union, enum, enumerator, namespace, namespace alias and using-declaration (the last three kinds 0.8.0; not an inheriting constructor's `using B::B;`) the file's own code declares, excluding implicit declarations, declarations in a body the compiler writes (`= default`) and template instantiations (a template counts once, as written); a parameter is a function's, not one written in a function type inside another declaration (`std::function<void(int level)>`). <a id="MC3-4.2-1"></a><sup>MC3-4.2-1</sup>
 
 | Member | Type | Description |
 |---|---|---|
 | `name` | range | Its name. |
 | `entity` | string | A stable id of the entity (a USR for Clang). |
 | `qualified-name` | string | |
-| `kind` | string | `variable`, `field`, `parameter`, `function`, `method`, `constructor`, `type-alias`, `class`, `struct`, `union`, `enum`, `namespace`, ... |
-| `type` | string | The declared type (of a variable, member, parameter or alias); a function's or a method's return type (0.5.0) -- a constructor, a destructor and a conversion function have none, their names say it. Filled for every declaration when `declaration-types` was asked for, and otherwise at least for a declaration marked `c-array` or `pointer`. <a id="MC3-4.2-2"></a><sup>MC3-4.2-2</sup> |
+| `kind` | string | `variable`, `field`, `parameter`, `function`, `method`, `constructor`, `type-alias`, `class`, `struct`, `union`, `enum`, `enumerator`, `namespace`, `namespace-alias`, `using-declaration`, ... |
+| `type` | string | The declared type (of a variable, member, parameter or alias); a function's or a method's return type (0.5.0) -- a constructor, a destructor and a conversion function have none, their names say it. An enumerator's is its enumeration, a namespace alias's the namespace it names and a using-declaration's what it names, each by the qualified name this specification gives it (`ns::Color`, `std::filesystem`, `mcpplibs::cmdline::detail::Option`: inline namespaces left out) (0.8.0): what an importer needs to find `fs::path` through a module's `namespace fs = std::filesystem;`, or `cmdline::Option` through its `export using detail::Option;`. <a id="MC3-4.2-8"></a><sup>MC3-4.2-8</sup> Filled for every declaration when `declaration-types` was asked for, and otherwise at least for a declaration marked `c-array` or `pointer`. <a id="MC3-4.2-2"></a><sup>MC3-4.2-2</sup> |
 | `templates` | string[] | Every class template the declared type names, at any depth (`std::vector`, `nlohmann::basic_json`); with `declaration-types`. |
 | `bases` | string[] | A class's direct bases, by the qualified names this specification gives classes (a specialization by its template's name, `std::__atomic_base`); with `declaration-types`, and absent where there are none (0.5.0). It is where a member access finds what a class inherits. <a id="MC3-4.2-5"></a><sup>MC3-4.2-5</sup> |
 | `template-parameters` | string[] | A class template's (its class declaration's), an alias template's or (0.7.0) a function template's parameters, in order: a type parameter `class T`, `class ...Ts`, or with its default `class A = std::allocator<T>` -- every name in a default fully qualified (inline namespaces left out), the template's own parameters by their names; a non-type parameter as its type and name, `std::size_t N` (its default left out); a template template parameter `template class C`. An unnamed parameter has no name (`class = void`). With `declaration-types`, and absent where there are none (0.6.0). It is what a member's type written with the parameters stands for in a specialization (`std::expected<R, E>::error` gives an `E`), and the arguments a specialization leaves to their defaults. <a id="MC3-4.2-6"></a><sup>MC3-4.2-6</sup> |

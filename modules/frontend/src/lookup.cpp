@@ -337,15 +337,26 @@ const std::vector<std::string>& Resolver::chain_at(std::size_t k) {
     return chains_.emplace(e, std::move(chain)).first->second;
 }
 
+std::optional<Target> Resolver::through_using(const Target& using_, int depth, bool scope_only) {
+    // One that names what has its own name (libc++'s `std`: `using std::vector;`) adds nothing: what
+    // it names is among the reachable declarations already.
+    if (using_.type.empty() || using_.type == using_.qualified) return std::nullopt;
+    return in_scope(scope_of(using_.type), std::string { last_component(using_.type) }, t_.size(), depth + 1, scope_only);
+}
+
 std::optional<Target> Resolver::in_scope(const std::string& scope, const std::string& n, std::size_t k, int depth, bool scope_only) {
     if (depth > 8) return std::nullopt;
     if (const auto s = scopes_.find(scope); s != scopes_.end()) {
         if (const auto m = s->second.find(n); m != s->second.end()) {
             const bool is_class { classes_.contains(scope) || imported_classes_.contains(scope) };
+            // A name another unit's using-declaration brings in is what it names (MC3 0.8.0).
+            for (const auto& target : m->second)
+                if (target.kind == msa::Kind::using_declaration)
+                    if (auto named = through_using(target, depth, scope_only)) return named;
             // A constructor or a destructor is not what a name finds: in its class, the class's
             // own name is the class (the injected-class-name).
             for (const auto& target : m->second)
-                if ((is_class || target.declaration < 0 || target.declared_at < k) && target.kind != msa::Kind::constructor &&
+                if (target.kind != msa::Kind::using_declaration && (is_class || target.declaration < 0 || target.declared_at < k) && target.kind != msa::Kind::constructor &&
                     target.kind != msa::Kind::destructor && (!scope_only || names_scope(target.kind))) {
                     // A function of an unnamed namespace in the same scope is an overload of it too.
                     if (function_kind(target.kind))
@@ -410,7 +421,8 @@ const std::vector<std::string>& Resolver::bases_of(std::int32_t c) {
 }
 
 std::optional<std::string> Resolver::alias_target(const Target& alias) {
-    if (alias.declaration < 0) return std::nullopt;
+    // An imported one: the namespace MC3 0.8.0's `type` names.
+    if (alias.declaration < 0) return alias.type.empty() ? std::nullopt : std::optional<std::string> { alias.type };
     const auto& d = ds_[static_cast<std::size_t>(alias.declaration)];
     std::string written;
     std::size_t k { d.name_token + 1 };
@@ -558,6 +570,62 @@ msa::Kind Resolver::imported_kind(const std::string& qualified) const {
     return msa::Kind::class_;
 }
 
+std::optional<std::vector<Member>> Resolver::members_at(msa::Position at) {
+    // The token the cursor is in or just after: a name being typed after the operator, or the operator.
+    std::optional<std::size_t> last;
+    for (std::size_t k { 0 }; k < t_.size(); ++k) {
+        if (t_[k].expanded) continue;
+        if (at < token_range(syntax_, static_cast<std::uint32_t>(k), static_cast<std::uint32_t>(k)).begin) break;
+        last = k;
+    }
+    if (!last) return std::nullopt;
+    std::size_t op { *last };
+    const auto end { token_range(syntax_, static_cast<std::uint32_t>(op), static_cast<std::uint32_t>(op)).end };
+    if (is(op, Kind::raw_identifier)) {
+        if (at > end || op == 0) return std::nullopt;   // after a whole name, not in one being typed
+        --op;
+    } else if (at < end) {
+        return std::nullopt;
+    }
+    const bool member { is(op, Kind::period) || (is(op, Kind::arrow) && !trailing_[op]) };
+    if ((!member && !is(op, Kind::coloncolon)) || op == 0) return std::nullopt;
+    std::optional<std::string> scope;
+    if (member) {
+        auto type { expression_type(op - 1) };
+        if (type && is(op, Kind::arrow)) type = pointee(*type);
+        if (!type) return std::nullopt;
+        scope = class_of(*type);
+        if (!scope || (!classes_.contains(*scope) && !scopes_.contains(*scope))) return std::nullopt;
+    } else {
+        if (!is(op - 1, Kind::raw_identifier) || !resolved_[op - 1]) return std::nullopt;
+        scope = follow(*resolved_[op - 1]);
+        if (!scope) return std::nullopt;
+    }
+    // Its members, then its bases' a name it does not declare (what lookup would find).
+    std::vector<Member> out;
+    std::set<std::string, std::less<>> seen;
+    const std::function<void(const std::string&, int)> collect = [&](const std::string& s, int depth) {
+        if (depth > 8) return;
+        if (const auto m = scopes_.find(s); m != scopes_.end())
+            for (const auto& [name, targets] : m->second)
+                for (const auto& found : targets) {
+                    std::optional<Target> t { found };
+                    if (found.kind == msa::Kind::using_declaration) t = through_using(found, depth, false);   // what it names
+                    if (!t || t->kind == msa::Kind::constructor || t->kind == msa::Kind::destructor || name.empty()) continue;
+                    if (seen.insert(name).second) out.push_back({ name, t->qualified, t->kind, t->type, t->declaration });
+                    break;
+                }
+        if (const auto unnamed = transparent_.find(s); unnamed != transparent_.end())
+            for (const auto& u : unnamed->second) collect(u, depth + 1);
+        if (const auto c = classes_.find(s); c != classes_.end())
+            for (const auto& base : bases_of(c->second)) collect(base, depth + 1);
+        if (const auto b = imported_bases_.find(s); b != imported_bases_.end())
+            for (const auto& base : b->second) collect(base, depth + 1);
+    };
+    collect(*scope, 0);
+    return out;
+}
+
 std::optional<Target> Resolver::unqualified(const std::string& n, std::size_t k, bool scope_only) {
     if (auto l = local(k, n, scope_only)) {
         // In a local class's member function, the class's members hide the locals of the function
@@ -595,12 +663,18 @@ std::optional<Target> Resolver::unqualified(const std::string& n, std::size_t k,
     for (auto u = syntax_.usings.rbegin(); u != syntax_.usings.rend(); ++u) {
         if (u->at >= k) continue;
         if (u->visible_end != 0 && k > u->visible_end) continue;
-        if (u->parent >= 0) {
-            const auto& p = ds_[static_cast<std::size_t>(u->parent)];
+        // What an unnamed or inline namespace declares is its enclosing namespace's to name too, to
+        // the end of the file: one written in it is met where that namespace's is.
+        std::int32_t in { u->parent };
+        while (in >= 0 && ds_[static_cast<std::size_t>(in)].kind == msa::Kind::namespace_ &&
+               (ds_[static_cast<std::size_t>(in)].name.empty() || ds_[static_cast<std::size_t>(in)].inline_namespace))
+            in = ds_[static_cast<std::size_t>(in)].parent;
+        if (in >= 0) {
+            const auto& p = ds_[static_cast<std::size_t>(in)];
             if (k < p.first_token || k > p.last_token) continue;
         }
         std::string around;   // the namespace it is written in
-        for (std::int32_t p { u->parent }; p >= 0; p = ds_[static_cast<std::size_t>(p)].parent)
+        for (std::int32_t p { in }; p >= 0; p = ds_[static_cast<std::size_t>(p)].parent)
             if (ds_[static_cast<std::size_t>(p)].kind == msa::Kind::namespace_) {
                 around = qualified_[static_cast<std::size_t>(p)];
                 break;
@@ -622,8 +696,8 @@ std::optional<Target> Resolver::unqualified(const std::string& n, std::size_t k,
                 acting.push_back({ std::move(common), &*u, std::move(scope) });
             }
         } else if (last_component(u->name) == n) {
-            const bool block { u->parent >= 0 && !scope_kind(ds_[static_cast<std::size_t>(u->parent)].kind) };
-            acting.push_back({ block ? std::nullopt : std::optional<std::string> { u->parent >= 0 ? members_[static_cast<std::size_t>(u->parent)] : std::string {} }, &*u, {} });
+            const bool block { in >= 0 && !scope_kind(ds_[static_cast<std::size_t>(in)].kind) };
+            acting.push_back({ block ? std::nullopt : std::optional<std::string> { in >= 0 ? members_[static_cast<std::size_t>(in)] : std::string {} }, &*u, {} });
         }
     }
     const auto through = [&](const Acting& a) -> std::optional<Target> {
@@ -719,6 +793,7 @@ std::optional<Target> Resolver::resolve_(std::size_t k) {
         if (is(open, Kind::l_brace)) {
             auto type { type_named_before(open) };
             if (!type && open > 0 && (word(open - 1, "return") || word(open - 1, "co_return"))) type = returned_at(open - 1);
+            if (!type && open > 0 && (is(open - 1, Kind::l_paren) || is(open - 1, Kind::comma))) type = argument_type(open);
             if (type)
                 if (auto scope = class_of(*type)) return in_scope(*scope, n, t_.size());
         }
@@ -845,6 +920,13 @@ Names names_of(const Syntax& syntax) {
 std::vector<Reference> references(const Syntax& syntax, const Imported& imported) {
     resolution::Resolver resolver { syntax, imported };
     return resolver.run();
+}
+
+std::optional<std::vector<Member>> members_at(const Syntax& syntax, const Imported& imported, msa::Position at) {
+    const base::trace::Span span { "frontend.lookup", "members", std::format("at {}:{}", at.line, at.column) };
+    resolution::Resolver resolver { syntax, imported };
+    (void)resolver.run();
+    return resolver.members_at(at);
 }
 
 } // namespace mcxx::frontend

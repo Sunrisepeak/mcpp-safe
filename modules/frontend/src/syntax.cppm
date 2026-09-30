@@ -80,6 +80,8 @@ struct Using {
     std::uint32_t at { 0 };            // its `using` (Syntax::pp.tokens)
     std::int32_t parent { -1 };        // the declaration it is in: a namespace, a function; -1 at file scope
     std::uint32_t visible_end { 0 };   // in a block: its last token; 0: to the end of its scope
+    std::uint32_t name_token { 0 };    // a using-declaration's name: the last component's token
+    bool exported { false };           // inside `export`
 };
 
 struct Syntax {

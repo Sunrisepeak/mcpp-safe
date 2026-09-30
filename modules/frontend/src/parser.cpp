@@ -511,12 +511,12 @@ private:
             if (is(i_, Kind::semi)) ++i_;
             return;
         }
-        using_names(scope.parent, using_token);
+        using_names(scope.parent, using_token, scope.exported);
         skip_statement();   // using namespace, using enum, a using-declaration
     }
 
     // `using namespace n;` and `using n::x;` at k (its `using`), recorded for name lookup.
-    void using_names(std::int32_t parent, std::size_t k) {
+    void using_names(std::int32_t parent, std::size_t k, bool exported = false) {
         std::size_t j { k + 1 };
         const bool directive { word(j, "namespace") };
         if (directive) ++j;
@@ -525,7 +525,7 @@ private:
         while (j < t_.size() && (identifier(j) || is(j, Kind::coloncolon))) name += tok(j++).spelling;
         if (name.empty() || !is(j, Kind::semi)) return;
         out_.usings.push_back({ directive, std::move(name), static_cast<std::uint32_t>(k), parent,
-                                static_cast<std::uint32_t>(scope_ends_.empty() ? 0 : scope_ends_.back()) });
+                                static_cast<std::uint32_t>(scope_ends_.empty() ? 0 : scope_ends_.back()), static_cast<std::uint32_t>(j - 1), exported });
     }
 
     // Up to (not past) the `;` that ends this declaration, or a `}` or `,` at this depth.

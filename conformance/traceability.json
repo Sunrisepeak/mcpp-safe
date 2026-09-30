@@ -1255,5 +1255,27 @@
   {
    "test": "modules/frontend/tests/test_lookup.cpp: a call's arguments choose among overloads whose return types differ (MC3 0.7.0)"
   }
+ ],
+ "MC3-4.2-8": [
+  {
+   "script": "modules/backend/clang/src/facts.cpp",
+   "contains": "decl.type = plain_name(target);"
+  },
+  {
+   "script": "modules/backend/clang/src/facts.cpp",
+   "contains": "if (const auto* named = alias->getNamespace(); named && types) decl.type = plain_name(named);"
+  },
+  {
+   "test": "modules/frontend/tests/test_declared.cpp: a file read as its module's interface carries its classes' bases and its templates' parameters"
+  },
+  {
+   "test": "modules/frontend/tests/test_lookup.cpp: a name another unit's using-declaration brings in is what it names (MC3 0.8.0)"
+  },
+  {
+   "test": "modules/frontend/tests/test_lookup.cpp: an imported namespace alias names the namespace its type says (MC3 0.8.0)"
+  },
+  {
+   "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
+  }
  ]
 }

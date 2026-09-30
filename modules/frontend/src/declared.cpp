@@ -260,6 +260,16 @@ bool Resolver::collect(const Typed& written, std::vector<std::string>& out, bool
     return true;
 }
 
+std::optional<std::string> Resolver::using_target(std::size_t u) {
+    const auto& using_ = syntax_.usings[u];
+    if (using_.directive) return std::nullopt;
+    const auto scope { scope_named(scope_of(using_.name), using_.at) };
+    if (!scope) return std::nullopt;
+    const auto found { in_scope(*scope, std::string { last_component(using_.name) }, t_.size()) };
+    if (!found) return std::nullopt;
+    return found->qualified;
+}
+
 DeclaredType Resolver::declared(std::size_t i) {
     const auto& d = ds_[i];
     DeclaredType out;
@@ -271,6 +281,19 @@ DeclaredType Resolver::declared(std::size_t i) {
     if (class_kind(d.kind) || d.kind == msa::Kind::type_alias || function_kind(d.kind))
         for (const auto& p : parameters_of(target_of(static_cast<std::int32_t>(i)))) out.template_parameters.push_back(written(p));
     if (function_kind(d.kind)) out.parameters = function_parameters(target_of(static_cast<std::int32_t>(i)));
+    // An enumerator's type is its enumeration, a namespace alias's the namespace it names (MC3 0.8.0).
+    if (d.kind == msa::Kind::enumerator) {
+        if (d.parent >= 0) out.type = qualified_[static_cast<std::size_t>(d.parent)];
+        return out;
+    }
+    if (d.kind == msa::Kind::namespace_alias) {
+        if (const auto named = alias_target(target_of(static_cast<std::int32_t>(i)))) out.type = *named;
+        else {
+            out.type_certain = false;
+            out.why = "unknown";
+        }
+        return out;
+    }
     if (!typed_kind) return out;
     out.type = type_text(syntax_, d, returns);
     const auto uncertain = [&](std::string why, bool type_too) {
@@ -399,6 +422,17 @@ std::vector<DeclaredType> declared_types(const Syntax& syntax, const Imported& i
     std::vector<DeclaredType> out;
     out.reserve(syntax.declarations.size());
     for (std::size_t i { 0 }; i < syntax.declarations.size(); ++i) out.push_back(resolver.declared(i));
+    for (std::size_t u { 0 }; u < syntax.usings.size(); ++u) {
+        DeclaredType named;
+        if (!syntax.usings[u].directive) {
+            if (auto target = resolver.using_target(u)) named.type = std::move(*target);
+            else {
+                named.type_certain = false;
+                named.why = "unknown";
+            }
+        }
+        out.push_back(std::move(named));
+    }
     return out;
 }
 

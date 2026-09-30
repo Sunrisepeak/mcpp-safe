@@ -55,12 +55,13 @@ msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>*
         const auto& d = ds[i];
         const auto whole = whole_range(syntax, d);
         // Declarations: what MSA's facts hold (variables, fields, parameters, functions, aliases, class
-        // and enum definitions, namespaces).
+        // and enum definitions, enumerators, namespaces and namespace aliases).
         const bool record { d.kind == msa::Kind::class_ || d.kind == msa::Kind::struct_ || d.kind == msa::Kind::union_ || d.kind == msa::Kind::enum_ };
         const bool declared { !d.binding && (d.kind == msa::Kind::variable || d.kind == msa::Kind::field || d.kind == msa::Kind::parameter ||
                               d.kind == msa::Kind::function || d.kind == msa::Kind::method || d.kind == msa::Kind::constructor ||
                               d.kind == msa::Kind::destructor || d.kind == msa::Kind::conversion || d.kind == msa::Kind::type_alias ||
-                              (record && d.definition) || d.kind == msa::Kind::namespace_) };
+                              (record && d.definition) || d.kind == msa::Kind::namespace_ || d.kind == msa::Kind::enumerator ||
+                              d.kind == msa::Kind::namespace_alias) };
         if (declared) {
             msa::fact::Declaration f;
             f.range = whole;
@@ -79,7 +80,9 @@ msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>*
             // return type (MC3 0.5.0); a constructor, a destructor, a conversion function has none.
             const bool function_kind { d.kind == msa::Kind::function || d.kind == msa::Kind::method || d.kind == msa::Kind::constructor ||
                                        d.kind == msa::Kind::destructor || d.kind == msa::Kind::conversion };
-            if (!function_kind) f.type = type_text(syntax, d);
+            if (d.kind == msa::Kind::enumerator) f.type = d.parent >= 0 ? qualified[static_cast<std::size_t>(d.parent)] : std::string {};
+            else if (d.kind == msa::Kind::namespace_alias) f.type.clear();   // the namespace it names: name lookup's to say
+            else if (!function_kind) f.type = type_text(syntax, d);
             else if (d.kind == msa::Kind::function || d.kind == msa::Kind::method) f.type = type_text(syntax, d, true);
             if (types != nullptr) {
                 const auto& known = (*types)[i];
@@ -122,6 +125,44 @@ msa::fact::Facts facts_of(const Syntax& syntax, const std::vector<DeclaredType>*
             w.reason = reason;
             out.suppressions.push_back(std::move(w));
         }
+    }
+    // Using-declarations (MC3 0.8.0): the name each brings into its scope, and (with types) the
+    // qualified name of what it names. Not an inheriting constructor's (`using Base::Base;`).
+    for (std::size_t u { 0 }; u < syntax.usings.size(); ++u) {
+        const auto& using_ = syntax.usings[u];
+        if (using_.directive || using_.name_token == 0 || using_.name_token >= syntax.pp.tokens.size()) continue;
+        const std::size_t cut { using_.name.rfind("::") };
+        const std::string simple { cut == std::string::npos ? using_.name : using_.name.substr(cut + 2) };
+        std::string scope, ns;
+        bool local { false }, is_exported { using_.exported };
+        if (using_.parent >= 0) {
+            const auto p = static_cast<std::size_t>(using_.parent);
+            const auto& parent = ds[p];
+            is_exported = is_exported || exported[p];
+            if (parent.kind == msa::Kind::namespace_) {
+                ns = parent.inline_namespace ? container[p] : qualified[p];
+                scope = ns;
+            } else if (parent.kind == msa::Kind::class_ || parent.kind == msa::Kind::struct_ || parent.kind == msa::Kind::union_) {
+                if (simple == parent.name) continue;
+                ns = container[p];
+                scope = qualified[p];
+            } else {
+                ns = container[p];
+                local = true;
+            }
+        }
+        std::uint32_t end { using_.name_token };
+        while (end + 1 < syntax.pp.tokens.size() && syntax.pp.tokens[end].kind != Kind::semi) ++end;
+        msa::fact::Declaration f;
+        f.range = token_range(syntax, using_.at, end);
+        f.name = token_range(syntax, using_.name_token, using_.name_token);
+        f.container = ns;
+        f.qualified_name = local || scope.empty() ? simple : scope + "::" + simple;
+        f.kind = msa::Kind::using_declaration;
+        f.exported = is_exported;
+        f.local = local;
+        if (types != nullptr && ds.size() + u < types->size() && (*types)[ds.size() + u].type_certain) f.type = (*types)[ds.size() + u].type;
+        out.declarations.push_back(std::move(f));
     }
     for (const auto& c : syntax.constructs) {
         const msa::Range r { token_range(syntax, c.first_token, c.last_token) };

@@ -116,6 +116,7 @@ int read_ifc(const std::string& path) {
     doc["cplusplus"] = unit->cplusplus;
     doc["dialect"] = Json { { "profiles", unit->dialect.profiles }, { "features", features }, { "namespaces", namespaces } };
     doc["reexports"] = unit->reexports;
+    doc["imports"] = unit->imports;
     doc["declarations"] = declarations_json(unit->declarations, unit->source, unit->module);
     doc["reachable"] = declarations_json(unit->reachable, unit->source, unit->module);   // MC2 1.2.0
     std::println("{}", doc.dump());

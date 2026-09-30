@@ -205,15 +205,21 @@ int facts(int argc, char** argv) {
     for (std::size_t i { 0 }; i < types.size(); ++i) {
         const auto& t = types[i];
         if (t.type_certain && t.templates_certain && t.pointer_certain) continue;
-        const auto& d = parsed.declarations[i];
-        std::string kind { mcxx::msa::to_string(d.kind) };
+        // A declaration's; after them, a using-declaration's (declared_types() gives one per using).
+        const bool declaration { i < parsed.declarations.size() };
+        if (!declaration && parsed.usings[i - parsed.declarations.size()].directive) continue;
+        const auto kind_of = declaration ? parsed.declarations[i].kind : mcxx::msa::Kind::using_declaration;
+        std::string kind { mcxx::msa::to_string(kind_of) };
         std::ranges::replace(kind, ' ', '-');
+        const auto name { declaration ? mcxx::frontend::fact_name(parsed, parsed.declarations[i])
+                                      : mcxx::frontend::token_range(parsed, parsed.usings[i - parsed.declarations.size()].name_token,
+                                                                    parsed.usings[i - parsed.declarations.size()].name_token) };
         std::string members;
         for (const auto& [certain, member] : { std::pair { t.type_certain, "type" }, std::pair { t.templates_certain, "templates" },
                                                std::pair { t.pointer_certain, "pointer" } })
             if (!certain) members += std::format("{}\"{}\"", members.empty() ? "" : ",", member);
         uncertain += std::format("{}{{\"name\":{},\"kind\":\"{}\",\"members\":[{}],\"why\":{}}}", uncertain.empty() ? "" : ",",
-                                 range_json(mcxx::frontend::fact_name(parsed, d)), kind, members, json(t.why));
+                                 range_json(name), kind, members, json(t.why));
     }
     out += std::format("],\"uncertain\":[{}],\"certain\":{}}}", uncertain, f.certainty == mcxx::msa::Certainty::certain);
     std::println("{}", out);
@@ -253,6 +259,9 @@ mcxx::frontend::Imported imported_by(const mcxx::frontend::Syntax& syntax, const
         // What its exported using-declarations name, their members, enumerators (MC2 1.2.0).
         out.declarations.insert(out.declarations.end(), iface->reachable.begin(), iface->reachable.end());
         for (const auto& reexported : iface->reexports) add(reexported);
+        // A unit of the same module sees what it imports too ([module.import]/7, MC2 1.6.0).
+        if (same_module)
+            for (const auto& imported : iface->imports) add(imported);
     };
     // An implementation unit (`module m;`) imports its module's interface.
     if (pp.module.present && !pp.module.exported && pp.module.partition.empty()) add(own);

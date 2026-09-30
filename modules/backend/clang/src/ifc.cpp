@@ -91,6 +91,8 @@ ifc::Interface interface_of(cl::CompilerInstance& ci, cl::ASTContext& ctx, const
     unit.reachable = reachable_of(ctx);
     for (const auto& e : m.Exports)
         if (const cl::Module* x = static_cast<cl::Module*>(e.first); x != nullptr && x->isNamedModule()) unit.reexports.push_back(x->getFullModuleName());
+    for (const cl::Module* x : m.Imports)
+        if (x != nullptr && x->isNamedModule() && !std::ranges::contains(unit.reexports, x->getFullModuleName())) unit.imports.push_back(x->getFullModuleName());
     return unit;
 }
 

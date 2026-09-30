@@ -29,7 +29,7 @@ std::string kind_name(Kind kind) {
 }
 
 std::optional<Kind> kind_from(std::string_view name) {
-    for (int k { 0 }; k <= static_cast<int>(Kind::label); ++k)
+    for (int k { 0 }; k <= static_cast<int>(Kind::using_declaration); ++k)
         if (kind_name(static_cast<Kind>(k)) == name) return static_cast<Kind>(k);
     return std::nullopt;
 }

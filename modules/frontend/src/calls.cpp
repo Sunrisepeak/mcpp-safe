@@ -104,6 +104,45 @@ bool Resolver::takes(const std::vector<Target>& candidates, std::size_t count) c
     return false;
 }
 
+std::optional<Typed> Resolver::argument_type(std::size_t open) {
+    // The call's `(`: the innermost one around it; which argument it is.
+    std::size_t index { 0 }, k { open };
+    for (int depth { 0 }; k > 0;) {
+        --k;
+        if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) ++depth;
+        else if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) {
+            if (depth == 0) break;
+            --depth;
+        } else if (depth == 0 && is(k, Kind::comma)) ++index;
+    }
+    if (k == 0 || !is(k, Kind::l_paren) || !is(k - 1, Kind::raw_identifier) || !resolved_[k - 1]) return std::nullopt;
+    const std::size_t callee { k - 1 };
+    const Target& f { *resolved_[callee] };
+    if (!function_kind(f.kind)) return std::nullopt;
+    const auto close { opening_forward(k) };
+    if (!close) return std::nullopt;
+    // Every overload that takes as many arguments has one parameter type there, or F1 does not say.
+    const std::size_t count { argument_count(k, *close) };
+    std::optional<std::string> parameter;
+    std::optional<Target> from;
+    for (const auto& candidate : overloads(f)) {
+        const auto params { function_parameters(candidate) };
+        if (!params) return std::nullopt;
+        if (index >= params->size() || !takes({ candidate }, count)) continue;
+        std::string type { without_default((*params)[index]) };
+        if (type.ends_with("...")) return std::nullopt;   // a pack's element: deduced
+        if (parameter && *parameter != type) return std::nullopt;
+        parameter = std::move(type);
+        from = candidate;
+    }
+    if (!parameter) return std::nullopt;
+    // Written in its function's names; a member function's in its class's (`const value_type &`), read
+    // in the object's specialization.
+    const Target as { from->declaration, from->qualified, msa::Kind::parameter, 0, *parameter, from->imported };
+    if (const auto object = objects_.find(callee); object != objects_.end()) return member_typed(as, object->second, 1);
+    return typed(as, 1);
+}
+
 std::vector<Resolver::Argument> Resolver::arguments(std::size_t open, std::size_t close, int depth) {
     std::vector<Argument> out;
     if (close <= open + 1) return out;

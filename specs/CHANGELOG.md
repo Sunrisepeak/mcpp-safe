@@ -2,6 +2,22 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-09-30 — MC3 0.8.0, MC2 1.6.0: enumerators and namespace aliases
+
+- **MC3** 0.8.0 (§4.2): enumerators, namespace aliases and using-declarations are declarations too;
+  an enumerator's `type` is its enumeration, a namespace alias's the namespace it names, a
+  using-declaration's what it names, each by its qualified name (MC3-4.2-8). An importer finds what
+  a module's interface declares that way: `namespace fs = std::filesystem;`, `enum class Level {
+  Notice, Error }`, `export using detail::Option;`.
+- **MC2** 1.6.0: the interface carries them (§3): an enumerator in its enumeration's sequence as
+  before, a namespace alias or a using-declaration a `Barren` declaration in its scope. An exported
+  alias of the unit reaches the class it names when another unit (not `std`) declares it; the unit's
+  own enumerators are no longer repeated among its reachable declarations; an exported namespace
+  alias an included file writes is reachable (libc++'s `std::views`), and so is a private or
+  protected member type alias of a reachable class (libc++'s `directory_entry::_Path`, which
+  `path()` returns). `mcxx::import`: the unit's other imports, which a unit of its module that
+  imports it sees too ([module.import]/7). 1.0-1.5 files are read as before.
+
 ## 2026-09-30 — MC3 0.7.0, MC2 1.5.0: parameters
 
 - **MC3** 0.7.0 (§4.2): a function-like declaration's `parameters`, each parameter's type as

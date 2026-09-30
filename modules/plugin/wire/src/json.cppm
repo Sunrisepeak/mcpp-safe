@@ -119,7 +119,7 @@ std::string kind_name(msa::Kind kind) {
     return out;
 }
 std::optional<msa::Kind> kind_from(std::string_view name) {
-    for (int k { 0 }; k <= static_cast<int>(msa::Kind::label); ++k)
+    for (int k { 0 }; k <= static_cast<int>(msa::Kind::using_declaration); ++k)
         if (kind_name(static_cast<msa::Kind>(k)) == name) return static_cast<msa::Kind>(k);
     return std::nullopt;
 }

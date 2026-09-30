@@ -22,7 +22,7 @@ export namespace mcxx::ifc {
 // 1.5.0: a function's parameters (MC3 0.7.0); 1.4.0: a template's parameters (MC3 0.6.0); 1.3.0:
 // bases, and a function's return type (MC3 0.5.0); 1.2.0 adds reachable declarations, 1.1.0
 // re-exports; 1.0 to 1.4 files are read too.
-inline constexpr std::string_view MC2_VERSION { "1.5.0" };
+inline constexpr std::string_view MC2_VERSION { "1.6.0" };
 inline constexpr std::uint8_t IFC_MAJOR { 0 };
 inline constexpr std::uint8_t IFC_MINOR { 43 };
 
@@ -57,6 +57,9 @@ struct Interface {
     Dialect dialect;
     std::vector<msa::fact::Declaration> declarations;   // T1: what is not local, in the facts' order
     std::vector<std::string> reexports;                 // `export import`: the modules an importer also sees ("m:part")
+    // (1.6.0) Its other imports: what a unit of the same module that imports it sees too
+    // ([module.import]/7: an implementation unit sees what its interface imports).
+    std::vector<std::string> imports;
     // What else an importer reaches through the unit (1.2.0): the declarations its exported
     // using-declarations name, the public members of the classes among them, the enumerators of the
     // enumerations it exports or reaches; exported, with no ranges (they are in other files).

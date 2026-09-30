@@ -3,7 +3,7 @@
 
     python3 tools/checks/refsdiff.py --corpus DIR --probe MCXX_PROBE --lexdump MCXX_LEXDUMP --resource DIR
                                      [--jobs N] [--reference-cache DIR] [--only SUBSTRING] [--report FILE]
-                                     [--min-in-file PCT] [--max-other PCT]
+                                     [--min-in-file PCT] [--min-overall PCT] [--max-other PCT]
 
 For every source file of a built corpus (its compile database; its own files): the names the file writes
 that name a declaration, with what each names -- the Clang backend's (`mcxx-probe --references`: its
@@ -16,7 +16,8 @@ front end resolves to the same target (qualified name and kind; a local's also b
 how many it resolves to another (wrong: the number that must stay near zero), and how many it leaves out --
 and of those, how many it says it is uncertain of (A2.2.3: a member of an object whose type it cannot tell).
 `--reference-cache` keeps Clang's side per file (its path's digest and modification time).
-`--min-in-file`: fail when fewer of the file's own names resolve the same; `--max-other`: fail when more
+`--min-in-file`: fail when fewer of the file's own names resolve the same; `--min-overall`: when fewer of
+all (in the file and elsewhere: A2.1.1's measure) resolve the same; `--max-other`: fail when more
 resolve to another target (either place) -- a wrong answer is worse than none.
 """
 import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile
@@ -173,6 +174,10 @@ if total["std:clang"]:
     n = total["std:clang"]
     print(f"    of which in std (A2.2.2): {n}: the same {total['std:same']} ({100 * total['std:same'] / n:.2f}%), another target {total['std:other']} "
           f"({100 * total['std:other'] / n:.2f}%), said uncertain {total['std:uncertain']} ({100 * total['std:uncertain'] / n:.2f}%)")
+both = total["in-file:clang"] + total["elsewhere:clang"]
+if both:
+    print(f"  overall (A2.1.1): {both}: the same {total['in-file:same'] + total['elsewhere:same']} "
+          f"({100 * (total['in-file:same'] + total['elsewhere:same']) / both:.2f}%)")
 print(f"  names the front end resolves that Clang reports nothing at: {total['extra']}")
 for x in examples["extra"][:6]:
     print(f"      {x}")
@@ -183,6 +188,9 @@ if report:
 problems = []
 if arg("min-in-file") and 100 * total["in-file:same"] / max(1, total["in-file:clang"]) < float(arg("min-in-file")):
     problems.append(f"the file's own names resolved the same below {arg('min-in-file')}%")
+overall = 100 * (total["in-file:same"] + total["elsewhere:same"]) / max(1, total["in-file:clang"] + total["elsewhere:clang"])
+if arg("min-overall") and overall < float(arg("min-overall")):
+    problems.append(f"names resolved the same below {arg('min-overall')}% ({overall:.2f}%)")
 if arg("max-other"):
     other = 100 * (total["in-file:other"] + total["elsewhere:other"]) / max(1, total["in-file:clang"] + total["elsewhere:clang"])
     if other > float(arg("max-other")):

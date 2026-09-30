@@ -85,6 +85,7 @@ public:
                 else if (name == "feature" && arity(2)) unit.dialect.features.push_back({ args[0], args[1] });
                 else if (name == "namespace_feature" && arity(3)) unit.dialect.namespaces.push_back({ args[0], args[1], args[2] });
                 else if (name == "reexport" && arity(1)) unit.reexports.push_back(args[0]);
+                else if (name == "import" && arity(1)) unit.imports.push_back(args[0]);
                 else return fail(std::format("unknown dialect item mcxx::{} with {} arguments", name, args.size()));
             }
         }

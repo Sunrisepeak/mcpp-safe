@@ -52,4 +52,18 @@ struct Imported {
 // each member name whose object's type F1 cannot tell.
 std::vector<Reference> references(const Syntax& syntax, const Imported& imported = {});
 
+// What may be written where a member access or a qualification is being typed (`x.`, `p->`, `S::`,
+// followed by the start of a name or by nothing yet): the members of the class the object's type
+// names -- its bases' too, a name once, the most derived class's -- or of the namespace, class or
+// enumeration the qualifier names. None when F1 cannot tell the object's class or what the qualifier
+// names (an editor asks the Clang backend then). `at`: the cursor (0-based line; column in bytes).
+struct Member {
+    std::string name;
+    std::string qualified;
+    msa::Kind kind { msa::Kind::unknown };
+    std::string type;                  // a variable's, a field's, a parameter's; a function's return type
+    std::int32_t declaration { -1 };   // the file's declaration (Syntax::declarations), or -1: an imported one
+};
+std::optional<std::vector<Member>> members_at(const Syntax& syntax, const Imported& imported, msa::Position at);
+
 } // namespace mcxx::frontend

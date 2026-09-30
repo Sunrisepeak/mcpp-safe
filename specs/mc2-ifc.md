@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC2 |
-| Version | 1.5.0 |
+| Version | 1.6.0 |
 | Status | Draft |
 | Schema | [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) (an interface as read back) |
 | Examples | [`examples/mc2-interface.json`](examples/mc2-interface.json) (`conformance/ifc/dialect`'s `dialect.ifc`, read back) |
@@ -51,6 +51,7 @@ When `mcxx` compiles a module unit to a BMI, it writes beside the BMI what MC++ 
 - A declaration's scope is the innermost `namespace`, `class`, `struct` or `union` declaration before it whose range holds its range, or the global scope; a parameter's function is the innermost function-like declaration (`function`, `method`, `conversion`, `constructor`, `destructor`) that does. `home_scope` is that declaration.
 - Its identity is its name, the last component of its qualified name (an operator's name whole), and the start of its name range as its place: `src.line` entry 0 is no place, the others are the unit's file (`name.source-file` 0) and a line from 1; columns count from 1. A declaration outside `export` has the basic specifier `NonExported`.
 - Declared types are not IFC types in MC2 1.x: MC3's text is carried (§4). A static member function is a `Method`.
+- (1.6.0) MC3 0.8.0's enumerators, namespace aliases and using-declarations are among a unit's T1 declarations: an enumerator in its enumeration's sequence, a namespace alias or a using-declaration a `Barren` declaration in its scope, whose `type` (§4) is what it names. A 1.0-1.5 interface has none of them (the name a namespace alias or a using-declaration of such a unit introduces is not known to an importer). The unit's own enumerators, T1 declarations now, are no longer among its reachable declarations (§3.1); an exported alias of the unit reaches the class or the enumeration it names when another unit declares it and it is not `std`'s (`using Spec = pm::Spec;` makes `pm::Spec`'s members an importer's).
 
 ### 3.1 Reachable declarations (1.2.0)
 
@@ -90,6 +91,7 @@ An importer names more than a unit's own code declares: `export using std::vecto
 | `mcxx::feature` | a feature id, a level | one per feature of the catalog the unit was compiled with: its level for code in the module, before any namespace's or declaration's (MC1 §6) |
 | `mcxx::namespace_feature` | a namespace, a feature id, a level | one per level the package sets for a namespace (MC1 §6) |
 | `mcxx::reexport` | a module's full name (`m`, `m:p`) | one per module the unit re-exports (`export import`): what an importer of the unit also sees (1.1.0) |
+| `mcxx::import` | a module's full name | one per other module the unit imports: what a unit of the same module that imports it sees too, as an implementation unit sees what its interface imports ([module.import]/7) (1.6.0) |
 
 ## 6. Reading
 
@@ -106,7 +108,7 @@ A build may copy a BMI where nothing beside it is copied: mcpp's build caches ke
 
 ## 8. The JSON form
 
-`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id), `reexports`, `declarations` and `reachable` (1.2.0) as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
+`mcxx-probe --read-ifc X.ifc` prints an interface as MC2 reads it: `module`, `internal`, `source`, `target`, `cplusplus`, `dialect` (`profiles`, `features` by id, `namespaces` by namespace then id), `reexports`, `imports` (1.6.0), `declarations` and `reachable` (1.2.0) as MC3 declarations (`schema/mc3-facts.schema.json`). [`schema/mc2-interface.schema.json`](schema/mc2-interface.schema.json) is its schema.
 
 ## 9. Rationale
 

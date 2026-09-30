@@ -130,7 +130,8 @@
             "parameter",
             "template-parameter",
             "macro",
-            "label"
+            "label",
+            "using-declaration"
           ]
         },
         "type": {
@@ -551,7 +552,8 @@
             "parameter",
             "template-parameter",
             "macro",
-            "label"
+            "label",
+            "using-declaration"
           ]
         }
       }

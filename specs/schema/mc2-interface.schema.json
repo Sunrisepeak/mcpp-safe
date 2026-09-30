@@ -79,6 +79,13 @@
       },
       "description": "The modules the unit re-exports (export import), by full name (MC2 1.1.0)."
     },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The modules the unit imports and does not re-export, by full name: what a unit of the same module that imports it sees too (MC2 1.6.0)."
+    },
     "declarations": {
       "type": "array",
       "items": {
@@ -193,7 +200,8 @@
             "parameter",
             "template-parameter",
             "macro",
-            "label"
+            "label",
+            "using-declaration"
           ]
         },
         "type": {
