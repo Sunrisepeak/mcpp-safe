@@ -5,11 +5,6 @@
 # file must not change depending on which command ran last.
 version = 2
 
-[package."openkal-musl"]
-version = "0.19.7"
-source  = "git+https://github.com/speak-agent/openkal-musl.git#tag=0.19.7"
-hash    = "fnv1a:2d42ca6a987b0c4e"
-
 [package."openkal-llvm-runtime"]
 namespace = "mcpplibs"
 version = "0.15.2"
