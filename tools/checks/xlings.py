@@ -14,6 +14,8 @@ any failure.
 """
 import json, os, pathlib, subprocess, sys
 
+windows = sys.platform == "win32"
+
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
 
@@ -21,7 +23,7 @@ repo = pathlib.Path(__file__).resolve().parents[2]
 mcxx = str(pathlib.Path(arg("mcxx")).resolve())
 headers = str(pathlib.Path(arg("headers")).resolve())
 home = pathlib.Path(arg("xlings-home", pathlib.Path.home() / ".mcpp/registry")).resolve()
-xlings = str(home / "bin/xlings")
+xlings = str(home / ("bin/xlings.exe" if windows else "bin/xlings"))
 env = dict(os.environ, XLINGS_HOME=str(home), MCXX_BINARY=mcxx, MCXX_CLANG_HEADERS=headers)
 failures = []
 
@@ -45,7 +47,9 @@ check("xlings use mcxx 0.1.0", used.returncode == 0, used.stdout[-300:] + used.s
 info = run("info", "mcxx:mcxx")
 check("xlings says it is installed and active", "selected installed: yes" in info.stdout and "(active)" in info.stdout, info.stdout[-400:])
 
-shim = home / "subos/current/bin/mcxx"
+# The program xvm puts on the path: mcxx, or on Windows mcxx.exe (or a .cmd shim).
+shim = next((home / "subos/current/bin" / n for n in (["mcxx.exe", "mcxx.cmd", "mcxx"] if windows else ["mcxx"])
+             if (home / "subos/current/bin" / n).exists()), home / "subos/current/bin/mcxx")
 if shim.exists():
     via = subprocess.run([str(shim), "version", "--json"], capture_output=True, text=True, env=env)
     direct = subprocess.run([mcxx, "version", "--json"], capture_output=True, text=True)
