@@ -12,6 +12,12 @@ package = {
 
     xpm = {
         linux = {
+            -- 23.1.0.6: upstream's fix for std::align_val_t declared in extern "C++" in a named module
+            -- (llvm/llvm-project#219151; MSVC's std module was ambiguous).
+            ["23.1.0.6"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.6.tar.gz",
+                sha256 = "fd82f8b5765972462190938333015628a2b06451efb2235971d943da906362e8",
+            },
             -- 23.1.0.5: the resource directory's generated intrinsics headers (llvm-generated/clang-lib/
             -- Headers: arm_neon.h and the other ARM, AArch64 and RISC-V ones).
             ["23.1.0.5"] = {
