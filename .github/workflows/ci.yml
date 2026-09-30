@@ -342,3 +342,32 @@ jobs:
           chmod +x "mcxx/${{ matrix.exe }}"
           "$py" tools/checks/xlings.py --mcxx "mcxx/${{ matrix.exe }}" --headers mcxx/headers
           "$py" tools/checks/toolchain.py --work "$HOME/toolchain-check"
+      # When the build fails: what the installed compiler sees -- its directory, configuration, resource
+      # directory and default target, and the header search of a trivial compile (the path spelled as
+      # mcpp spells it: on Windows the drive path, from PowerShell).
+      - name: What the installed compiler sees (on failure)
+        if: failure() && runner.os != 'Windows'
+        run: |
+          reg="$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx"
+          ls -la "$reg/" "$reg/bin/" "$reg/lib/clang/" || true
+          ls "$reg/lib/clang/23/include" | head -8 || true
+          cat "$reg/bin/clang++.cfg" || true
+          "$reg/bin/clang++" --version || true
+          "$reg/bin/clang++" -print-resource-dir || true
+          "$reg/bin/clang++" --no-default-config -dumpmachine || true
+          echo 'int main() { return 0; }' > probe.cpp
+          "$reg/bin/clang++" --no-default-config -v -fsyntax-only probe.cpp 2>&1 | head -40 || true
+      - name: What the installed compiler sees (on failure, Windows)
+        if: failure() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $reg = Join-Path $env:USERPROFILE '.mcpp\registry\data\xpkgs\xim-x-llvm\23.1.0-mcxx'
+          $exe = Join-Path $reg 'bin\clang++.exe'
+          Get-ChildItem $reg, (Join-Path $reg 'bin'), (Join-Path $reg 'lib\clang') -ErrorAction SilentlyContinue | Select-Object -First 60 | Format-Table Mode, Name, Target
+          Get-Content (Join-Path $reg 'bin\clang++.cfg') -ErrorAction SilentlyContinue
+          & $exe --version
+          & $exe -print-resource-dir
+          & $exe --no-default-config -dumpmachine
+          'int main() { return 0; }' | Set-Content probe.cpp
+          & $exe --no-default-config -v -fsyntax-only probe.cpp 2>&1 | Select-Object -First 40
+          "exit: $LASTEXITCODE"
