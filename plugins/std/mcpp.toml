@@ -15,6 +15,7 @@ kind = "lib"
 
 [dependencies]
 openkal-llvm-runtime = "0.15.2"
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.7" }   # as the root: a `-p` graph of its own (tests) is not settled by it
 mcxx-msa    = { path = "../../modules/msa" }
 mcxx-plugin = { path = "../../modules/plugin/sdk" }
 

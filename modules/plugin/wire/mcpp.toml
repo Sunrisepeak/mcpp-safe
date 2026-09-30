@@ -20,6 +20,7 @@ json = "3.12.0"
 [dev-dependencies]
 mcxx-testing = { path = "../../testing" }
 openkal-llvm-runtime = "0.15.2"   # the tests run as mcxx does; the library names no runtime
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.7" }   # as the root: a `-p` graph of its own (tests) is not settled by it
 
 [lib]
 path = "src/wire.cppm"

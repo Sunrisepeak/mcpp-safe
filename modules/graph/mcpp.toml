@@ -10,6 +10,7 @@ kind = "lib"
 
 [dependencies]
 openkal-llvm-runtime = "0.15.2"   # stated, not inherited: consumers outside this workspace read it
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.7" }   # as the root: a `-p` graph of its own (tests) is not settled by it
 
 [dev-dependencies]
 mcxx-testing = { path = "../testing" }
