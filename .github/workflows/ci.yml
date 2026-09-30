@@ -94,7 +94,7 @@ jobs:
           lexdump=$(find tools/lexdump/target -type f -name mcxx-lexdump -path '*/bin/*' | head -1)
           python3 tools/checks/symbols.py "$(find modules/features/target -type f -name test_iso -path '*/bin/*' | head -1)" "$lexdump" --expect-clang "$(find target -type f -name mcxx -path '*/bin/*' | head -1)"
           # MC++'s lexer against Clang's (A1.6.1): the edge cases, this repository, Clang's own lexer and headers, libc++.
-          clang_dev=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.6/*/llvm | head -1)
+          clang_dev=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm | head -1)
           python3 tools/checks/lexdiff.py --lexdump "$lexdump" --probe "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)" \
             modules/frontend/corpus/lex src modules plugins tools "$clang_dev/clang/lib/Lex" "$clang_dev/clang/include" \
             "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/$LLVM_VERSION/include/c++/v1" --any
@@ -108,7 +108,7 @@ jobs:
           set -euo pipefail
           export XLINGS_HOME="$HOME/.mcpp/registry"
           mcxx=$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")
-          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.6/*/llvm/clang/lib/Headers | head -1)
+          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm/clang/lib/Headers | head -1)
           # E-XL-1: installed from this repository's xpkg, selected with `xlings use`, run through xlings' path.
           python3 tools/checks/xlings.py --mcxx "$mcxx" --headers "$headers"
           python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
@@ -228,3 +228,146 @@ jobs:
           name: unit-tests-aarch64-macos
           path: cross
       - run: python3 tools/checks/platforms.py --run cross/aarch64-macos
+
+  # E-XIM-3: the mcxx xpkg (xpkgs/pkgs/m/mcxx.lua) on the other two platforms. mcxx is cross-built
+  # here for each, with Clang's builtin headers (the generated intrinsics ones among them), and handed
+  # to a job on the platform itself, which installs it through xlings over mcpp's llvm 22.1.8 and
+  # builds and runs a modules program with mcpp's --toolchain llvm@23.1.0-mcxx.
+  mcxx-cross:
+    name: mcxx cross-built (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-windows-gnu, aarch64-macos]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: xlings
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 \
+            https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            ~/.mcpp/registry/data/xpkgs
+            ~/.mcpp/build-cache
+          key: mcxx-cross-${{ matrix.target }}-${{ env.MCPP_VERSION }}-${{ hashFiles('index/**', '**/mcpp.toml') }}
+          restore-keys: mcxx-cross-${{ matrix.target }}-${{ env.MCPP_VERSION }}-
+      - name: mcpp and LLVM
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do xlings install "mcpp@$MCPP_VERSION" -y -g && break; sleep 20; done
+          mcpp self config --mirror GLOBAL
+          mcpp toolchain install llvm "$LLVM_VERSION"
+          mcpp toolchain default "llvm@$LLVM_VERSION"
+      - name: mcxx for ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          target=${{ matrix.target }}
+          mcpp build --target "$target"
+          exe=mcxx; case "$target" in *windows*) exe=mcxx.exe ;; esac
+          out="$PWD/xpkg-$target"; mkdir -p "$out/headers"
+          cp "$(ls -t $(find "target/$target" -type f -name "$exe" -path '*/bin/*') | head -1)" "$out/$exe"
+          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm/clang/lib/Headers | head -1)
+          cp -R "$headers"/. "$out/headers/"
+          cp "$headers"/../../../../llvm-generated/clang-lib/Headers/* "$out/headers/"
+          ls -la "$out" && ls "$out/headers" | wc -l
+      - uses: actions/cache/save@v4
+        if: always() && steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.mcpp/registry/data/xpkgs
+            ~/.mcpp/build-cache
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcxx-${{ matrix.target }}
+          path: xpkg-${{ matrix.target }}
+          retention-days: 7
+
+  xpkg:
+    name: the mcxx xpkg on ${{ matrix.os }} (E-XIM-3)
+    needs: mcxx-cross
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: x86_64-windows-gnu
+            exe: mcxx.exe
+          - os: macos-14
+            target: aarch64-macos
+            exe: mcxx
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: xlings (macOS)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 \
+            https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash -s "$XLINGS_VERSION"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+      - name: xlings (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          irm https://d2learn.org/xlings-install.ps1.txt | iex
+          "$env:USERPROFILE\.xlings\subos\current\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: mcpp and LLVM
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do xlings install "mcpp@$MCPP_VERSION" -y -g && break; sleep 20; done
+          mcpp --version
+          mcpp self config --mirror GLOBAL
+          for attempt in 1 2 3; do mcpp toolchain install llvm "$LLVM_VERSION" && break; sleep 20; done
+          mcpp toolchain default "llvm@$LLVM_VERSION"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mcxx-${{ matrix.target }}
+          path: mcxx
+      - name: Installed through xlings, and mcpp builds with it
+        run: |
+          set -euo pipefail
+          py=$(command -v python3 || command -v python)
+          chmod +x "mcxx/${{ matrix.exe }}"
+          "$py" tools/checks/xlings.py --mcxx "mcxx/${{ matrix.exe }}" --headers mcxx/headers
+          "$py" tools/checks/toolchain.py --work "$HOME/toolchain-check"
+      # When the build fails: what the installed compiler sees -- its directory, configuration, resource
+      # directory and default target, and the header search of a trivial compile (the path spelled as
+      # mcpp spells it: on Windows the drive path, from PowerShell).
+      - name: What the installed compiler sees (on failure)
+        if: failure() && runner.os != 'Windows'
+        run: |
+          reg="$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx"
+          ls -la "$reg/" "$reg/bin/" "$reg/lib/clang/" || true
+          ls "$reg/lib/clang/23/include" | head -8 || true
+          cat "$reg/bin/clang++.cfg" || true
+          "$reg/bin/clang++" --version || true
+          "$reg/bin/clang++" -print-resource-dir || true
+          "$reg/bin/clang++" --no-default-config -dumpmachine || true
+          echo 'int main() { return 0; }' > probe.cpp
+          "$reg/bin/clang++" --no-default-config -v -fsyntax-only probe.cpp 2>&1 | head -40 || true
+      - name: What the installed compiler sees (on failure, Windows)
+        if: failure() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $reg = Join-Path $env:USERPROFILE '.mcpp\registry\data\xpkgs\xim-x-llvm\23.1.0-mcxx'
+          $exe = Join-Path $reg 'bin\clang++.exe'
+          Get-ChildItem $reg, (Join-Path $reg 'bin'), (Join-Path $reg 'lib\clang') -ErrorAction SilentlyContinue | Select-Object -First 60 | Format-Table Mode, Name, Target
+          Get-Content (Join-Path $reg 'bin\clang++.cfg') -ErrorAction SilentlyContinue
+          & $exe --version
+          & $exe -print-resource-dir
+          & $exe --no-default-config -dumpmachine
+          'int main() { return 0; }' | Set-Content probe.cpp
+          & $exe --no-default-config -v -fsyntax-only probe.cpp 2>&1 | Select-Object -First 40
+          "exit: $LASTEXITCODE"

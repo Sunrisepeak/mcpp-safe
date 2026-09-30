@@ -46,20 +46,40 @@ void register_targets() {
     (void)once;
 }
 
+// An absolute path with a drive (C:\...\clang++.exe), as a build tool starts a compiler on Windows.
+// LLVM there is built as for Linux: it finds its own path from /proc/self/exe, which openkal's Windows
+// target has not, or by resolving argv[0], which a drive path defeats (realpath takes it for a relative
+// one). clang's driver was then left with no directory, and found neither its configuration files --
+// the payload's --target: mcpp took the toolchain for x86_64-w64-windows-gnu, not MSVC's triple -- nor
+// its resource directory. Such a path is the program's as given, and -no-canonical-prefixes has the
+// driver take it so. Not for cc1 (argv[1] names it), nor when the command says either way itself.
+bool takes_path_as_given(std::string_view self, const std::vector<std::string_view>& args) {
+    const bool drive { self.size() > 2 && ((self[0] >= 'A' && self[0] <= 'Z') || (self[0] >= 'a' && self[0] <= 'z')) && self[1] == ':'
+                       && (self[2] == '\\' || self[2] == '/') };
+    if (!drive || (!args.empty() && args.front().starts_with("-cc1"))) return false;
+    return std::ranges::none_of(args, [](std::string_view a) { return a == "-canonical-prefixes" || a == "-no-canonical-prefixes"; });
+}
+
+char no_canonical_prefixes[] { "-no-canonical-prefixes" };
+
 } // namespace
 
 int run(int argc, char** argv) {
     llvm::InitLLVM init { argc, argv };
     register_targets();
-    return clang_main(argc, argv, { argv[0], nullptr, false });
+    std::vector<char*> args { argv, argv + argc };
+    if (argc > 0 && takes_path_as_given(argv[0], { argv + 1, argv + argc })) args.insert(args.begin() + 1, no_canonical_prefixes);
+    args.push_back(nullptr);
+    return clang_main(static_cast<int>(args.size()) - 1, args.data(), { argv[0], nullptr, false });
 }
 
 int run_as(std::string_view mode, const char* self, std::vector<std::string> args) {
     std::vector<std::string> storage;
     storage.reserve(args.size() + 1);
     const std::string_view path { self };
-    const auto slash = path.find_last_of('/');
+    const auto slash = path.find_last_of("/\\");
     storage.push_back(std::string { slash == std::string_view::npos ? std::string_view {} : path.substr(0, slash + 1) } + std::string { mode });
+    if (takes_path_as_given(path, { args.begin(), args.end() })) storage.emplace_back(no_canonical_prefixes);
     for (auto& a : args) storage.push_back(std::move(a));
     std::vector<char*> argv;
     for (auto& s : storage) argv.push_back(s.data());

@@ -8,7 +8,9 @@ The payload must be installed (xpkgs/README.md). Checks: the build succeeds, the
 it should, and its objects say clang 23.1 compiled them. The work directory is outside the
 repository (default ~/.cache/mcxx-checks/toolchain). Exits non-zero on any failure.
 """
-import pathlib, shutil, subprocess, sys
+import pathlib, re, shutil, subprocess, sys
+
+windows = sys.platform == "win32"
 
 toolchain = sys.argv[sys.argv.index("--toolchain") + 1] if "--toolchain" in sys.argv else "llvm@23.1.0-mcxx"
 work = pathlib.Path(sys.argv[sys.argv.index("--work") + 1] if "--work" in sys.argv else pathlib.Path.home() / ".cache/mcxx-checks/toolchain")
@@ -30,13 +32,24 @@ shutil.rmtree(work, ignore_errors=True)
 
 build = subprocess.run(["mcpp", "build", "--toolchain", toolchain], cwd=work, capture_output=True, text=True)
 check(f"mcpp build --toolchain {toolchain}", build.returncode == 0, (build.stdout + build.stderr)[-800:])
-binaries = sorted(work.glob("target/*/*/bin/hello-modules"))
+binaries = sorted(work.glob("target/*/*/bin/hello-modules" + (".exe" if windows else "")))
 if binaries:
     run = subprocess.run([str(binaries[-1])], capture_output=True, text=True)
     check("the program runs and prints what it should", run.returncode == 0 and run.stdout.strip() == "hello, modules (answer=42)", run.stdout + run.stderr)
-    comment = subprocess.run(["readelf", "-p", ".comment", str(binaries[-1])], capture_output=True, text=True).stdout
-    check("its code was compiled by clang 23.1 (mcxx)", "clang version 23.1.0" in comment, comment[:300])
     ninja = next(iter(sorted(work.glob("target/*/*/build.ninja"))), None)
-    check("the build's compiler is the payload's clang++", ninja is not None and f"xim-x-llvm/{toolchain.split('@')[1]}/bin/clang++" in ninja.read_text())
+    # The payload's clang++ (clang++.exe), whichever separator the build's paths use.
+    compiler = re.search(r"(\S*xim-x-llvm[/\\]" + re.escape(toolchain.split("@")[1]) + r"[/\\]bin[/\\]clang\+\+(?:\.exe)?)",
+                         ninja.read_text()) if ninja else None
+    check("the build's compiler is the payload's clang++", compiler is not None)
+    if sys.platform.startswith("linux"):
+        comment = subprocess.run(["readelf", "-p", ".comment", str(binaries[-1])], capture_output=True, text=True).stdout
+        check("its code was compiled by clang 23.1 (mcxx)", "clang version 23.1.0" in comment, comment[:300])
+    elif compiler:
+        # PE and Mach-O objects keep no .comment: the compiler the build ran (the payload's, checked
+        # above) says what it is -- run from mcpp's store, not from build.ninja's spelling of it
+        # (ninja escapes a drive's colon).
+        payload = pathlib.Path.home() / ".mcpp/registry/data/xpkgs/xim-x-llvm" / toolchain.split("@")[1] / "bin" / ("clang++.exe" if windows else "clang++")
+        version = subprocess.run([str(payload), "--version"], capture_output=True, text=True).stdout
+        check("its code was compiled by clang 23.1 (mcxx)", "clang version 23.1.0" in version, version[:300])
 print(f"\n{failures} failed")
 sys.exit(1 if failures else 0)
