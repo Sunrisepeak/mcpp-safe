@@ -12,6 +12,12 @@ package = {
 
     xpm = {
         linux = {
+            -- 23.1.0.8: a program on openkal's macOS target knows its own path (_NSGetExecutablePath took
+            -- the kernel's 0 for a failure; mcxx found neither its resource directory nor its configuration).
+            ["23.1.0.8"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.8.tar.gz",
+                sha256 = "253076a0b0280ef510d6221bb5d9722579cc805deb29a922f9e69dca3ae4396f",
+            },
             -- 23.1.0.7: the code generator builds for openkal's macOS target (INT64_C and UINT64_C in the
             -- typedefs' type: MachineIRBuilder's SrcOp(INT64_C(0)) was ambiguous there; E-XIM-3).
             ["23.1.0.7"] = {
