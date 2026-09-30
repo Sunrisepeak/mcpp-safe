@@ -142,6 +142,41 @@ int main() {
         self = nullptr;
     };
 
+    "a module queued for a program that no longer has it is dropped, not failed"_test = [] {
+        Program p { "dropped" };
+        p.file("src/a.cppm", "export module a;\nexport int a() { return undeclared_symbol; }\n");
+        const std::string b { p.file("src/b.cppm", "export module b;\nimport a;\nexport int b() { return 1; }\n") };
+        p.file("src/main.cpp", "int main() { return 0; }\n");
+        std::vector<msa::Command> without;
+        for (const auto& c : p.commands)
+            if (c.file != b) without.push_back(c);
+        // As above: `b`, dispatched on `a`'s failure, is still queued when the program loses it.
+        std::atomic<msa::Workspace*> self { nullptr };
+        std::atomic_bool reprogrammed { false };
+        msa::Workspace::Options options;
+        options.cache_directory = (p.root / ".cache").generic_string();
+        options.workers = 1;
+        options.background_index = false;
+        options.changed = [&] {
+            msa::Workspace* w { self.load() };
+            if (w == nullptr || reprogrammed.load()) return;
+            const auto s = w->status();
+            if (std::ranges::none_of(s.failures, [](const msa::ModuleFailure& f) { return f.module == "a"; })) return;
+            if (!reprogrammed.exchange(true)) w->set_commands(without);
+        };
+        auto w = mcxx::backend::clang::make_workspace(std::move(options));
+        self = w.get();
+        w->set_commands(p.commands);
+        for (int round { 0 }; round < 600 && (!reprogrammed.load() || w->status().busy); ++round)
+            std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+        expect(fatal(reprogrammed.load())) << "a failed once";
+        const auto s = w->status();
+        expect(std::ranges::none_of(s.failures, [](const msa::ModuleFailure& f) { return f.module == "b"; }))
+            << std::format("b failed: {}", s.failures.empty() ? std::string {} : s.failures.back().reason);
+        expect(s.failures.size() == 1) << std::format("{} failures", s.failures.size());
+        self = nullptr;
+    };
+
     "a failed module, and what imports it, are built again when a header it read is mended"_test = [] {
         Program p { "header" };
         // Not a unit of the program (no command): only the module that includes it knows it.

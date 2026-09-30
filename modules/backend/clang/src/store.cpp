@@ -252,6 +252,14 @@ void ModuleStore::build_(const std::string& module) {
     {
         std::lock_guard lock { mutex_ };
         file = graph_.provider(module);
+        // Queued for a program that had it, and the program now has not (the inferred plan's units
+        // the build tool does not describe, xlings' apps/gui): nothing to build, and no failure.
+        if (file.empty()) {
+            auto& e = entries_[module];
+            e.again = false;
+            e.state = State::unknown;
+            return;
+        }
         if (const auto it = buffers_.find(file); it != buffers_.end()) buffer = it->second;
         const auto it = commands_.find(file);
         if (it != commands_.end()) command = it->second;
