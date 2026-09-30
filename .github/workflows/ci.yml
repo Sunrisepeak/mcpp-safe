@@ -94,7 +94,7 @@ jobs:
           lexdump=$(find tools/lexdump/target -type f -name mcxx-lexdump -path '*/bin/*' | head -1)
           python3 tools/checks/symbols.py "$(find modules/features/target -type f -name test_iso -path '*/bin/*' | head -1)" "$lexdump" --expect-clang "$(find target -type f -name mcxx -path '*/bin/*' | head -1)"
           # MC++'s lexer against Clang's (A1.6.1): the edge cases, this repository, Clang's own lexer and headers, libc++.
-          clang_dev=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.8/*/llvm | head -1)
+          clang_dev=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm | head -1)
           python3 tools/checks/lexdiff.py --lexdump "$lexdump" --probe "$(find tools/probe/target -type f -name mcxx-probe -path '*/bin/*' | head -1)" \
             modules/frontend/corpus/lex src modules plugins tools "$clang_dev/clang/lib/Lex" "$clang_dev/clang/include" \
             "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/$LLVM_VERSION/include/c++/v1" --any
@@ -108,7 +108,7 @@ jobs:
           set -euo pipefail
           export XLINGS_HOME="$HOME/.mcpp/registry"
           mcxx=$(realpath "$(find target -type f -name mcxx -path '*/bin/*' | head -1)")
-          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.8/*/llvm/clang/lib/Headers | head -1)
+          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm/clang/lib/Headers | head -1)
           # E-XL-1: installed from this repository's xpkg, selected with `xlings use`, run through xlings' path.
           python3 tools/checks/xlings.py --mcxx "$mcxx" --headers "$headers"
           python3 tools/checks/toolchain.py --work "$HOME/toolchain-check"
@@ -274,7 +274,7 @@ jobs:
           exe=mcxx; case "$target" in *windows*) exe=mcxx.exe ;; esac
           out="$PWD/xpkg-$target"; mkdir -p "$out/headers"
           cp "$(ls -t $(find "target/$target" -type f -name "$exe" -path '*/bin/*') | head -1)" "$out/$exe"
-          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.8/*/llvm/clang/lib/Headers | head -1)
+          headers=$(ls -d "$PWD"/.mcpp/.xlings/data/xpkgs/llvm-x-clang-dev/23.1.0.9/*/llvm/clang/lib/Headers | head -1)
           cp -R "$headers"/. "$out/headers/"
           cp "$headers"/../../../../llvm-generated/clang-lib/Headers/* "$out/headers/"
           ls -la "$out" && ls "$out/headers" | wc -l

@@ -12,6 +12,12 @@ package = {
 
     xpm = {
         linux = {
+            -- 23.1.0.9: mcxx as a toolchain on Windows and macOS (MSVC's triple as Windows' default; on
+            -- macOS the kernel's process identifier for the executable's path, and Darwin's release).
+            ["23.1.0.9"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.9.tar.gz",
+                sha256 = "0f9dde453dd5994d4e11d339c485badaf80cef7d5960feb1083dd858f28d5552",
+            },
             -- 23.1.0.8: a program on openkal's macOS target knows its own path (_NSGetExecutablePath took
             -- the kernel's 0 for a failure; mcxx found neither its resource directory nor its configuration).
             ["23.1.0.8"] = {
