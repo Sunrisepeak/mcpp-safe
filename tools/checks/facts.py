@@ -40,7 +40,9 @@ atexit.register(shutil.rmtree, cache, True)   # the probe's cache of this run on
 CLANG = {"Var": "variable", "Decomposition": "variable", "ParmVar": "parameter", "Field": "field", "Function": "function",
          "CXXMethod": "method", "CXXConstructor": "constructor", "CXXDestructor": "destructor", "CXXConversion": "conversion",
          "Typedef": "type-alias", "TypeAlias": "type-alias", "Enum": "enum", "Namespace": "namespace",
-         "CXXRecord": "record", "Record": "record", "ClassTemplateSpecialization": "record"}
+         "CXXRecord": "record", "Record": "record", "ClassTemplateSpecialization": "record",
+         # MC3 0.8.0's T1 kinds (what a unit introduces: MC2 1.6)
+         "EnumConstant": "enumerator", "NamespaceAlias": "namespace-alias", "Using": "using-declaration"}
 RECORDS = {"class", "struct", "union"}
 
 
