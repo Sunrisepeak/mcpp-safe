@@ -177,6 +177,24 @@ int main() {
         self = nullptr;
     };
 
+    "the index's progress counts the current program's units, each once"_test = [] {
+        Program p { "progress" };
+        p.file("src/lib.cppm", "export module lib;\nexport int one() { return 1; }\n");
+        const std::string main { p.file("src/main.cpp", "import lib;\nint main() { return one(); }\n") };
+        auto w = workspace_for(p);
+        const auto settle = [&] {
+            for (int round { 0 }; round < 600 && w->status().busy; ++round) std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+        };
+        settle();
+        expect(w->status().indexed == w->status().units) << std::format("{} indexed of {} units", w->status().indexed, w->status().units);
+        // Described again (mcppls: the inferred plan, then the build tool's), and a unit changed.
+        w->set_commands(p.commands);
+        w->file_changed(main);
+        settle();
+        const auto s = w->status();
+        expect(s.indexed == s.units) << std::format("{} indexed of {} units", s.indexed, s.units);
+    };
+
     "a failed module, and what imports it, are built again when a header it read is mended"_test = [] {
         Program p { "header" };
         // Not a unit of the program (no command): only the module that includes it knows it.

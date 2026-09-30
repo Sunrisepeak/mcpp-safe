@@ -155,19 +155,22 @@ public:
         }
         modules_->set_program(graph, byFile);
         modules_->prepare_all();
-        if (options_.background_index) {
+        {
             std::lock_guard lock { mutex_ };
-            indexQueue_.clear();
-            // Interfaces first: their declarations are what the rest of the program refers to.
-            for (const auto& [file, command] : byFile) {
-                const auto* s = graph.scan_of(file);
-                if (s && s->provides_interface()) indexQueue_.push_back(file);
+            indexed_.clear();
+            ++indexGeneration_;
+            if (options_.background_index) {
+                indexQueue_.clear();
+                // Interfaces first: their declarations are what the rest of the program refers to.
+                for (const auto& [file, command] : byFile) {
+                    const auto* s = graph.scan_of(file);
+                    if (s && s->provides_interface()) indexQueue_.push_back(file);
+                }
+                for (const auto& [file, command] : byFile) {
+                    const auto* s = graph.scan_of(file);
+                    if (!s || !s->provides_interface()) indexQueue_.push_back(file);
+                }
             }
-            for (const auto& [file, command] : byFile) {
-                const auto* s = graph.scan_of(file);
-                if (!s || !s->provides_interface()) indexQueue_.push_back(file);
-            }
-            indexTotal_ = indexQueue_.size();
         }
         indexCv_.notify_all();
         options_.changed();
@@ -181,7 +184,7 @@ public:
         for (const auto& r : rejected_)
             if (s.rejected.size() < 5) s.rejected.push_back(r);
         s.units = commands_.size();
-        s.indexed = indexDone_;
+        s.indexed = indexed_.size();
         if (!indexQueue_.empty() || indexRunning_ > 0) s.busy = true;
         return s;
     }
@@ -334,8 +337,11 @@ private:
     std::size_t rejectedCount_ { 0 };
     std::vector<msa::RejectedCommand> rejected_;   // the first few
     std::deque<std::string> indexQueue_;
-    std::size_t indexTotal_ { 0 };
-    std::size_t indexDone_ { 0 };
+    // The units of the current program indexed so far: a set, so a unit indexed again (a file
+    // changed) counts once, and cleared with each program, so the inferred plan's do not count
+    // toward the build tool's (the count ran past the units, and mcppls took the index for done).
+    std::set<std::string, std::less<>> indexed_;
+    std::uint64_t indexGeneration_ { 0 };
     std::size_t indexRunning_ { 0 };
     std::condition_variable_any indexCv_;
     bool stopping_ { false };
@@ -439,12 +445,14 @@ private:
     void index_work_(std::stop_token stop) {
         while (true) {
             std::string file;
+            std::uint64_t generation { 0 };
             {
                 std::unique_lock lock { mutex_ };
                 indexCv_.wait(lock, stop, [&] { return !indexQueue_.empty() || stopping_; });
                 if (stop.stop_requested() || stopping_) return;
                 file = indexQueue_.front();
                 indexQueue_.pop_front();
+                generation = indexGeneration_;
                 ++indexRunning_;
             }
             base::trace::Span span { "index", "unit", file };
@@ -463,7 +471,7 @@ private:
             {
                 std::lock_guard lock { mutex_ };
                 --indexRunning_;
-                ++indexDone_;
+                if (generation == indexGeneration_) indexed_.insert(file);
             }
             options_.changed();
         }
