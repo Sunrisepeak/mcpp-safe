@@ -105,6 +105,65 @@ int main() {
         expect(std::ranges::any_of(status.failures, [](const msa::ModuleFailure& f) { return f.module == "chain.mid" && f.cause == "chain.base"; }));
     };
 
+    "a module dispatched before the program changed waits for its dependency to be built again, not failed on it"_test = [] {
+        Program p { "reprogram" };
+        p.file("src/a.cppm", "export module a;\n#ifdef FIXED\nexport int a() { return 1; }\n#else\nexport int a() { return undeclared_symbol; }\n#endif\n");
+        p.file("src/b.cppm", "export module b;\nimport a;\nexport int b() { return a(); }\n");
+        const std::string text { "import b;\nint main() { return b(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        std::vector<msa::Command> fixed { p.commands };
+        for (auto& c : fixed) c.arguments.push_back("-DFIXED");
+        // One worker, and the program described again from its notice that `a` failed: `b`, dispatched
+        // on that failure, is still queued when `a` goes stale (mcppls: the inferred plan, then mcpp's).
+        std::atomic<msa::Workspace*> self { nullptr };
+        std::atomic_bool reprogrammed { false };
+        msa::Workspace::Options options;
+        options.cache_directory = (p.root / ".cache").generic_string();
+        options.workers = 1;
+        options.background_index = false;
+        options.changed = [&] {
+            msa::Workspace* w { self.load() };
+            if (w == nullptr || reprogrammed.load()) return;
+            const auto s = w->status();
+            if (std::ranges::none_of(s.failures, [](const msa::ModuleFailure& f) { return f.module == "a"; })) return;
+            if (!reprogrammed.exchange(true)) w->set_commands(fixed);
+        };
+        auto w = mcxx::backend::clang::make_workspace(std::move(options));
+        self = w.get();
+        w->set_commands(p.commands);
+        for (int round { 0 }; round < 600 && (!reprogrammed.load() || w->status().busy); ++round)
+            std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+        expect(fatal(reprogrammed.load())) << "a failed once";
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto diagnostics = unit->diagnostics();
+        expect(diagnostics.empty()) << std::format("{} diagnostics: {}", diagnostics.size(), diagnostics.empty() ? std::string {} : diagnostics[0].message);
+        expect(w->status().failures.empty()) << std::format("{} modules failed", w->status().failures.size());
+        self = nullptr;
+    };
+
+    "a failed module, and what imports it, are built again when a header it read is mended"_test = [] {
+        Program p { "header" };
+        // Not a unit of the program (no command): only the module that includes it knows it.
+        const auto header = p.root / "src/base.h";
+        std::ofstream { header } << "inline int base_value() { return undeclared_symbol; }\n";
+        p.file("src/base.cppm", "module;\n#include \"base.h\"\nexport module chain.base;\nexport int base() { return base_value(); }\n");
+        p.file("src/mid.cppm", "export module chain.mid;\nimport chain.base;\nexport int mid() { return base(); }\n");
+        const std::string text { "import chain.mid;\nint main() { return mid(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        expect(unit->diagnostics().size() == 1) << std::format("{} diagnostics", unit->diagnostics().size());
+        std::ofstream { header } << "inline int base_value() { return 1; }\n";
+        w->file_changed(mcxx::base::normalize_path(header.generic_string()));
+        auto again = w->parse(main, text, 2);
+        expect(fatal(again != nullptr));
+        const auto after = again->diagnostics();
+        expect(after.empty()) << std::format("{} diagnostics: {}", after.size(), after.empty() ? std::string {} : after[0].message);
+        expect(w->status().failures.empty()) << std::format("{} modules still failed", w->status().failures.size());
+    };
+
     "an interface edited in the editor is what its importers see"_test = [] {
         Program p { "overlay" };
         const std::string libText { "export module lib;\nexport int one() { return 1; }\n" };

@@ -94,6 +94,10 @@ private:
 
     void schedule_(const std::string& module);
 
+    // `changed`, and every module that imports one of them (its interface was built on theirs), are
+    // built again when next required. Holds mutex_.
+    void invalidate_(const std::vector<std::string>& changed);
+
     // Moves queued modules whose dependencies are done to the ready queue. Holds mutex_.
     void dispatch_();
 

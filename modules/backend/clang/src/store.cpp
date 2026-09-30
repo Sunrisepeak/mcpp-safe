@@ -104,6 +104,18 @@ void ModuleStore::set_buffer(const std::string& path, std::optional<std::string>
     std::vector<std::string> changed;
     for (const auto& module : graph_.modules())
         if (graph_.provider(module) == path) changed.push_back(module);
+    invalidate_(changed);
+}
+
+void ModuleStore::file_changed(const std::string& path) {
+    std::lock_guard lock { mutex_ };
+    std::vector<std::string> changed;
+    for (const auto& [module, entry] : entries_)
+        if (entry.source == path || std::ranges::find(entry.inputs, path) != entry.inputs.end()) changed.push_back(module);
+    invalidate_(changed);
+}
+
+void ModuleStore::invalidate_(const std::vector<std::string>& changed) {
     if (changed.empty()) return;
     for (auto& [module, e] : entries_) {
         bool hit { std::ranges::find(changed, module) != changed.end() };
@@ -113,16 +125,7 @@ void ModuleStore::set_buffer(const std::string& path, std::optional<std::string>
         }
         if (!hit) continue;
         if (e.state == State::ready || e.state == State::failed) e.state = State::stale;
-        else if (e.state == State::building) e.again = true;
-    }
-}
-
-void ModuleStore::file_changed(const std::string& path) {
-    std::lock_guard lock { mutex_ };
-    for (auto& [module, entry] : entries_) {
-        if (entry.source != path && std::ranges::find(entry.inputs, path) == entry.inputs.end()) continue;
-        if (entry.state == State::ready || entry.state == State::failed) entry.state = State::stale;
-        else if (entry.state == State::building) entry.again = true;   // it may have read the file before it changed
+        else if (e.state == State::building) e.again = true;   // it may have read the file before it changed
     }
 }
 
@@ -253,15 +256,30 @@ void ModuleStore::build_(const std::string& module) {
         const auto it = commands_.find(file);
         if (it != commands_.end()) command = it->second;
         const std::vector<std::string> roots { graph_.requires_of(module) };
+        bool dependencyPending { false };
         for (const auto& dependency : graph_.closure(roots)) {
             const auto& d = entries_[dependency];
             if (d.state == State::ready) {
                 dependencies.emplace_back(dependency, d.pcm);
                 dependencyKeys += dependency + "=" + d.key + ";";
-            } else {
+            } else if (d.state == State::failed) {
                 dependencyFailed = true;
                 failedDependency = dependency;
+            } else {
+                dependencyPending = true;
+                schedule_(dependency);
             }
+        }
+        // Dispatched when its dependencies were done, and one is not any more: the program changed
+        // under it (set_program, an edit) before a worker took it. It waits for that one to be built
+        // again rather than fail on it, which nothing would undo (real-xlings in CI: what the
+        // inferred plan's failures had dispatched failed on the build tool's program, and stayed so).
+        if (dependencyPending) {
+            auto& e = entries_[module];
+            e.again = false;
+            e.state = State::queued;
+            waiting_.push_back(module);
+            return;
         }
     }
     bool rejected { false };
@@ -365,17 +383,7 @@ void ModuleStore::build_(const std::string& module) {
     const auto started = std::chrono::steady_clock::now();
     const bool ok { instance.ExecuteAction(action) && !instance.getDiagnostics().hasErrorOccurred() };
     const auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
-    if (!ok) {
-        std::error_code ec;
-        fs::remove(tmp, ec);
-        std::string reason { consumer.errors.empty() ? std::string { "errors" } : consumer.errors.front() };
-        finish(false, {}, key, reason, {});
-        base::trace::count("modules.failed");
-        std::string noted;
-        for (const auto& n : consumer.notes) noted += "; note: " + n;
-        base::trace::info("modules", "Failed to build module {}; due to Failed to compile {}: {}{}", module, file, reason, noted);
-        return;
-    }
+    // What the build read, failed or not: a failure in a header is mended by changing the header.
     std::vector<std::string> inputs;
     std::string listing;
     for (const auto& dependency : collector->getDependencies()) {
@@ -387,6 +395,17 @@ void ModuleStore::build_(const std::string& module) {
         if (ec) continue;
         inputs.push_back(path);
         listing += std::format("{}\t{}\t{}\n", path, size, time.time_since_epoch().count());
+    }
+    if (!ok) {
+        std::error_code ec;
+        fs::remove(tmp, ec);
+        std::string reason { consumer.errors.empty() ? std::string { "errors" } : consumer.errors.front() };
+        finish(false, {}, key, reason, std::move(inputs));
+        base::trace::count("modules.failed");
+        std::string noted;
+        for (const auto& n : consumer.notes) noted += "; note: " + n;
+        base::trace::info("modules", "Failed to build module {}; due to Failed to compile {}: {}{}", module, file, reason, noted);
+        return;
     }
     std::error_code ec;
     fs::rename(tmp, pcm, ec);
