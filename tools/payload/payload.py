@@ -8,7 +8,8 @@ with mcxx as its compiler.
     LLVM_PAYLOAD   an installed xim:llvm payload, e.g. ~/.mcpp/registry/data/xpkgs/xim-x-llvm/22.1.8:
                    libc++ (headers, archives, std module sources), compiler-rt, lld, binutils and
                    clang-scan-deps come from it
-    CLANG_HEADERS  Clang 23.1's builtin headers (llvm/clang/lib/Headers of llvm.clang-dev)
+    CLANG_HEADERS  Clang 23.1's builtin headers (llvm/clang/lib/Headers of llvm.clang-dev; the generated ones
+                   beside it, llvm-generated/clang-lib/Headers, are added)
     DIR            the payload; to use it from mcpp as `llvm@23.1.0-mcxx`, DIR is
                    <mcpp registry>/data/xpkgs/xim-x-llvm/23.1.0-mcxx
 
@@ -65,6 +66,12 @@ for item in (llvm / "lib").iterdir():
 resource = out / "lib" / "clang" / "23"
 resource.mkdir(parents=True)
 shutil.copytree(headers, resource / "include", symlinks=True)
+# And the ones Clang's build generates, which clang/lib/Headers does not hold (arm_neon.h and the other
+# ARM, AArch64 and RISC-V intrinsics): llvm.clang-dev 23.1.0.5 carries them in llvm-generated/clang-lib/Headers.
+generated = headers.parents[3] / "llvm-generated" / "clang-lib" / "Headers"
+if generated.is_dir():
+    for h in generated.iterdir():
+        shutil.copy2(h, resource / "include" / h.name)
 if (llvm_resource / "lib").exists():
     (resource / "lib").symlink_to(llvm_resource / "lib")
 # clang-scan-deps is the llvm payload's: it finds the builtin headers under lib/clang/<ITS major>

@@ -98,6 +98,9 @@ function install()
         "for i in \"$L\"/lib/*; do n=$(basename \"$i\"); [ \"$n\" = clang ] || ln -s \"$i\" \"$D/lib/$n\"; done",
         "R=$(ls -d \"$L\"/lib/clang/* | head -1)",
         "cp -R " .. q(headers) .. " \"$D/lib/clang/" .. CLANG_MAJOR .. "/include\"",
+        -- The headers Clang's build generates (arm_neon.h, the other ARM, AArch64 and RISC-V
+        -- intrinsics), which llvm.clang-dev carries beside clang/lib/Headers since 23.1.0.5.
+        "G=" .. q(headers) .. "/../../../../llvm-generated/clang-lib/Headers; if [ -d \"$G\" ]; then cp \"$G\"/* \"$D/lib/clang/" .. CLANG_MAJOR .. "/include/\"; fi",
         "[ -d \"$R/lib\" ] && ln -s \"$R/lib\" \"$D/lib/clang/" .. CLANG_MAJOR .. "/lib\"",
         -- the llvm payload's clang-scan-deps looks under lib/clang/<its major> for the builtin headers
         "r=$(basename \"$R\"); [ \"$r\" = " .. CLANG_MAJOR .. " ] || ln -s " .. CLANG_MAJOR .. " \"$D/lib/clang/$r\"",

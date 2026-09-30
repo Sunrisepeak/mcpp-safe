@@ -12,6 +12,12 @@ package = {
 
     xpm = {
         linux = {
+            -- 23.1.0.5: the resource directory's generated intrinsics headers (llvm-generated/clang-lib/
+            -- Headers: arm_neon.h and the other ARM, AArch64 and RISC-V ones).
+            ["23.1.0.5"] = {
+                url    = "https://github.com/speak-agent/llvm-clang-dev/archive/refs/tags/23.1.0.5.tar.gz",
+                sha256 = "441cad8ea9b9825dc17601bb19d7c1877d4e38eaec4ffa4d19ecf55683b08df3",
+            },
             -- 23.1.0.4: also openkal's Windows and macOS targets, cross-built from Linux (a path on
             -- Windows has a drive, read by Windows' rules).
             ["23.1.0.4"] = {

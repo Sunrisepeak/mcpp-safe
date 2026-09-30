@@ -26,7 +26,7 @@ mcxx-diagnostics = { path = "../../diagnostics" }   # MC5 §9: the human and age
 # Clang's frontend libraries built by mcpp on openkal (speak-agent/llvm-clang-dev), served by this
 # repository's own index (index/llvm).
 [dependencies.llvm]
-clang-dev = "23.1.0.4"
+clang-dev = "23.1.0.5"
 
 [lib]
 path = "src/clang.cppm"
