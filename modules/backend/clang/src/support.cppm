@@ -141,6 +141,9 @@ std::string plain_name(const cl::NamedDecl* d);
 class CollectingConsumer : public cl::DiagnosticConsumer {
 public:
     std::vector<std::string> errors;
+    // The first error's notes (an ambiguity's candidates, a redeclaration's previous one): what a
+    // module's failure says in the log beside it.
+    std::vector<std::string> notes;
     void HandleDiagnostic(cl::DiagnosticsEngine::Level level, const cl::Diagnostic& info) override;
 };
 

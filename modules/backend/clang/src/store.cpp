@@ -366,7 +366,9 @@ void ModuleStore::build_(const std::string& module) {
         std::string reason { consumer.errors.empty() ? std::string { "errors" } : consumer.errors.front() };
         finish(false, {}, key, reason, {});
         base::trace::count("modules.failed");
-        base::trace::info("modules", "Failed to build module {}; due to Failed to compile {}: {}", module, file, reason);
+        std::string noted;
+        for (const auto& n : consumer.notes) noted += "; note: " + n;
+        base::trace::info("modules", "Failed to build module {}; due to Failed to compile {}: {}{}", module, file, reason, noted);
         return;
     }
     std::vector<std::string> inputs;

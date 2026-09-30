@@ -261,7 +261,8 @@ std::vector<std::string> backend_arguments(const std::string& resourceDirectory)
 
 void CollectingConsumer::HandleDiagnostic(cl::DiagnosticsEngine::Level level, const cl::Diagnostic& info) {
     cl::DiagnosticConsumer::HandleDiagnostic(level, info);
-    if (level < cl::DiagnosticsEngine::Error || errors.size() >= 8) return;
+    const bool note { level == cl::DiagnosticsEngine::Note && errors.size() == 1 && notes.size() < 8 };
+    if ((level < cl::DiagnosticsEngine::Error && !note) || errors.size() >= 8) return;
     llvm::SmallString<256> message;
     info.FormatDiagnostic(message);
     std::string where;
@@ -269,7 +270,8 @@ void CollectingConsumer::HandleDiagnostic(cl::DiagnosticsEngine::Level level, co
         const cl::PresumedLoc presumed { info.getSourceManager().getPresumedLoc(info.getLocation()) };
         if (presumed.isValid()) where = std::string { presumed.getFilename() } + ":" + std::to_string(presumed.getLine()) + ": ";
     }
-    errors.push_back(where + std::string { message.str() });
+    if (note && where.empty()) where = "(no location: an implicit declaration): ";
+    (note ? notes : errors).push_back(where + std::string { message.str() });
 }
 
 std::string plain_name(const cl::NamedDecl* d) {
