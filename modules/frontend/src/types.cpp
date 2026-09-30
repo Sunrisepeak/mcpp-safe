@@ -278,6 +278,14 @@ std::optional<std::string> parameters_text(const Tokens& t, std::size_t open, st
             }
             std::string printed { named_type_text(p) };
             if (printed.empty()) return std::nullopt;
+            // A parameter of array type is a pointer in the function's type ([dcl.fct]/5), as Clang
+            // prints it: `char *argv[]` is `char **`, `int v[3]` is `int *` (one bound; more, not printed).
+            if (printed.ends_with(']')) {
+                const auto open = printed.rfind('[');
+                if (open == std::string::npos || open == 0 || printed.find('[') != open || printed.find('(') != std::string::npos) return std::nullopt;
+                printed.erase(open);
+                printed += printed.ends_with('*') ? "*" : " *";
+            }
             params.push_back(std::move(printed));
         }
     }
@@ -468,15 +476,31 @@ std::vector<PpToken> split_shifts(std::span<const PpToken> tokens) {
 }
 
 std::string named_type_text(Tokens tokens) {
-    // A named parameter: its name is the last identifier, after a type's last token.
-    if (tokens.size() >= 2 && tokens.back().kind == Kind::raw_identifier && !builtin(tokens.back().spelling) &&
-        tokens.back().spelling != "const" && tokens.back().spelling != "volatile") {
-        const auto& before = tokens[tokens.size() - 2];
+    // A named parameter: its name is the last identifier, after a type's last token -- before its
+    // bounds when it is an array (`char *argv[]`).
+    std::size_t bounds { tokens.size() };
+    while (bounds > 0 && tokens[bounds - 1].kind == Kind::r_square) {
+        std::size_t j { bounds };
+        int depth { 0 };
+        while (j > 0) {
+            --j;
+            if (tokens[j].kind == Kind::r_square) ++depth;
+            else if (tokens[j].kind == Kind::l_square && --depth == 0) break;
+        }
+        if (depth != 0) break;
+        bounds = j;
+    }
+    if (bounds >= 2 && tokens[bounds - 1].kind == Kind::raw_identifier && !builtin(tokens[bounds - 1].spelling) &&
+        tokens[bounds - 1].spelling != "const" && tokens[bounds - 1].spelling != "volatile") {
+        const auto& before = tokens[bounds - 2];
         if (before.kind == Kind::raw_identifier || before.kind == Kind::greater || before.kind == Kind::star || before.kind == Kind::amp ||
             before.kind == Kind::ampamp || before.kind == Kind::ellipsis)
             if (!(before.kind == Kind::raw_identifier && (before.spelling == "struct" || before.spelling == "class" || before.spelling == "enum" ||
-                                                          before.spelling == "union" || before.spelling == "typename")))
-                tokens = tokens.subspan(0, tokens.size() - 1);
+                                                          before.spelling == "union" || before.spelling == "typename"))) {
+                std::vector<PpToken> unnamed { tokens.begin(), tokens.begin() + static_cast<std::ptrdiff_t>(bounds) - 1 };
+                unnamed.insert(unnamed.end(), tokens.begin() + static_cast<std::ptrdiff_t>(bounds), tokens.end());
+                return type_of(unnamed);
+            }
     }
     return type_of(tokens);
 }
@@ -510,9 +534,43 @@ std::string type_text(const Syntax& syntax, const Declaration& d, bool return_ty
     for (std::uint32_t k { d.declarator_begin }; k < declarator_end; ++k)
         if (d.id_end <= d.id_begin || k < d.id_begin || k >= d.id_end) written.push_back(all[k]);
     const auto declarator { split_shifts(written) };
-    // A class defined in the specifiers (`struct S { ... } s;`) is not followed.
-    if (std::ranges::any_of(specifiers, [](const PpToken& t) { return t.kind == Kind::l_brace; })) return {};
-    const auto base { base_of(specifiers, d.kind == msa::Kind::parameter) };
+    // A class or an enumeration defined in the specifiers (`enum class Kind { ... } kind;`): Clang
+    // prints it by its key and its name (`enum Kind`), an unnamed one's `(unnamed)` (`struct (unnamed)`);
+    // its base-clause, its underlying type and its body are not the type's text.
+    std::vector<PpToken> defined;
+    std::string unnamed;
+    if (const auto body = std::ranges::find_if(specifiers, [](const PpToken& t) { return t.kind == Kind::l_brace; }); body != specifiers.end()) {
+        const std::size_t open { static_cast<std::size_t>(body - specifiers.begin()) };
+        std::size_t key { open };
+        for (std::size_t k { 0 }; k < open; ++k)
+            if (word(specifiers, k, "struct") || word(specifiers, k, "class") || word(specifiers, k, "union") || word(specifiers, k, "enum")) {
+                key = k;
+                break;
+            }
+        if (key == open) return {};
+        std::size_t name { key + 1 };
+        if (word(specifiers, key, "enum") && (word(specifiers, name, "class") || word(specifiers, name, "struct"))) ++name;
+        while (is(specifiers, name, Kind::l_square) && is(specifiers, name + 1, Kind::l_square)) name = close_of(specifiers, name);
+        if (word(specifiers, name, "final")) name = open;   // `struct final { }`: no name
+        defined.assign(specifiers.begin(), specifiers.begin() + static_cast<std::ptrdiff_t>(key) + 1);
+        if (name < open && is(specifiers, name, Kind::raw_identifier) && !is(specifiers, name + 1, Kind::coloncolon)) defined.push_back(specifiers[name]);
+        else if (name < open && is(specifiers, name, Kind::raw_identifier)) return {};   // `struct A::B { }`: its name is qualified
+        else unnamed = std::format("{} (unnamed)", specifiers[key].spelling);
+        defined.insert(defined.end(), specifiers.begin() + static_cast<std::ptrdiff_t>(close_of(specifiers, open)), specifiers.end());
+    }
+    std::optional<Base> base;
+    if (!unnamed.empty()) {
+        // No name for base_of to print: its cv-qualifiers, and the key's text.
+        base.emplace();
+        base->text = unnamed;
+        for (const auto& t : defined) {
+            base->is_const = base->is_const || (t.kind == Kind::raw_identifier && t.spelling == "const");
+            base->is_volatile = base->is_volatile || (t.kind == Kind::raw_identifier && t.spelling == "volatile");
+            base->is_constexpr = base->is_constexpr || (t.kind == Kind::raw_identifier && t.spelling == "constexpr");
+        }
+    } else {
+        base = base_of(defined.empty() ? specifiers : Tokens { defined }, d.kind == msa::Kind::parameter);
+    }
     if (!base) return {};
     // A constexpr variable is const at its top level: its base's, or its outermost pointer's.
     const bool outer_pointer { !declarator.empty() && std::ranges::any_of(declarator, [](const PpToken& t) { return t.kind == Kind::star; }) };

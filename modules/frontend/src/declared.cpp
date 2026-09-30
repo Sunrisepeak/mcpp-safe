@@ -198,7 +198,26 @@ bool Resolver::collect(const Typed& written, std::vector<std::string>& out, bool
                     if (!literal(a)) known = collect(derived(type, a), out, pointer, depth + 1) && known;
                 return known;
             }
-            return collect(unbound(type), out, pointer, depth + 1);
+            // Otherwise what it names -- when that is a class template's specialization, a pointer or an
+            // array (Clang's collect_templates takes those first, whatever sugar they are under). Else
+            // Clang finds the alias template's specialization in the sugar: itself and its arguments as
+            // written (`std::remove_extent_t<T> *`, what `shared_ptr<T>::get()` returns).
+            std::vector<std::string> named;
+            bool named_pointer { false };
+            const Typed target { unbound(type) };
+            if (!collect(target, named, named_pointer, depth + 1)) return false;
+            if (!named.empty() || named_pointer || bare(target.text).ends_with(']')) {
+                for (const auto& n : named) add(n);
+                pointer = pointer || named_pointer;
+                return true;
+            }
+            add(found->qualified);
+            bool known { true };
+            for (std::size_t i { 0 }; i < args.size(); ++i) {
+                const bool type_argument { i < parameters.size() ? parameters[i].sort == Parameter::Sort::type || parameters[i].pack : !literal(args[i]) };
+                if (type_argument && !literal(args[i])) known = collect(derived(type, args[i]), out, pointer, depth + 1) && known;
+            }
+            return known;
         }
         if (!args.empty()) return false;
         // A member alias of a class template (`std::map::iterator`): what it names in the
@@ -371,8 +390,9 @@ DeclaredType Resolver::declared(std::size_t i) {
             }
         }
     }
-    // `T x[] = { a, b, c }`: the bound its initializer gives, as Clang prints it (`T[3]`).
-    if (const auto open = out.type.find("[]"); open != std::string::npos) {
+    // `T x[] = { a, b, c }`: the bound its initializer gives, as Clang prints it (`T[3]`). A parameter's
+    // is as written (`char *argv[]`: Clang prints its type before the adjustment to a pointer).
+    if (const auto open = out.type.find("[]"); open != std::string::npos && d.kind != msa::Kind::parameter) {
         std::size_t k { d.declarator_end };
         if (is(k, Kind::equal)) ++k;
         if (!is(k, Kind::l_brace)) {

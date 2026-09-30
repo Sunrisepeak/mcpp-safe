@@ -1676,6 +1676,12 @@ private:
             while (name < end && (is(name, Kind::amp) || is(name, Kind::ellipsis))) ++name;
             if (identifier(name) && name + 1 < end && (is(name + 1, Kind::equal) || is(name + 1, Kind::l_brace) || is(name + 1, Kind::l_paren))) {
                 const std::int32_t index { record(msa::Kind::variable, std::string { tok(name).spelling }, name, k, end - 1, scope, true, false, {}) };
+                // Its declarator is what precedes the initializer (`&x`): no type is written.
+                auto& d = out_.declarations[static_cast<std::size_t>(index)];
+                d.capture = true;
+                d.declarator_begin = static_cast<std::uint32_t>(k);
+                d.id_begin = static_cast<std::uint32_t>(name);
+                d.id_end = d.declarator_end = static_cast<std::uint32_t>(name + 1);
                 scan(is(name + 1, Kind::equal) ? name + 2 : name + 1, end, owner, false);
                 close(index, end - 1);
             }

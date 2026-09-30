@@ -3,7 +3,7 @@
 
     python3 tools/checks/declsdiff.py --corpus DIR --probe MCXX_PROBE --lexdump MCXX_LEXDUMP --resource DIR
                                       [--jobs N] [--reference-cache DIR] [--only SUBSTRING] [--report FILE]
-                                      [--min MEMBER=PCT]... [--max-differ MEMBER=PCT]...
+                                      [--min MEMBER=PCT]... [--min-written MEMBER=PCT]... [--max-differ MEMBER=PCT]...
 
 For every source file of a built corpus (its compile database; its own files, not its dependencies'):
 the Clang backend's T1 facts (`mcxx-probe --facts`, every kind, declaration types too) and MC++'s own
@@ -16,7 +16,10 @@ is counted apart. Printed: how many of Clang's declarations the front end has, a
 that agrees, the share said uncertain, with examples of what differs. `--reference-cache` keeps Clang's side per file (its path's
 digest and modification time), since it costs a parse. `--min matched=99.9 --min qualified-name=99.9`:
 fail when a share falls below it (a regression gate); `--max-differ templates=0.1`: fail when more than
-that share differs from Clang's (an answer given and wrong, not one said uncertain).
+that share differs from Clang's (an answer given and wrong, not one said uncertain). A2.1.2's measure is
+the declarations whose type is written, not deduced (`auto`, an init-capture, a structured binding, class
+template argument deduction: the expression layer's to type, and the Clang backend's meanwhile -- A2.2.3):
+printed per member as "written", and `--min-written type=99` fails when its share falls below it.
 """
 import atexit, collections, concurrent.futures, hashlib, json, os, pathlib, shlex, shutil, subprocess, sys, tempfile
 
@@ -84,6 +87,7 @@ def compare(unit):
     t = {key(d): d for d in theirs["declarations"]}
     o = {key(d): d for d in ours["declarations"]}
     unsure = {key(u): set(u["members"]) for u in ours.get("uncertain", [])}
+    deduced = {key(u) for u in ours.get("uncertain", []) if u.get("why") == "deduced"}
     counts = collections.Counter()
     wrong = collections.defaultdict(list)
     counts["clang"] = len(t)
@@ -94,11 +98,17 @@ def compare(unit):
             wrong["missing"].append(f"{d['kind']} {d['qualified-name']}")
             continue
         counts["matched"] += 1
+        if k in deduced:
+            counts["deduced"] += 1
         for m in MEMBERS:
             if m in unsure.get(k, ()):
                 counts[m + ":uncertain"] += 1
+                if k in deduced:
+                    counts[m + ":deduced"] += 1
             elif mine.get(m) == d.get(m):
                 counts[m] += 1
+                if k in deduced:
+                    counts[m + ":deduced-same"] += 1
             else:
                 wrong[m].append(f"{d['qualified-name']}: {d.get(m)!r} vs {mine.get(m)!r}")
     for k, d in o.items():
@@ -122,8 +132,10 @@ for f, r in results:
 matched = total["matched"]
 print(f"{len(results) - len(failed)} files of {corpus.name}; Clang's declarations {total['clang']}, the front end's {total['own']}, "
       f"matched {matched} ({100 * matched / max(1, total['clang']):.2f}% of Clang's)")
+written = matched - total["deduced"]
+print(f"  written types (not deduced): {written} of the matched ({100 * written / max(1, matched):.2f}%)")
 summary = {"files": len(results) - len(failed), "clang": total["clang"], "own": total["own"], "matched": matched, "members": {}, "uncertain": {},
-           "differ": {}}
+           "differ": {}, "written": {}}
 for m in MEMBERS:
     share = 100 * total[m] / max(1, matched)
     unsure = total[m + ":uncertain"]
@@ -131,7 +143,10 @@ for m in MEMBERS:
     summary["uncertain"][m] = round(100 * unsure / max(1, matched), 3)
     summary["differ"][m] = round(100 * (matched - total[m] - unsure) / max(1, matched), 3)
     said = f", said uncertain {unsure} ({100 * unsure / max(1, matched):.2f}%)" if unsure else ""
-    print(f"  {m:<15} {share:7.3f}%  ({matched - total[m] - unsure} differ{said})")
+    # Of the declarations whose type is written: the same, of all of them.
+    same_written = total[m] - total[m + ":deduced-same"]
+    summary["written"][m] = round(100 * same_written / max(1, written), 3)
+    print(f"  {m:<15} {share:7.3f}%  ({matched - total[m] - unsure} differ{said}; written {summary['written'][m]:.3f}%)")
     for x in examples[m][:3]:
         print(f"      {x}")
 for m in ("missing", "extra"):
@@ -150,6 +165,12 @@ for i, a in enumerate(sys.argv):
     share = 100 * matched / max(1, total["clang"]) if member == "matched" else summary["members"].get(member, 0)
     if share < float(floor):
         problems.append(f"{member} {share:.3f}% below {floor}%")
+for i, a in enumerate(sys.argv):
+    if a != "--min-written" or i + 1 >= len(sys.argv):
+        continue
+    member, floor = sys.argv[i + 1].split("=")
+    if summary["written"].get(member, 0) < float(floor):
+        problems.append(f"{member}: {summary['written'].get(member, 0):.3f}% of the written types, below {floor}%")
 for i, a in enumerate(sys.argv):
     if a != "--max-differ" or i + 1 >= len(sys.argv):
         continue

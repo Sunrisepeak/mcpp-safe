@@ -86,6 +86,7 @@ bool Resolver::placeholder_text(std::string_view type) {
 }
 
 bool Resolver::placeholder(const Declaration& d) const {
+    if (d.capture) return true;   // an init-capture: deduced as `auto` ([expr.prim.lambda.capture]/6)
     for (std::uint32_t k { d.specifiers_begin }; k < d.specifiers_end && k < t_.size(); ++k)
         if (word(k, "auto")) return true;
     return false;

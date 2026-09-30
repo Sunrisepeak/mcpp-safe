@@ -54,6 +54,7 @@ struct Declaration {
     std::uint32_t visible_end { 0 };
     std::uint32_t visible_begin { 0 };   // where it becomes visible, when not at its name: an init-capture's lambda body
     bool binding { false };   // a name a structured binding introduces (not a declaration of MC3's: its `[a, b]` is)
+    bool capture { false };   // an init-capture (`[x = e]`): its type deduced as `auto`'s, `auto&`'s for `&x = e`
     bool scoped_enum { false };   // `enum class`, `enum struct`: its enumerators are named in it
     std::uint32_t bases_begin { 0 }, bases_end { 0 };   // a class's base-clause tokens, after its `:`
     // Its [[mcpp::allow("ids", "reason")]] waivers (MC1 §7).

@@ -70,6 +70,75 @@ int main() {
         expect(!of("at").templates_certain) << "a specialization's member type is its own definition's";
     };
 
+    "an init-capture is deduced, a parameter's array written, a class defined in its declaration named"_test = [] {
+        // libc++'s std module: `using std::uint64_t;`, which names the C library's `::uint64_t` (MC2 1.6.0).
+        using K = mcxx::msa::Kind;
+        f::Imported imported;
+        mcxx::msa::fact::Declaration renamed;
+        renamed.qualified_name = "std::uint64_t";
+        renamed.kind = K::using_declaration;
+        renamed.type = "uint64_t";
+        mcxx::msa::fact::Declaration c;
+        c.qualified_name = "uint64_t";
+        c.kind = K::type_alias;
+        c.type = "__uint64_t";
+        imported.declarations = { renamed, c };
+        const std::string_view source {
+            "struct Session { int id; };\n"
+            "Session session;\n"
+            "auto run = [copied = session, &held = session] { return copied.id + held.id; };\n"
+            "int main(int argc, char* argv[]) { return 0; }\n"
+            "enum class Kind { a, b } kind { Kind::a };\n"
+            "struct { int n; } rows[] = { { 1 }, { 2 } };\n"
+            "std::uint64_t count;\n"
+        };
+        const auto parsed = f::parse(source);
+        const auto types = f::declared_types(parsed, imported);
+        const auto of = [&](std::string_view name) -> const f::DeclaredType& {
+            for (std::size_t i { 0 }; i < parsed.declarations.size(); ++i)
+                if (parsed.declarations[i].name == name) return types[i];
+            static const f::DeclaredType none;
+            return none;
+        };
+        expect(!of("copied").type_certain && of("copied").why == "deduced" && of("copied").templates_certain && of("copied").templates.empty())
+            << "an init-capture's type is deduced as `auto`'s: " << of("copied").why;
+        expect(of("held").why == "deduced" && of("held").templates_certain) << "`&x = e`: `auto&`'s";
+        expect(of("argv").type_certain && of("argv").type == "char *[]" && of("argv").pointer) << "as written: " << of("argv").type;
+        expect(of("kind").type_certain && of("kind").type == "enum Kind" && of("kind").templates_certain) << of("kind").type;
+        expect(of("rows").type_certain && of("rows").type == "struct (unnamed)[2]" && of("rows").templates_certain) << of("rows").type;
+        expect(of("count").type_certain && of("count").templates_certain && of("count").templates.empty() && !of("count").pointer)
+            << "std::uint64_t through the using-declaration: " << of("count").why;
+    };
+
+    "an alias template that names no specialization is what Clang finds in the sugar"_test = [] {
+        // Clang's collect_templates: a canonical specialization's template first; otherwise the alias
+        // template's specialization the type is written with (libc++'s `shared_ptr<T>::get()` returns
+        // `remove_extent_t<T> *`).
+        const std::string_view source {
+            "template <class T> using Same = T;\n"
+            "template <class T> struct Box { T value; };\n"
+            "template <class T> using Boxed = Box<T>;\n"
+            "template <class T> struct Holder { using element_type = Same<T>; element_type* get(); };\n"
+            "struct Task {};\n"
+            "Same<Task> direct;\n"
+            "Boxed<Task> boxed;\n"
+            "Holder<Task> holder;\n"
+            "auto got = holder.get();\n"
+        };
+        const auto parsed = f::parse(source);
+        const auto types = f::declared_types(parsed, {});
+        const auto of = [&](std::string_view name) -> const f::DeclaredType& {
+            for (std::size_t i { 0 }; i < parsed.declarations.size(); ++i)
+                if (parsed.declarations[i].name == name) return types[i];
+            static const f::DeclaredType none;
+            return none;
+        };
+        using V = std::vector<std::string>;
+        expect(of("direct").templates_certain && of("direct").templates == V { "Same" }) << "the alias template itself";
+        expect(of("boxed").templates == V { "Box" }) << "a specialization: its template, not the alias";
+        expect(of("got").templates_certain && of("got").templates == V { "Same" } && of("got").pointer) << "deduced through the member alias";
+    };
+
     "a file read as its module's interface carries its classes' bases and its templates' parameters"_test = [] {
         const std::string_view source {
             "export module shapes;\n"

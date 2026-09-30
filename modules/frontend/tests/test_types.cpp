@@ -52,6 +52,8 @@ int main() {
             "bool flag;\n"
             "decltype(big) same;\n"
             "int *const volatile cvp = nullptr;\n"
+            "lib::function<int(int argc, char* argv[])> a33;\n"
+            "lib::function<void(int values[3], const char* names[])> a34;\n"
         };
         const auto facts = f::facts(f::parse(source));
         const std::vector<std::pair<std::string_view, std::string_view>> expected {
@@ -88,6 +90,8 @@ int main() {
             { "flag", "bool" },
             { "same", "decltype(big)" },
             { "cvp", "int *const volatile" },
+            { "a33", "lib::function<int (int, char **)>" },
+            { "a34", "lib::function<void (int *, const char **)>" },
         };
         for (const auto& [name, type] : expected) {
             const auto it = std::ranges::find(facts.declarations, name, &mcxx::msa::fact::Declaration::qualified_name);
