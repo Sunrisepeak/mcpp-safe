@@ -124,8 +124,9 @@ def compare(unit):
             continue
         # The same entity: its qualified name and kind; a local (named by its name alone) also by where
         # it is declared. Which redeclaration a namespace's or a class's member is "declared" at is
-        # not what lookup decides.
-        same = any(plain(r["target"]) == m["target"] and r["kind"] == m["kind"] and
+        # not what lookup decides. Both names as plain() has them: a local class's members are named
+        # through their function, whose parameters' types Clang's side has without their arguments.
+        same = any(plain(r["target"]) == plain(m["target"]) and r["kind"] == m["kind"] and
                    ("::" in m["target"] or r.get("declaration") is None or m.get("declaration") is None or r["declaration"] == m["declaration"])
                    for r in rs)
         if same:

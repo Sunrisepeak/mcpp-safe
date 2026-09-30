@@ -1466,10 +1466,14 @@ private:
                     continue;
                 }
             }
-            // A lambda: [captures] <T> (parameters) specifiers { body }.
+            // A lambda: [captures] <T> (parameters) specifiers { body }. Not a subscript's `[`: after a
+            // name (a keyword that begins an expression aside: `return [x = f()] { ... }`), a `)`, ...
+            const auto begins_expression = [&](std::size_t p) {
+                return word(p, "return") || word(p, "co_return") || word(p, "co_yield") || word(p, "throw");
+            };
             if (t.kind == Kind::l_square && !is(k + 1, Kind::l_square) &&
-                !(k > from && (identifier(k - 1) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) || is(k - 1, Kind::greater) ||
-                               is_string(tok(k - 1).kind)))) {
+                !(k > from && ((identifier(k - 1) && !begins_expression(k - 1)) || is(k - 1, Kind::r_paren) || is(k - 1, Kind::r_square) ||
+                               is(k - 1, Kind::greater) || is_string(tok(k - 1).kind)))) {
                 ++lambdas_;
                 const std::size_t lambda_declarations { out_.declarations.size() };
                 captures(k, owner);

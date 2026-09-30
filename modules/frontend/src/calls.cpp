@@ -21,6 +21,12 @@ std::string without_default(std::string parameter) {
     return parameter;
 }
 
+// How many arguments a call must give: a parameter with a default argument (` =`) or a pack
+// (`Args &&...`, which may take none) is not one it must.
+std::size_t required_arguments(const std::vector<std::string>& parameters) {
+    return static_cast<std::size_t>(std::ranges::count_if(parameters, [](const std::string& p) { return !p.ends_with(" =") && !p.ends_with("..."); }));
+}
+
 bool arithmetic_word(std::string_view w) {
     static constexpr std::string_view words[] { "bool", "char", "signed", "unsigned", "short", "int", "long", "float", "double",
                                                 "wchar_t", "char8_t", "char16_t", "char32_t", "__int128" };
@@ -64,6 +70,38 @@ std::optional<std::vector<std::string>> Resolver::function_parameters(const Targ
         out.push_back(std::move(type));
     }
     return out;
+}
+
+std::size_t Resolver::argument_count(std::size_t open, std::size_t close) const {
+    if (close <= open + 1) return 0;
+    std::size_t count { 1 };
+    int nesting { 0 }, angle { 0 };
+    for (std::size_t k { open + 1 }; k < close; ++k) {
+        if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) ++nesting;
+        else if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) --nesting;
+        // Template arguments: a `<` after a name that is not an object's (as arguments() tells them).
+        else if (nesting == 0 && is(k, Kind::less) && k > 0 && is(k - 1, Kind::raw_identifier) &&
+                 !(resolved_[k - 1] && (resolved_[k - 1]->kind == msa::Kind::variable || resolved_[k - 1]->kind == msa::Kind::field ||
+                                        resolved_[k - 1]->kind == msa::Kind::parameter)))
+            ++angle;
+        else if (nesting == 0 && angle > 0 && is(k, Kind::greater)) --angle;
+        else if (nesting == 0 && angle > 0 && is(k, Kind::greatergreater)) angle = std::max(0, angle - 2);
+        else if (nesting == 0 && angle == 0 && is(k, Kind::comma)) ++count;
+    }
+    return count;
+}
+
+bool Resolver::takes(const std::vector<Target>& candidates, std::size_t count) const {
+    for (const auto& candidate : candidates) {
+        const auto params { function_parameters(candidate) };
+        if (!params) return true;   // one whose parameters are not known may
+        const bool variadic { std::ranges::any_of(*params, [](const std::string& p) { return p.find("...") != std::string::npos; }) ||
+                              (candidate.imported >= 0 && imported_.declarations[static_cast<std::size_t>(candidate.imported)].c_variadic) ||
+                              (candidate.declaration >= 0 && ds_[static_cast<std::size_t>(candidate.declaration)].c_variadic) };
+        const auto required = required_arguments(*params);
+        if (count >= required && (count <= params->size() || variadic)) return true;
+    }
+    return false;
 }
 
 std::vector<Resolver::Argument> Resolver::arguments(std::size_t open, std::size_t close, int depth) {
@@ -196,7 +234,7 @@ std::optional<Target> Resolver::chosen_by_arguments(const std::vector<Target>& c
         const bool variadic { std::ranges::any_of(*params, [](const std::string& p) { return p.find("...") != std::string::npos; }) ||
                               (candidate.imported >= 0 && imported_.declarations[static_cast<std::size_t>(candidate.imported)].c_variadic) ||
                               (candidate.declaration >= 0 && ds_[static_cast<std::size_t>(candidate.declaration)].c_variadic) };
-        const auto required = static_cast<std::size_t>(std::ranges::count_if(*params, [](const std::string& p) { return !p.ends_with(" ="); }));
+        const auto required = required_arguments(*params);
         if (args.size() < required || (args.size() > params->size() && !variadic)) continue;
         const Typed where { {}, candidate.declaration >= 0 ? ds_[static_cast<std::size_t>(candidate.declaration)].name_token : 0,
                             candidate.declaration >= 0 ? std::string {} : scope_of(candidate.qualified), candidate.declaration < 0, {}, nullptr };
@@ -244,7 +282,7 @@ std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open
             const bool variadic { std::ranges::any_of(*params, [](const std::string& p) { return p.find("...") != std::string::npos; }) ||
                                   (candidate.imported >= 0 && imported_.declarations[static_cast<std::size_t>(candidate.imported)].c_variadic) ||
                                   (candidate.declaration >= 0 && ds_[static_cast<std::size_t>(candidate.declaration)].c_variadic) };
-            const auto required = static_cast<std::size_t>(std::ranges::count_if(*params, [](const std::string& p) { return !p.ends_with(" ="); }));
+            const auto required = required_arguments(*params);
             if (args.size() < required || (args.size() > params->size() && !variadic)) continue;
             // Its parameters are read where it is declared, with its class's arguments (a member of a
             // specialization: `const string_t &`).

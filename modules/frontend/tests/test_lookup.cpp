@@ -321,6 +321,134 @@ int main() {
         expect(at(4, 66) == "tolower") << "one argument: the C library's: " << at(4, 66);
     };
 
+    "a designated initializer a return writes names its function's return type's member, or its lambda's"_test = [] {
+        const std::string_view source {
+            "struct Result { bool ok; int code; };\n"
+            "Result make(bool fail) {\n"
+            "    if (fail) return { .ok = false, .code = 1 };\n"
+            "    auto later = [](int c) -> Result { return { .ok = true, .code = c }; };\n"
+            "    return later(0);\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto [line, column, target] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view>> {
+                 { 2, 24, "Result::ok" }, { 2, 37, "Result::code" }, { 3, 49, "Result::ok" }, { 3, 61, "Result::code" } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            expect(at != references.end() && at->target == target) << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "a local class's member hides a local around it; `return [x = e]` declares x; `struct s` names a type"_test = [] {
+        using K = mcxx::msa::Kind;
+        const std::string_view source {
+            "struct archive { int n; };\n"
+            "int use(int fd, const char* archive) {\n"
+            "    struct Guard { int fd; ~Guard() { fd = 0; } } g { fd };\n"
+            "    struct archive* a = nullptr;\n"
+            "    int m = Guard { fd }.fd;\n"
+            "    return [fd = fd + m](int b) { return fd + b + (a != nullptr); }(1);\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto [line, column, target, kind] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view, K>> {
+                 { 2, 38, "Guard::fd", K::field }, { 2, 54, "fd", K::parameter }, { 3, 11, "archive", K::struct_ }, { 4, 20, "fd", K::parameter }, { 4, 25, "Guard::fd", K::field },
+                 { 5, 17, "fd", K::parameter }, { 5, 41, "fd", K::variable } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            expect(at != references.end() && at->target.ends_with(target) && at->kind == kind)
+                << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target + " " + std::string { mcxx::msa::to_string(at->kind) });
+        }
+    };
+
+    "a string's `+`, a path's `/` and a condition whose branches agree are typed"_test = [] {
+        const std::string_view source {
+            "namespace std {\n"
+            "template <class C> struct basic_string { int size() const; };\n"
+            "using string = basic_string<char>;\n"
+            "namespace filesystem { struct path { path filename() const; int native() const; }; }\n"
+            "}\n"
+            "int use(bool b, std::string s, std::filesystem::path p) {\n"
+            "    auto joined = s + \"x\";\n"
+            "    auto under = p / \"x\";\n"
+            "    auto either = b ? s : std::string {};\n"
+            "    return joined.size() + under.native() + either.size();\n"
+            "}\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto [line, column, target] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view>> {
+                 { 9, 18, "std::basic_string::size" }, { 9, 33, "std::filesystem::path::native" }, { 9, 51, "std::basic_string::size" } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            expect(at != references.end() && at->target == target) << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "an unqualified call none of whose functions takes its arguments is left to argument-dependent lookup"_test = [] {
+        const std::string_view source {
+            "namespace lib { struct Options {}; int run(Options o, int a, int b); }\n"
+            "namespace lib::tool { int run(int request); int go() { lib::Options o; return run(o, 1, 2) + run(5); } }\n"
+            "namespace lib::tool { template <class... A> int say(const char* f, A&&... a); int hi() { return say(\"x\"); } }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = [&](std::uint32_t column) {
+            return std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 1, column } && r.certain; });
+        };
+        expect(at(78) == references.end()) << "three arguments: not lib::tool::run";
+        expect(at(93) != references.end() && at(93)->target == "lib::tool::run") << "one argument";
+        const auto say = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 2, 96 }; });
+        expect(say != references.end() && say->target == "lib::tool::say") << "a pack may take no argument";
+    };
+
+    "what a using-directive nominates is met in the namespace enclosing both it and the directive"_test = [] {
+        const std::string_view source {
+            "namespace mcpp { int classify(int a, int b); }\n"
+            "namespace mcpp::build::runner_lookup { int classify(int e); }\n"
+            "namespace mcpp::build { int go() { using namespace mcpp::build::runner_lookup; return classify(1); } }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        const auto at = std::ranges::find_if(references, [](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { 2, 86 }; });
+        expect(at != references.end() && at->target == "mcpp::build::runner_lookup::classify") << (at == references.end() ? std::string { "not resolved" } : at->target);
+    };
+
+    "a trailing return type's names are looked up as a type's, not as members"_test = [] {
+        using K = mcxx::msa::Kind;
+        const std::string_view source {
+            "namespace lib { struct Box { int n; }; Box* get(); }\n"
+            "auto make() -> lib::Box;\n"
+            "auto use() -> lib::Box { auto l = [](lib::Box* b) -> lib::Box { return *b; }; return l(lib::get()); }\n"
+            "int count() { return lib::get()->n; }\n"
+        };
+        const auto references = f::references(f::parse(source));
+        for (const auto [line, column, target, kind] : std::vector<std::tuple<std::uint32_t, std::uint32_t, std::string_view, K>> {
+                 { 1, 15, "lib", K::namespace_ }, { 1, 20, "lib::Box", K::struct_ }, { 2, 14, "lib", K::namespace_ },
+                 { 2, 53, "lib", K::namespace_ }, { 2, 58, "lib::Box", K::struct_ }, { 3, 33, "lib::Box::n", K::field } }) {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            expect(at != references.end() && at->target == target && at->kind == kind)
+                << std::format("{}:{} {}", line, column, at == references.end() ? "not resolved" : at->target);
+        }
+    };
+
+    "a namespace alias a block declares again for the same namespace is the first declaration"_test = [] {
+        const std::string_view source {
+            "namespace store { int count(); }\n"
+            "namespace other { int count(); }\n"
+            "int use(bool more) {\n"
+            "    namespace s = store;\n"
+            "    if (more) { namespace s = store; return s::count(); }\n"
+            "    { namespace s = other; return s::count(); }\n"
+            "}\n"
+        };
+        const auto syntax = f::parse(source);
+        const auto references = f::references(syntax);
+        // Where the alias a use names is declared (1-based, as Where has it).
+        const auto declared_at = [&](std::uint32_t line, std::uint32_t column) -> std::pair<std::uint32_t, std::uint32_t> {
+            const auto at = std::ranges::find_if(references, [&](const f::Reference& r) { return r.range.begin == mcxx::msa::Position { line, column }; });
+            if (at == references.end() || at->declaration < 0) return {};
+            const auto& name = syntax.declarations[static_cast<std::size_t>(at->declaration)].name_at;
+            return { name.line, name.column };
+        };
+        expect(declared_at(4, 44) == std::pair<std::uint32_t, std::uint32_t> { 4, 15 }) << "the same namespace: the first alias";
+        expect(declared_at(5, 34) == std::pair<std::uint32_t, std::uint32_t> { 6, 17 }) << "another namespace: its own alias";
+    };
+
     "a range-for over a json value gives json values"_test = [] {
         using K = mcxx::msa::Kind;
         const auto decl = [](std::string qualified, K kind, std::string type = {}) {

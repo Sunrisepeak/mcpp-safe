@@ -104,6 +104,13 @@ private:
     // An unnamed namespace's members are its enclosing namespace's too ([namespace.unnamed]).
     std::map<std::string, std::vector<std::string>, std::less<>> transparent_;
     std::vector<std::int32_t> enclosing_;
+    // The scope a class's members are named in: its qualified name, but a local class's members are
+    // named through its function (`f(int)::Local::m`) while it is named `Local`.
+    std::vector<std::string> members_;
+    // The `->` that begins a trailing return type (a function's, a lambda's): a type follows, not a member.
+    std::vector<char> trailing_;
+    // What each using-directive nominates (nominated()), once.
+    std::vector<std::optional<std::vector<std::string>>> nominated_;
     std::vector<std::optional<Target>> resolved_;
     std::map<std::int32_t, std::vector<std::string>> chains_;
     std::map<std::int32_t, std::vector<std::string>> bases_;
@@ -208,6 +215,8 @@ private:
     // The type of an initializer's expression [begin, end]: a postfix expression's (expression_type),
     // what `*e` points to, `&e`'s pointer, a lambda's closure; nothing for an operator between operands.
     std::optional<Typed> initializer_type(std::size_t begin, std::size_t end, int depth);
+    // A conditional expression's type, its `?` at `question`: its branches' when they have one.
+    std::optional<Typed> conditional_type(std::size_t question, std::size_t end, int depth);
 
     // A structured binding's name (`auto [a, b] = e;`, `for (auto& [k, v] : m)`): its place among the
     // names, of what the group is deduced to be -- a pair's or a tuple's argument there, an array's
@@ -270,6 +279,19 @@ private:
     // The type a construction names, written before the `{` or `(` at `open`: `ns::T`, `std::vector<int>`.
     std::optional<Typed> type_named_before(std::size_t open);
 
+    // A lambda whose captures open at `introducer` (`[`), read no further than `limit`: its trailing
+    // return type's `->` (0: none, its return type deduced from its body) and its body's `{` and `}`.
+    struct Lambda {
+        std::size_t arrow { 0 }, body { 0 }, end { 0 };
+    };
+    std::optional<Lambda> lambda_at(std::size_t introducer, std::size_t limit) const;
+    // Whether the `[` at j begins a lambda: not a subscript's, an attribute's, `operator[]`'s, `new T[n]`'s, `delete[]`'s.
+    bool introduces_lambda(std::size_t j) const;
+
+    // What a `return` at k returns: the innermost lambda's trailing return type it is in, or its
+    // function's declared return type. Nothing when that is deduced.
+    std::optional<Typed> returned_at(std::size_t k);
+
     // The type of the expression that ends at token `end`: what a member access's object has. A
     // name (a variable, a parameter, a field, `this`), a call (its function's return type), a
     // subscript (its element), a parenthesized expression. Nothing when it is not one of these.
@@ -299,6 +321,9 @@ private:
 
     // The arguments between `open` and `close`, each told apart.
     std::vector<Argument> arguments(std::size_t open, std::size_t close, int depth);
+    // How many there are, told apart as arguments() tells them; whether one of `candidates` takes as many.
+    std::size_t argument_count(std::size_t open, std::size_t close) const;
+    bool takes(const std::vector<Target>& candidates, std::size_t count) const;
 
     // Of the functions `candidates` a call at `name` (its `(` next) names, the one its arguments fit,
     // when exactly one does.

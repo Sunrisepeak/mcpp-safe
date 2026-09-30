@@ -126,53 +126,65 @@ std::optional<Typed> Resolver::initializer_type(std::size_t begin, std::size_t e
     // A lambda: its closure type, a class of its own that names nothing -- unless it is called at once
     // (`[&]() -> std::string { ... }()`), which gives what it returns: its trailing return type.
     if (is(begin, Kind::l_square) && !is(begin + 1, Kind::l_square)) {
-        std::size_t k { begin };
-        int nesting { 0 };
-        for (; k <= end; ++k) {   // the captures' `]`
-            if (is(k, Kind::l_square)) ++nesting;
-            else if (is(k, Kind::r_square) && --nesting == 0) break;
-        }
-        std::size_t arrow { 0 }, body { 0 };
-        for (std::size_t j { k + 1 }; j <= end; ++j) {
-            if (is(j, Kind::l_paren) && arrow == 0) {
-                if (const auto close = opening_forward(j)) j = *close;
-                continue;
-            }
-            if (is(j, Kind::arrow) && arrow == 0) arrow = j;
-            if (is(j, Kind::l_brace)) {
-                body = j;
-                break;
-            }
-        }
-        const auto body_end { body != 0 ? opening_forward(body) : std::nullopt };
-        const bool called { body_end && *body_end < end && is(*body_end + 1, Kind::l_paren) && opening_forward(*body_end + 1) == end };
+        const auto lambda { lambda_at(begin, end) };
+        const bool called { lambda && lambda->end < end && is(lambda->end + 1, Kind::l_paren) && opening_forward(lambda->end + 1) == end };
         if (!called) return Typed { "(lambda)", begin, {}, false, {}, nullptr };
-        if (arrow == 0) return std::nullopt;   // its return type is deduced from its body
-        const std::string returned { type_text(std::span { t_ }.subspan(arrow + 1, body - arrow - 1)) };
+        if (lambda->arrow == 0) return std::nullopt;   // its return type is deduced from its body
+        const std::string returned { type_text(std::span { t_ }.subspan(lambda->arrow + 1, lambda->body - lambda->arrow - 1)) };
         if (returned.empty()) return std::nullopt;
-        return Typed { returned, arrow + 1, {}, false, {}, nullptr };
+        return Typed { returned, lambda->arrow + 1, {}, false, {}, nullptr };
     }
-    // An operator between operands at the top: not an expression F1 types (its last operand's type
-    // is not the whole's).
+    // The operators between operands at the top. Most make an expression F1 does not type (its last
+    // operand's type is not the whole's); these it does: a condition whose branches have one type, a
+    // string's `+`, a path's `/`.
     const auto operand_end = [&](std::size_t k) {
         return is(k, Kind::raw_identifier) || is(k, Kind::numeric_constant) || is(k, Kind::r_paren) || is(k, Kind::r_square) ||
                is(k, Kind::r_brace) || is(k, Kind::string_literal) || is(k, Kind::char_constant);
     };
     int nesting { 0 };
+    // A condition: all before its `?` is the condition, whatever operators are there.
+    for (std::size_t k { begin }; k <= end; ++k) {
+        if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) ++nesting;
+        else if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) --nesting;
+        else if (nesting == 0 && is(k, Kind::question)) return conditional_type(k, end, depth);
+    }
+    std::vector<std::size_t> pluses, slashes;
+    nesting = 0;
     for (std::size_t k { begin }; k <= end; ++k) {
         if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) ++nesting;
         else if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) --nesting;
         if (nesting != 0) continue;
         const Kind kind { t_[k].kind };
-        if (kind == Kind::question || kind == Kind::pipepipe || kind == Kind::ampamp || kind == Kind::slash || kind == Kind::percent ||
-            kind == Kind::pipe || kind == Kind::caret || kind == Kind::equalequal || kind == Kind::exclaimequal || kind == Kind::lessequal ||
-            kind == Kind::greaterequal || kind == Kind::spaceship || kind == Kind::lessless)
+        if (kind == Kind::pipepipe || kind == Kind::ampamp || kind == Kind::percent || kind == Kind::pipe || kind == Kind::caret ||
+            kind == Kind::equalequal || kind == Kind::exclaimequal || kind == Kind::lessequal || kind == Kind::greaterequal ||
+            kind == Kind::spaceship || kind == Kind::lessless)
             return std::nullopt;
-        if ((kind == Kind::plus || kind == Kind::minus || kind == Kind::star || kind == Kind::amp) && k > begin && operand_end(k - 1)) return std::nullopt;
+        if (kind == Kind::slash) slashes.push_back(k);
+        else if (kind == Kind::plus && k > begin && operand_end(k - 1)) pluses.push_back(k);
+        else if ((kind == Kind::minus || kind == Kind::star || kind == Kind::amp) && k > begin && operand_end(k - 1)) return std::nullopt;
         // `a < b`: a comparison when what precedes is an object, not a template.
         if (kind == Kind::less && k > begin && resolved_[k - 1] &&
             (resolved_[k - 1]->kind == msa::Kind::variable || resolved_[k - 1]->kind == msa::Kind::field || resolved_[k - 1]->kind == msa::Kind::parameter))
             return std::nullopt;
+    }
+    if (!pluses.empty() && !slashes.empty()) return std::nullopt;
+    // `s + "x" + t`: a std::basic_string when one of the operands is one ([string.op.plus]).
+    if (!pluses.empty()) {
+        std::size_t from { begin };
+        pluses.push_back(end + 1);
+        for (const auto op : pluses) {
+            if (op > from)
+                if (auto operand { initializer_type(from, op - 1, depth + 1) })
+                    if (class_of(*operand) == std::optional<std::string> { "std::basic_string" }) return operand;
+            from = op + 1;
+        }
+        return std::nullopt;
+    }
+    // `p / "x" / q`: a std::filesystem::path when the first operand is one ([fs.path.nonmember]).
+    if (!slashes.empty()) {
+        auto first { initializer_type(begin, slashes.front() - 1, depth + 1) };
+        if (first && class_of(*first) == std::optional<std::string> { "std::filesystem::path" }) return first;
+        return std::nullopt;
     }
     if (is(begin, Kind::star)) {
         const auto inner { initializer_type(begin + 1, end, depth + 1) };
@@ -187,6 +199,28 @@ std::optional<Typed> Resolver::initializer_type(std::size_t begin, std::size_t e
         is(begin, Kind::minusminus))
         return std::nullopt;
     return expression_type(end, depth);
+}
+
+std::optional<Typed> Resolver::conditional_type(std::size_t question, std::size_t end, int depth) {
+    // Its `:`: the one at the top that is not a nested condition's.
+    std::size_t colon { 0 };
+    int nesting { 0 }, inner { 0 };
+    for (std::size_t k { question + 1 }; k <= end && colon == 0; ++k) {
+        if (is(k, Kind::l_paren) || is(k, Kind::l_square) || is(k, Kind::l_brace)) ++nesting;
+        else if (is(k, Kind::r_paren) || is(k, Kind::r_square) || is(k, Kind::r_brace)) --nesting;
+        else if (nesting == 0 && is(k, Kind::question)) ++inner;
+        else if (nesting == 0 && is(k, Kind::colon) && inner-- == 0) colon = k;
+    }
+    if (colon == 0 || colon == question + 1 || colon == end) return std::nullopt;
+    // Both branches of one type: the whole's ([expr.cond]); otherwise F1 does not say which.
+    const auto first { initializer_type(question + 1, colon - 1, depth + 1) };
+    const auto second { initializer_type(colon + 1, end, depth + 1) };
+    if (!first || !second) return std::nullopt;
+    if (bare(first->text) == bare(second->text)) return first;
+    const auto a { class_of(*first) }, b { class_of(*second) };
+    const bool plain { bare(first->text).find('<') == std::string::npos && bare(second->text).find('<') == std::string::npos };
+    if (a && a == b && plain) return first;
+    return std::nullopt;
 }
 
 std::optional<Typed> Resolver::binding_type(std::size_t i, int depth) {
@@ -411,6 +445,67 @@ std::optional<Typed> Resolver::type_named_before(std::size_t open) {
     }
     if (begin == open) return std::nullopt;
     return Typed { type_text(std::span { t_ }.subspan(begin, open - begin)), begin, {}, false };
+}
+
+std::optional<Resolver::Lambda> Resolver::lambda_at(std::size_t k, std::size_t limit) const {
+    int nesting { 0 };
+    for (; k <= limit && k < t_.size(); ++k) {   // the captures' `]`
+        if (is(k, Kind::l_square)) ++nesting;
+        else if (is(k, Kind::r_square) && --nesting == 0) break;
+    }
+    if (k > limit || k >= t_.size()) return std::nullopt;
+    Lambda out;
+    // Its template parameters, its parameters, its specifiers, its trailing return type, its body.
+    for (std::size_t j { k + 1 }; j <= limit && j < t_.size(); ++j) {
+        if (j == k + 1 && is(j, Kind::less)) {
+            for (int angle { 0 }; j <= limit && j < t_.size(); ++j) {
+                if (is(j, Kind::less)) ++angle;
+                else if (is(j, Kind::greater) && --angle == 0) break;
+            }
+            continue;
+        }
+        if (is(j, Kind::l_paren)) {
+            if (const auto close = opening_forward(j)) j = *close;
+            continue;
+        }
+        if (is(j, Kind::arrow) && out.arrow == 0) out.arrow = j;
+        if (is(j, Kind::l_brace)) {
+            const auto close { opening_forward(j) };
+            if (!close) return std::nullopt;
+            out.body = j;
+            out.end = *close;
+            return out;
+        }
+        // Not a lambda's: a structured binding's names (`auto& [a, b] = e;`, `: m`), a subscript's.
+        if (is(j, Kind::semi) || is(j, Kind::equal) || is(j, Kind::colon) || is(j, Kind::r_paren) || is(j, Kind::r_brace)) return std::nullopt;
+    }
+    return std::nullopt;
+}
+
+bool Resolver::introduces_lambda(std::size_t j) const {
+    if (!is(j, Kind::l_square) || is(j + 1, Kind::l_square) || j == 0) return false;
+    const std::size_t p { j - 1 };
+    if (is(p, Kind::r_paren) || is(p, Kind::r_square) || is(p, Kind::l_square) || is(p, Kind::greater) || is(p, Kind::string_literal)) return false;
+    return !(is(p, Kind::raw_identifier) && (!keyword(t_[p].spelling) || word(p, "operator") || word(p, "new") || word(p, "delete")));
+}
+
+std::optional<Typed> Resolver::returned_at(std::size_t k) {
+    const std::int32_t e { k < enclosing_.size() ? enclosing_[k] : -1 };
+    if (e < 0 || !function_kind(ds_[static_cast<std::size_t>(e)].kind)) return std::nullopt;
+    const auto& f = ds_[static_cast<std::size_t>(e)];
+    // The lambdas around k: the latest whose body holds k is the innermost.
+    std::optional<Lambda> inner;
+    for (std::size_t j { f.first_token }; j < k; ++j) {
+        if (!introduces_lambda(j)) continue;
+        if (const auto lambda = lambda_at(j, k); lambda && lambda->body < k && k < lambda->end) inner = lambda;
+    }
+    if (inner) {
+        if (inner->arrow == 0) return std::nullopt;   // deduced from its body
+        const std::string returned { type_text(std::span { t_ }.subspan(inner->arrow + 1, inner->body - inner->arrow - 1)) };
+        if (returned.empty()) return std::nullopt;
+        return Typed { returned, inner->arrow + 1, {}, false, {}, nullptr };
+    }
+    return typed(target_of(e), 0, true);
 }
 
 std::optional<Typed> Resolver::expression_type(std::size_t end, int depth) {
