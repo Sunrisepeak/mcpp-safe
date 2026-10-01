@@ -81,10 +81,30 @@ namespace mcxx::clang_backend {
 namespace cl = ::clang;
 namespace fs = std::filesystem;
 
+namespace {
+
+bool exception_model_flag(std::string_view a) {
+    return a == "-fdwarf-exceptions" || a == "-fseh-exceptions" || a == "-fsjlj-exceptions" || a == "-fwasm-exceptions";
+}
+
+} // namespace
+
 void ModuleStore::set_program(const mcxx::graph::Graph& graph, const std::map<std::string, msa::Command, std::less<>>& commands) {
     std::lock_guard lock { mutex_ };
     graph_ = graph;
     commands_ = commands;
+    // The exception model is a language option a BMI and every unit importing it must agree on
+    // ("ExceptionHandling differs in precompiled file"), and a build description can give a module
+    // a command without the one its importers name: mcpp's std for openkal's Windows runtime has no
+    // `-fdwarf-exceptions`, every unit of the program has it, and every import of std failed. The
+    // model most commands name is the one a module whose command names none is built with.
+    std::map<std::string, std::size_t> models;
+    for (const auto& [file, command] : commands_)
+        for (const auto& a : command.arguments)
+            if (exception_model_flag(a)) ++models[a];
+    exceptionModel_.clear();
+    for (const auto& [flag, count] : models)
+        if (2 * count > commands_.size()) exceptionModel_ = flag;
     for (auto& [module, entry] : entries_) {
         if (entry.state == State::ready || entry.state == State::failed) entry.state = State::stale;
         // One being built now reads the program as it was: built again once it is done, never
@@ -272,6 +292,7 @@ void ModuleStore::build_(const std::string& module) {
     bool dependencyFailed { false };
     std::string failedDependency;
     std::optional<std::string> buffer;
+    std::string exceptionModel;
     {
         std::lock_guard lock { mutex_ };
         file = graph_.provider(module);
@@ -284,6 +305,7 @@ void ModuleStore::build_(const std::string& module) {
             return;
         }
         if (const auto it = buffers_.find(file); it != buffers_.end()) buffer = it->second;
+        exceptionModel = exceptionModel_;
         const auto it = commands_.find(file);
         if (it != commands_.end()) command = it->second;
         const std::vector<std::string> roots { graph_.requires_of(module) };
@@ -351,6 +373,7 @@ void ModuleStore::build_(const std::string& module) {
         return;
     }
     std::vector<std::string> args { normalize(command) };
+    if (!exceptionModel.empty() && std::ranges::none_of(args, exception_model_flag)) args.push_back(exceptionModel);
     std::string keyText { std::string { CACHE_EPOCH } + "\n" };
     for (const auto& a : args) keyText += a + '\0';
     keyText += "\n" + file + "\n" + hex_digest(*source) + "\n" + dependencyKeys;
