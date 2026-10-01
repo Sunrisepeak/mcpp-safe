@@ -1,4 +1,4 @@
-// langdiff: c++2c
+// langdiff: c++2c c23
 // #embed (P1967R14) as Clang 23.1 has it, and P3540R3's offset as Clang's `clang::offset`: the directive's
 // replacement, token for token (tools/checks/langdiff.py).
 int plain[] = {

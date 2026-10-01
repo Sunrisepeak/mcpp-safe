@@ -10,13 +10,15 @@ tokens in Clang's `-E` output, as tools/checks/ppdiff.py does for a corpus.
     --clang   a Clang with C23's #embed: 23.1 (xim's LLVM under ~/.mcpp/registry/data/xpkgs/xim-x-llvm); its -E
               output is the reference where its reading is the paper's. The Clang fork's S4 line implements the same
               papers (P3540R3's own `offset`, P2843R3's diagnostics) and becomes the reference for the rest.
-    DIR       a directory of .cpp files; the first line `// langdiff: c++2c` is the standard both read it as
-              (-std= for Clang, --std for MC++); resources are found next to the file (`-I DIR`)
+    DIR       a directory of .cpp files; the first line `// langdiff: c++2c [c23]` is the standard both read it as
+              (-std= for Clang, --std for MC++), and, when a C standard follows, the C23 reading too: Clang's -E in C
+              mode over the same text (#embed is C23's, and where the papers agree with it the output is the same);
+              resources are found next to the file (`-I DIR`)
 
 MC++ gets `--feature all`: every language feature of C++26 and C++29 on. Each file is `equal` or differs at a token
 (the first one is printed); exits non-zero when any file differs or one cannot be preprocessed.
 """
-import concurrent.futures, os, pathlib, re, subprocess, sys, tempfile
+import concurrent.futures, json, os, pathlib, re, subprocess, sys, tempfile
 
 
 def arg(name, default=None):
@@ -34,21 +36,23 @@ scratch = tempfile.mkdtemp(prefix="mcxx-langdiff-")
 
 def check(path):
     first = pathlib.Path(path).read_text(encoding="utf-8").splitlines()[0]
-    m = re.match(r"//\s*langdiff:\s*(\S+)", first)
+    m = re.match(r"//\s*langdiff:\s*(\S+)(?:\s+(\S+))?", first)
     std = m.group(1) if m else "c++2c"
     directory = os.path.dirname(path)
-    output = os.path.join(scratch, f"{abs(hash(path))}.i")
-    run = subprocess.run([clang, "-E", f"-std={std}", "-Wno-c23-extensions", "-x", "c++", "-I", directory, path, "-o", output], capture_output=True, text=True)
-    if run.returncode != 0:
-        return path, "clang-failed", run.stderr.strip().splitlines()[0][:300] if run.stderr.strip() else ""
-    ours = subprocess.run([lexdump, "--ppdiff", "--std", std, "--feature", "all", "-I", directory, path, output], capture_output=True, text=True)
-    os.unlink(output)
-    if ours.returncode != 0 or not ours.stdout.strip():
-        return path, "lexdump-failed", ours.stderr[-300:]
-    import json
-    r = json.loads(ours.stdout)
-    note = "" if r["verdict"] == "equal" else f"token {r['at']} (line {r['line']})\n    ours:  {r['ours']}\n    clang: {r['clang']}"
-    return path, r["verdict"], note
+    readings = [("c++", f"-std={std}", "c++")] + ([("c", f"-std={m.group(2)}", "c")] if m and m.group(2) else [])
+    for language, flag, x in readings:
+        output = os.path.join(scratch, f"{abs(hash(path))}.i")
+        run = subprocess.run([clang, "-E", flag, "-Wno-c23-extensions", "-x", x, "-I", directory, path, "-o", output], capture_output=True, text=True)
+        if run.returncode != 0:
+            return path, "clang-failed", (language + ": " + run.stderr.strip().splitlines()[0][:300]) if run.stderr.strip() else ""
+        ours = subprocess.run([lexdump, "--ppdiff", "--std", std, "--feature", "all", "-I", directory, path, output], capture_output=True, text=True)
+        os.unlink(output)
+        if ours.returncode != 0 or not ours.stdout.strip():
+            return path, "lexdump-failed", ours.stderr[-300:]
+        r = json.loads(ours.stdout)
+        if r["verdict"] != "equal":
+            return path, r["verdict"], f"({language}) token {r['at']} (line {r['line']})\n    ours:  {r['ours']}\n    clang: {r['clang']}"
+    return path, "equal", ""
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

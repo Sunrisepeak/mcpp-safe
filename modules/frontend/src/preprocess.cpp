@@ -867,6 +867,13 @@ private:
         return !e.found ? 0 : e.count == 0 ? 2 : 1;
     }
 
+    // [cpp.include]/4 (P2843R3): a directive that is not one of the two forms once its macros are replaced is
+    // ill-formed, no diagnostic required; one with more after the header name is one (adjacent string literals are
+    // not concatenated: `#include "a" "b"`). Diagnosed when the feature is on, as every compiler does.
+    void trailing_include_tokens(Where at) {
+        forbid(PREPROCESSING_NEVER_UNDEFINED, at, "`#include` has tokens after the header name; adjacent string literals are not concatenated");
+    }
+
     void include_directive(std::span<const Token> rest, Where at, const Token& keyword) {
         std::string header;
         std::uint32_t end { keyword.end };
@@ -877,9 +884,11 @@ private:
             if (k == rest.size()) return error(at, "expected '>' to end the header name");
             header = std::format("<{}>", text_.substr(rest[0].end, rest[k].begin - rest[0].end));
             end = rest[k].end;
+            if (k + 1 < rest.size()) trailing_include_tokens(at);
         } else if (!rest.empty() && rest[0].kind == Kind::string_literal) {
             header = std::string { spelled(rest[0]) };
             end = rest[0].end;
+            if (rest.size() > 1) trailing_include_tokens(at);
         } else {
             return uncertain(at, "a computed #include");
         }

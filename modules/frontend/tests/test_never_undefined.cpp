@@ -165,6 +165,15 @@ int main() {
         expect(pp.diagnostics.empty() && text(source, o) == "int a ; int b ; int c ; int d ;");
     };
 
+    "[cpp.include]/4: a header name with tokens after it is not concatenated with them"_test = [] {
+        const auto o = options();
+        expect(forbids("#include \"cstdlib\" \"\"\n", o, "tokens after the header name"));
+        expect(forbids("#include \"cstd\"\"io\"\n", o, "tokens after the header name"));
+        expect(forbids("#include <vector> extra\n", o, "tokens after the header name"));
+        expect(forbidden("#include <vector>\n#include \"a.h\"\n", o).empty());
+        expect(forbidden("#include \"cstdlib\" \"\"\n", options(23, std::nullopt)).empty());
+    };
+
     "[cpp.include], [cpp.cond]: what the paper keeps IFNDR is not made an error"_test = [] {
         // Not diagnosed: a macro that expands to defined, in the cases every compiler takes the same way.
         const auto o = options();
