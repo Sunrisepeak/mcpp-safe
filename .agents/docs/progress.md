@@ -33,6 +33,16 @@
 | E-LS-5 | ✅ | 三个平台的 payload 都不带 clangd：linux 见检查点 1；darwin-arm64、win32-x64 由 fork 的 `payload (<platform>, mcxx)` job 组装，`payload --verify` 通过且没有 `payload/clangd` |
 | E-IDX-3 | ✅ | `index/llvm` 的 `llvm.clang-dev` 是源码包，按目标构建：fork 从 Linux 交叉构建 aarch64-macos、x86_64-windows-gnu 的 mcppls（Clang 库在里面），本仓库 CI 交叉构建这两个目标的单元测试 |
 | E-XIM-3 | ✅ | `xpkgs/pkgs/m/mcxx.lua` 在三个平台上安装（各自的 xim:llvm 22.1.8 之上），mcpp 用 `--toolchain llvm@23.1.0-mcxx` 构建并运行模块程序：mcpp-safe CI run 36779946418 的 `the mcxx xpkg on windows-2022`、`on macos-14` 都通过（xlings 安装、use、在 PATH 上、mcpp 列出工具链；构建、运行、由 clang 23.1 编译）。`mcxx-cross` job 在 Linux 上为两个平台交叉构建 mcxx 并带上内置头文件（含生成的 intrinsics 头文件）。一路上各平台 job 查出的问题：llvm.clang-dev 23.1.0.7（macOS 上代码生成器：`INT64_C` 的类型）、23.1.0.8/23.1.0.9（macOS 上程序自己的路径——openkal-musl 的 `getpid` 按设计是 1，改用内核的进程号；宿主三元组用 Darwin 的版本号；Windows 的默认目标改为 MSVC 的，mcpp 为 std 模块传 `--no-default-config`）；mcxx 以盘符路径启动时把该路径当作自己的（`-no-canonical-prefixes`：Windows 上 LLVM 没有 `/proc/self/exe`）；payload 里的工具另有不带 `.exe` 的名字（`lld-link`）；配置文件的 `--target` 取自 xim:llvm 自己的 `-dumpmachine`；Windows 上目录是 junction、文件是硬链接，删除前先解除 junction。 |
+| E-LS-1 | ✅ | （2026-10-02 补记，MF.0 台账）参数漂移：A0.5.2，fork `65aa199`，同一个模型从生产方和缓存读回，规划出的引擎参数逐字节相同；热启动不重建的回归检查是 fixture `mcxx-warm`（A1.4.4，`module-cache-reused`）。clangd 路径已在 MS 中去掉 |
+| E-LS-3 | ✅ | （补记）即 M1.8：fork `25dc86a`，native 引擎改用 `mcxx.frontend` |
+| E-LS-6 | ✅ | （补记）计时插桩：fork 的 fixture `timing`、`self-mcpp-first-jump`、`self-mcppls-first-jump`，A2.3.2 用它们测量（`e9658a4` 等） |
+| E-MCPP-3 | ✅ | （补记）mcxx 和 mcppls 读各包 `mcpp.toml` 的 `[package.metadata.mcxx]`（M0.3、MC1 0.4.0 的按文件级别；M1.2 的方言边界） |
+| E-PLG-1 | ✅ | （补记）即 M1.5：`plugins/mcpp-tools-safe` |
+| E-IDX-4 | 🟡 | （补记）fork 现在按路径依赖使用 libmc++（`../../modules/...`、`../../plugins/...`，开发期的做法）；libmc++ 各组件包和插件 SDK 还没有进本仓库的 `index/`。MC++ 1.0（AF.8）发布前完成 |
+| E-IDX-6、E-PLG-3 | ⬜ | GPU 区域插件原型及其编译规则，归入 MF.5（AF.5.1） |
+| E-OK-3 | ⬜ | aarch64-linux 的 compiler-rt builtins，归入 MF.1（MX） |
+| E-XIM-4 | ⏳ | macOS 27：本地已提交（xpkg 的 `--ld64`、CI 的 `xcode-27` 一行，lab 的 `ld64.lld`），等推送后 CI 验证；llvm-clang-dev 23.1.0.10 带上 `arm64e.x1` |
+| E-XIM-2、E-PLG-2 | — | 有条件的退路，V0.1 走通，不需要 |
 
 ## 里程碑
 
