@@ -169,7 +169,12 @@ int main(int argc, char** argv) {
     workspace->set_commands(load(db));
     std::println(std::cerr, "[{:7.2f}] {} commands, {} modules", seconds_since(started), workspace->status().units, workspace->status().modules);
 
-    mcxx::lsp::Service service { *workspace, {}, [&](std::string_view method, Json params) {
+    // A batch run waits for its parse however long it takes: the service's default (60 s, a request's
+    // patience) gave up on C-mcppls' conformance.cpp beside three other probes (74 s), and the probe
+    // then printed nothing and exited 0 (refsdiff: "not compared").
+    mcxx::lsp::Options serviceOptions;
+    serviceOptions.wait = std::chrono::hours { 1 };
+    mcxx::lsp::Service service { *workspace, serviceOptions, [&](std::string_view method, Json params) {
                                     if (method == "textDocument/publishDiagnostics") {
                                         std::println(std::cerr, "[{:7.2f}] diagnostics v{}: {}", seconds_since(started), params["version"].dump(),
                                                      params["diagnostics"].size());
@@ -183,6 +188,10 @@ int main(int argc, char** argv) {
     service.open(uri, read(path), 1);
     const auto unit = service.unit(uri, true);
     std::println(std::cerr, "[{:7.2f}] parsed: {} occurrences", seconds_since(started), unit ? unit->occurrences().size() : 0);
+    if (!unit) {
+        std::println(std::cerr, "{}: no parse", path);
+        return 1;
+    }
     if (facts && unit) std::println("{}", mcxx::plugin::wire::facts_to_json(unit->facts(), path, unit->module_name()).dump());
     if (!ifc.empty()) {
         if (!unit) {
