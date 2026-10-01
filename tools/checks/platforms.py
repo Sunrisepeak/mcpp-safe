@@ -42,8 +42,10 @@ def run_test(exe, command, env):
     last = next((l for l in reversed(done.stdout.splitlines()) if "test cases" in l), "")
     # How it ended: a signal (a crash before its first line prints nothing else) or its exit status.
     ended = f"killed by signal {-done.returncode}" if done.returncode < 0 else f"exit status {done.returncode}"
+    # Which cases failed and where, wherever in the output they are; then the output's end.
+    failed = [l for l in (done.stdout + done.stderr).splitlines() if "FAILED" in l or (l.startswith("test \"") and l.endswith("failed"))]
     check(f"{exe.name} ({time.monotonic() - start:.1f} s) {last}", done.returncode == 0 and ", 0 failed;" in last,
-          f"{ended}\n" + (done.stdout + done.stderr)[-1500:])
+          f"{ended}\n" + "\n".join(failed[:20]) + ("\n" if failed else "") + (done.stdout + done.stderr)[-1500:])
 
 
 def built(member, target):

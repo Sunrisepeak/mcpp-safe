@@ -202,6 +202,9 @@ int main() {
         p.file("src/b.cppm", "export module b;\nimport a;\nexport int g() { return f(); }\n");
         const std::string text { "import a;\nimport b;\nint main() { return f() - g(); }\n" };
         const std::string main { p.file("src/main.cpp", text) };
+        // One target everywhere (no header is read): the flag is the program's, and Windows' default target
+        // (MSVC's) takes no -fdwarf-exceptions at all.
+        for (auto& c : p.commands) c.arguments.push_back("--target=x86_64-unknown-linux-gnu");
         for (std::size_t i { 1 }; i < p.commands.size(); ++i) p.commands[i].arguments.push_back("-fdwarf-exceptions");
         auto w = workspace_for(p);
         auto unit = w->parse(main, text, 1);
