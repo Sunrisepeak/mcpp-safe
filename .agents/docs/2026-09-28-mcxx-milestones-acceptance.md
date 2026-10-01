@@ -373,7 +373,7 @@
 
 ---
 
-## M3 自研前端覆盖 `mc++.safe`（先定方向，细则在 M2 结束时补充）
+## M3 自研前端覆盖 `mc++.safe`（2026-10-02 补充细则）
 
 | # | 条件（初值） |
 |---|---|
@@ -382,6 +382,24 @@
 | A3.3 | 生命周期分析 v0（过程内分析 + `lifetimebound` 类注解）：在 fixture 上公布精确率和召回率，精确率 ≥ 95% |
 | A3.4 | GPU 区域插件原型：`[[gpu::kernel]]` 区域套用 `gpu.device` profile，抽取后交给 `rules-cuda` 或 `rules-sycl` 编译，能运行（依赖 **E-PLG-3**、E-IDX-6） |
 | A3.5 | 库控制插件统计出 C-mcppls、C-mcpp 对 `std` 的实际使用分布（为 M4 的 `std` 决策提供数据） |
+
+### M3 细则（2026-10-02，M2 结束时按当时的测量补充）
+
+起点（`progress.md` 的「A2.3.5 不确定比例」，2026-09-30）：声明类型"不确定"C-mcppls 16.70%、C-mcpp 28.24%、C-xlings 26.93%，几乎全是推导出来的类型（`auto`、结构化绑定、类模板实参推导）；目标在别处的引用"不确定"1.42%、0.45%、3.05%。这些正是 F3 表达式层要回答的。
+
+| # | 条件 | 验证方式 |
+|---|---|---|
+| A3.1.1 | 表达式的类型由自研前端给出，足以判定 `safe` profile 的每个特性（`raw-pointer-arithmetic`、`new-delete`、`reinterpret-cast`、`c-style-cast`、`const-cast`、`union`、`c-array`、`c-varargs`、`uninitialized`、`asm`） | 每个特性一组 fixture，由前端的事实判定，结果和 Clang 后端一致 |
+| A3.1.2 | 声明类型"不确定"在三个语料上都 ≤ 5%，"不同"仍 ≤ 0.1% | `declsdiff.py --max-uncertain type=5 --max-differ type=0.1` |
+| A3.1.3 | 目标在别处的引用"不确定"在三个语料上都 ≤ 0.5%，合计相同 ≥ 99.5% | `refsdiff.py` |
+| A3.2.1 | 新的差分检查：每个 `safe` 特性，前端事实得出的发现和 Clang 后端事实得出的，在三个语料和 `conformance/gates` 上逐条比较，每个特性一致率 ≥ 99.5%，fixture 上 100% | `tools/checks/gatediff.py`（新） |
+| A3.2.2 | `mcxx check` 默认先用前端的事实判门禁，只有前端说不确定的文件或特性才交给 Clang；三个语料上由前端独立判完的文件 ≥ 95% | `mcxx check` 的统计输出 |
+| A3.3.1 | 生命周期分析 v0 的 fixture 集 ≥ 150 例（返回局部的引用、临时对象的 `string_view`、迭代器失效、`lifetimebound` 类注解），精确率 ≥ 95%，召回率公布（目标 ≥ 70%） | `conformance/lifetime/` |
+| A3.3.2 | 在三个语料上运行，每条发现都审过，误报率 ≤ 5% | 审查记录 |
+| A3.4 | 同上表；CI 没有 GPU，用 SYCL 的 CPU 后端运行抽取出的 kernel | CI |
+| A3.5 | 库使用插件按 `std` 的设施（头文件或模块里的名字）统计三个语料的使用次数，输出 JSON 和表格 | `plugins/` 新插件 + `progress.md` |
+
+可以并行的工作项（§0.5）：A3.1（前端，量最大，按表达式种类再拆）、A3.3（分析，独立）、A3.5（插件，小）；A3.2 依赖 A3.1；A3.4 依赖 E-PLG-3、E-IDX-6。
 
 ## M4 独立编译器（先定方向）
 
