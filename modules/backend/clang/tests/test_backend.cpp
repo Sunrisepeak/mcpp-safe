@@ -195,6 +195,21 @@ int main() {
         expect(s.indexed == s.units) << std::format("{} indexed of {} units", s.indexed, s.units);
     };
 
+    "the outline lists what is declared, and a using-declaration is no line of it"_test = [] {
+        Program p { "outline" };
+        const std::string text { "namespace lib {\nint one() { return 1; }\n}\nusing lib::one;\nint main() { return one(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto outline = unit->symbols();
+        std::string names;
+        for (const auto& s : outline) names += " " + s.name;
+        expect(outline.size() == 2 && outline[0].name == "lib" && outline[1].name == "main") << names;
+        expect(std::ranges::none_of(outline, [](const msa::Symbol& s) { return s.kind == msa::Kind::using_declaration; })) << names;
+        expect(outline.size() == 2 && outline[0].children.size() == 1 && outline[0].children[0].name == "one") << names;
+    };
+
     "a definition the index has not reached is indexed before the rest when it is asked for"_test = [] {
         Program p { "index-first" };
         // A cold index takes every interface before any implementation unit: cli.cpp, which defines

@@ -424,7 +424,11 @@ void collect_symbols(const cl::DeclContext* dc, const cl::SourceManager& sm, con
         const cl::SourceLocation nameLoc { sm.getFileLoc(nd->getLocation()) };
         if (nameLoc.isInvalid() || sm.getFileID(nameLoc) != main) continue;
         const msa::Kind kind { kind_of(nd) };
-        if (kind == msa::Kind::unknown || kind == msa::Kind::parameter || kind == msa::Kind::template_parameter) continue;
+        // A using-declaration declares no entity of its own: no line in an outline (MC++'s parser
+        // gives none). Its kind is for hover and the facts.
+        if (kind == msa::Kind::unknown || kind == msa::Kind::parameter || kind == msa::Kind::template_parameter ||
+            kind == msa::Kind::using_declaration)
+            continue;
         msa::Symbol symbol;
         symbol.name = nd->getNameAsString();
         symbol.kind = kind;
