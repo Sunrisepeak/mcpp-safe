@@ -58,6 +58,7 @@ class FakeWorkspace final : public msa::Workspace {
 public:
     Scenario scenario;
     std::vector<std::string> closed;
+    std::vector<std::string> indexedFirst;
     std::atomic<int> parses { 0 };
 
     void set_commands(std::vector<msa::Command>) override {}
@@ -74,6 +75,7 @@ public:
     std::vector<msa::Location> declarations(std::string_view id) const override { return lookup(scenario.declarations, id); }
     std::vector<msa::Location> references(std::string_view id) const override { return lookup(scenario.references, id); }
     std::vector<msa::Found> find(std::string_view, std::size_t) const override { return {}; }
+    void index_first(const std::string& declaredIn) override { indexedFirst.push_back(declaredIn); }
     void file_changed(const std::string&) override {}
     void close(const std::string& path) override { closed.push_back(path); }
 
@@ -148,6 +150,20 @@ int main() {
         expect(md.starts_with("### variable `greet`")) << md;
         expect(md.contains("Value = `42`")) << md;
         expect((*hover)["range"]["start"]["character"] == 7);
+    };
+
+    "a definition not indexed yet: the declaration now, and its module's units indexed next"_test = [&] {
+        FakeWorkspace w;
+        const msa::Location decl { "/w/src/cli.cppm", range(1, 11, 14) };
+        w.scenario.entities["c:@F@run"] = msa::Entity { .id = "c:@F@run", .name = "run", .qualified_name = "run", .kind = msa::Kind::function,
+                                                        .signature = "int run()", .declaration = decl };
+        w.scenario.occurrences.push_back({ range(1, 20, 23), "c:@F@run", "run", msa::Kind::function, msa::role::reference });
+        lsp::Service service { w, { .parse_workers = 1, .debounce = std::chrono::milliseconds { 0 } }, {} };
+        service.open(uri, "import cli;\nint main() { return run(); }\n", 1);
+        const auto found = service.request("textDocument/definition", at(uri, 1, 21));
+        expect(fatal(found.has_value()));
+        expect(found->size() == 1 && (*found)[0]["uri"] == lsp::path_to_uri(decl.path)) << found->dump();
+        expect(w.indexedFirst == std::vector<std::string> { decl.path }) << std::format("{} asked first", w.indexedFirst.size());
     };
 
     "references without declarations leave definitions out too"_test = [&] {

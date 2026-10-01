@@ -667,7 +667,11 @@ Result Service::request(std::string_view method, const Json& params, std::stop_t
             if (atDefinition && entity->declaration && !(entity->declaration->path == unit->path() && entity->declaration->range.contains(at)))
                 found.push_back(*entity->declaration);
             else found = definitions;
-            if (found.empty() && entity->declaration) found.push_back(*entity->declaration);
+            if (found.empty() && entity->declaration) {
+                // Not indexed yet: the declaration now, and the units that may define it indexed next.
+                if (entity->declaration->path != unit->path()) s.workspace.index_first(entity->declaration->path);
+                found.push_back(*entity->declaration);
+            }
         }
         return locations(found);
     }

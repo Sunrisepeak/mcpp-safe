@@ -295,6 +295,26 @@ public:
         latest_.erase(path);
     }
 
+    void index_first(const std::string& declaredIn) override {
+        const std::string path { normalize_path(declaredIn) };
+        {
+            std::lock_guard lock { mutex_ };
+            const auto* declaring = graph_.scan_of(path);
+            if (!options_.background_index || declaring == nullptr || !declaring->is_module_unit()) return;
+            // The module's implementation units and implementation partitions, at the queue's head: a
+            // cold start queues every interface before them, so a definition in one waited for the
+            // whole program's (self-mcppls' main -> mcppls::cli::run: 135 s on linux-x64, past 300 s
+            // on win32-x64).
+            for (const auto& [file, command] : commands_) {
+                const auto* s = graph_.scan_of(file);
+                if (s == nullptr || s->exported || s->primary() != declaring->primary() || indexed_.contains(file)) continue;
+                std::erase(indexQueue_, file);
+                indexQueue_.push_front(file);
+            }
+        }
+        indexCv_.notify_all();
+    }
+
     void file_changed(const std::string& file) override {
         const std::string path { normalize_path(file) };
         modules_->file_changed(path);

@@ -73,6 +73,9 @@ public:
     virtual std::vector<Location> declarations(std::string_view entity) const = 0;
     virtual std::vector<Location> references(std::string_view entity) const = 0;
     virtual std::vector<Found> find(std::string_view query, std::size_t limit) const = 0;
+    // The definitions of what `declaredIn` declares are wanted and the index has none yet: the units
+    // that can hold them (a module interface's implementation units) are indexed before the rest.
+    virtual void index_first(const std::string& declaredIn) { (void)declaredIn; }
 
     // What a syntax-level reading of the text says at once, without a parse (the Clang backend: MC++'s
     // own front end): the gate findings of the features it decides, and those features -- what an

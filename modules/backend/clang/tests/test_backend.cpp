@@ -195,6 +195,31 @@ int main() {
         expect(s.indexed == s.units) << std::format("{} indexed of {} units", s.indexed, s.units);
     };
 
+    "a definition the index has not reached is indexed before the rest when it is asked for"_test = [] {
+        Program p { "index-first" };
+        // A cold index takes every interface before any implementation unit: cli.cpp, which defines
+        // run(), would come last of 51 units.
+        for (int i { 0 }; i < 48; ++i) p.file(std::format("src/m{}.cppm", i), std::format("export module m{};\nexport int f{}() {{ return {}; }}\n", i, i, i));
+        const std::string interface { p.file("src/cli.cppm", "export module cli;\nexport int run();\n") };
+        const std::string impl { p.file("src/cli.cpp", "module cli;\nint run() { return 0; }\n") };
+        const std::string text { "import cli;\nint main() { return run(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        auto w = workspace_for(p);   // two workers: one indexer
+        w->index_first(interface);
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto run = unit->entity_at(*find(text, "run()", 0));
+        expect(fatal(run.has_value() && run->declaration.has_value()));
+        expect(run->declaration->path == interface);
+        std::vector<msa::Location> defined;
+        for (int round { 0 }; round < 1200 && (defined = w->definitions(run->id)).empty(); ++round)
+            std::this_thread::sleep_for(std::chrono::milliseconds { 10 });
+        const auto s = w->status();
+        expect(fatal(!defined.empty())) << "run() never defined";
+        expect(defined.front().path == impl) << defined.front().path;
+        expect(s.indexed < s.units / 2) << std::format("defined once {} of {} units were indexed", s.indexed, s.units);
+    };
+
     "a parse given up on lets go while the module it waits for is still being built"_test = [] {
         Program p { "cancelled" };
         // Seconds of constant evaluation (about 5 s in process on linux-x64): the parse is cancelled long before.
