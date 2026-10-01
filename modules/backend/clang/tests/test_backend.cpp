@@ -195,6 +195,43 @@ int main() {
         expect(s.indexed == s.units) << std::format("{} indexed of {} units", s.indexed, s.units);
     };
 
+    "a module a parse waits for, changed on disk meanwhile, is built again and the wait ends"_test = [] {
+        Program p { "changed-while-waiting" };
+        const std::string a { p.file("src/a.cppm", "export module a;\nexport int f() { return 1; }\n") };
+        // Seconds of constant evaluation: a is built, b still is, when a changes.
+        p.file("src/b.cppm", "export module b;\nconstexpr long spin() { long s = 0; for (long i = 0; i < 6000000; ++i) s += i % 7; return s; }\n"
+                             "export constexpr long value = spin();\n");
+        const std::string text { "import a;\nimport b;\nint main() { return f() + (value == 0); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        for (auto& c : p.commands) c.arguments.push_back("-fconstexpr-steps=2147483647");
+        msa::Workspace::Options options;
+        options.cache_directory = (p.root / ".cache").generic_string();
+        options.workers = 1;
+        options.background_index = false;
+        auto w = mcxx::backend::clang::make_workspace(std::move(options));
+        w->set_commands(p.commands);
+        std::stop_source watchdog;
+        std::atomic_bool ended { false };
+        std::shared_ptr<const msa::Unit> unit;
+        std::jthread parse { [&] {
+            unit = w->parse(main, text, 1, watchdog.get_token());
+            ended = true;
+        } };
+        for (int round { 0 }; round < 1500 && w->status().modules_ready == 0; ++round) std::this_thread::sleep_for(std::chrono::milliseconds { 20 });
+        expect(fatal(w->status().modules_ready == 1 && w->status().busy)) << "a was not built before b";
+        // a changes on disk (file_changed: the program described again, nothing scheduled): the parse,
+        // waiting for b, waits for a too, which nothing else imports.
+        std::ofstream { a, std::ios::app } << "// changed\n";
+        w->file_changed(a);
+        for (int round { 0 }; round < 1200 && !ended; ++round) std::this_thread::sleep_for(std::chrono::milliseconds { 100 });
+        const bool waitEnded { ended.load() };
+        watchdog.request_stop();
+        parse.join();
+        expect(waitEnded) << "the parse still waited 120 s after a changed";
+        expect(unit != nullptr && unit->diagnostics().empty())
+            << (unit == nullptr || unit->diagnostics().empty() ? std::string {} : unit->diagnostics().front().message);
+    };
+
     "a module whose command names no exception model is built with the one its importers name"_test = [] {
         Program p { "exception-model" };
         // mcpp's std for openkal's Windows runtime: its command has no -fdwarf-exceptions, every unit's has.

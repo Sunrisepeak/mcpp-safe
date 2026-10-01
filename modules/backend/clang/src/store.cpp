@@ -165,15 +165,33 @@ ModuleStore::Result ModuleStore::require(const std::vector<std::string>& roots, 
     for (const auto& module : order) schedule_(module);
     dispatch_();
     const auto since { std::chrono::steady_clock::now() };
+    // What it waits for may change under it: a file changed on disk (file_changed: set_program, and
+    // nothing scheduled) leaves a module it had ready stale, and a module the program no longer
+    // provides (renamed, its unit gone) is dropped -- either way never ready or failed again, and the
+    // wait never ended (win32-x64, verify-changes: a module renamed while cxx_verify waited, 120 s).
+    // So a stale or unknown one is scheduled again, and one no longer provided is missing, not awaited.
+    const auto gone = [&](const std::string& m) { return graph_.provider(m).empty(); };
+    const auto settled = [&](const std::string& m) {
+        const auto& e = entries_[m];
+        return gone(m) || e.state == State::ready || e.state == State::failed;
+    };
+    const auto idle = [&](const std::string& m) {
+        const auto& e = entries_[m];
+        return !gone(m) && (e.state == State::unknown || e.state == State::stale);
+    };
     // Woken by the cancel token too, not only by the next module done: a request given up on (an
     // older version of the text) let go of its thread while the store is still busy.
-    while (!cv_.wait_for(lock, cancel, std::chrono::seconds { 10 }, [&] {
-        if (stopping_) return true;
-        return std::ranges::all_of(order, [&](const std::string& m) {
-            const auto& e = entries_[m];
-            return e.state == State::ready || e.state == State::failed;
-        });
-    })) {
+    while (true) {
+        if (stopping_ || cancel.stop_requested() || std::ranges::all_of(order, settled)) break;
+        if (std::ranges::any_of(order, idle)) {
+            for (const auto& module : order)
+                if (idle(module)) schedule_(module);
+            dispatch_();
+            continue;
+        }
+        if (cv_.wait_for(lock, cancel, std::chrono::seconds { 10 },
+                         [&] { return stopping_ || std::ranges::all_of(order, settled) || std::ranges::any_of(order, idle); }))
+            continue;
         if (cancel.stop_requested()) break;
         // A wait that does not end: what it waits for, and in which state each is.
         if (!base::trace::enabled("modules", base::trace::Level::debug)) continue;
@@ -181,7 +199,7 @@ ModuleStore::Result ModuleStore::require(const std::vector<std::string>& roots, 
         std::string pending;
         for (const auto& module : order) {
             const auto& e = entries_[module];
-            if (e.state != State::ready && e.state != State::failed)
+            if (!settled(module))
                 pending += std::format(" {} ({}{})", module, names[static_cast<std::size_t>(e.state)], e.again ? ", again" : "");
         }
         const auto seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - since).count() };
@@ -189,7 +207,8 @@ ModuleStore::Result ModuleStore::require(const std::vector<std::string>& roots, 
     }
     for (const auto& module : order) {
         const auto& e = entries_[module];
-        if (e.state == State::ready) result.pcms.emplace(module, e.pcm);
+        if (gone(module)) result.missing.push_back(module);
+        else if (e.state == State::ready) result.pcms.emplace(module, e.pcm);
         else result.failed.push_back(module);
     }
     return result;
