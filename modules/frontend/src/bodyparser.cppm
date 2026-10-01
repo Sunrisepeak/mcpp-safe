@@ -167,6 +167,7 @@ private:
     int speculating_ { 0 };
     int no_gt_ { 0 };                     // inside template arguments: a `>` closes them
     bool fold_ok_ { false };              // directly in parentheses: `op ...` ends an expression
+    bool no_brace_ { false };             // in a requires-clause: a `{` after a name begins the body, not a construction
     int depth_ { 0 };
     std::int32_t owner_ { -1 };
     std::vector<Entry> scope_;
@@ -263,6 +264,8 @@ private:
     bool template_arguments(Span32& out);
     Handle template_argument();
     bool starts_name() const;
+    bool at_splice() const;                       // `[:` with no space
+    std::size_t splice_end(std::size_t k) const;  // past the `:]` closing the splice at k, or k
     bool operator_function_id(NameComponent& c);
     std::size_t angle_end(std::size_t at_less) const;   // past the `>` of `<` at at_less by bracket counting, or at_less when none
 
@@ -379,9 +382,10 @@ private:
 // fold's `...` is not the enclosing parentheses'. Restores what it replaced.
 class Nested {
 public:
-    explicit Nested(BodyParser& p, bool fold = false, int no_gt = 0) : p_ { p }, fold_ { p.fold_ok_ }, no_gt_ { p.no_gt_ } {
+    explicit Nested(BodyParser& p, bool fold = false, int no_gt = 0) : p_ { p }, fold_ { p.fold_ok_ }, no_gt_ { p.no_gt_ }, no_brace_ { p.no_brace_ } {
         p.fold_ok_ = fold;
         p.no_gt_ = no_gt;
+        p.no_brace_ = false;
     }
     ~Nested() { if (!restored_) restore(); }
     Nested(const Nested&) = delete;
@@ -389,6 +393,7 @@ public:
     void restore() {
         p_.fold_ok_ = fold_;
         p_.no_gt_ = no_gt_;
+        p_.no_brace_ = no_brace_;
         restored_ = true;
     }
 
@@ -396,6 +401,7 @@ private:
     BodyParser& p_;
     bool fold_;
     int no_gt_;
+    bool no_brace_;
     bool restored_ { false };
 };
 

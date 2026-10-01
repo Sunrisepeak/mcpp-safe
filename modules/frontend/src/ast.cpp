@@ -235,6 +235,12 @@ private:
             if (l.template_params.count != 0) out += " <" + list(l.template_params).substr(1) + ">";
             if (l.has_params) out += " (" + (l.params.count != 0 ? list(l.params).substr(1) : std::string {}) + ")";
             if (l.function) out += " " + id(l.function);
+            if (l.mutable_) out += " mutable";
+            if (l.constexpr_) out += " constexpr";
+            if (l.consteval_) out += " consteval";
+            if (l.static_) out += " static";
+            if (l.requires_) out += " requires " + id(l.requires_);
+            if (l.trailing_requires) out += " requires " + id(l.trailing_requires);
             return out + " " + id(l.body) + ")";
         }
         case ExprKind::requires_: {
@@ -247,7 +253,7 @@ private:
                 case Requirement::Form::simple: out += " (simple " + id(q.expr) + ")"; break;
                 case Requirement::Form::type: out += " (type " + id(q.type) + ")"; break;
                 case Requirement::Form::compound:
-                    out += " (compound " + id(q.expr) + (q.noexcept_ ? " noexcept" : "") + (q.type ? " -> " + id(q.type) : std::string {}) + ")";
+                    out += " (compound " + id(q.expr) + (q.noexcept_ ? " noexcept" : "") + (q.type ? " -> " + id(q.type) : q.constraint ? " -> " + id(q.constraint) : std::string {}) + ")";
                     break;
                 case Requirement::Form::nested: out += " (nested " + id(q.expr) + ")"; break;
                 }
@@ -353,7 +359,7 @@ private:
             return out + ")";
         }
         case TypeKind::pack_expansion: return "(pack " + id(n.inner) + ")";
-        case TypeKind::pack_index: return std::format("(pack-index {} {})", id(n.name), id(n.expr));
+        case TypeKind::pack_index: return std::format("(pack-index {} {})", n.inner ? id(n.inner) : id(n.name), id(n.expr));
         case TypeKind::splice: return "(splice " + id(n.expr) + ")";
         case TypeKind::atomic: return "(atomic " + id(n.inner) + ")";
         case TypeKind::typeof_: return "(typeof " + (n.inner ? id(n.inner) : id(n.expr)) + ")";
@@ -365,7 +371,17 @@ private:
         const std::string name { l.name ? id(l.name) : l.name_token != NONE ? tok(l.name_token) : std::string { "_" } };
         std::string out { "(" + std::string { to_string(l.kind) } };
         if (l.kind == LocalKind::structured_binding || l.kind == LocalKind::namespace_ || l.kind == LocalKind::template_) {
-        } else if (l.name || l.name_token != NONE) out += " " + name;
+        } else if (l.kind == LocalKind::access) out += l.form == 1 ? " public" : l.form == 2 ? " protected" : " private";
+        else if (l.kind == LocalKind::capture && l.form != 0) {}
+        else if (l.name || l.name_token != NONE) out += std::string { l.kind == LocalKind::capture && l.has(Local::by_ref) ? " &" : " " } + name;
+        if (l.kind == LocalKind::structured_binding) out += l.has(Local::by_ref) ? " &" : l.has(Local::by_rvalue_ref) ? " &&" : "";
+        if (l.kind == LocalKind::capture) {
+            if (l.form == 1) out += " this";
+            else if (l.form == 2) out += " *this";
+            else if (l.form == 3) out += l.has(Local::by_ref) ? " &" : " =";
+            else if (l.has(Local::by_ref)) out += "";
+        }
+        if (l.kind == LocalKind::static_assert_) return out + " " + id(l.init) + (l.width ? " " + id(l.width) : std::string {}) + ")";
         if (l.has(Local::static_)) out += " static";
         if (l.has(Local::constexpr_)) out += " constexpr";
         if (l.has(Local::typedef_)) out += " typedef";

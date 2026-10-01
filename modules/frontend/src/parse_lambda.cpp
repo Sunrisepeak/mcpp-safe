@@ -248,7 +248,7 @@ ExprId BodyParser::requires_expression() {
         } else if (word("requires")) {
             r.form = Requirement::Form::nested;
             next();
-            r.expr = constraint_expression();
+            r.expr = binary_expression(3);   // a constraint-expression: a logical-or-expression, `requires sizeof(T) > 1;`
         } else {
             r.form = Requirement::Form::simple;
             r.expr = expression();

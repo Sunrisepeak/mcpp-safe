@@ -185,7 +185,11 @@ std::vector<std::string> validate(const Tree& tree) {
                 continue;
             }
             const auto [cf, cl] = tree.tokens(child);
-            if (!derived_type(child) && (cf < first || cl > last))
+            const bool error_node { (tree.expression(child) != nullptr && tree.expression(child)->kind == ExprKind::error) ||
+                                    (tree.statement(child) != nullptr && tree.statement(child)->kind == StmtKind::error) ||
+                                    (tree.type(child) != nullptr && tree.type(child)->kind == TypeKind::error) ||
+                                    (tree.local(child) != nullptr && tree.local(child)->kind == LocalKind::error) };
+            if (!derived_type(child) && !error_node && (cf < first || cl > last))
                 bad(h, std::format("a child ({} {}) spans tokens {}..{} outside its {}..{}", static_cast<int>(child.sort), child.index, cf, cl, first, last));
         }
     };

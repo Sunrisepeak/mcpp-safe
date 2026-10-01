@@ -165,22 +165,27 @@ void BodyParser::skip_balanced() {
 // ---- nodes ----
 
 ExprId BodyParser::add(Expr e) {
+    if (e.last < e.first) e.last = e.first;
     tree_.expressions.push_back(e);
     return { static_cast<std::uint32_t>(tree_.expressions.size() - 1) };
 }
 StmtId BodyParser::add(Stmt s) {
+    if (s.last < s.first) s.last = s.first;
     tree_.statements.push_back(s);
     return { static_cast<std::uint32_t>(tree_.statements.size() - 1) };
 }
 TypeId BodyParser::add(TypeNode n) {
+    if (n.last < n.first && n.kind != TypeKind::function) n.last = n.first;
     tree_.types.push_back(n);
     return { static_cast<std::uint32_t>(tree_.types.size() - 1) };
 }
 LocalId BodyParser::add(Local l) {
+    if (l.last < l.first) l.last = l.first;
     tree_.locals.push_back(l);
     return { static_cast<std::uint32_t>(tree_.locals.size() - 1) };
 }
 NameId BodyParser::add(Name n) {
+    if (n.last < n.first) n.last = n.first;
     tree_.names.push_back(n);
     return { static_cast<std::uint32_t>(tree_.names.size() - 1) };
 }
@@ -310,7 +315,11 @@ void BodyParser::recover_to_statement_end() {
             return;
         }
         if (k == Kind::r_brace) return;
-        if (k == Kind::l_paren || k == Kind::l_square || k == Kind::l_brace) {
+        if (k == Kind::l_brace) {   // a block ends the statement it was in
+            i_ = std::max(i_ + 1, balanced(i_));
+            return;
+        }
+        if (k == Kind::l_paren || k == Kind::l_square) {
             i_ = std::max(i_ + 1, balanced(i_));
             continue;
         }

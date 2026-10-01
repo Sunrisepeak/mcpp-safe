@@ -184,6 +184,8 @@ std::vector<LocalId> BodyParser::simple_declaration(Site site, bool* function_de
 
 void BodyParser::bind_declared(const Local& l) {
     if (l.name_token == NONE) return;
+    // A constructor has its class's name, which the class declared already: as a type, the injected-class-name.
+    if (l.entity == msa::Kind::constructor || l.entity == msa::Kind::destructor || l.entity == msa::Kind::conversion) return;
     NameClass what { NameClass::value };
     if (l.kind == LocalKind::type_alias || l.kind == LocalKind::class_ || l.kind == LocalKind::enum_) what = NameClass::type;
     declare_name(l.name_token, what);
@@ -203,8 +205,8 @@ LocalId BodyParser::init_declarator(const DeclSpec& spec, Site site, bool, bool*
         return add(l);
     }
     // `f(x);` could declare x of the type f; a name nothing knows as a type is a call.
-    if (tentative_declaration_ && d.parenthesized_name && spec.has_type && tree_.types[spec.type.index].kind == TypeKind::named &&
-        !type_like(last_type_class_) && !type_template(last_type_class_)) {
+    if (tentative_declaration_ && d.parenthesized_name && (is(Kind::semi) || is(Kind::comma)) && spec.has_type &&
+        tree_.types[spec.type.index].kind == TypeKind::named && !type_like(last_type_class_) && !type_template(last_type_class_)) {
         fail("looks like a call");
         return add(l);
     }
@@ -519,7 +521,7 @@ LocalId BodyParser::class_specifier(DeclSpec& spec, Site site) {
     if (!definition) {
         // A reference (`struct S *p`) or a forward declaration (`struct S;`).
         type.last = prev();
-        if (is(Kind::semi) && name && site != Site::parameter) {
+        if (is(Kind::semi) && name && site != Site::parameter && (spec.flags & Local::friend_) == 0) {
             Local l;
             l.kind = LocalKind::class_;
             l.entity = kind;
@@ -527,7 +529,7 @@ LocalId BodyParser::class_specifier(DeclSpec& spec, Site site) {
             l.name = name;
             l.name_token = tree_.components[tree_.names[name.index].components.begin + tree_.names[name.index].components.count - 1].token;
             l.last = prev();
-            const LocalId id { add(l) };
+            const LocalId id { link_outline(add(l)) };
             bind_declared(tree_.locals[id.index]);
             type.local = id;
             spec.defined = id;
@@ -548,7 +550,7 @@ LocalId BodyParser::class_specifier(DeclSpec& spec, Site site) {
         read_base_clause(l);
         if (failed_) return {};
     }
-    const LocalId id { add(l) };
+    const LocalId id { link_outline(add(l)) };
     if (name) bind_declared(tree_.locals[id.index]);
     if (!is(Kind::l_brace)) {
         fail("expected `{` after a class's name");
@@ -643,7 +645,7 @@ LocalId BodyParser::enum_specifier(DeclSpec& spec, Site site) {
         type.last = prev();
         if (is(Kind::semi) && name && site != Site::parameter && (l.type || (l.flags & Local::scoped) != 0)) {
             l.last = prev();
-            const LocalId id { add(l) };
+            const LocalId id { link_outline(add(l)) };
             bind_declared(tree_.locals[id.index]);
             type.local = id;
             spec.type = add(type);
@@ -656,7 +658,7 @@ LocalId BodyParser::enum_specifier(DeclSpec& spec, Site site) {
         return {};
     }
     next();
-    const LocalId id { add(l) };
+    const LocalId id { link_outline(add(l)) };
     if (name) bind_declared(tree_.locals[id.index]);
     std::vector<Handle> enumerators;
     // Enumerators are visible in the enumeration's scope and, unscoped, in the enclosing one: here, as values.

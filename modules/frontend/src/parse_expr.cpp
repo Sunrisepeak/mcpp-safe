@@ -768,7 +768,9 @@ ExprId BodyParser::primary_expression() {
         k == Kind::utf16_char_constant || k == Kind::utf32_char_constant)
         return literal_expression();
     if (k == Kind::l_paren) return parenthesized_expression();
-    if ((k == Kind::caret || k == Kind::l_square) && !extensions_.empty()) {
+    // `[: r :]::member`: a name whose first part is a splice, not a splice expression.
+    if (at_splice() && !extensions_.empty() && is(Kind::coloncolon, splice_end(i_) - i_)) return name_expression();
+    if (!extensions_.empty()) {
         ExprId out;
         for (const auto& ext : extensions_)
             if (ext->expression_primary(*this, out)) return out;
@@ -838,9 +840,9 @@ ExprId BodyParser::name_expression() {
         if (!failed_) fail("expected a name");
         return error_expr(first);
     }
-    if (is(Kind::l_paren) || is(Kind::l_brace)) {
+    if (is(Kind::l_paren) || (is(Kind::l_brace) && !no_brace_)) {
         const NameInfo info { classify_name(n, first) };
-        const bool brace { is(Kind::l_brace) };
+        const bool brace { is(Kind::l_brace) && !no_brace_ };
         const bool type { type_like(info.what) || type_template(info.what) };
         if (type || brace) {
             note(Ambiguity::name, type ? Resolution::type : Resolution::unknown, type ? info.basis : ast::Basis::shape, first);
@@ -1102,6 +1104,12 @@ ExprId BodyParser::constraint_expression() {
         return postfix_expression();
     };
     const std::uint32_t first { here() };
+    const bool saved_brace { std::exchange(no_brace_, true) };
+    struct Restore {
+        bool& flag;
+        bool saved;
+        ~Restore() { flag = saved; }
+    } restore_brace { no_brace_, saved_brace };
     ExprId lhs { operand() };
     while (!failed_ && (is(Kind::ampamp) || is(Kind::pipepipe))) {
         const Op op { is(Kind::ampamp) ? Op::logical_and : Op::logical_or };

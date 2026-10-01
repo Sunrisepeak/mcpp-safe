@@ -40,6 +40,23 @@ Resolution resolution_of(NameClass c) {
 
 } // namespace
 
+bool BodyParser::at_splice() const { return is(Kind::l_square) && (is(Kind::colon, 1) || is(Kind::coloncolon, 1)) && adjacent(1); }
+
+// Past the `:]` that closes the splice opened at k (tokens `[` `:` ... `:` `]`), counting what nests inside; k when it does not close.
+std::size_t BodyParser::splice_end(std::size_t k) const {
+    int depth { 0 };
+    for (std::size_t j { k }; j < end_; ++j) {
+        const Kind kd { t_[j].kind };
+        if (kd == Kind::l_paren || kd == Kind::l_square || kd == Kind::l_brace) ++depth;
+        else if (kd == Kind::r_paren || kd == Kind::r_brace) --depth;
+        else if (kd == Kind::r_square) {
+            if (--depth == 0) return j > 0 && t_[j - 1].kind == Kind::colon && t_[j - 1].at.end == t_[j].at.begin ? j + 1 : k;
+        }
+        if (depth <= 0 && j > k) return k;
+    }
+    return k;
+}
+
 bool BodyParser::starts_name() const {
     if (ident() || is(Kind::coloncolon) || is(Kind::tilde)) return true;
     if (word("operator") || word("template") || (word("decltype") && is(Kind::l_paren, 1))) return true;
@@ -130,7 +147,12 @@ bool BodyParser::name_component(NameComponent& c, NameUse use, bool first, bool 
     c.token = here();
     if (is(Kind::l_square)) {
         for (const auto& ext : extensions_)
-            if (ext->name_component(*this, c)) return !failed_;
+            if (ext->name_component(*this, c)) {
+                written += "[:...:]";
+                *more = is(Kind::coloncolon);
+                if (dependent != nullptr) *dependent = true;
+                return !failed_;
+            }
     }
     if (word("decltype") && is(Kind::l_paren, 1)) {
         advance(2);

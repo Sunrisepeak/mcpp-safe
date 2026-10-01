@@ -99,8 +99,8 @@ StmtId BodyParser::statement_inner() {
     }
     if (tok().kind == Kind::raw_identifier) {
         const std::string_view w { tok().spelling };
-        // Syntax a later generation of the language adds: template for, contract_assert, consteval { }.
-        if ((w == "template" || w == "contract_assert" || w == "consteval") && !extensions_.empty()) {
+        // Syntax a later generation of the language adds is an extension's to read (C++26's: template for, contract_assert, consteval { }).
+        if (!extensions_.empty()) {
             StmtId out;
             for (const auto& ext : extensions_)
                 if (ext->statement(*this, out)) return out;
@@ -201,7 +201,7 @@ StmtId BodyParser::declaration_or_expression_statement() {
 bool BodyParser::try_declaration_statement(std::uint32_t first, Site site) {
     // What cannot begin a declaration: not a name, not a type keyword, not `::`.
     if (eof()) return false;
-    const bool name_start { ident() || is(Kind::coloncolon) };
+    const bool name_start { ident() || is(Kind::coloncolon) || (at_splice() && !extensions_.empty()) };
     const bool keyword_start { tok().kind == Kind::raw_identifier && (at_type_start(false) || word("decltype") || word("template")) };
     if (!name_start && !keyword_start) return false;
     // A first name the scopes know as a value begins an expression.

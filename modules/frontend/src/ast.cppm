@@ -218,7 +218,7 @@ enum class TypeKind : std::uint8_t {
     array,              // inner: the element, expr: the bound (none: `[]`); flag vla `[*]`
     function,           // inner: the return type, list: parameters (LocalIds), expr: noexcept(expr), contracts
     pack_expansion,     // inner...
-    pack_index,         // C++26 `name...[expr]` as a type: name, expr
+    pack_index,         // C++26 `T...[expr]` as a type: inner (the pack's type), expr
     splice,             // C++26 `[: expr :]` as a type (typename allowed)
     atomic,             // _Atomic(inner)
     typeof_,            // __typeof__(expr or type): type or expr

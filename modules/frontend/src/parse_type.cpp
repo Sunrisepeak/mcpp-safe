@@ -975,7 +975,8 @@ Declarator BodyParser::declarator(TypeId base, Mode mode, Site site) {
             // function is its type's.
             if (!inner.function && after.function) inner.params = after.params;
             inner.contracts.insert(inner.contracts.end(), after.contracts.begin(), after.contracts.end());
-            inner.parenthesized_name = inner.name && !inner.function && !after.function && inner.type == derived && derived == type;
+            // `T (x)`, `T (*x)`: a name (and its pointers) in parentheses, no parameters or bounds after them.
+            inner.parenthesized_name = inner.name && !inner.function && !after.function && derived == type;
             return inner;
         }
     }
