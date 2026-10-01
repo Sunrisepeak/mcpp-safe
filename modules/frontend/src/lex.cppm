@@ -57,4 +57,10 @@ std::vector<Token> lex(std::string_view text, Options options = {});
 // A token's text with its line splices taken out: what it means rather than how it is written.
 std::string spelling(std::string_view text, const Token& token);
 
+// Whether an identifier token has a character that only the mathematical notation profile (UAX #31's
+// ID_Compat_Math_Start and _Continue) lets into an identifier, written as UTF-8 or as a universal
+// character name: `∇f`, `x²`, `²`. The lexer takes them in every standard, as Clang does (as an
+// extension); C++29 takes them (P3658R1), and that is what a front end that gates it asks about.
+bool uses_mathematical_notation(std::string_view text, const Token& token);
+
 } // namespace mcxx::frontend

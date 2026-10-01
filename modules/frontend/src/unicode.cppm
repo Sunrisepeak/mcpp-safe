@@ -2,7 +2,8 @@
 //
 // Which code points an identifier may start and continue with ([lex.name]): XID_Start and XID_Continue
 // (UAX #31), and the mathematical notation profile's characters Clang accepts as an extension (∂, ∇,
-// ∞ and their mathematical forms to start; superscript and subscript digits to continue).
+// ∞ and their mathematical forms to start; superscript and subscript digits to continue); those of the
+// profile alone are kept apart too (math_start, math_continue), for P3658R1.
 export module mcxx.frontend:unicode;
 
 import std;
@@ -273,6 +274,18 @@ constexpr Range CONTINUE[] {
     { 0x2EBF0, 0x2EE5D }, { 0x2F800, 0x2FA1D }, { 0x30000, 0x3134A }, { 0x31350, 0x33479 }, { 0x3D000, 0x3FC3F }, { 0xE0100, 0xE01EF },
 };
 
+constexpr Range MATH_START[] {
+    { 0x02202, 0x02202 }, { 0x02207, 0x02207 }, { 0x0221E, 0x0221E }, { 0x1D6C1, 0x1D6C1 }, { 0x1D6DB, 0x1D6DB }, { 0x1D6FB, 0x1D6FB },
+    { 0x1D715, 0x1D715 }, { 0x1D735, 0x1D735 }, { 0x1D74F, 0x1D74F }, { 0x1D76F, 0x1D76F }, { 0x1D789, 0x1D789 }, { 0x1D7A9, 0x1D7A9 },
+    { 0x1D7C3, 0x1D7C3 },
+};
+
+constexpr Range MATH_CONTINUE[] {
+    { 0x000B2, 0x000B3 }, { 0x000B9, 0x000B9 }, { 0x02070, 0x02070 }, { 0x02074, 0x0207E }, { 0x02080, 0x0208E }, { 0x02202, 0x02202 },
+    { 0x02207, 0x02207 }, { 0x0221E, 0x0221E }, { 0x1D6C1, 0x1D6C1 }, { 0x1D6DB, 0x1D6DB }, { 0x1D6FB, 0x1D6FB }, { 0x1D715, 0x1D715 },
+    { 0x1D735, 0x1D735 }, { 0x1D74F, 0x1D74F }, { 0x1D76F, 0x1D76F }, { 0x1D789, 0x1D789 }, { 0x1D7A9, 0x1D7A9 }, { 0x1D7C3, 0x1D7C3 },
+};
+
 bool in(std::span<const Range> ranges, char32_t c) {
     const auto it = std::ranges::lower_bound(ranges, c, {}, &Range::last);
     return it != ranges.end() && it->first <= c;
@@ -290,5 +303,13 @@ bool identifier_start(char32_t c) { return in(START, c); }
 
 // A non-ASCII code point that may continue one (every one that may start one, too).
 bool identifier_continue(char32_t c) { return in(CONTINUE, c); }
+
+// A code point only the mathematical notation profile lets an identifier start with (P3658R1; Clang
+// takes it as an extension in every mode): it has ID_Compat_Math_Start, and not XID_Start.
+bool math_start(char32_t c) { return in(MATH_START, c); }
+
+// One only that profile lets an identifier continue with: ID_Compat_Math_Continue (or _Start), and not
+// XID_Continue.
+bool math_continue(char32_t c) { return in(MATH_CONTINUE, c); }
 
 } // namespace mcxx::frontend::unicode

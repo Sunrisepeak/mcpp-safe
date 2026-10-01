@@ -17,6 +17,7 @@ export module mcxx.frontend:preprocess;
 import std;
 import :lex;
 import :predefined;
+import :standard;
 
 export namespace mcxx::frontend {
 
@@ -45,6 +46,14 @@ struct IncludeDirective {
     std::string header;                  // as written, with its brackets or quotes
     Where at;                            // the directive: from its line's start to the header's end
     bool global_module_fragment { false };
+};
+
+// A #embed the file has in a group taken (P1967R14): the resource as written, and what it gave.
+struct EmbedDirective {
+    std::string header;                  // as written, with its brackets or quotes
+    Where at;                            // the directive: from its line's start to its last token
+    bool found { false };                // the host had the resource
+    std::uint64_t count { 0 };           // the elements the directive is replaced by (its resource-count)
 };
 
 struct MacroDefinition {
@@ -79,11 +88,17 @@ struct Diagnostic {
     Severity severity { Severity::error };
     std::string message;
     Where at;
+    // A diagnostic about a language feature of a newer standard (:standard) names its MC1 feature id and
+    // its paper: the use of one that is not on (a gate for MC1 to word), or what a feature that is on
+    // forbids. Empty for any other.
+    std::string feature;
+    std::string paper;
 };
 
 struct Preprocessed {
     std::vector<PpToken> tokens;
     std::vector<IncludeDirective> includes;
+    std::vector<EmbedDirective> embeds;
     std::vector<MacroDefinition> macros;     // every #define of the file in a group taken
     std::vector<MacroUse> expansions;        // every invocation of a macro in the file's text
     std::vector<Import> imports;
@@ -105,6 +120,15 @@ struct PreprocessOptions {
     // complete, a name not among them is known not to be a macro.
     std::vector<std::string> header_macros;
     bool header_macros_complete { false };
+    // The standard the file is read as and the language features of a newer one that are on in it
+    // (:standard). __cplusplus follows the standard; #embed, __has_embed, the stricter rules of
+    // P2843R3 and the identifiers of P3658R1 follow the features.
+    Language language;
+    // The bytes of a resource #embed and __has_embed name, as the host finds it (the search path is
+    // the host's: for "name" the file's own directory and the -I ones, for <name> the -I ones): the
+    // header as written, with its brackets or quotes; none when there is no such resource. A host that
+    // gives none leaves what a resource says unknown (`certain` false).
+    std::function<std::optional<std::string>(std::string_view)> read_resource;
 };
 
 Preprocessed preprocess(std::string_view text, const PreprocessOptions& options = {});

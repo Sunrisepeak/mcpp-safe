@@ -12,6 +12,8 @@
 |---|---|
 | `:lex` | C++23 的原始词法分析（不做预处理），逐条照 Clang 23.1 的原始词法器（`lib/Lex/Lexer.cpp`）：token 种类用 Clang 的名字（`raw_identifier`、`l_paren`、`utf8_string_literal`……），便于逐个比对 |
 | `:unicode` | 标识符可用的 Unicode 字符（XID_Start / XID_Continue，UAX #31，加上 Clang 作为扩展接受的数学记号）。**生成的**：`gen/unicode.py` 读所钉版本 Clang 的 `UnicodeCharSets.h`，Unicode 版本和参照一致（18.0） |
+| `:standard` | 文件按哪个 C++ 标准读（`-std=` 的拼写、`__cplusplus` 的值），以及更新一代标准的语言特性在这个文件里开没开（ML-F）：`Language` = 标准加上每个特性 id 的 MC1 级别（`deny`、`warn`、`allow`，没有写就是 `deny`）；`Language::on(特性)` 要两条都成立：标准是这篇论文的或更新，级别不是 `deny`。前端只看得到 MSA，看不到插件 SDK，所以三个级别在这里重写一遍，由宿主把文件适用的那几个交进来 |
+| `:embed` | `#embed`、`__has_embed` 里不依赖预处理器状态的部分：embed-parameter-seq 的读取、resource-count 的算法（`limit`、`offset`）、元素列表。指令本身（找资源、宏替换、`limit` 的常量表达式、替换）在 `:preprocess` 的定义里 |
 | `:predefined` | 三个目标（linux-x64、macos-arm64、windows-x64）的预定义宏，**生成的**：`gen/predefined.py` 跑 `mcxx c++ -target T -std=c++23 -dM -E` |
 | `:preprocess` | 预处理：条件编译、文件自己的宏（`#`、`##`、`__VA_ARGS__`、`__VA_OPT__`、GNU 的 `, ## __VA_ARGS__`）、`#include` 记录、模块声明和 import 的识别 |
 | `:syntax` | （接口单元只声明；每个分区的定义在同名的 `.cpp` 里，`:syntax` 的在 `parser.cpp` 和 `outline.cpp`）声明：namespace、class/struct/union、enum 和枚举项、函数（函数体按括号跳过）、变量、成员、别名、concept、模板，每个都有名字和整体范围，构成一棵树；`symbols()` 给出和 MSA `Unit::symbols()` 一样的大纲 |
@@ -66,7 +68,7 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 - 条件里用到一个名字，而前面包含过的头文件可能把它定义成宏；
 - `__has_include` 之类需要编译器才知道的查询；
-- 本预处理器不覆盖的指令（`#line`、`#embed`、`#include_next`、……）。
+- 本预处理器不覆盖的指令（`#line` 的效果、行标记 `# 12 "文件"`、`#include_next`、……）；`#embed` 在宿主不给资源（`PreprocessOptions::read_resource`）时也算。
 
 判断一个名字能不能确定"没有定义"：另一个目标预定义、本目标没有预定义的名字（Linux 上的 `_WIN32`），头文件不会去定义，所以可以确定。文件自己在最后一个 `#include` 之后 `#undef` 或 `#define` 过的名字也可以确定。
 
@@ -88,6 +90,27 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
   | C-mcpp | 334/334 equal（`--header-macros`）；不加时 187 equal、147 header-macro、0 certain |
 
 - `mcxx-conformance --frontend`：门禁 fixture 的每个文件都经过本前端取事实，再交给同一个门禁引擎。凡是由 `macros`、`includes` 事实判定的特性，发现必须和 fixture 的 `// expect:` 一致（A1.6.2）。
+
+## C++26/29 的词法和预处理论文（ML-F）
+
+四篇论文，在本前端里实现；Clang 23.1 没有的部分由 Clang fork 另做（S4 线），那之后 fork 是它们的参照。每一篇都带 MC1 的特性 id（`plugins/lang/cpp26`、`cpp29`），**特性开了才生效**：文件的标准是这篇论文的或更新（`PreprocessOptions::language.standard`），并且文件里这个 id 的级别不是 `deny`（`language.features`）。两条缺一条，用到它就是一条**门禁诊断**——`Diagnostic::feature` 是 id、`::paper` 是论文，严重程度是 MC1 的（`deny` 是错误，`warn` 是警告）——不是词法错误，处理接着照开着读下去，便于恢复。MC1 的诊断管线（`mcxx.features`）按这两个字段给它自己的措辞和修复建议；前端的诊断在宿主接上之前只有 `mcxx-lexdump --diagnostics` 在看。
+
+| 论文 | 特性 id | 做了什么 | 差分参照 |
+|---|---|---|---|
+| P1967R14 `#embed` | `c++26:embed` | `#embed` 的三种形式（`<名字>`、`"名字"` 找不到就当 `<名字>`、宏替换后的整条指令），`limit`、`prefix`、`suffix`、`if_empty`（参数按普通文本替换一次，替换出来的记号不再当宏调用，`limit` 里不许有 `defined`），`clang::offset`（Clang 的写法，不受门禁），`__has_embed`（1、2、0；不认识的参数是 0；`limit` 里不许有 `__has_include`），`__cpp_pp_embed`，`__has_embed` 被 `defined` 当作已定义的宏；资源由宿主给（`read_resource`），没有宿主就说不确定 | Clang 23.1 的 `-E`（C23 的实现在 C++ 里是扩展）：`tools/checks/langdiff.py` 对 `corpus/pp26/embed.cpp` |
+| P3540R3 `offset` | `c++29:embed-offset-parameter` | `offset(N)`：先跳过 N 个元素再数 `limit`（resource-count = max(min(limit, 总数 − offset), 0)）；不带前缀的 `offset` 是 C++29 的，门禁用它自己的 id | Clang 的 `clang::offset`，语义相同 |
+| P2843R3 预处理从不未定义 | `c++26:preprocessing-never-undefined` | 开着时这些是错误：`#define`/`#undef` 的名字是预定义宏、`defined`、关键字（含替代记号）、有特殊含义的标识符（`final`、`import`、`module`、`override`）、属性记号（`likely`、`unlikely` 作函数式宏除外）；宏调用的实参里有指令；`#` 得到的不是有效字符串字面量（以单个 `\` 结尾）；`#line` 的行号不在 1 到 2147483647、形式不是两种之一。不论开不开都是定义好的（也是 Clang 的做法）：`#` 作用在原始字符串里的换行变成 `\n`（CWG1709），以 `\` 结尾的字符串去掉最后的 `\`（开着时再加一个错误），`//` 注释里的 FF、VT。仍是 IFNDR、不诊断的：宏展开出 `defined`、`#include` 展开后不是两种形式之一、保留标识符 | 记号流和 Clang 一致（`corpus/pp26/stringize.cpp`）；诊断是论文要求的，Clang 对其中不少只警告 |
+| P3658R1 标识符 | `c++29:unicode-identifier-recommendations` | 论文的规则：标识符可以由 ID_Compat_Math_Start/Continue（UAX #31 的数学记号轮廓，`∇f`、`x²`、`C∞`）的字符加上 XID_Start/Continue 组成。词法器在每个模式下都这样读（Clang 把它们当扩展接受，逐 token 一致不能变），所以记号流不变；用到这些字符（UTF-8 或 UCN）的标识符在特性没开时是一条门禁诊断（`uses_mathematical_notation`，`gen/unicode.py` 现在把轮廓独有的字符单独生成） | Clang 23.1 的词法（`corpus/pp26/unicode.cpp`） |
+
+`tools/checks/langdiff.py --lexdump … --clang …`：`modules/frontend/corpus/pp26` 里的每个文件，开着全部特性的预处理结果和 Clang 的 `-E` 逐 token 比对（现在 3/3）。单元测试是论文的例子：`test_embed`（P1967R14、P3540R3 的全部例子，错误形式，门禁）、`test_never_undefined`（P2843R3 各节的例子）、`test_language`（`-std` 的拼写、`__cplusplus`、`Language::on`、P3658R1 的表和 UCN）。
+
+**接口**（宿主要接的）：`PreprocessOptions::language`（标准和级别）、`::read_resource`（`#embed` 的资源，带引号或尖括号的名字原样给宿主，搜索路径是宿主的事）；`mcxx-lexdump` 的 `--std`、`--feature ID[=级别]`、`-I`。MC4 的语言提供者已经知道一个文件里哪些特性开着（`LanguageContext::enabled`），把它们交给前端是接上 `Language::features` 的几行。
+
+**已知的限制**：`#embed` 把资源展开成每字节两个记号（数、逗号），1 MB 的资源要一两百 MB 内存——要处理大资源需要解析器认一种“嵌入”记号（M3.0）；`__cplusplus` 随标准，别的 `__cpp_*` 特性测试宏仍是 C++23 的值（`predefined.py` 只生成了 `-std=c++23` 的表）；`#line` 的效果没做。
+
+## 对照 Clang 的测试（cxxtests）
+
+`tools/checks/cxxtests.py`：Clang 23.1 的 `test/CXX`、`Parser`、`SemaCXX`、`SemaTemplate`、`Preprocessor`、`Lexer`（只读取用，不进仓库）里每个测试的 RUN 行和 `expected-*` 指令，按目录和 `CXX/<章节>` 统计前端现在能被评判的部分：应当接受的文件里前端不报错的比例、前端报了 Clang 不期望的错的文件，以及 `Lexer`、`Preprocessor` 里词法（`-dump-raw-tokens`）和预处理（`-E`）对 Clang 的逐 token 一致数。用法和数字见脚本的说明和 `tools/README.md`。
 
 ## 语法：声明和大纲，和 Clang 的一致
 
@@ -155,8 +178,9 @@ auto facts = mcxx::frontend::facts(pp);   // 交给 mcxx::features::evaluate，�
 
 - `mcpp test -p modules/frontend`：
   - `test_lex`：难写对的词法情况；
+  - `test_embed`、`test_never_undefined`、`test_language`：ML-F（上面）；
   - `test_preprocess`：标准自己的例子（[cpp.scope] 的例 3–5、[cpp.subst] 里的 `__VA_OPT__`）、按目标取的条件、模块行、不确定的情形、`#error`；
   - `test_syntax`：类的成员（构造、析构、运算符、转换、字段、静态）、namespace 的嵌套和匿名、枚举、模板和别名和 concept、类外定义、参数表还是初始化、`export` 和 `extern "C"`、出错后继续。
 - 重新生成表：
-  - `python3 modules/frontend/gen/unicode.py <clang-dev>/clang/lib/Lex/UnicodeCharSets.h > modules/frontend/src/unicode.cppm`
+  - `python3 modules/frontend/gen/unicode.py <clang-dev>/clang/lib/Lex/UnicodeCharSets.h > modules/frontend/src/unicode.cppm`（也生成数学记号轮廓独有的 `MATH_START`、`MATH_CONTINUE`）
   - `python3 modules/frontend/gen/predefined.py <mcxx> > modules/frontend/src/predefined.cppm`

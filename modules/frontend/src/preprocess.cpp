@@ -2,10 +2,14 @@
 module mcxx.frontend;
 
 import std;
+import mcxx.base;
+import :embed;
 
 namespace mcxx::frontend {
 
 namespace {
+
+constexpr std::string_view TRACE { "frontend.preprocess" };
 
 // A token being preprocessed: its hide set ([cpp.rescan], as Prosser's algorithm keeps it), and
 // whether it is a placemarker ([cpp.concat]).
@@ -13,6 +17,7 @@ struct Tok {
     PpToken t;
     std::uint32_t hide { 0 };
     bool placemarker { false };
+    bool final { false };   // not a macro invocation again: what a #embed's parameters read as normal text once made
 };
 
 struct Macro {
@@ -79,6 +84,32 @@ constexpr std::string_view BUILTINS[] {
 constexpr std::pair<std::string_view, std::int64_t> STANDARD_ATTRIBUTES[] {
     { "assume", 202207 }, { "carries_dependency", 200809 }, { "deprecated", 201309 }, { "fallthrough", 201603 }, { "likely", 201803 },
     { "maybe_unused", 201603 }, { "no_unique_address", 201803 }, { "nodiscard", 201907 }, { "noreturn", 200809 }, { "unlikely", 201803 },
+};
+
+// The names a translation unit does not #define or #undef ([cpp.predefined], [macro.names]; P2843R3): the
+// keywords (the alternative tokens too), the identifiers with special meaning (Table 4), the attribute
+// tokens (`likely` and `unlikely` may be function-like macros), and the predefined macros and operators the
+// standard names. The prefixes `__cpp_` and `__STDCPP_` are the standard's own feature-test and
+// implementation-quantity macros.
+constexpr std::string_view KEYWORDS[] {
+    "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t",
+    "char32_t", "class", "compl", "concept", "const", "const_cast", "consteval", "constexpr", "constinit", "continue", "contract_assert",
+    "co_await", "co_return", "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export",
+    "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not",
+    "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast", "requires", "return",
+    "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch", "template", "this", "thread_local", "throw",
+    "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
+    "xor_eq",
+};
+constexpr std::string_view SPECIAL_IDENTIFIERS[] { "final", "import", "module", "override" };
+constexpr std::string_view ATTRIBUTE_TOKENS[] {
+    "assume", "carries_dependency", "deprecated", "fallthrough", "indeterminate", "likely", "maybe_unused", "nodiscard", "noreturn",
+    "no_unique_address", "unlikely",
+};
+constexpr std::string_view STANDARD_MACROS[] {
+    "__cplusplus", "__DATE__", "__FILE__", "__LINE__", "__TIME__", "__STDC_HOSTED__", "__STDC_EMBED_NOT_FOUND__", "__STDC_EMBED_FOUND__",
+    "__STDC_EMBED_EMPTY__", "__STDC_ISO_10646__", "__STDC_MB_MIGHT_NEQ_WC__", "__has_include", "__has_cpp_attribute", "__has_embed",
+    "__VA_ARGS__", "__VA_OPT__", "defined",
 };
 
 bool is(const Tok& t, Kind kind) { return !t.placemarker && t.t.kind == kind; }
@@ -195,6 +226,9 @@ private:
     NameMap<std::size_t> touched_;   // the raw index of the file's last #define/#undef of a name
     bool in_fragment_ { false };        // between `module;` and the module declaration
     std::uint32_t counter_ { 0 };
+    std::uint32_t collecting_ { 0 };    // macro invocations whose arguments are being read (P2843R3: no directive in them)
+    std::deque<Tok> injected_;          // what a directive replaced itself with (#embed), read before the file goes on
+    Where site_;                        // the invocation being substituted, as written in the file: where # and ## say what they did
 
     // ---- places and diagnostics ----
 
@@ -209,6 +243,38 @@ private:
     void uncertain(Where at, std::string why) {
         out_.certain = false;
         diagnose(Diagnostic::Severity::note, at, "not certain: " + std::move(why));
+    }
+
+    // ---- the language features of newer standards (:standard) ----
+
+    const Language& language() const { return options_.language; }
+
+    void feature_diagnostic(Diagnostic::Severity s, Where at, std::string message, const LanguageFeature& f) {
+        base::trace::debug(TRACE, "{}:{} {} ({}): {}", at.line, at.column, f.id, f.paper, message);
+        out_.diagnostics.push_back({ s, std::move(message), at, std::string { f.id }, std::string { f.paper } });
+    }
+
+    // The use of `what`, which a feature of a newer standard gives. True when the feature is on (at level warn
+    // it says so, in a warning). When it is not it is a gate diagnostic that names the feature and its paper,
+    // an error as MC1's `deny` is, and the caller goes on as if it were on, to read the rest of the file.
+    bool use(const LanguageFeature& f, Where at, std::string_view what) {
+        if (language().on(f)) {
+            if (language().level(f.id) == FeatureLevel::warn)
+                feature_diagnostic(Diagnostic::Severity::warning, at, std::format("{} is C++{} ({}) [{}]", what, f.year, f.paper, f.id), f);
+            return true;
+        }
+        const std::string why { language().has(f) ? std::format("which is not enabled in this file; to enable it, set \"{}\" = \"allow\"", f.id)
+                                                   : std::format("and this file is read as C++{}", language().standard.year) };
+        feature_diagnostic(Diagnostic::Severity::error, at, std::format("{} is C++{} ({}), {} [{}]", what, f.year, f.paper, why, f.id), f);
+        return false;
+    }
+
+    // What a feature that restricts the program forbids, when it is on: an error (a warning at level warn).
+    // Nothing when it is not: the program is read as the standard of the file always read it.
+    void forbid(const LanguageFeature& f, Where at, std::string message) {
+        if (!language().on(f)) return;
+        feature_diagnostic(language().level(f.id) == FeatureLevel::warn ? Diagnostic::Severity::warning : Diagnostic::Severity::error, at,
+                           std::format("{} [{}]", message, f.id), f);
     }
 
     // ---- tokens ----
@@ -243,16 +309,33 @@ private:
     bool active() const { return groups_.empty() || groups_.back().active; }
 
     std::optional<Tok> file_next() {
-        while (at_ < raw_.size()) {
+        while (at_ < raw_.size() || !injected_.empty()) {
+            if (!injected_.empty()) {
+                Tok t { std::move(injected_.front()) };
+                injected_.pop_front();
+                return t;
+            }
             const Token& r = raw_[at_];
             if (r.start_of_line && r.kind == Kind::hash) {
                 directive();
                 continue;
             }
             ++at_;
-            if (active()) return from_file(r);
+            if (active()) {
+                check_identifier(r);
+                return from_file(r);
+            }
         }
         return std::nullopt;
+    }
+
+    // P3658R1: an identifier with a character only the mathematical notation profile gives is lexed as one in
+    // every mode (as Clang does), and is a use of the feature that lets it in.
+    void check_identifier(const Token& r) {
+        if (r.kind != Kind::raw_identifier) return;
+        const std::string_view raw { text_.substr(r.begin, r.end - r.begin) };
+        if (std::ranges::all_of(raw, [](char c) { return static_cast<unsigned char>(c) < 0x80 && c != '\\'; })) return;
+        if (uses_mathematical_notation(text_, r)) use(UNICODE_IDENTIFIERS, where(r), std::format("the identifier `{}`", spelling(text_, r)));
     }
 
     std::optional<Tok> next(Source& s) {
@@ -287,6 +370,9 @@ private:
             error({}, std::format("no predefined macros for target `{}`", options_.target));
             out_.certain = false;
         }
+        // The shared table is C++23's: the standard of the file and its feature-test macros on top.
+        if (language().standard.year != 23) define_text(std::format("__cplusplus {}", cplusplus_value(language().standard)), false);
+        if (language().on(EMBED)) define_text("__cpp_pp_embed 202502L", false);
         for (const auto& d : options_.defines) {
             const auto eq = d.find('=');
             define_text(eq == std::string::npos ? d + " 1" : d.substr(0, eq) + " " + d.substr(eq + 1), false);
@@ -339,6 +425,13 @@ private:
         const std::string_view name { line[0].kind == Kind::raw_identifier ? spelled(line[0]) : std::string_view {} };
         const auto rest = line.subspan(1);
 
+        // [cpp.replace.general]/13 (P2843R3): what would act as a directive in the arguments of a macro
+        // invocation makes the program ill-formed.
+        if (collecting_ > 0 && (groups_.empty() || groups_.back().parent_active))
+            forbid(PREPROCESSING_NEVER_UNDEFINED, at, std::format("`#{}` is a directive in the arguments of a macro invocation", name.empty() ? spelled(line[0]) : name));
+        if (active())
+            for (const auto& t : line) check_identifier(t);
+
         if (name == "if" || name == "ifdef" || name == "ifndef") {
             const bool parent { active() };
             bool value { false };
@@ -372,23 +465,28 @@ private:
         }
         if (!active()) return;
 
+        // `# 12 "file" 1`: a line marker (GNU), what -E and the preprocessed files have; where the line goes is not modeled.
+        if (line[0].kind == Kind::numeric_constant) return uncertain(at, "a line marker is outside what MC++'s preprocessor covers");
+
         if (name == "define") return define_directive(rest, first + 1, at);
         if (name == "undef") {
             if (rest.empty() || rest[0].kind != Kind::raw_identifier) return error(at, "macro name missing");
             const std::string n { spelled(rest[0]) };
+            check_macro_name(n, "#undef", where(rest[0]), false);
             undefine(n);
             touched_[n] = first;
             return;
         }
         if (name == "include") return include_directive(rest, at, line[0]);
+        if (name == "embed") return embed_directive(rest, at);
+        if (name == "line") return line_directive(rest, at);
         if (name == "error" || name == "warning") {
             const auto from = rest.empty() ? line[0].end : rest.front().begin;
             const std::string message { text_.substr(from, line.back().end - from) };
             return diagnose(name == "error" ? Diagnostic::Severity::error : Diagnostic::Severity::warning, at, std::format("#{} {}", name, message));
         }
         if (name == "pragma") return pragma(rest, at);
-        if (name == "line" || name == "include_next" || name == "import" || name == "embed" || name == "ident" || name == "sccs" ||
-            name == "assert" || name == "unassert")
+        if (name == "include_next" || name == "import" || name == "ident" || name == "sccs" || name == "assert" || name == "unassert")
             return uncertain(at, std::format("#{} is outside what MC++'s preprocessor covers", name));
         error(at, std::format("invalid preprocessing directive #{}", spelled(line[0])));
     }
@@ -429,6 +527,8 @@ private:
         for (const auto& r : rest) line.push_back(from_file(r));
         const std::string name { spelled(rest[0]) };
         if (name == "defined") return error(where(rest[0]), "`defined` cannot be a macro name");
+        // A function-like one may be `likely` or `unlikely` ([macro.names]).
+        check_macro_name(name, "#define", where(rest[0]), rest.size() > 1 && rest[1].kind == Kind::l_paren && rest[1].begin == rest[0].end);
         if (define(line, true, where(rest[0]))) {
             out_.macros.push_back({ name, where(rest[0]), find_macro(name)->function_like });
             touched_[name] = index;
@@ -502,6 +602,269 @@ private:
         removed_.erase(std::string { line[0].t.spelling });
         macros_.insert_or_assign(std::string { line[0].t.spelling }, std::move(m));
         return true;
+    }
+
+    // [cpp.predefined]/4 and [macro.names]/2 (P2843R3): the names the standard keeps from #define and #undef.
+    void check_macro_name(std::string_view name, std::string_view directive, Where at, bool function_like) {
+        if (!language().on(PREPROCESSING_NEVER_UNDEFINED)) return;
+        std::string_view what;
+        if (std::ranges::contains(KEYWORDS, name)) what = "a keyword";
+        else if (std::ranges::contains(SPECIAL_IDENTIFIERS, name)) what = "an identifier with special meaning";
+        else if (std::ranges::contains(ATTRIBUTE_TOKENS, name)) {
+            if ((name == "likely" || name == "unlikely") && function_like) return;
+            what = "an attribute-token";
+        } else if (std::ranges::contains(STANDARD_MACROS, name) || name.starts_with("__cpp_") || name.starts_with("__STDCPP_")) {
+            what = "a predefined macro of the standard";
+        }
+        if (!what.empty()) forbid(PREPROCESSING_NEVER_UNDEFINED, at, std::format("`{} {}` names {}", directive, name, what));
+    }
+
+    // [cpp.line] (P2843R3): the line number is a digit sequence from 1 to 2147483647 and the directive is
+    // `# line digit-sequence` or `# line digit-sequence "s-char-sequence"` after macro replacement. Where
+    // the line goes is not modeled, so the directive is still not certain.
+    void line_directive(std::span<const Token> rest, Where at) {
+        if (language().on(PREPROCESSING_NEVER_UNDEFINED)) {
+            std::vector<Tok> tokens;
+            for (const auto& r : rest) tokens.push_back(from_file(r));
+            const auto expanded = expand_all(tokens);
+            const auto bad = [&](std::string message) { forbid(PREPROCESSING_NEVER_UNDEFINED, at, "`#line` " + std::move(message)); };
+            if (expanded.empty()) {
+                bad("takes a digit sequence");
+            } else {
+                std::string digits;
+                for (const char c : expanded[0].t.spelling)
+                    if (c != '\'') digits += c;
+                const bool sequence { expanded[0].t.kind == Kind::numeric_constant && !digits.empty() &&
+                                      std::ranges::all_of(digits, [](char c) { return c >= '0' && c <= '9'; }) };
+                if (!sequence) {
+                    bad(std::format("takes a digit sequence, not `{}`", expanded[0].t.spelling));
+                } else {
+                    const auto stripped = digits.find_first_not_of('0');
+                    const std::string_view significant { stripped == std::string::npos ? std::string_view {} : std::string_view { digits }.substr(stripped) };
+                    if (significant.empty() || significant.size() > 10 || std::stoull(std::string { significant }) > 2147483647ull)
+                        bad(std::format("takes a line number from 1 to 2147483647, not {}", digits));
+                    if (expanded.size() > 2 || (expanded.size() == 2 && !is(expanded[1], Kind::string_literal)))
+                        bad("takes a digit sequence and at most one string literal");
+                }
+            }
+        }
+        uncertain(at, "#line is outside what MC++'s preprocessor covers");
+    }
+
+    // ---- #embed and __has_embed (P1967R14; P3540R3's offset) ----
+
+    // `<h-char-sequence>` or a string literal at the start of `v`: the name as written, with `next` where the
+    // parameters start.
+    static std::optional<std::string> resource_name(const std::vector<Tok>& v, std::size_t& next) {
+        if (v.empty()) return std::nullopt;
+        if (is(v[0], Kind::string_literal)) {
+            next = 1;
+            return std::string { v[0].t.spelling };
+        }
+        if (!is(v[0], Kind::less)) return std::nullopt;
+        std::string name;
+        for (std::size_t k { 1 }; k < v.size(); ++k) {
+            if (is(v[k], Kind::greater)) {
+                next = k + 1;
+                return "<" + name + ">";
+            }
+            if (k > 1 && v[k].t.leading_space) name += ' ';
+            name += v[k].t.spelling;
+        }
+        return std::nullopt;
+    }
+
+    // The resource and the parameters of a #embed's tokens, or of a __has_embed's: the first two forms read the
+    // name as written and replace the macros after it, the third replaces them first ([cpp.embed.gen]).
+    bool split_embed(const std::vector<Tok>& tokens, std::string& header, std::vector<Tok>& params) {
+        const bool named { !tokens.empty() && (is(tokens[0], Kind::less) || is(tokens[0], Kind::string_literal)) };
+        const auto all = named ? tokens : expand_all(tokens);
+        std::size_t next { 0 };
+        const auto name = resource_name(all, next);
+        if (!name) return false;
+        header = *name;
+        params.assign(all.begin() + static_cast<std::ptrdiff_t>(next), all.end());
+        if (named) params = expand_all(params);
+        return true;
+    }
+
+    // What an embed's parameters and its resource come to.
+    struct Embedded {
+        bool well_formed { true };     // the parameters are, as far as they were read (the errors are given)
+        bool supported { true };       // every parameter is one this front end supports (__has_embed's 0 otherwise)
+        bool unknown { false };        // the host reads no resources: what the resource says is not known
+        bool found { false };
+        std::string bytes;
+        std::uint64_t offset { 0 };
+        std::uint64_t count { 0 };     // the resource-count
+        std::optional<std::vector<Tok>> prefix, suffix, if_empty;
+    };
+
+    // The value of a limit's or an offset's constant-expression ([cpp.embed.param.limit]): already replaced as
+    // normal text, `defined` is not in it, and in a __has_embed neither is __has_include and its kin.
+    std::optional<std::uint64_t> embed_value(const std::vector<Tok>& tokens, Where at, bool query) {
+        if (tokens.empty()) {
+            error(at, "an embed parameter needs a constant expression");
+            return std::nullopt;
+        }
+        for (const auto& t : tokens) {
+            if (is(t, "defined")) {
+                error(at, "`defined` cannot appear in an embed parameter's constant expression");
+                return std::nullopt;
+            }
+            if (query && t.t.kind == Kind::raw_identifier && (t.t.spelling == "__has_include" || t.t.spelling == "__has_embed" || t.t.spelling == "__has_cpp_attribute")) {
+                error(at, std::format("`{}` cannot appear in a __has_embed's embed parameter", t.t.spelling));
+                return std::nullopt;
+            }
+        }
+        const auto evaluated = evaluate_operators(tokens, at);
+        Expression e { *this, evaluated, at };
+        const auto v = e.parse();
+        if (!v) return std::nullopt;   // the expression said why
+        if (!v->is_unsigned && v->s() < 0) {
+            error(at, "the constant expression of an embed parameter cannot be negative");
+            return std::nullopt;
+        }
+        return v->bits;
+    }
+
+    Embedded embed_resource(const std::string& header, const std::vector<Tok>& params, Where at, bool query) {
+        Embedded e;
+        std::vector<PpToken> flat;
+        for (const auto& p : params) flat.push_back(p.t);
+        const auto parsed = parse_embed_parameters(flat);
+        const auto fail = [&](std::string message) {
+            e.well_formed = false;
+            error(at, std::move(message));
+        };
+        if (parsed.error_at) {
+            fail(parsed.error);
+            return e;
+        }
+        std::optional<std::uint64_t> limit;
+        std::set<std::string> seen;
+        for (const auto& p : parsed.list) {
+            std::string name { p.name };
+            if (name == "clang::offset" || name == "gnu::offset") {
+                name = "offset";   // what Clang and GCC have as an extension, P3540R3's before it was the standard's
+            } else if (name == "offset") {
+                use(EMBED_OFFSET, at, "the embed parameter `offset`");
+            } else if (name != "limit" && name != "prefix" && name != "suffix" && name != "if_empty") {
+                e.supported = false;   // conditionally supported: __has_embed says 0, a #embed is an error
+                if (!query) fail(std::format("unknown embed parameter `{}`", p.name));
+                continue;
+            }
+            if (!seen.insert(name).second) {
+                fail(std::format("the embed parameter `{}` appears more than once", p.name));
+                continue;
+            }
+            if (!p.parenthesized) {
+                fail(std::format("the embed parameter `{}` takes arguments in parentheses", p.name));
+                continue;
+            }
+            const auto first { static_cast<std::size_t>(p.arguments.data() - flat.data()) };
+            const std::vector<Tok> arguments { params.begin() + static_cast<std::ptrdiff_t>(first),
+                                               params.begin() + static_cast<std::ptrdiff_t>(first + p.arguments.size()) };
+            if (name == "limit" || name == "offset") {
+                const auto value = embed_value(arguments, at, query);
+                if (!value) e.well_formed = false;
+                else if (name == "limit") limit = value;
+                else e.offset = *value;
+            } else if (name == "prefix") {
+                e.prefix = arguments;
+            } else if (name == "suffix") {
+                e.suffix = arguments;
+            } else {
+                e.if_empty = arguments;
+            }
+        }
+        if (!options_.read_resource) {
+            e.unknown = true;
+            return e;
+        }
+        auto bytes = options_.read_resource(header);
+        // "name" that is not found is looked for as <name> ([cpp.embed.gen]).
+        if (!bytes && header.starts_with('"') && header.size() >= 2) bytes = options_.read_resource("<" + header.substr(1, header.size() - 2) + ">");
+        e.found = bytes.has_value();
+        if (bytes) {
+            e.bytes = std::move(*bytes);
+            e.count = embed_count(e.bytes.size(), e.offset, limit);
+        }
+        return e;
+    }
+
+    // `#embed resource parameters` is replaced by the resource's elements as integer literals, between the
+    // prefix and the suffix; by the if_empty tokens, or nothing, when it has none.
+    void embed_directive(std::span<const Token> rest, Where at) {
+        use(EMBED, at, "`#embed`");
+        std::vector<Tok> tokens;
+        for (const auto& r : rest) tokens.push_back(from_file(r));
+        std::string header;
+        std::vector<Tok> params;
+        if (!split_embed(tokens, header, params)) return error(at, "expected \"FILENAME\" or <FILENAME> after #embed");
+        const Embedded e { embed_resource(header, params, at, false) };
+        if (!e.well_formed) return;
+        if (e.unknown) return uncertain(at, std::format("#embed {}: the resource is not read (the host gives no resources)", header));
+        base::trace::debug(TRACE, "{}:{} #embed {} {} ({} bytes, {} elements)", at.line, at.column, header, e.found ? "found" : "not found", e.bytes.size(), e.count);
+        out_.embeds.push_back({ header, at, e.found, e.found ? e.count : 0 });
+        if (!e.found) return error(at, std::format("{} file not found", header));
+        std::vector<Tok> result;
+        const auto append = [&](const std::optional<std::vector<Tok>>& tokens) {
+            if (tokens) result.insert(result.end(), tokens->begin(), tokens->end());
+        };
+        if (e.count == 0) {
+            append(e.if_empty);
+        } else {
+            append(e.prefix);
+            static const std::array<std::string, 256> DECIMAL { [] {
+                std::array<std::string, 256> a;
+                for (std::size_t i { 0 }; i < a.size(); ++i) a[i] = std::to_string(i);
+                return a;
+            }() };
+            const auto from { static_cast<std::size_t>(std::min<std::uint64_t>(e.offset, e.bytes.size())) };
+            for (std::size_t i { 0 }; i < e.count; ++i) {
+                if (i > 0) {
+                    Tok comma;
+                    comma.t.kind = Kind::comma;
+                    comma.t.spelling = ",";
+                    result.push_back(comma);
+                }
+                Tok number;
+                number.t.kind = Kind::numeric_constant;
+                number.t.spelling = DECIMAL[static_cast<unsigned char>(e.bytes[from + i])];
+                number.t.leading_space = i > 0;
+                result.push_back(number);
+            }
+            append(e.suffix);
+        }
+        // What the directive's tokens read as normal text once made them: not read as macro invocations again.
+        for (auto& t : result) {
+            t.t.at = at;
+            t.t.expanded = true;
+            t.t.macro_end = at.end;
+            t.t.start_of_line = false;
+            t.final = true;
+        }
+        for (auto& t : result) injected_.push_back(std::move(t));
+    }
+
+    // __has_embed ( resource parameters ): 0 when there is no such resource or a parameter is not supported, 1
+    // when it is there and has elements under the parameters, 2 when it has none (__STDC_EMBED_*).
+    std::int64_t has_embed(const std::vector<Tok>& operand, Where at) {
+        use(EMBED, at, "`__has_embed`");
+        std::string header;
+        std::vector<Tok> params;
+        if (!split_embed(operand, header, params)) {
+            error(at, "__has_embed expects \"FILENAME\" or <FILENAME>");
+            return 0;
+        }
+        const Embedded e { embed_resource(header, params, at, true) };
+        if (!e.well_formed || !e.supported) return 0;
+        if (e.unknown) {
+            uncertain(at, std::format("__has_embed({}) needs the resources the host has", header));
+            return 0;
+        }
+        return !e.found ? 0 : e.count == 0 ? 2 : 1;
     }
 
     void include_directive(std::span<const Token> rest, Where at, const Token& keyword) {
@@ -653,6 +1016,7 @@ private:
 
     // Expands `t` when it names a macro that is not hidden for it, onto the front of `s`: true then.
     bool expand(Source& s, const Tok& t) {
+        if (t.final) return false;
         const std::string_view name { t.t.spelling };
         if (name.starts_with("__") || name == "_Pragma")
             if (builtin(s, t)) return true;
@@ -676,6 +1040,7 @@ private:
             int depth { 1 };
             std::optional<Tok> close;
             const std::size_t fixed { m.variadic ? m.parameters.size() - 1 : m.parameters.size() };
+            ++collecting_;
             while (auto a = next(s)) {
                 consumed.push_back(*a);
                 if (is(*a, Kind::l_paren)) ++depth;
@@ -689,6 +1054,7 @@ private:
                 }
                 current.push_back(std::move(*a));
             }
+            --collecting_;
             if (!close) {
                 error(t.t.at, std::format("unterminated function-like macro invocation of `{}`", name));
                 for (std::size_t i { consumed.size() }; i-- > 0;) s.pending.push_front(std::move(consumed[i]));
@@ -706,7 +1072,10 @@ private:
             if (!close->t.expanded && !t.t.expanded) site = where(t.t.at.begin, close->t.at.end);
         }
         if (!t.t.expanded) out_.expansions.push_back({ std::string { name }, site });
+        const Where outer { site_ };
+        site_ = site;
         auto result = substitute(m, args, hs);
+        site_ = outer;
         bool first { true };
         const std::uint32_t macro_end { t.t.expanded ? t.t.macro_end : t.t.at.end };
         for (auto& r : result) {
@@ -908,12 +1277,27 @@ private:
             first = false;
             if (is_string(t.t.kind) || is_char(t.t.kind)) {
                 for (const char c : t.t.spelling) {
+                    // A new-line in a raw string literal becomes `\n` ([cpp.stringize]/2, P2843R3 and CWG1709: what
+                    // Clang does).
+                    if (c == '\n') {
+                        s += "\\n";
+                        continue;
+                    }
                     if (c == '"' || c == '\\') s += '\\';
                     s += c;
                 }
             } else {
                 s += t.t.spelling;
             }
+        }
+        // A final backslash left alone would escape the closing quote: no valid literal. P2843R3 makes it
+        // ill-formed; as Clang does, the backslash is ignored (a warning, or the error where the feature is on).
+        std::size_t slashes { 0 };
+        for (std::size_t i { s.size() }; i > 1 && s[i - 1] == '\\'; --i) ++slashes;
+        if (slashes % 2 == 1) {
+            s.pop_back();
+            if (language().on(PREPROCESSING_NEVER_UNDEFINED)) forbid(PREPROCESSING_NEVER_UNDEFINED, site_, "the # operator forms an invalid string literal: it ends in a backslash");
+            else diagnose(Diagnostic::Severity::warning, site_, "invalid string literal, ignoring final '\\'");
         }
         s += '"';
         Tok r { hash };
@@ -933,7 +1317,7 @@ private:
             r.t.spelling = held;
             return r;
         }
-        error(lhs.t.at, std::format("pasting formed '{}', an invalid preprocessing token", held));
+        error(site_, std::format("pasting formed '{}', an invalid preprocessing token", held));
         r.t.spelling = held;
         r.t.kind = Kind::unknown;
         return r;
@@ -951,7 +1335,17 @@ private:
         for (const auto& r : rest) tokens.push_back(from_file(r));
         const auto evaluated = evaluate_operators(tokens, at);
         const auto expanded = expand_all(evaluated);
-        const auto final_tokens = evaluate_operators(expanded, at);
+        auto final_tokens = evaluate_operators(expanded, at);
+        // The alternative tokens are the operators in C++ ([lex.digraph]): `#if a and not b`.
+        for (auto& t : final_tokens) {
+            if (t.t.kind != Kind::raw_identifier || t.placemarker) continue;
+            static constexpr std::pair<std::string_view, Kind> ALTERNATIVES[] {
+                { "and", Kind::ampamp }, { "or", Kind::pipepipe }, { "not", Kind::exclaim }, { "bitand", Kind::amp }, { "bitor", Kind::pipe },
+                { "xor", Kind::caret }, { "compl", Kind::tilde }, { "not_eq", Kind::exclaimequal },
+            };
+            for (const auto& [word, kind] : ALTERNATIVES)
+                if (t.t.spelling == word) t.t.kind = kind;
+        }
         Expression e { *this, final_tokens, at };
         const auto v = e.parse();
         return v && v->truth();
@@ -985,6 +1379,19 @@ private:
                 i = paren ? k + 1 : k;
                 continue;
             }
+            if (is(t, "__has_embed") && i + 1 < in.size() && is(in[i + 1], Kind::l_paren) && !has_macro("__has_embed")) {
+                std::size_t k { i + 2 };
+                int depth { 1 };
+                const std::size_t from { k };
+                for (; k < in.size(); ++k) {
+                    if (is(in[k], Kind::l_paren)) ++depth;
+                    if (is(in[k], Kind::r_paren) && --depth == 0) break;
+                }
+                const std::vector<Tok> operand { in.begin() + static_cast<std::ptrdiff_t>(from), in.begin() + static_cast<std::ptrdiff_t>(std::min(k, in.size())) };
+                out.push_back(number(t, has_embed(operand, t.t.at)));
+                i = k;
+                continue;
+            }
             if (t.t.kind == Kind::raw_identifier && t.t.spelling.starts_with("__") && i + 1 < in.size() && is(in[i + 1], Kind::l_paren) &&
                 std::ranges::contains(BUILTINS, t.t.spelling) && !has_macro(t.t.spelling)) {
                 // The operand, to the matching ')'.
@@ -1006,6 +1413,21 @@ private:
         return out;
     }
 
+    // Whether `name` is a keyword in the standard the file is read as: the C++11 ones are keywords from C++11 on, the
+    // C++20 ones (char8_t, concept, consteval, constinit, co_await, co_return, co_yield, requires) from C++20, and
+    // contract_assert from C++26.
+    bool keyword(std::string_view name) const {
+        if (!std::ranges::contains(KEYWORDS, name)) return false;
+        const int year { language().standard.year };
+        if (name == "contract_assert") return year >= 26;
+        if (name == "char8_t" || name == "concept" || name == "consteval" || name == "constinit" || name == "co_await" || name == "co_return" || name == "co_yield" || name == "requires")
+            return year >= 20;
+        if (name == "alignas" || name == "alignof" || name == "char16_t" || name == "char32_t" || name == "constexpr" || name == "decltype" || name == "noexcept" ||
+            name == "nullptr" || name == "static_assert" || name == "thread_local")
+            return year >= 11;
+        return true;
+    }
+
     std::int64_t has(std::string_view op, std::string_view operand, Where at) {
         if (op == "__has_cpp_attribute") {
             const std::string_view name { operand.starts_with("std::") ? operand.substr(5) : operand };
@@ -1013,7 +1435,13 @@ private:
                 if (attribute == name) return value;
             if (operand.find("::") == std::string_view::npos) return 0;
         }
-        if (op == "__is_identifier") return 1;
+        if (op == "__is_identifier") {
+            // 0 for a keyword of the standard the file is read as, 1 for any other name; a name the compiler makes
+            // a keyword of its own (`__attribute`, `_Bool`) is for the compiler to say.
+            if (keyword(operand)) return 0;
+            if (operand.starts_with("__") || (operand.size() > 1 && operand[0] == '_' && operand[1] >= 'A' && operand[1] <= 'Z')) uncertain(at, std::format("__is_identifier({}) needs what the compiler knows", operand));
+            return 1;
+        }
         uncertain(at, std::format("{}({}) needs what the compiler knows", op, operand));
         return 0;
     }
