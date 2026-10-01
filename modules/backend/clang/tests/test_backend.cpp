@@ -214,6 +214,23 @@ int main() {
         expect(w->status().failures.empty()) << std::format("{} modules failed", w->status().failures.size());
     };
 
+    "a module whose command names no target is built for the one its importers name"_test = [] {
+        Program p { "target" };
+        // mcpp's std on macOS: no deployment target in its command, 14.0 in its importers'. Here the triple:
+        // the module's command names none, the units name one no host defaults to (the vendor `pc`).
+        p.file("src/a.cppm", "export module a;\nexport int f() { return 1; }\n");
+        p.file("src/b.cppm", "export module b;\nimport a;\nexport int g() { return f(); }\n");
+        const std::string text { "import a;\nimport b;\nint main() { return f() - g(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
+        for (std::size_t i { 1 }; i < p.commands.size(); ++i) p.commands[i].arguments.push_back("--target=x86_64-pc-linux-gnu");
+        auto w = workspace_for(p);
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto diagnostics = unit->diagnostics();
+        expect(diagnostics.empty()) << std::format("{} diagnostics: {}", diagnostics.size(), diagnostics.empty() ? std::string {} : diagnostics[0].message);
+        expect(w->status().failures.empty()) << std::format("{} modules failed", w->status().failures.size());
+    };
+
     "the outline lists what is declared, and a using-declaration is no line of it"_test = [] {
         Program p { "outline" };
         const std::string text { "namespace lib {\nint one() { return 1; }\n}\nusing lib::one;\nint main() { return one(); }\n" };

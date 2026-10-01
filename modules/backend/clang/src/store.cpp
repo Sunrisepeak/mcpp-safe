@@ -83,9 +83,15 @@ namespace fs = std::filesystem;
 
 namespace {
 
-bool exception_model_flag(std::string_view a) {
-    return a == "-fdwarf-exceptions" || a == "-fseh-exceptions" || a == "-fsjlj-exceptions" || a == "-fwasm-exceptions";
-}
+// The options a BMI and every unit importing it must agree on that a build description may leave out
+// of one command and give the rest (Clang: "ExceptionHandling differs in precompiled file", "was
+// compiled for the target 'arm64-apple-macosx15.0.0' but the current translation unit is being
+// compiled for target 'arm64-apple-macosx14.0.0'"). Each kind: whether an argument names it.
+constexpr std::array<bool (*)(std::string_view), 3> AGREED {
+    [](std::string_view a) { return a == "-fdwarf-exceptions" || a == "-fseh-exceptions" || a == "-fsjlj-exceptions" || a == "-fwasm-exceptions"; },
+    [](std::string_view a) { return a.starts_with("--target") || a == "-target"; },
+    [](std::string_view a) { return a.starts_with("-mmacosx-version-min=") || a.starts_with("-mmacos-version-min="); },
+};
 
 } // namespace
 
@@ -93,18 +99,19 @@ void ModuleStore::set_program(const mcxx::graph::Graph& graph, const std::map<st
     std::lock_guard lock { mutex_ };
     graph_ = graph;
     commands_ = commands;
-    // The exception model is a language option a BMI and every unit importing it must agree on
-    // ("ExceptionHandling differs in precompiled file"), and a build description can give a module
-    // a command without the one its importers name: mcpp's std for openkal's Windows runtime has no
-    // `-fdwarf-exceptions`, every unit of the program has it, and every import of std failed. The
-    // model most commands name is the one a module whose command names none is built with.
-    std::map<std::string, std::size_t> models;
-    for (const auto& [file, command] : commands_)
-        for (const auto& a : command.arguments)
-            if (exception_model_flag(a)) ++models[a];
-    exceptionModel_.clear();
-    for (const auto& [flag, count] : models)
-        if (2 * count > commands_.size()) exceptionModel_ = flag;
+    // Of each kind in AGREED, the one argument most of the program's commands give, when one does: a
+    // module whose own command names none of that kind is built with it. mcpp's std for openkal's
+    // Windows runtime had no `-fdwarf-exceptions` and every unit of the program had it; on macOS std
+    // had no deployment target and its importers 14.0: every import of std failed.
+    agreed_.clear();
+    for (const auto& is : AGREED) {
+        std::map<std::string, std::size_t> given;
+        for (const auto& [file, command] : commands_)
+            for (const auto& a : command.arguments)
+                if (is(a) && a != "-target" && a != "--target") ++given[a];   // a two-word form's value is the next one
+        for (const auto& [flag, count] : given)
+            if (2 * count > commands_.size()) agreed_.push_back(flag);
+    }
     for (auto& [module, entry] : entries_) {
         if (entry.state == State::ready || entry.state == State::failed) entry.state = State::stale;
         // One being built now reads the program as it was: built again once it is done, never
@@ -292,7 +299,7 @@ void ModuleStore::build_(const std::string& module) {
     bool dependencyFailed { false };
     std::string failedDependency;
     std::optional<std::string> buffer;
-    std::string exceptionModel;
+    std::vector<std::string> agreed;
     {
         std::lock_guard lock { mutex_ };
         file = graph_.provider(module);
@@ -305,7 +312,7 @@ void ModuleStore::build_(const std::string& module) {
             return;
         }
         if (const auto it = buffers_.find(file); it != buffers_.end()) buffer = it->second;
-        exceptionModel = exceptionModel_;
+        agreed = agreed_;
         const auto it = commands_.find(file);
         if (it != commands_.end()) command = it->second;
         const std::vector<std::string> roots { graph_.requires_of(module) };
@@ -373,7 +380,10 @@ void ModuleStore::build_(const std::string& module) {
         return;
     }
     std::vector<std::string> args { normalize(command) };
-    if (!exceptionModel.empty() && std::ranges::none_of(args, exception_model_flag)) args.push_back(exceptionModel);
+    for (const auto& flag : agreed) {
+        const auto kind = std::ranges::find_if(AGREED, [&](const auto& is) { return is(flag); });
+        if (kind != AGREED.end() && std::ranges::none_of(args, [&](const std::string& a) { return (*kind)(a); })) args.push_back(flag);
+    }
     std::string keyText { std::string { CACHE_EPOCH } + "\n" };
     for (const auto& a : args) keyText += a + '\0';
     keyText += "\n" + file + "\n" + hex_digest(*source) + "\n" + dependencyKeys;

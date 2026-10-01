@@ -84,9 +84,10 @@ private:
     std::condition_variable_any cv_;
     mcxx::graph::Graph graph_;
     std::map<std::string, msa::Command, std::less<>> commands_;
-    // The exception model most of the program's commands name (`-fdwarf-exceptions`), or empty: a
-    // module whose own command names none is built with it (set_program).
-    std::string exceptionModel_;
+    // What most of the program's commands give of each option a BMI and its importers must agree on
+    // (the exception model, the target, macOS's deployment version): a module whose own command names
+    // none of a kind is built with it (set_program).
+    std::vector<std::string> agreed_;
     std::map<std::string, Entry, std::less<>> entries_;
     std::map<std::string, std::string, std::less<>> buffers_;   // path -> the editor's text
     std::deque<std::string> ready_;   // scheduled modules whose dependencies are all done
