@@ -1,0 +1,29 @@
+# C++29's core-language features (the plan's milestone ML, its list ML.1), one MC4 language provider
+# (plugins/lang/README.md): each paper an MC1 feature of category standard, off unless enabled.
+#
+#   mcxx.plugins.lang.cpp29         the provider: a file where any feature is enabled is compiled as C++29
+#   mcxx.plugins.lang.cpp29:table   the papers and their status in Clang 23.1 (generated: ../cxx_status.py)
+#
+# Written against the plugin SDK (mcxx.plugin) only, as any third-party plugin is. Independent of
+# plugins/lang/cpp26: either can be composed without the other.
+[package]
+name        = "mcxx-plugins-lang-cpp29"
+version     = "0.1.0"
+description = "MC++ plugin: C++29's core-language features, on per file (MC1 category standard)"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugins-lang-cpp29]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-msa    = { path = "../../../modules/msa" }
+mcxx-plugin = { path = "../../../modules/plugin/sdk" }
+
+[dev-dependencies]
+mcxx-testing = { path = "../../../modules/testing" }
+# Its tests' C library, as the root names it (plugins/std/mcpp.toml says why).
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.9" }
+
+[lib]
+path = "src/cpp29.cppm"
