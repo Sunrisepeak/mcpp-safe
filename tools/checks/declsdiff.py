@@ -42,6 +42,7 @@ if only:
 probe_cache = tempfile.mkdtemp(prefix="mcxx-declsdiff-")
 atexit.register(shutil.rmtree, probe_cache, True)   # the probe's cache of this run only
 
+why = {}   # a file not compared: which side failed, its exit status and its last words
 MEMBERS = ["qualified-name", "container", "exported", "pointer", "c-array", "union", "c-variadic", "local", "type", "templates"]
 
 
@@ -54,6 +55,8 @@ def clang_side(unit):
     run = subprocess.run([probe, "--db", str(database.parent), "--resource", resource, "--cache", probe_cache, "--facts", unit["file"]],
                          capture_output=True, text=True)
     facts = next((json.loads(l) for l in run.stdout.splitlines() if l.startswith("{") and '"declarations"' in l), None)
+    if facts is None:
+        why[unit["file"]] = f"mcxx-probe exit {run.returncode}: {(run.stderr.strip().splitlines() or [''])[-1][:200]}"
     if facts is not None and key is not None:
         key.parent.mkdir(parents=True, exist_ok=True)
         key.write_text(json.dumps(facts))
@@ -73,7 +76,10 @@ def own_side(unit):
         elif a.startswith(("-fmodule-file=", "-fprebuilt-module-path=")):
             flags.append(a)   # where the imports' BMIs, and so their MC2 interfaces, are (M2.2)
     run = subprocess.run([lexdump, "--facts", *flags, unit["file"]], capture_output=True, text=True)
-    return json.loads(run.stdout) if run.returncode == 0 and run.stdout.startswith("{") else None
+    if run.returncode == 0 and run.stdout.startswith("{"):
+        return json.loads(run.stdout)
+    why[unit["file"]] = f"mcxx-lexdump exit {run.returncode}: {(run.stderr.strip().splitlines() or [''])[-1][:200]}"
+    return None
 
 
 def key(d):
@@ -155,6 +161,8 @@ for m in ("missing", "extra"):
         print(f"      {x}")
 if failed:
     print(f"  not compared: {len(failed)} ({', '.join(pathlib.Path(f).name for f in failed[:5])})")
+    for f in failed[:5]:
+        print(f"      {pathlib.Path(f).name}: {why.get(f, 'no reason kept')}")
 if report:
     pathlib.Path(report).write_text(json.dumps({**summary, "examples": {k: v[:200] for k, v in examples.items()}}, indent=1))
 problems = []

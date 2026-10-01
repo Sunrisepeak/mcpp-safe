@@ -23,7 +23,9 @@ subprocess.run(["git", "checkout", "--quiet", REVISION], cwd=work, check=True)
 with open(work / "mcpp.toml", "a") as m:
     m.write('\n# Local, for the self-host measurement (A0.5.3): MC++ reports the pitfall, the build goes on.\n'
             '[package.metadata.mcxx.features]\n"json-brace-init" = "warn"\n')
-test = subprocess.run(["mcpp", "test", "--toolchain", toolchain], cwd=work, capture_output=True, text=True)
+# Its dependencies built here too (`--cache local`): mcpp's global cache keeps what an older mcxx built,
+# and with it that mcxx's MC2 interfaces, which the checks after this one read.
+test = subprocess.run(["mcpp", "test", "--toolchain", toolchain, "--cache", "local"], cwd=work, capture_output=True, text=True)
 tail = "\n".join((test.stdout + test.stderr).splitlines()[-6:])
 print(tail)
 ok = test.returncode == 0 and "test result ok" in test.stdout + test.stderr

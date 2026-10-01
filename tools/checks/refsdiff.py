@@ -40,6 +40,7 @@ if only:
     units = [u for u in units if only in u["file"]]
 probe_cache = tempfile.mkdtemp(prefix="mcxx-refsdiff-")
 atexit.register(shutil.rmtree, probe_cache, True)   # the probe's cache of this run only
+why = {}   # a file not compared: which side failed, its exit status and its last words
 INLINE = re.compile(r"::__\w*\d\w*(?=::|$)")   # libc++'s std::__1:: and its like: MC3 names leave inline namespaces out
 
 
@@ -64,6 +65,8 @@ def clang_side(unit):
     run = subprocess.run([probe, "--db", str(database.parent), "--resource", resource, "--cache", probe_cache, "--references", unit["file"]],
                          capture_output=True, text=True)
     refs = next((json.loads(l) for l in run.stdout.splitlines() if l.startswith("{") and '"references"' in l), None)
+    if refs is None:
+        why[unit["file"]] = f"mcxx-probe exit {run.returncode}: {(run.stderr.strip().splitlines() or [''])[-1][:200]}"
     if refs is not None and key is not None:
         key.parent.mkdir(parents=True, exist_ok=True)
         key.write_text(json.dumps(refs))
@@ -83,7 +86,10 @@ def own_side(unit):
         elif a.startswith(("-fmodule-file=", "-fprebuilt-module-path=")):
             flags.append(a)   # where the imports' BMIs, and so their MC2 interfaces, are (M2.2)
     run = subprocess.run([lexdump, "--references", *flags, unit["file"]], capture_output=True, text=True)
-    return json.loads(run.stdout) if run.returncode == 0 and run.stdout.startswith("{") else None
+    if run.returncode == 0 and run.stdout.startswith("{"):
+        return json.loads(run.stdout)
+    why[unit["file"]] = f"mcxx-lexdump exit {run.returncode}: {(run.stderr.strip().splitlines() or [''])[-1][:200]}"
+    return None
 
 
 def compare(unit):
@@ -183,6 +189,8 @@ for x in examples["extra"][:6]:
     print(f"      {x}")
 if failed:
     print(f"  not compared: {len(failed)} ({', '.join(pathlib.Path(f).name for f in failed[:5])})")
+    for f in failed[:5]:
+        print(f"      {pathlib.Path(f).name}: {why.get(f, 'no reason kept')}")
 if report:
     pathlib.Path(report).write_text(json.dumps({**summary, "examples": {k: v[:300] for k, v in examples.items()}}, indent=1))
 problems = []
