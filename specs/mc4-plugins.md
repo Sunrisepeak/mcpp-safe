@@ -31,7 +31,7 @@ A provider has a `name`, unique among the providers a host has; the features it 
 | **profile** | -- | named sets of levels (MC1 §4): by joining features, by category, by feature id | when a configuration is resolved |
 | **attribute** | -- | attributes it claims, `ns::name`: the compiler accepts them on declarations and records each use as an MC3 fact (MC3 §4.12); a rule reads the declaration's facts (`plugin::subtree`) | when a file is parsed |
 | **region** | -- | an attribute that names a profile: inside the declaration it is on, that profile's levels apply where stricter (MC1 §6) | when a finding is gated |
-| **language** (0.4.0) | a file's path, the target (§2.1), and whether each of the provider's features is enabled in the file (its level there, by profiles, the package and file globs, is not `deny`) | the compiler arguments those features need, in order | before the file is compiled or parsed |
+| **language** (0.4.0) | a file's path, the target (§2.1), whether each of the provider's features is enabled in the file (its level there, by profiles, the package and file globs, is not `deny`), and the file's command's own arguments, so that it adds only what the command lacks (a later `-std`, not an earlier one) | the compiler arguments those features need, in order | before the file is compiled or parsed |
 
 - A rule MUST report findings only for features it declares, and SHOULD report only those it is asked for. <a id="MC4-2-2"></a><sup>MC4-2-2</sup>
 - A rule decides whether code uses a feature; it MUST NOT decide the level: that is the configuration's (MC1 §6). <a id="MC4-2-3"></a><sup>MC4-2-3</sup>

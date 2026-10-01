@@ -129,7 +129,8 @@ std::shared_ptr<const Plan> plan_for(std::string_view source_path);
 // The compiler arguments a file's enabled language features need (MC4 0.4.0): every language
 // provider, asked with the file's levels -- profiles, the package and file globs; not a module's or
 // a namespace's, since an option changes how the whole file is parsed. Enabled: not `deny`.
-std::vector<std::string> language_arguments(std::string_view source_path, const plugin::Target& target);
+std::vector<std::string> language_arguments(std::string_view source_path, const plugin::Target& target,
+                                            std::span<const std::string> arguments = {});
 
 struct Waiver {
     std::string feature;

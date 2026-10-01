@@ -1285,5 +1285,23 @@
   {
    "test": "modules/backend/clang/tests/test_backend.cpp: a file is parsed, and a module built, with the arguments its enabled language features need (MC4 0.4.0)"
   }
+ ],
+ "MC1-2.1-5": [
+  {
+   "test": "modules/features/tests/test_standard.cpp: a standard feature is named for its standard, off by default and names its paper; the rest are problems"
+  },
+  {
+   "script": "modules/plugin/sdk/src/catalog.cpp",
+   "contains": "(MC1-2.1-5)"
+  }
+ ],
+ "MC1-2.1-6": [
+  {
+   "test": "modules/features/tests/test_standard.cpp: a standard feature is named for its standard, off by default and names its paper; the rest are problems"
+  },
+  {
+   "script": "modules/plugin/sdk/src/catalog.cpp",
+   "contains": "(MC1-2.1-6)"
+  }
  ]
 }

@@ -2,6 +2,18 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-10-02 — MC1 0.5.0: newer standards' features
+
+- **MC1** 0.5.0 (§2.1): a sixth category, `standard`: a core-language feature of an ISO C++ standard
+  newer than the one a program is written in, adopted into that standard's working draft. Its id
+  starts with the standard, `c++26:` or `c++29:` (MC1-2.1-5; the id pattern of MC1-2-1 takes the
+  prefix); its `standard` field is the paper that adopted it (`P2996R13`); it is off unless enabled
+  -- its default level is `deny` -- and enabling it turns it on in the compiler through its
+  provider's language arguments (MC4 0.4.0) (MC1-2.1-6). Any provider may declare one. The schemas
+  (MC1 catalog, MC4 protocol, MC6 requests) take the category, the id prefix and a paper number.
+- **MC4** 0.4.0 (§2): a language provider is also given the file's command's own arguments, so that it
+  adds only what the command lacks (`plugins/lang`'s `-std=c++2c` where the command asks for less).
+
 ## 2026-10-02 — MC4 0.4.0: language providers
 
 - **MC4** 0.4.0 (§2): a fourth kind of extension point, **language**: for a file, its path, its

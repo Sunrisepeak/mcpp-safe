@@ -29,12 +29,13 @@ std::string_view to_string(Category category) {
     case Category::library: return "library";
     case Category::pitfall: return "pitfall";
     case Category::extension: return "extension";
+    case Category::standard: return "standard";
     }
     return "policy";
 }
 
 std::optional<Category> parse_category(std::string_view name) {
-    for (const auto c : { Category::iso, Category::policy, Category::library, Category::pitfall, Category::extension })
+    for (const auto c : { Category::iso, Category::policy, Category::library, Category::pitfall, Category::extension, Category::standard })
         if (to_string(c) == name) return c;
     return std::nullopt;
 }

@@ -116,7 +116,8 @@
                   "policy",
                   "library",
                   "pitfall",
-                  "extension"
+                  "extension",
+                  "standard"
                 ]
               },
               "level": {

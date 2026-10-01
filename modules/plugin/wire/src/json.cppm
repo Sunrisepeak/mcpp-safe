@@ -109,7 +109,7 @@ constexpr std::pair<fact::CastKind, std::string_view> CASTS[] {
 };
 constexpr std::pair<Level, std::string_view> LEVELS[] { { Level::allow, "allow" }, { Level::warn, "warn" }, { Level::deny, "deny" } };
 constexpr std::pair<Category, std::string_view> CATEGORIES[] {
-    { Category::iso, "iso" }, { Category::policy, "policy" }, { Category::library, "library" }, { Category::pitfall, "pitfall" }, { Category::extension, "extension" },
+    { Category::iso, "iso" }, { Category::policy, "policy" }, { Category::library, "library" }, { Category::pitfall, "pitfall" }, { Category::extension, "extension" }, { Category::standard, "standard" },
 };
 
 // msa::Kind by its MC3 name: to_string's words joined by -.

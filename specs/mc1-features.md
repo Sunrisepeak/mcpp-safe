@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC1 |
-| Version | 0.4.0 |
+| Version | 0.5.0 |
 | Status | Draft |
 | Schemas | [`schema/mc1-config.schema.json`](schema/mc1-config.schema.json), [`schema/mc1-catalog.schema.json`](schema/mc1-catalog.schema.json), [`schema/mc1-audit.schema.json`](schema/mc1-audit.schema.json) |
 | Examples | [`examples/mc1-config.toml`](examples/mc1-config.toml) with [`examples/mc1-config.json`](examples/mc1-config.json), [`examples/mc1-catalog.json`](examples/mc1-catalog.json), [`examples/mc1-audit.jsonl`](examples/mc1-audit.jsonl) |
@@ -27,9 +27,9 @@ A feature is described by these fields; the catalog (§10) lists them.
 
 | Field | Type | Requirement | Description |
 |---|---|---|---|
-| `id` | string | MUST | Unique among the features a compiler has. It matches `^(lib:\|ext:)?[a-z0-9]+([-.][a-z0-9]+)*$`. <a id="MC1-2-1"></a><sup>MC1-2-1</sup> |
-| `category` | string | MUST | One of `iso`, `policy`, `library`, `pitfall`, `extension` (§2.1). <a id="MC1-2-2"></a><sup>MC1-2-2</sup> |
-| `standard` | string | MUST for `iso` | The ISO C++ stable names of what it controls, space-separated, each in brackets: `[stmt.goto]`. Empty for the other categories. <a id="MC1-2-3"></a><sup>MC1-2-3</sup> |
+| `id` | string | MUST | Unique among the features a compiler has. It matches `^(lib:\|ext:\|c\+\+[0-9]{2}:)?[a-z0-9]+([-.][a-z0-9]+)*$`. <a id="MC1-2-1"></a><sup>MC1-2-1</sup> |
+| `category` | string | MUST | One of `iso`, `policy`, `library`, `pitfall`, `extension`, `standard` (§2.1). <a id="MC1-2-2"></a><sup>MC1-2-2</sup> |
+| `standard` | string | MUST for `iso` and `standard` | For `iso`, the ISO C++ stable names of what it controls, space-separated, each in brackets: `[stmt.goto]`; for `standard`, the WG21 paper that adopted it: `P2996R13`. Empty for the other categories. <a id="MC1-2-3"></a><sup>MC1-2-3</sup> |
 | `layer` | string | SHOULD | Where it is decided: `syntax`, `decl`, `expr`, `text`, `flow`. <a id="MC1-2-4"></a><sup>MC1-2-4</sup> |
 | `summary` | string | MUST | One line: what the feature is, and for an undefined-behavior source, why. <a id="MC1-2-5"></a><sup>MC1-2-5</sup> |
 | `fix` | string | SHOULD | What to write instead. <a id="MC1-2-6"></a><sup>MC1-2-6</sup> |
@@ -48,6 +48,7 @@ A feature is described by these fields; the catalog (§10) lists them.
 | `library` | Which library facilities a program may use. Its id MUST start with `lib:`: `lib:std.vector`. <a id="MC1-2.1-2"></a><sup>MC1-2.1-2</sup> | yes |
 | `pitfall` | A trap in a library or the language: `json-brace-init`. | yes |
 | `extension` | What MC++ adds to C++. Its id MUST start with `ext:`: `ext:cfg`. Code that uses an extension needs MC++. <a id="MC1-2.1-3"></a><sup>MC1-2.1-3</sup> | no |
+| `standard` (0.5.0) | A core-language feature of an ISO C++ standard newer than the one a program is written in, adopted into that standard's working draft: `c++26:reflection`. Its id MUST start with the standard's name and a colon, `c++26:` or `c++29:`. <a id="MC1-2.1-5"></a><sup>MC1-2.1-5</sup> It is off unless enabled: its default level MUST be `deny`, and enabling it (any level but `deny`) is what turns it on in the compiler, through its provider's language arguments (MC4 §2). <a id="MC1-2.1-6"></a><sup>MC1-2.1-6</sup> Any provider may declare one; it is not MC++'s alone, as `iso` is. | yes |
 
 Denying a feature of any category but `extension` MUST NOT change what a program that compiles means: a program that uses none of them is ISO C++, compiled by any conforming compiler. <a id="MC1-2.1-4"></a><sup>MC1-2.1-4</sup>
 
