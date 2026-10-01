@@ -30,6 +30,14 @@ public:
     virtual std::vector<Location> overriders(std::string_view id) const = 0;
     // What the file's own code declares and does (MC3 v0): computed once, on first use.
     virtual const fact::Facts& facts() const = 0;
+    // The kinds asked for, computed now (MC3-4.1-1): how a consumer gets a kind "every kind" leaves out,
+    // control flow (MC3-4.1-2). A backend that cannot says so with certainty `unknown`.
+    virtual fact::Facts facts(fact::Kinds kinds) const {
+        fact::Facts f;
+        f.collected = kinds;
+        f.certainty = Certainty::unknown;
+        return f;
+    }
 };
 
 // Cooperative cancellation: a long operation polls it and returns early when set.

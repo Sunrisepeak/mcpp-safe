@@ -37,15 +37,25 @@ namespace {
 
 // The function's own local variable or parameter `e` names, if it is one MC3's events follow: a
 // reference names another object, a static or thread_local one is not the function's.
+// The reference itself, under parentheses and no-op conversions: C++23's implicit move makes `return x;`
+// an xvalue of x (P2266), a NoOp cast between the read and the name.
+const cl::DeclRefExpr* ref_of(const cl::Expr* e) {
+    for (;;) {
+        e = e->IgnoreParens();
+        const auto* cast = llvm::dyn_cast<cl::ImplicitCastExpr>(e);
+        if (cast == nullptr || cast->getCastKind() != cl::CK_NoOp) break;
+        e = cast->getSubExpr();
+    }
+    return llvm::dyn_cast<cl::DeclRefExpr>(e);
+}
+
 const cl::VarDecl* local_of(const cl::Expr* e) {
     if (e == nullptr) return nullptr;
-    const auto* ref = llvm::dyn_cast<cl::DeclRefExpr>(e->IgnoreParens());
+    const auto* ref = ref_of(e);
     if (ref == nullptr) return nullptr;
     const auto* var = llvm::dyn_cast<cl::VarDecl>(ref->getDecl());
     return var != nullptr && var->hasLocalStorage() && !var->getType()->isReferenceType() ? var : nullptr;
 }
-
-const cl::DeclRefExpr* ref_of(const cl::Expr* e) { return llvm::dyn_cast<cl::DeclRefExpr>(e->IgnoreParens()); }
 
 // Whether a local starts indeterminate: no initializer and a scalar type, or a class whose trivial
 // default constructor leaves its members so (as facts' Initialization::indeterminate says it).

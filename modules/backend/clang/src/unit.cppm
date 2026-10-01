@@ -100,6 +100,7 @@ public:
 
     // MC3 v0 facts of the file's own code (defined in facts.cpp).
     const msa::fact::Facts& facts() const override;
+    msa::fact::Facts facts(msa::fact::Kinds kinds) const override;
     // The file's own declarations counted by Clang's kind names, straight off the AST (A0.4.3's
     // reference: a clang::RecursiveASTVisitor with Clang's defaults, not MSA's collector).
     std::map<std::string, std::int64_t> census() const;

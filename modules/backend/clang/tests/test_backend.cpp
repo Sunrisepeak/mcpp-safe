@@ -572,7 +572,9 @@ int main() {
         auto w = workspace_for(p);
         auto unit = w->parse(file, text, 1);
         expect(fatal(unit != nullptr));
-        const auto& flows = unit->facts().control_flow;
+        const auto facts = unit->facts(msa::fact::Kinds::control_flow);
+        expect(unit->facts().control_flow.empty()) << "every kind leaves control flow out (MC3-4.1-2)";
+        const auto& flows = facts.control_flow;
         const auto flow_of = [&](std::string_view name) {
             const auto it = std::ranges::find(flows, name, &msa::fact::Flow::function);
             return it == flows.end() ? nullptr : &*it;

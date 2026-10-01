@@ -942,4 +942,18 @@ const msa::fact::Facts& UnitImpl::facts() const {
     });
 }
 
+// UnitImpl::facts(kinds): the kinds asked for, collected now on the Workspace's Clang stack.
+msa::fact::Facts UnitImpl::facts(msa::fact::Kinds kinds) const {
+    return pool_->run([&]() {
+        std::lock_guard lock { mutex_ };
+        if (!ast_) {
+            msa::fact::Facts none;
+            none.collected = kinds;
+            none.certainty = msa::Certainty::unknown;
+            return none;
+        }
+        return facts_of(ast_->getASTContext(), &ast_->getPreprocessor(), kinds);
+    });
+}
+
 } // namespace mcxx::clang_backend

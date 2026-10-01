@@ -13,6 +13,7 @@ MC++ 第一方插件的实现。插件机制本身在 [`modules/plugin`](../modu
 | [`std`](std/README.md) | `mcxx-plugins-std` | `mcxx.plugins.policy`（mc++.policy） | 规则 | `raw-pointers`（policy）、`lib:std.vector`（library） |
 | | | `mcxx.plugins.cfg`（`[[mcpp::cfg(...)]]`） | 源码过滤器 | `ext:cfg`（extension） |
 | [`libs`](libs/README.md) | `mcxx-plugins-libs` | `mcxx.plugins.json`（nlohmann::json） | 规则 | `json-brace-init`（pitfall） |
+| [`flow`](flow/README.md) | `mcxx-plugins-flow` | `mcxx.plugins.flow`（控制流） | 分析 pass（MC4 0.5.0） | `uninitialized-read`、`missing-return`、`noreturn-returns`（pitfall，`flow` 层，profile `safe` 禁止） |
 | [`lang/cpp26`](lang/README.md) | `mcxx-plugins-lang-cpp26` | `mcxx.plugins.lang.cpp26`（C++26） | 语言（编译参数） | C++26 的 54 篇核心语言提案，`c++26:reflection` 等（standard） |
 | [`lang/cpp29`](lang/README.md) | `mcxx-plugins-lang-cpp29` | `mcxx.plugins.lang.cpp29`（C++29） | 语言（编译参数） | C++29 的 17 篇核心语言提案，`c++29:pack-indexing-template-names` 等（standard） |
 

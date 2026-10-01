@@ -1303,5 +1303,53 @@
    "script": "modules/plugin/sdk/src/catalog.cpp",
    "contains": "(MC1-2.1-6)"
   }
+ ],
+ "MC3-4.1-2": [
+  {
+   "script": "modules/msa/src/facts.cppm",
+   "contains": "Every kind but control_flow"
+  }
+ ],
+ "MC3-4.14-1": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"
+  },
+  {
+   "test": "modules/plugin/wire/tests/test_wire.cpp: every kind of fact survives a round trip"
+  }
+ ],
+ "MC3-4.14-2": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"
+  },
+  {
+   "test": "plugins/flow/tests/test_flow.cpp: a function whose flow is not known (a template's pattern) is not judged"
+  }
+ ],
+ "MC3-4.14-3": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"
+  }
+ ],
+ "MC3-4.14-4": [
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"
+  },
+  {
+   "test": "plugins/flow/tests/test_flow.cpp: written on every path, initialized, or its address taken: no finding"
+  }
+ ],
+ "MC3-4.14-5": [
+  {
+   "test": "plugins/flow/tests/test_flow.cpp: every path returns, throws or calls what does not return: no missing-return"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"
+  }
+ ],
+ "MC4-2-10": [
+  {
+   "test": "plugins/flow/tests/test_flow.cpp: a function whose flow is not known (a template's pattern) is not judged"
+  }
  ]
 }
