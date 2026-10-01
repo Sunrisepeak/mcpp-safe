@@ -29,7 +29,7 @@ constexpr std::string_view NEW_DELETE { "new-delete" }, REINTERPRET { "reinterpr
     PACK_EXPANSION { "c++11:variadic-templates" }, DECLTYPE { "c++11:decltype" }, NOEXCEPT_EXPR { "c++11:noexcept" },
     STATEMENT_EXPRESSION { "ext:gnu-statement-expression" }, LABEL_ADDRESS { "ext:gnu-address-of-label" },
     OMITTED_OPERAND { "ext:gnu-conditional-omitted-operand" }, BUILTIN { "ext:gnu-builtin" }, CASE_RANGE { "ext:gnu-case-range" },
-    TYPEOF { "ext:gnu-typeof" }, COMPOUND_LITERAL { "ext:gnu-compound-literal" };
+    TYPEOF { "ext:gnu-typeof" }, COMPOUND_LITERAL { "ext:gnu-compound-literal" }, REAL_IMAG { "ext:gnu-complex-parts" };
 
 constexpr FeatureInfo FEATURES[] {
     { NEW_DELETE, true, "a new or delete expression" },
@@ -77,6 +77,7 @@ constexpr FeatureInfo FEATURES[] {
     { CASE_RANGE, false, "case a ... b" },
     { TYPEOF, false, "__typeof__" },
     { COMPOUND_LITERAL, false, "(T){ ... }" },
+    { REAL_IMAG, false, "__real__, __imag__" },
 };
 
 } // namespace
@@ -96,6 +97,7 @@ std::string_view feature_of(const Expr& e) {
     case ExprKind::typeid_: return RTTI;
     case ExprKind::throw_: return EXCEPTIONS;
     case ExprKind::label_address: return LABEL_ADDRESS;
+    case ExprKind::unary: return e.op == Op::real_part || e.op == Op::imag_part ? REAL_IMAG : std::string_view {};
     case ExprKind::lambda: return LAMBDA;
     case ExprKind::requires_: return CONCEPTS;
     case ExprKind::fold: return FOLD;

@@ -209,6 +209,11 @@ Resolver::Nature Resolver::nature_of(std::string_view written, std::size_t k) {
         found = in_scope(*scope, std::string { rest.substr(at + 2) }, t_.size());
     }
     if (!found) return n;
+    // A parameter the outline read from a lone type (`void f(index_sequence<Is...>)`) has no name, whatever it is called.
+    if (found->declaration >= 0) {
+        const auto& d = ds_[static_cast<std::size_t>(found->declaration)];
+        if (d.kind == msa::Kind::parameter && d.specifiers_end <= d.specifiers_begin && !d.capture) return n;
+    }
     n.found = true;
     n.kind = found->kind;
     if (found->declaration >= 0) {

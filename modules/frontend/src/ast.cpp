@@ -14,14 +14,14 @@ std::string_view lookup(const std::array<std::string_view, N>& names, E e) {
     return i < N ? names[i] : std::string_view { "?" };
 }
 
-constexpr std::array<std::string_view, 56> OPS {
+constexpr std::array<std::string_view, 58> OPS {
     "", "+", "-", "!", "~", "*", "&", "++", "--", "++", "--",
     "*", "/", "%", "+", "-", "<<", ">>", "<", ">", "<=", ">=", "<=>", "==", "!=", "&", "^", "|", "&&", "||", ",", ".*", "->*",
     "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|=",
     "static_cast", "dynamic_cast", "const_cast", "reinterpret_cast",
-    "()", "[]", "new", "delete", "new[]", "delete[]", "co_await", "->",
+    "()", "[]", "new", "delete", "new[]", "delete[]", "co_await", "->", "__real__", "__imag__",
 };
-static_assert(OPS.size() == static_cast<std::size_t>(Op::arrow) + 1);
+static_assert(OPS.size() == static_cast<std::size_t>(Op::imag_part) + 1);
 
 constexpr std::array<std::string_view, 24> BUILTINS {
     "", "void", "bool", "char", "signed char", "unsigned char", "wchar_t", "char8_t", "char16_t", "char32_t", "short", "unsigned short", "int",

@@ -41,7 +41,7 @@ inline bool is_type_keyword(std::string_view w) {
     static constexpr std::string_view WORDS[] { "void", "bool", "char", "char8_t", "char16_t", "char32_t", "wchar_t", "short", "int", "long", "signed",
                                                 "unsigned", "float", "double", "__int128", "__int128_t", "__uint128_t", "_Float16", "__fp16", "__bf16",
                                                 "_Complex", "_Bool", "__signed", "__signed__", "__unsigned", "_Float32", "_Float64", "_Float128",
-                                                "__float128", "_Float32x", "_Float64x", "_Float128x", "__ibm128" };
+                                                "__float128", "_Float32x", "_Float64x", "_Float128x", "__ibm128", "_BitInt", "_ExtInt" };
     return std::ranges::contains(WORDS, w);
 }
 
@@ -98,7 +98,10 @@ public:
     void set_outline(const std::unordered_map<std::uint32_t, std::int32_t>* outline) { outline_ = outline; }
     // Names the part's declaration makes visible: a function's parameters, a template's parameters.
     void declare_entry(std::string_view name, NameClass what, bool dependent = false);
-    void begin_part(std::int32_t declaration, std::size_t from, std::size_t to);
+    // `open_ended`: the outline's end of the part is a guess (an initializer it cut at a comma inside template
+    // arguments): the parse reads where the grammar ends; position() says where that was.
+    void begin_part(std::int32_t declaration, std::size_t from, std::size_t to, bool open_ended = false);
+    std::size_t position_after() const { return i_; }
     // Roots: what a part holds.
     StmtId read_function_body();
     StmtId read_static_assert();
@@ -154,7 +157,7 @@ private:
     const bool tracing_ { base::trace::enabled(TRACE, base::trace::Level::debug) };
     const std::unordered_map<std::uint32_t, std::int32_t>* outline_ { nullptr };
 
-    std::size_t i_ { 0 }, end_ { 0 }, begin_ { 0 };
+    std::size_t i_ { 0 }, end_ { 0 }, begin_ { 0 }, guess_ { 0 };   // guess_: where the outline said an open-ended part ends
     Kind split_ { Kind::unknown };        // a `>` taken off a `>>`, `>=`, `>>=`: what is left of the token at split_at_
     std::size_t split_at_ { NPOS };
     bool failed_ { false };
@@ -294,6 +297,7 @@ private:
     ExprId throw_expression();
     bool try_cast(std::uint32_t first, ExprId& out);
     static int precedence(Kind k, Op* op);
+    static bool is_builtin_name(std::string_view w);
     bool at_binary_operator(Op* op, int* prec) const;
     ExprId member_access(ExprId lhs, std::uint32_t first);
 
@@ -316,6 +320,7 @@ private:
     void function_qualifiers(TypeId fn, std::vector<std::uint32_t>* contracts);
     bool starts_nested_declarator() const;
     bool starts_parameter_clause(Mode mode, Site site);
+    bool every_element_reads_as_parameter(std::size_t open);
     std::uint32_t cv_flags();
     void skip_attributes();
     void skip_attributes(std::uint32_t& first, std::uint32_t& last);

@@ -334,7 +334,10 @@ void BodyParser::declare_name(std::size_t token, NameClass what, bool dependent)
     if (token < t_.size()) scope_.push_back({ t_[token].spelling, what, dependent });
 }
 
-void BodyParser::declare_entry(std::string_view name, NameClass what, bool dependent) { scope_.push_back({ name, what, dependent }); }
+void BodyParser::declare_entry(std::string_view name, NameClass what, bool dependent) {
+    if (tracing_) base::trace::debug(TRACE, "a part sees {} `{}`{}", what == NameClass::value ? "a value" : what == NameClass::type ? "a type" : "a template", name, dependent ? " (dependent)" : "");
+    scope_.push_back({ name, what, dependent });
+}
 void BodyParser::declare(std::uint32_t name_token, NameClass what) { declare_name(name_token, what); }
 void BodyParser::pop_scope() {
     if (scope_marks_.empty()) return;
@@ -364,6 +367,10 @@ NameInfo BodyParser::classify(std::string_view written, std::size_t at, bool) {
         }
     }
     const NameAnswer a { oracle_.classify({ written, static_cast<std::uint32_t>(at) }) };
+    if (tracing_ && a.what != NameClass::unknown) {
+        const auto& where = t_[std::min(at, t_.size() - 1)].at;
+        base::trace::debug(TRACE, "{}:{} the oracle says `{}` is {}", where.line, where.column, written, static_cast<int>(a.what));
+    }
     if (a.what != NameClass::unknown) {
         info.what = a.what;
         info.basis = a.basis;
@@ -375,11 +382,12 @@ NameInfo BodyParser::classify_name(NameId n, std::size_t at, bool record) { retu
 
 // ---- parts ----
 
-void BodyParser::begin_part(std::int32_t declaration, std::size_t from, std::size_t to) {
+void BodyParser::begin_part(std::int32_t declaration, std::size_t from, std::size_t to, bool open_ended) {
     owner_ = declaration;
     i_ = from;
     begin_ = from;
-    end_ = std::min(to, t_.size());
+    guess_ = open_ended ? std::min(to, t_.size()) : 0;
+    end_ = open_ended ? t_.size() : std::min(to, t_.size());
     split_at_ = NPOS;
     failed_ = false;
     part_failed_ = false;
@@ -387,7 +395,9 @@ void BodyParser::begin_part(std::int32_t declaration, std::size_t from, std::siz
     no_gt_ = 0;
     fold_ok_ = false;
     depth_ = 0;
+    scope_.clear();   // what the last part declared is not visible in this one
     scope_marks_.clear();
+    class_names_.clear();
 }
 
 void BodyParser::finish_part() {
@@ -395,10 +405,11 @@ void BodyParser::finish_part() {
         report_failure();
         failed_ = false;
     }
-    if (i_ < end_) {
+    // An open-ended part ends where the grammar does; what the outline guessed shorter was left unread.
+    if (guess_ != 0 ? i_ < guess_ : i_ < end_) {
         part_failed_ = true;
         diagnostic(std::format("unexpected `{}` after the construct", t_[i_].spelling), i_);
-        i_ = end_;
+        i_ = guess_ != 0 ? guess_ : end_;
     }
 }
 
@@ -475,17 +486,55 @@ using namespace bodies;
 
 namespace {
 
-// The kind a template parameter has, from the tokens before its name (the outline records no more).
-NameClass template_parameter_class(const Syntax& syntax, const Declaration& d) {
+// The kind a template parameter has, from the tokens before its name (the outline records no more): `class T` and
+// `typename T` are types, `template <...> class T` a template, a name before the parameter's is the concept that
+// constrains a type (`std::integral T`, `C<U> T`) or the type of a value (`std::size_t N`): the concept when the
+// oracle says so, or when it has arguments (a value of a class type is rare), else a value.
+NameClass template_parameter_class(const Syntax& syntax, const Declaration& d, NameOracle& oracle) {
     const auto& t = syntax.pp.tokens;
-    std::size_t k { d.name_token };
-    if (k >= 1 && t[k - 1].kind == Kind::ellipsis) --k;
-    if (k >= 1 && t[k - 1].kind == Kind::raw_identifier && (t[k - 1].spelling == "class" || t[k - 1].spelling == "typename")) {
-        // `template <...> class T` is a template template parameter.
-        if (k >= 2 && t[k - 2].kind == Kind::greater) return NameClass::class_template;
-        return NameClass::type;
+    std::size_t name { d.name_token };
+    if (name >= 1 && t[name - 1].kind == Kind::ellipsis) --name;
+    // Back to the start of this parameter: the `<` that opens the list, or the `,` before it, at its own depth.
+    std::size_t start { name };
+    int depth { 0 };
+    while (start > 0) {
+        const Kind k { t[start - 1].kind };
+        if (k == Kind::greater) ++depth;
+        else if (k == Kind::greatergreater) depth += 2;
+        else if (k == Kind::less) {
+            if (depth == 0) break;
+            --depth;
+        } else if (k == Kind::comma && depth == 0) break;
+        else if (k == Kind::r_paren || k == Kind::r_square) {
+            int nested { 0 };
+            while (start > 0) {
+                const Kind c { t[start - 1].kind };
+                if (c == Kind::r_paren || c == Kind::r_square) ++nested;
+                else if ((c == Kind::l_paren || c == Kind::l_square) && --nested == 0) break;
+                --start;
+            }
+        }
+        --start;
     }
-    return NameClass::value;
+    if (start >= name) return NameClass::value;
+    const std::string_view first { t[start].spelling };
+    if (first == "template") return NameClass::class_template;
+    if (first == "class" || first == "typename") return NameClass::type;
+    static constexpr std::string_view VALUE_WORDS[] { "auto", "decltype", "const", "volatile", "signed", "unsigned", "int", "long", "short", "char", "bool",
+                                                      "float", "double", "void", "wchar_t", "char8_t", "char16_t", "char32_t", "constexpr" };
+    if (std::ranges::contains(VALUE_WORDS, first)) return NameClass::value;
+    // A (qualified) name, perhaps with arguments: a constraint when it is a concept, or has arguments.
+    std::string text;
+    bool arguments { false };
+    for (std::size_t k { start }; k < name; ++k) {
+        if (t[k].kind == Kind::less) {
+            arguments = true;
+            break;
+        }
+        if (t[k].kind == Kind::raw_identifier || t[k].kind == Kind::coloncolon) text += t[k].spelling;
+    }
+    if (!text.empty() && oracle.classify({ text, static_cast<std::uint32_t>(start) }).what == NameClass::concept_) return NameClass::type;
+    return arguments ? NameClass::type : NameClass::value;
 }
 
 class Driver {
@@ -521,18 +570,27 @@ public:
             // What a body holds that the outline read as a part of its own (a local class's method) was read with it.
             if (part.begin < covered) continue;
             if (options_.roots_only_bodies && part.role != Part::Role::function_body) continue;
+            const bool open_ended { part.role == Part::Role::initializer || part.role == Part::Role::default_argument ||
+                                    part.role == Part::Role::enumerator_value || part.role == Part::Role::bit_width };
             covered = part.end;
-            parser.begin_part(part.declaration, part.begin, part.end);
+            parser.begin_part(part.declaration, part.begin, part.end, open_ended);
             // What is visible in it: the template parameters in scope, and the function's parameters.
             for (const auto p : template_parameters) {
                 const auto& d = ds[static_cast<std::size_t>(p)];
-                if (d.name_token < part.begin && (d.visible_end == 0 || part.begin <= d.visible_end))
-                    parser.declare_entry(d.name, template_parameter_class(syntax_, d), true);
+                if (d.name_token >= part.begin) continue;
+                // Visible to the end of its template; when the outline did not say where that is, within the scope it was declared in.
+                bool visible { d.visible_end != 0 && part.begin <= d.visible_end };
+                if (d.visible_end == 0) {
+                    const std::int32_t scope { d.parent };
+                    visible = scope < 0 || (part.begin >= ds[static_cast<std::size_t>(scope)].first_token && part.begin <= ds[static_cast<std::size_t>(scope)].last_token);
+                }
+                if (visible) parser.declare_entry(d.name, template_parameter_class(syntax_, d, *oracle), true);
             }
             if (part.declaration >= 0)
                 for (const auto p : parameters[static_cast<std::size_t>(part.declaration)]) {
                     const auto& d = ds[static_cast<std::size_t>(p)];
-                    if (!d.name.empty()) parser.declare_entry(d.name, NameClass::value);
+                    // The outline reads a lone type (`void f(index_sequence<Is...>)`) as a parameter's name: no type written, no name.
+                    if (!d.name.empty() && d.specifiers_end > d.specifiers_begin) parser.declare_entry(d.name, NameClass::value);
                 }
             Root root;
             root.declaration = part.declaration;
@@ -551,6 +609,11 @@ public:
             case Part::Role::contract: root.role = Root::Role::contract; root.node = parser.read_contract_part().handle(); break;
             }
             parser.finish_part();
+            if (open_ended) {
+                // Where the grammar ended, which the outline's guess may have cut short (or run past).
+                root.last = static_cast<std::uint32_t>(std::max<std::size_t>(parser.position_after(), root.first + 1) - 1);
+                covered = std::max<std::uint32_t>(covered, root.last + 1);
+            }
             ++tree_.stats.parts;
             if (parser.failed_part()) ++tree_.stats.failed;
             tree_.roots.push_back(root);

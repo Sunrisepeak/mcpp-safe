@@ -268,6 +268,7 @@ StmtId BodyParser::asm_statement(std::uint32_t first) {
 
 // A condition: a declaration with an initializer (`T x = e`, `auto [a, b] = e`) or an expression. The cursor at its start.
 bool BodyParser::condition(ExprId& expr, LocalId& local) {
+    skip_attributes();   // `if ([[maybe_unused]] auto* p = f())`
     if (try_condition_declaration(local)) return true;
     if (failed_) return false;
     Nested nest { *this };

@@ -40,7 +40,7 @@ struct Builtins {
             if (w == "__uint128_t") ++unsigned_;
         } else if (w == "_Complex") slot = &complex;
         else if (w == "_Float16" || w == "__fp16" || w == "__bf16" || w == "_Float32" || w == "_Float64" || w == "_Float128" || w == "__float128" ||
-                 w == "_Float32x" || w == "_Float64x" || w == "_Float128x" || w == "__ibm128")
+                 w == "_Float32x" || w == "_Float64x" || w == "_Float128x" || w == "__ibm128" || w == "_BitInt" || w == "_ExtInt")
             slot = &other;
         if (slot == nullptr) return false;
         ++*slot;
@@ -299,6 +299,7 @@ DeclSpec BodyParser::decl_specifiers(Site site) {
             if (type_first == NONE) type_first = here();
             b.add(w, here());
             next();
+            if ((w == "_BitInt" || w == "_ExtInt") && is(Kind::l_paren)) skip_balanced();   // _BitInt(N): the width is its own
             continue;
         }
         if (b.any()) break;
@@ -624,12 +625,17 @@ bool BodyParser::starts_parameter_clause(Mode mode, Site site) {
             return false;
         // A name: a type when something knows it; a value likewise; unknown: two names in a row (`Bar b`)
         // read as a parameter, a name followed by `,` `)` `.` `->` an operator as an expression.
-        const NameInfo info { classify(w, at) };
+        // The whole qualified name is what is classified (`_Ops::f` is not `_Ops`).
+        std::string written { w };
+        for (std::size_t q { at + 1 }; q + 1 < end_ && t_[q].kind == Kind::coloncolon && t_[q + 1].kind == Kind::raw_identifier; q += 2)
+            written += "::" + std::string { t_[q + 1].spelling };
+        const NameInfo info { classify(written, at) };
+        if (info.dependent) return false;   // a dependent qualified name is a value without `typename`
         if (info.what == NameClass::type || type_template(info.what)) {
             // `T x(U(y))` ...: with a type known the parentheses hold a parameter, unless a value follows it
-            // as an initializer would be: `Foo f(Bar{})`, `Foo f(Bar(1))`.
+            // as an initializer would be: `Foo f(Bar{})`, `Foo f(Bar(1))`; and every element must be one.
             if (is(Kind::l_brace, k + 1)) return false;
-            return true;
+            return every_element_reads_as_parameter(i_);
         }
         if (info.what == NameClass::value) return false;
         // Unknown: look at what follows the name (qualified names and template-ids skipped by token).
@@ -652,6 +658,60 @@ bool BodyParser::starts_parameter_clause(Mode mode, Site site) {
         return false;
     }
     return false;
+}
+
+// The `(` at `open`: whether each of its comma-separated elements could be a parameter -- begins with a type the scopes or
+// lookup know, a type keyword, or a name and a name, `*` or `&` -- rather than `std::move(x)`, `a + b`, a literal.
+bool BodyParser::every_element_reads_as_parameter(std::size_t open) {
+    const std::size_t close { balanced(open) - 1 };
+    std::size_t k { open + 1 };
+    while (k < close) {
+        // the element's tokens up to a top-level comma
+        std::size_t e { k };
+        while (e < close && t_[e].kind != Kind::comma) {
+            if (t_[e].kind == Kind::l_paren || t_[e].kind == Kind::l_square || t_[e].kind == Kind::l_brace) e = balanced(e);
+            else if (t_[e].kind == Kind::less && e > k && t_[e - 1].kind == Kind::raw_identifier) {
+                const std::size_t after { angle_end(e) };
+                e = after == e ? e + 1 : after;
+            } else ++e;
+        }
+        if (e == k) return false;
+        if (t_[k].kind != Kind::raw_identifier && t_[k].kind != Kind::coloncolon) return false;
+        const std::string_view w { t_[k].spelling };
+        if (!(is_type_keyword(w) || w == "const" || w == "volatile" || w == "typename" || w == "struct" || w == "class" || w == "enum" || w == "decltype" || w == "auto")) {
+            // a name: the qualified name, classified whole
+            std::string written;
+            std::size_t q { k };
+            if (t_[q].kind == Kind::coloncolon) {
+                written = "::";
+                ++q;
+            }
+            while (q < e && t_[q].kind == Kind::raw_identifier) {
+                written += t_[q].spelling;
+                ++q;
+                if (q < e && t_[q].kind == Kind::less) {
+                    const std::size_t after { angle_end(q) };
+                    if (after == q) break;
+                    q = after;
+                }
+                if (q + 1 < e && t_[q].kind == Kind::coloncolon && t_[q + 1].kind == Kind::raw_identifier) {
+                    written += "::";
+                    ++q;
+                } else break;
+            }
+            const NameInfo info { classify(written, k) };
+            const bool known_type { info.what == NameClass::type || type_template(info.what) };
+            if (info.what == NameClass::value || info.dependent) return false;
+            if (!known_type) {
+                // unknown: followed by a name, a pointer or reference, a pack
+                if (q >= e) return false;
+                const Kind f { t_[q].kind };
+                if (!(f == Kind::raw_identifier || f == Kind::star || f == Kind::amp || f == Kind::ampamp || f == Kind::ellipsis)) return false;
+            }
+        }
+        k = e + 1;
+    }
+    return true;
 }
 
 TypeId BodyParser::function_type(TypeId return_type, Span32 params, bool variadic, std::uint32_t first) {
@@ -931,10 +991,6 @@ Declarator BodyParser::declarator(TypeId base, Mode mode, Site site) {
             d.name_token = tree_.components[tree_.names[d.name.index].components.begin + tree_.names[d.name.index].components.count - 1].token;
             d.ok = true;
         }
-    } else if (mode == Mode::abstract && is(Kind::ellipsis) && !is(Kind::l_square, 1)) {
-        // an unnamed pack: `T...`
-        next();
-        d.pack = true;
     }
     skip_attributes();
     suffixes(type, mode, site, &d);
@@ -1034,7 +1090,9 @@ Handle BodyParser::type_or_expression_biased(bool unknown_is_expression) {
             if (last.ends_with("_v") || last == "value") as_type = false;
             else if (last.ends_with("_t") && has_arguments) as_type = true;
             else if (unknown_is_expression && (follower == Kind::r_paren || follower == Kind::comma) && written.find("::") == std::string::npos && !has_arguments) as_type = false;
-            else if (follower == Kind::raw_identifier && !reserved_operator_word(t_[follower_at].spelling)) as_type = true;   // `T x`: a name and a name
+            else if (follower == Kind::raw_identifier && (!reserved_operator_word(t_[follower_at].spelling) || t_[follower_at].spelling == "const" ||
+                                                          t_[follower_at].spelling == "volatile"))
+                as_type = true;   // `T x`, `T const`: a name and a name
             else if (follower == Kind::l_paren && !unknown_is_expression) {
                 // `R(Args)`: a function type when it reads as a type that ends the argument; `f(x)` otherwise.
                 const Mark m { mark() };

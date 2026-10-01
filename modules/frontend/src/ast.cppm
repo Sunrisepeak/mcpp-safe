@@ -81,6 +81,8 @@ enum class Op : std::uint8_t {
     static_cast_, dynamic_cast_, const_cast_, reinterpret_cast_,
     // operator functions that are not one of the above (`operator()`, `operator[]`, `operator new`, ...)
     call, subscript, new_, delete_, new_array, delete_array, co_await_, arrow,
+    // GNU unary
+    real_part, imag_part,
 };
 std::string_view spelling(Op op);
 

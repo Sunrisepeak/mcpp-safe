@@ -10,10 +10,17 @@ namespace mcxx::frontend::bodies {
 
 namespace {
 
-// Tokens that end an expression where a `<...>` that came before could not have been a comparison.
-bool ends_expression(Kind k) {
-    return k == Kind::r_paren || k == Kind::r_square || k == Kind::r_brace || k == Kind::comma || k == Kind::semi || k == Kind::colon ||
-           k == Kind::question || k == Kind::unknown;
+// Tokens that cannot begin an operand: after `a < b >` any of them means the `<...>` was a template-argument list,
+// since a comparison `(a < b) > x` goes on with an operand.
+bool cannot_start_operand(Kind k) {
+    switch (k) {
+    case Kind::raw_identifier: case Kind::numeric_constant: case Kind::char_constant: case Kind::wide_char_constant: case Kind::utf8_char_constant:
+    case Kind::utf16_char_constant: case Kind::utf32_char_constant: case Kind::string_literal: case Kind::wide_string_literal: case Kind::utf8_string_literal:
+    case Kind::utf16_string_literal: case Kind::utf32_string_literal: case Kind::l_square: case Kind::plus: case Kind::minus: case Kind::star: case Kind::amp:
+    case Kind::exclaim: case Kind::tilde: case Kind::plusplus: case Kind::minusminus: case Kind::coloncolon: case Kind::caret:
+        return false;
+    default: return true;
+    }
 }
 
 Resolution resolution_of(NameClass c) {
@@ -181,8 +188,9 @@ bool BodyParser::name_component(NameComponent& c, NameUse use, bool first, bool 
             prefix.what = NameClass::unknown;   // the object's class is not known here
         } else {
             prefix = classify(written, c.token);
-            if (prefix.dependent && !after_template_kw) {
+            if (prefix.dependent && !after_template_kw && !template_like(prefix.what)) {
                 // `T::f<` without `template` is a comparison.
+                if (tracing_) base::trace::debug(TRACE, "dependent `{}` followed by `<`", written);
                 take = false;
                 if (dependent != nullptr) *dependent = true;
                 note(Ambiguity::template_arguments, Resolution::less_than, ast::Basis::syntax, less_at);
@@ -214,7 +222,9 @@ bool BodyParser::name_component(NameComponent& c, NameUse use, bool first, bool 
                 if (good) {
                     const Kind follower { kind() };
                     const bool typed { use == NameUse::type };
-                    good = typed || follower == Kind::l_paren || follower == Kind::l_brace || follower == Kind::coloncolon || ends_expression(follower);
+                    good = typed || follower == Kind::l_paren || follower == Kind::l_brace || follower == Kind::coloncolon || cannot_start_operand(follower);
+                    // Closed by half of a `>>` or `>=` outside any argument list: the operator is the expression's, `a < b >> c`.
+                    if (good && !typed && split_at_ == i_ && no_gt_ == 0) good = false;
                     if (!good) ++tree_.stats.rewinds;
                 }
                 if (!good) {

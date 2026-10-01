@@ -104,6 +104,32 @@ bool assignment_operator(Kind k, Op* op) {
 
 } // namespace
 
+// A name the compiler gives meaning to, whose arguments may be types: `__builtin_*` and Clang's type-trait keywords. A
+// library's own `__is_x(...)` is a function like any other (libc++'s are).
+bool BodyParser::is_builtin_name(std::string_view w) {
+    if (w.starts_with("__builtin_")) return true;
+    static constexpr std::string_view TRAITS[] {
+        "__has_nothrow_assign", "__has_nothrow_move_assign", "__has_nothrow_copy", "__has_nothrow_constructor", "__has_trivial_assign",
+        "__has_trivial_move_assign", "__has_trivial_copy", "__has_trivial_constructor", "__has_trivial_move_constructor", "__has_trivial_destructor",
+        "__has_virtual_destructor", "__has_unique_object_representations", "__is_abstract", "__is_aggregate", "__is_base_of", "__is_class",
+        "__is_convertible_to", "__is_empty", "__is_enum", "__is_final", "__is_literal", "__is_standard_layout", "__is_pod", "__is_polymorphic",
+        "__is_sealed", "__is_trivial", "__is_union", "__is_assignable", "__is_constructible", "__is_nothrow_assignable", "__is_nothrow_constructible",
+        "__is_trivially_assignable", "__is_trivially_constructible", "__is_trivially_copyable", "__is_lvalue_expr", "__is_rvalue_expr",
+        "__is_arithmetic", "__is_floating_point", "__is_integral", "__is_complete_type", "__is_void", "__is_array", "__is_function", "__is_reference",
+        "__is_lvalue_reference", "__is_rvalue_reference", "__is_fundamental", "__is_object", "__is_scalar", "__is_compound", "__is_pointer",
+        "__is_member_object_pointer", "__is_member_function_pointer", "__is_member_pointer", "__is_const", "__is_volatile", "__is_signed",
+        "__is_unsigned", "__is_same", "__is_same_as", "__is_convertible", "__is_nothrow_convertible", "__is_layout_compatible",
+        "__is_pointer_interconvertible_base_of", "__is_bounded_array", "__is_unbounded_array", "__is_trivially_relocatable", "__is_nothrow_relocatable",
+        "__is_referenceable", "__is_scoped_enum", "__is_implicit_lifetime", "__is_virtual_base_of", "__is_destructible", "__is_nothrow_destructible",
+        "__is_trivially_destructible", "__is_core_convertible", "__underlying_type", "__reference_binds_to_temporary",
+        "__reference_constructs_from_temporary", "__reference_converts_from_temporary", "__array_rank", "__array_extent", "__remove_cv",
+        "__remove_const", "__remove_volatile", "__remove_reference_t", "__remove_pointer", "__remove_cvref", "__remove_extent", "__remove_all_extents",
+        "__add_pointer", "__add_lvalue_reference", "__add_rvalue_reference", "__decay", "__make_signed", "__make_unsigned", "__type_pack_element",
+        "__integer_pack", "__datasizeof", "__builtin_va_arg", "__null",
+    };
+    return std::ranges::contains(TRAITS, w);
+}
+
 int BodyParser::precedence(Kind k, Op* op) {
     switch (k) {
     case Kind::periodstar: *op = Op::member_pointer_dot; return 14;
@@ -325,6 +351,13 @@ bool BodyParser::try_cast(std::uint32_t first, ExprId& out) {
             return false;
         }
     }
+    // `(T *)`, `(T &)`, `(T [3])`: no expression reads that way, so it is a type whatever T is.
+    switch (tree_.types[type.index].kind) {
+    case TypeKind::pointer: case TypeKind::lvalue_ref: case TypeKind::rvalue_ref: case TypeKind::member_pointer: case TypeKind::array: case TypeKind::function:
+        certain = true;
+        break;
+    default: break;
+    }
     // What follows decides when the type was only a name that may be one: an operand that cannot continue a
     // binary expression makes it a cast; `+ - * &` could be either.
     const Kind follower { kind() };
@@ -395,6 +428,10 @@ ExprId BodyParser::unary_expression() {
     case Kind::tilde: op = Op::complement; break;
     case Kind::star: op = Op::deref; break;
     case Kind::amp: op = Op::address_of; break;
+    case Kind::raw_identifier:
+        if (word("__real__") || word("__real")) op = Op::real_part;
+        else if (word("__imag__") || word("__imag")) op = Op::imag_part;
+        break;
     case Kind::ampamp:
         if (ident(1)) {   // GNU: &&label
             next();
@@ -794,7 +831,7 @@ ExprId BodyParser::functional_cast(TypeId type, std::uint32_t first) {
 
 ExprId BodyParser::name_expression() {
     const std::uint32_t first { here() };
-    if (ident() && spelled(first).starts_with("__") && is(Kind::l_paren, 1) && spelled(first) != "__func__") return builtin_expression();
+    if (ident() && is(Kind::l_paren, 1) && is_builtin_name(spelled(first))) return builtin_expression();
     bool dependent { false };
     const NameId n { qualified_name(NameUse::expression, &dependent, nullptr) };
     if (failed_ || !n) {
