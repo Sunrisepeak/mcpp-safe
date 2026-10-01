@@ -308,6 +308,11 @@ jobs:
           - os: macos-14
             target: aarch64-macos
             exe: mcxx
+          # macOS 27's SDK (a preview image): its .tbd stubs list arm64e.x1, which only an ld64.lld
+          # with release/23.x's backport of llvm/llvm-project#222721 reads (E-XIM-4).
+          - os: xcode-27
+            target: aarch64-macos
+            exe: mcxx
     defaults:
       run:
         shell: bash
@@ -337,12 +342,32 @@ jobs:
         with:
           name: mcxx-${{ matrix.target }}
           path: mcxx
+      # E-XIM-4: on macOS the payload's ld64.lld is speak-agent/llvm-macos27-lab's, built from
+      # release/23.x at 21ef2ddb8060 (no LLVM release has the arm64e.x1 backport yet), by its digest.
+      - name: An ld64.lld that reads Xcode 27's SDK (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          gh release download toolchain-21ef2ddb8060 -R speak-agent/llvm-macos27-lab -p llvm-23.1.2-x1-macos-arm64.tar.xz
+          echo "40b9fa16be5628a5d277824f961faa33dadbf84d9520cff9fe2aeb9b0b217ebf  llvm-23.1.2-x1-macos-arm64.tar.xz" | shasum -a 256 -c
+          mkdir -p lab && tar -xJf llvm-23.1.2-x1-macos-arm64.tar.xz -C lab
+          lld=$(find lab -path '*/bin/lld' -type f | head -1)
+          "$lld" -flavor darwin --version
+          echo "LD64=$PWD/$lld" >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: What the SDK lists (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          sw_vers || true
+          sdk=$(xcrun --sdk macosx --show-sdk-path); echo "$sdk"
+          grep -m2 -n 'arm64e' "$sdk/usr/lib/libSystem.tbd" || true
       - name: Installed through xlings, and mcpp builds with it
         run: |
           set -euo pipefail
           py=$(command -v python3 || command -v python)
           chmod +x "mcxx/${{ matrix.exe }}"
-          "$py" tools/checks/xlings.py --mcxx "mcxx/${{ matrix.exe }}" --headers mcxx/headers
+          "$py" tools/checks/xlings.py --mcxx "mcxx/${{ matrix.exe }}" --headers mcxx/headers ${LD64:+--ld64 "$LD64"}
           "$py" tools/checks/toolchain.py --work "$HOME/toolchain-check"
       # When the build fails: what the installed compiler sees -- its directory, configuration, resource
       # directory and default target, and the header search of a trivial compile (the path spelled as

@@ -14,3 +14,6 @@ mcpp.lock
 # xlings keeps a cache of each package index beside it
 index/*/.xlings-index-cache.json
 __pycache__/
+
+# Parallel agents' worktrees (plan section 0.5)
+.claude/

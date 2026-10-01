@@ -43,7 +43,7 @@ import pathlib
 import re
 import sys
 
-SKIP_DIRS = {"target", ".mcpp", ".deps", ".git", "forks", "node_modules"}
+SKIP_DIRS = {"target", ".mcpp", ".deps", ".git", "forks", "node_modules", ".claude"}   # .claude: agents' worktrees (plan §0.5)
 
 
 def walk(root: pathlib.Path, names):

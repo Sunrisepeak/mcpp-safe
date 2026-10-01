@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """E-XL-1: mcxx through xlings, from this repository's own xpkg -- installed, selected, run.
 
-    python3 tools/checks/xlings.py --mcxx MCXX --headers DIR [--xlings-home DIR]
+    python3 tools/checks/xlings.py --mcxx MCXX --headers DIR [--xlings-home DIR] [--ld64 LD64_LLD]
 
     MCXX       a built mcxx: the payload's program (there is no download yet, xpkgs/pkgs/m/mcxx.lua)
     --headers  Clang 23.1's builtin headers (llvm.clang-dev's llvm/clang/lib/Headers)
@@ -25,6 +25,9 @@ headers = str(pathlib.Path(arg("headers")).resolve())
 home = pathlib.Path(arg("xlings-home", pathlib.Path.home() / ".mcpp/registry")).resolve()
 xlings = str(home / ("bin/xlings.exe" if windows else "bin/xlings"))
 env = dict(os.environ, XLINGS_HOME=str(home), MCXX_BINARY=mcxx, MCXX_CLANG_HEADERS=headers)
+# macOS: an ld64.lld that reads Xcode 27's SDK (E-XIM-4), the payload's in place of the llvm one's.
+if arg("ld64"):
+    env["MCXX_LD64_LLD"] = str(pathlib.Path(arg("ld64")).absolute())
 failures = []
 
 

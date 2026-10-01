@@ -5,6 +5,7 @@
 --
 --   XLINGS_HOME=~/.mcpp/registry ~/.mcpp/registry/bin/xlings config --add-xpkg xpkgs/pkgs/m/mcxx.lua
 --   MCXX_BINARY=<a built mcxx> MCXX_CLANG_HEADERS=<llvm.clang-dev's llvm/clang/lib/Headers> \
+--       [MCXX_LD64_LLD=<an ld64.lld that reads Xcode 27's SDK, macOS>] \
 --       XLINGS_HOME=~/.mcpp/registry ~/.mcpp/registry/bin/xlings install mcxx:mcxx@0.1.0 -y
 --   mcpp build --toolchain llvm@23.1.0-mcxx          # in any mcpp project; mcpp is not changed
 --
@@ -127,7 +128,7 @@ local function llvm_registration(install_dir)
     return path.join(store, "xim-x-llvm", TOOLCHAIN_VERSION)
 end
 
-local function assemble_posix(dir, llvm, mcxx, headers, target, macos)
+local function assemble_posix(dir, llvm, mcxx, headers, target, macos, ld64)
     local script = table.concat({
         "set -e",
         "L=" .. q(llvm), "D=" .. q(dir),
@@ -147,6 +148,11 @@ local function assemble_posix(dir, llvm, mcxx, headers, target, macos)
         macos and ("cp " .. q(mcxx) .. " \"$D/bin/clang++\" && chmod 755 \"$D/bin/clang++\" && codesign -s - -f \"$D/bin/clang++\" && ln \"$D/bin/clang++\" \"$D/bin/clang\"")
               or ("for n in clang++ clang; do ln " .. q(mcxx) .. " \"$D/bin/$n\" 2>/dev/null || cp " .. q(mcxx) .. " \"$D/bin/$n\"; done"),
         "ln -s clang++ \"$D/bin/mcxx\"",
+        -- macOS: an ld64.lld that reads Xcode 27's SDK (MCXX_LD64_LLD; E-XIM-4), in place of the llvm
+        -- payload's. Its .tbd stubs list arm64e.x1, which LLVM 22.x and 23.1.2 reject ("could not load
+        -- TAPI file ... unknown target"); release/23.x's backport of llvm/llvm-project#222721 reads them.
+        (macos and ld64) and ("rm -f \"$D/bin/ld64.lld\" \"$D/bin/lld\" && cp " .. q(ld64) .. " \"$D/bin/lld\" && chmod 755 \"$D/bin/lld\""
+                              .. " && codesign -s - -f \"$D/bin/lld\" && ln -s lld \"$D/bin/ld64.lld\"") or "true",
         -- The llvm payload's configuration, with the target stated.
         "for n in clang++ clang; do { echo --target=" .. target .. "; cat \"$L/bin/$n.cfg\" 2>/dev/null; } > \"$D/bin/$n.cfg\"; done",
     }, "\n")
@@ -247,7 +253,9 @@ function install()
     if os.host() == "windows" then
         ok = assemble_windows(dir, llvm, mcxx, headers, target)
     else
-        ok = assemble_posix(dir, llvm, mcxx, headers, target, os.host() == "macosx")
+        local ld64 = os.getenv("MCXX_LD64_LLD")
+        if ld64 and ld64 ~= "" and not os.isfile(ld64) then raise("mcxx: MCXX_LD64_LLD names no file: " .. ld64) end
+        ok = assemble_posix(dir, llvm, mcxx, headers, target, os.host() == "macosx", ld64 ~= "" and ld64 or nil)
     end
     if not ok then
         raise("mcxx: assembling the payload failed")

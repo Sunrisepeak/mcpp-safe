@@ -105,6 +105,7 @@
 | **E-XIM-1** | 本仓库 `xpkgs/` | `mcxx` 工具链的 xpkg 文件（先 linux-x64） | M0 | V0.7 通过；`xlings install mcxx` 能用 | A0.5.3、A1.5.x |
 | **E-XIM-2** | 本仓库 `xpkgs/` | （仅当 V0.1 走退路时）glibc 形式的 `llvm-dev@23.1` xpkg 文件 | M0（有条件） | 同上 | V0.1 的退路 |
 | **E-XIM-3** | 本仓库 `xpkgs/` | `mcxx` 补齐其余平台 | MS 之前 | 各平台 CI 通过 | AS.4.x |
+| **E-XIM-4** | 本仓库 `xpkgs/`、speak-agent/llvm-clang-dev | macOS 27（Xcode 27 SDK）：SDK 的 `.tbd` 列出 `arm64e.x1`，LLVM 22.x、23.1.2 的 `ld64.lld` 拒绝（"unknown target"）。xpkg 在 macOS 上用 speak-agent/llvm-macos27-lab 的 `ld64.lld`（release/23.x 21ef2ddb8060，带 llvm/llvm-project#222721 的回移，按摘要固定）；llvm-clang-dev 23.1.0.10 让 LLVM 认识 `arm64e.x1`（同一回移的库部分）。LLVM 23.1.3 发布后换回正式版 | 2026-10-02 起 | `xcode-27` runner 上 mcpp 用 mcxx 构建并运行模块程序（CI 的 xpkg job） | AS.4.x、MX |
 | **E-XL-1** | 验证即可 | 通过本地索引仓库执行 `xlings install mcxx`、`xlings use mcxx` | M1 | 冒烟脚本 | A1.5.x |
 | **E-MCPP-1** | 不改 mcpp（V0.6）；退路是 speak-agent/mcpp fork | mcxx 作为工具链接入 mcpp | M0 | `mcpp build` 用 mcxx 编译 hello-modules 和 C-mcppls | A0.5.3 |
 | **E-MCPP-2** | 本仓库（不改 mcpp） | **按项目静态组合插件**：由 `mcxx compose` 生成一个临时 workspace（libmc++ + 项目声明的插件包），交给 mcpp 构建出本项目的 mcxx，并按插件集合的哈希缓存 | M0 | 插件集合不变时不重新链接 | A0.6.1 |
