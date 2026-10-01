@@ -9,6 +9,7 @@ module mcxx.frontend;
 
 import std;
 import mcxx.msa;
+import mcxx.base;
 import :resolver;
 
 namespace mcxx::frontend::resolution {
@@ -347,9 +348,13 @@ std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open
         have_args = true;
         std::vector<const Target*> viable;
         std::vector<std::pair<const Target*, bool>> fitting;   // each one the arguments fit, and whether it is a template
+        const bool tracing { base::trace::enabled("frontend.lookup", base::trace::Level::debug) };
         for (const auto& candidate : set) {
             const auto params { function_parameters(candidate) };
-            if (!params) return std::nullopt;   // an overload whose parameters are not known: no choice
+            if (!params) {   // an overload whose parameters are not known: no choice
+                if (tracing) base::trace::debug("frontend.lookup", "call of {}: an overload returning {} has no known parameters", candidate.qualified, candidate.type);
+                return std::nullopt;
+            }
             const auto templates { templates_of(candidate) };
             const bool variadic { std::ranges::any_of(*params, [](const std::string& p) { return p.find("...") != std::string::npos; }) ||
                                   (candidate.imported >= 0 && imported_.declarations[static_cast<std::size_t>(candidate.imported)].c_variadic) ||
@@ -364,6 +369,12 @@ std::optional<Typed> Resolver::call_typed(const Target& callee, std::size_t open
             bool fits { true };
             for (std::size_t i { 0 }; i < args.size() && i < params->size() && fits; ++i) fits = accepts((*params)[i], where, args[i], templates);
             if (fits) fitting.emplace_back(&candidate, !templates.empty());
+            if (tracing) {
+                std::string written;
+                for (const auto& p : *params) written += (written.empty() ? "" : ", ") + p;
+                base::trace::debug("frontend.lookup", "call of {}: the overload ({}) returning {} {} its {} arguments", candidate.qualified, written,
+                                   candidate.type, fits ? "takes" : "does not take", args.size());
+            }
         }
         // A function that is not a template is preferred to a template's specialization that fits as
         // well ([over.match.best]: path::generic_string() rather than its allocator's template).

@@ -182,6 +182,17 @@ if corpus:
     check(f"std's interface names what it takes from the C library under std ({len(renamed)} using-declarations): std::uint64_t, std::memcpy",
           renamed.get("std::uint64_t") == "uint64_t" and renamed.get("std::memcpy") == "memcpy" and "uint64_t" in reached and "std::vector" not in renamed,
           f"{std_ifc}: {[(k, v) for k, v in renamed.items()][:5]}")
+    # MC2 1.7.0: a class the unit declares and does not export, returned by an exported function, is
+    # reachable: mcpplibs.cmdline's App::option(std::string_view) returns its OptBuilder.
+    cmdline_bmi = database.parent / "pcm.cache/mcpplibs.cmdline.pcm"
+    cmdline_ifc = cmdline_bmi.with_suffix(".ifc")
+    if not cmdline_ifc.exists() and cmdline_bmi.exists():
+        cmdline_ifc = store / f"{hashlib.sha256(cmdline_bmi.read_bytes()).hexdigest()}.ifc"
+    cmdline_read = read_ifc(cmdline_ifc) if cmdline_ifc.exists() else None
+    builder = {d["qualified-name"] for d in (cmdline_read or {}).get("reachable", []) if "OptBuilder" in d["qualified-name"]}
+    check(f"what an exported function returns, unexported, is reachable: mcpplibs.cmdline's OptBuilder ({len(builder)} declarations)",
+          {"mcpplibs::cmdline::OptBuilder", "mcpplibs::cmdline::OptBuilder::help", "mcpplibs::cmdline::OptBuilder::takes_value"} <= builder,
+          f"{cmdline_ifc}: {sorted(builder)[:5]}")
     # MC2-3.1-1: what a unit's OWN exported using-declarations name. A unit that imports std sees std's
     # exported using-declarations in its context too; they are std's interface's to carry, not every
     # importer's (each C-mcppls interface once carried std's whole reachable set, about 4 MB).

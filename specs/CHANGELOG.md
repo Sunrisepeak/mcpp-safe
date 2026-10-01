@@ -2,6 +2,16 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-10-01 — MC2 1.7.0: what an exported function returns
+
+- **MC2** 1.7.0 (§3.1): a class or enumeration the unit declares and does not export, named by the
+  return type or a parameter type of an exported function or of a public member function of an
+  exported class (references and pointers taken off), is among the reachable declarations, with its
+  members: [module.reach]/3 makes it reachable, and an importer's call on what such a function
+  returns is a member access on it. `mcpplibs.cmdline`'s `App::option(std::string_view)` returns its
+  unexported `OptBuilder`; `app.option("x").takes_value().help("...")`, written hundreds of times in
+  C-mcppls, named nothing an importer knew. Nothing new to read: a 1.6 reader reads it.
+
 ## 2026-09-30 — MC2 1.6.1: what std takes from the C library
 
 - **MC2** 1.6.1 (§3): an exported using-declaration an included file writes whose name is not what

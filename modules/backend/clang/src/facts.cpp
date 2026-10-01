@@ -828,6 +828,23 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
         if (named == nullptr) named = type->getAsEnumDecl();
         if (named != nullptr && named->isFromASTFile() && !plain_name(named).starts_with("std::")) add(named, 0);
     };
+    // A class (or enumeration) the unit declares and does not export, named by the type an exported
+    // function returns or takes -- an exported class's public member function among them (MC2 1.7.0):
+    // reachable, [module.reach]/3, and what an importer's call is a member access on
+    // (mcpplibs.cmdline: `App::option(std::string_view)` returns an `OptBuilder`, whose `help()` and
+    // `takes_value()` are what `app.option("x").help("...")` calls).
+    const auto unexported_of = [&](cl::QualType type) {
+        type = type.getNonReferenceType();
+        while (type->isPointerType()) type = type->getPointeeType();
+        const cl::NamedDecl* named { base_class(type) };
+        if (named == nullptr) named = type->getAsEnumDecl();
+        if (named != nullptr && !named->isFromASTFile() && !named->isInExportDeclContext()) add(named, 0);
+    };
+    const auto function_reaches = [&](const cl::FunctionDecl* f) {
+        if (f == nullptr || f->isImplicit() || f->getAccess() == cl::AS_private || f->getAccess() == cl::AS_protected) return;
+        unexported_of(f->getReturnType());
+        for (const auto* parameter : f->parameters()) unexported_of(parameter->getType());
+    };
     // The unit's exported using-declarations and aliases (in classes too). Its own: what it imports is
     // in its context too (a unit that imports std sees std's exported using-declarations there), and
     // is that module's interface's to carry, not every importer's. Its own enumerators are its
@@ -856,6 +873,10 @@ std::vector<fact::Declaration> reachable_of(cl::ASTContext& ctx) {
                 // `namespace views = ranges::views;` in its std/ranges.inc): the main file's own are its
                 // declarations (MC3 0.8.0).
                 if (seen.insert(alias).second) push(alias);
+            } else if (const auto* f = llvm::dyn_cast<cl::FunctionDecl>(d); f != nullptr && f->isInExportDeclContext()) {
+                function_reaches(f);
+            } else if (const auto* ft = llvm::dyn_cast<cl::FunctionTemplateDecl>(d); ft != nullptr && ft->isInExportDeclContext()) {
+                function_reaches(ft->getTemplatedDecl());
             } else if (const auto* r = llvm::dyn_cast<cl::CXXRecordDecl>(d); r != nullptr && r->isInExportDeclContext() && r->isThisDeclarationADefinition()) {
                 walk(r);
             } else if (llvm::isa<cl::NamespaceDecl, cl::ExportDecl, cl::LinkageSpecDecl>(d)) {

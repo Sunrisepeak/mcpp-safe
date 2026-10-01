@@ -22,7 +22,7 @@ export namespace mcxx::ifc {
 // 1.5.0: a function's parameters (MC3 0.7.0); 1.4.0: a template's parameters (MC3 0.6.0); 1.3.0:
 // bases, and a function's return type (MC3 0.5.0); 1.2.0 adds reachable declarations, 1.1.0
 // re-exports; 1.0 to 1.4 files are read too.
-inline constexpr std::string_view MC2_VERSION { "1.6.1" };
+inline constexpr std::string_view MC2_VERSION { "1.7.0" };
 inline constexpr std::uint8_t IFC_MAJOR { 0 };
 inline constexpr std::uint8_t IFC_MINOR { 43 };
 
