@@ -18,7 +18,7 @@ import json, os, pathlib, shutil, subprocess, sys
 def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
 
-mcxx = str(pathlib.Path(arg("mcxx")).resolve())
+mcxx = str(pathlib.Path(arg("mcxx")).absolute())   # links kept: mcxx selects its mode by the name it is started by
 lexdump = str(pathlib.Path(arg("lexdump")).resolve())
 probe = str(pathlib.Path(arg("probe")).resolve())
 resource = arg("resource")

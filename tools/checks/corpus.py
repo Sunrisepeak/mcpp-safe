@@ -20,7 +20,7 @@ def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
 
 corpus = pathlib.Path(arg("corpus")).resolve()
-mcxx = str(pathlib.Path(arg("mcxx")).resolve())
+mcxx = str(pathlib.Path(arg("mcxx")).absolute())   # links kept: mcxx selects its mode by the name it is started by
 clang = str(pathlib.Path(arg("clang")).resolve())
 jobs = int(arg("jobs", os.cpu_count() or 4))
 report_file = arg("json")

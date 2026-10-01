@@ -24,7 +24,7 @@ def arg(name, default=None):
     return sys.argv[sys.argv.index(f"--{name}") + 1] if f"--{name}" in sys.argv else default
 
 repo = pathlib.Path(__file__).resolve().parents[2]
-mcxx = str(pathlib.Path(arg("mcxx")).resolve())
+mcxx = str(pathlib.Path(arg("mcxx")).absolute())   # links kept: mcxx selects its mode by the name it is started by
 probe = str(pathlib.Path(arg("probe")).resolve())
 corpus = pathlib.Path(arg("corpus")).resolve() if arg("corpus") else None
 resource = arg("resource")
