@@ -409,6 +409,8 @@
 
 依赖：E-XIM-3（已完成）、AS.4.1（从 Linux 交叉构建已在 MS 中完成）、openkal 各实现的 fork（speak-agent）。
 
+aarch64-linux-gnu 目标（2026-10-02 实测）：mcpp 2026.9.28.2 把它列为"已登记、尚未支持"，项目在清单里写 `[target.aarch64-linux-gnu] toolchain = "..."` 可以提前用；这样编译都能通过，链接缺 compiler-rt 的 128 位浮点内建函数（`ld.lld: undefined symbol: __divtf3`，来自 musl 的 `vfprintf`），openkal-llvm-runtime 没有为 aarch64-linux 提供。所以这个目标另有一个前置项 **E-OK-3**：在 speak-agent 的 openkal-llvm-runtime fork 里补上 aarch64-linux 的 compiler-rt builtins。其余三个目标先做。
+
 **MX 的退出条件**：AX.1–AX.5 全部通过。
 
 ---
