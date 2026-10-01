@@ -17,6 +17,8 @@ export import :syntax;
 export import :types;
 export import :lookup;
 export import :declared;
+export import :ast;
+export import :bodies;
 
 export namespace mcxx::frontend {
 

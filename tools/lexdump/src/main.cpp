@@ -321,6 +321,89 @@ int references(int argc, char** argv) {
     return 0;
 }
 
+// The full parse of the file's function bodies and initializers (mcxx.frontend:bodies, M3.0), as
+// `mcxx-lexdump --bodies [OPTIONS] [--dump] [--nodes] [--decisions] FILE`: one JSON object with how many parts it read, how
+// many it could not, the error nodes, the diagnostics, and who decided each question the grammar left open
+// (tools/checks/syntaxdiff.py --bodies). --dump: each root as text, one per line, before the JSON; --nodes:
+// every statement and expression with its kind and range (what a probe of Clang's AST is compared with).
+// `--fragment TEXT`: the statements of a function body given on the command line, dumped.
+int bodies(int argc, char** argv, bool fragment) {
+    mcxx::frontend::PreprocessOptions options;
+    std::string file;
+    std::map<std::string, std::string, std::less<>> module_files;
+    std::vector<std::string> prebuilt;
+    bool dump { false }, nodes { false }, decisions { false }, no_cpp26 { false };
+    for (int i { 2 }; i < argc; ++i) {
+        const std::string_view a { argv[i] };
+        if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a == "--dump") dump = true;
+        else if (a == "--nodes") nodes = true;
+        else if (a == "--decisions") decisions = true;
+        else if (a == "--cxx23") no_cpp26 = true;
+        else if (a.starts_with("-fmodule-file=") && a.find('=', 14) != std::string_view::npos) {
+            const auto rest { a.substr(14) };
+            const auto eq { rest.find('=') };
+            module_files.insert_or_assign(std::string { rest.substr(0, eq) }, std::string { rest.substr(eq + 1) });
+        } else if (a.starts_with("-fprebuilt-module-path=")) prebuilt.emplace_back(a.substr(23));
+        else if (a == "--header-macros" && i + 1 < argc) {
+            std::istringstream lines { read(argv[++i]) };
+            for (std::string l; std::getline(lines, l);) options.header_macros.push_back(l);
+            options.header_macros_complete = true;
+        } else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
+        else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else file = a;
+    }
+    options.file = fragment ? "fragment.cpp" : file;
+    const std::string text { fragment ? "void mcxx_fragment() {\n" + file + "\n}\n" : read(file) };
+    const auto parsed = mcxx::frontend::parse(text, options);
+    const auto imported { imported_by(parsed, module_files, prebuilt) };
+    mcxx::frontend::BodyOptions body_options;
+    body_options.imported = &imported;
+    body_options.record_decisions = decisions;
+    if (no_cpp26) body_options.extensions.clear();
+    const auto started = std::chrono::steady_clock::now();
+    const auto tree = mcxx::frontend::parse_bodies(parsed, body_options);
+    const double seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count() };
+    if (dump)
+        for (const auto& root : tree.roots) std::println("{}", mcxx::frontend::ast::dump(tree, root.node));
+    std::vector<std::string> notes;
+    for (const auto& d : tree.diagnostics) notes.push_back(std::format("{}:{}: {}", d.at.line, d.at.column, d.message));
+    namespace ast = mcxx::frontend::ast;
+    std::string out { std::format("{{\"parts\":{},\"failed\":{},\"errors\":{},\"diagnostics\":{},\"decisions\":{{\"total\":{},\"syntax\":{},\"scope\":{},"
+                                  "\"lookup\":{},\"feedback\":{},\"shape\":{}}},\"speculations\":{},\"rewinds\":{},\"seconds\":{:.6f}",
+                                  tree.stats.parts, tree.stats.failed, tree.stats.errors, strings(notes), tree.stats.decisions,
+                                  tree.stats.by_basis[0], tree.stats.by_basis[1], tree.stats.by_basis[2], tree.stats.by_basis[3], tree.stats.by_basis[4],
+                                  tree.stats.speculations, tree.stats.rewinds, seconds) };
+    if (decisions) {
+        out += ",\"decided\":[";
+        bool first { true };
+        for (const auto& d : tree.decisions) {
+            const auto r { mcxx::frontend::token_range(parsed, d.token, d.token) };
+            out += std::format("{}{{\"at\":[{},{}],\"what\":\"{}\",\"chose\":\"{}\",\"by\":\"{}\"}}", first ? "" : ",", r.begin.line, r.begin.column,
+                               ast::to_string(d.what), ast::to_string(d.chose), ast::to_string(d.basis));
+            first = false;
+        }
+        out += "]";
+    }
+    if (nodes) {
+        out += ",\"nodes\":[";
+        bool first { true };
+        const auto add = [&](std::string_view sort, std::string_view kind, std::string_view detail, std::uint32_t a, std::uint32_t b) {
+            const auto r { mcxx::frontend::token_range(parsed, a, b) };
+            out += std::format("{}{{\"sort\":\"{}\",\"kind\":\"{}\",\"detail\":{},\"range\":[{},{},{},{}]}}", first ? "" : ",", sort, kind, json(detail),
+                               r.begin.line, r.begin.column, r.end.line, r.end.column);
+            first = false;
+        };
+        for (const auto& e : tree.expressions) add("expression", ast::to_string(e.kind), ast::spelling(e.op), e.first, e.last);
+        for (const auto& s : tree.statements) add("statement", ast::to_string(s.kind), "", s.first, s.last);
+        out += "]";
+    }
+    // The tree's own consistency: what ast::validate finds wrong with it (ranges, children), none when sound.
+    out += std::format(",\"invalid\":{}", strings(ast::validate(tree)));
+    std::println("{}}}", out);
+    return 0;
+}
+
 int preprocessed(bool diff, int argc, char** argv) {
     mcxx::frontend::PreprocessOptions options;
     std::vector<std::string> files;
@@ -486,6 +569,8 @@ int main(int argc, char** argv) {
     if (argc > 2 && std::string_view { argv[1] } == "--syntax") return syntax(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--facts") return facts(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--references") return references(argc, argv);
+    if (argc > 2 && std::string_view { argv[1] } == "--bodies") return bodies(argc, argv, false);
+    if (argc > 2 && std::string_view { argv[1] } == "--fragment") return bodies(argc, argv, true);
     if (argc > 2 && std::string_view { argv[1] } == "--bench") return bench(std::stoi(argv[2]), argc, argv);
     if (argc > 1 && (std::string_view { argv[1] } == "--pp" || std::string_view { argv[1] } == "--ppdiff")) return preprocessed(std::string_view { argv[1] } == "--ppdiff", argc, argv);
     for (int i { 1 }; i < argc; ++i) {

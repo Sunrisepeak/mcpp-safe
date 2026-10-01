@@ -252,6 +252,11 @@ private:
         out_.declarations.push_back(std::move(d));
         return static_cast<std::int32_t>(out_.declarations.size() - 1);
     }
+    // A stretch the full parse reads (parse_bodies): [begin, end) of the tokens, belonging to `declaration`.
+    void part(Part::Role role, std::int32_t declaration, std::size_t begin, std::size_t end) {
+        if (end <= begin || declaration < -1) return;
+        out_.parts.push_back({ role, declaration, static_cast<std::uint32_t>(begin), static_cast<std::uint32_t>(end) });
+    }
     // Its last token, once its body is read.
     void close(std::int32_t index, std::size_t last) {
         auto& d = out_.declarations[static_cast<std::size_t>(index)];
@@ -423,7 +428,13 @@ private:
         }
         if (w == "extern" && word(i_ + 1, "template")) return skip_statement();
         if (w == "asm" || w == "__asm__") add_construct(Construct::What::asm_, i_, i_, scope.parent);
-        if (w == "static_assert" || w == "_Static_assert" || w == "asm" || w == "__asm__") return skip_statement();
+        if (w == "static_assert" || w == "_Static_assert") {
+            const std::size_t from { i_ };
+            skip_statement();
+            part(Part::Role::static_assert_, scope.parent, from, i_);
+            return;
+        }
+        if (w == "asm" || w == "__asm__") return skip_statement();
         if ((w == "public" || w == "private" || w == "protected") && is(i_ + 1, Kind::colon)) {
             i_ += 2;
             return;
@@ -569,8 +580,10 @@ private:
         if (word(i_, "concept") && identifier(i_ + 1)) {
             const std::size_t id { i_ + 1 };
             i_ += 2;
+            const std::size_t from { is(attributes(i_), Kind::equal) ? attributes(i_) + 1 : i_ };
             skip_statement_end();
-            record(msa::Kind::concept_, std::string { tok(id).spelling }, id, begin, i_ - 1, scope, true, scope.listed, {});
+            const std::int32_t index { record(msa::Kind::concept_, std::string { tok(id).spelling }, id, begin, i_ - 1, scope, true, scope.listed, {}) };
+            part(Part::Role::concept_definition, index, from, i_);
             if (is(i_, Kind::semi)) ++i_;
             return;
         }
@@ -754,11 +767,15 @@ private:
             const std::size_t id { i_ };
             ++i_;
             i_ = attributes(i_);
+            std::size_t value_from { 0 }, value_to { 0 };
             if (is(i_, Kind::equal)) {
                 ++i_;
+                value_from = i_;
                 skip_statement_end(true);
+                value_to = i_;
             }
-            record(msa::Kind::enumerator, std::string { tok(id).spelling }, id, id, i_ - 1, e, true, e.listed, {});
+            const std::int32_t enumerator { record(msa::Kind::enumerator, std::string { tok(id).spelling }, id, id, i_ - 1, e, true, e.listed, {}) };
+            part(Part::Role::enumerator_value, enumerator, value_from, value_to);
             if (is(i_, Kind::comma)) ++i_;
             else if (!is(i_, Kind::r_brace)) {
                 diagnose("expected `,` or `}` after an enumerator");
@@ -922,7 +939,9 @@ private:
 
     // What follows a function's declarator: cv, ref, noexcept, trailing return, virt-specifiers, a
     // requires-clause, = 0 / default / delete.
-    void function_tail() {
+    // `function`: the declaration it is of (the parts it has -- noexcept(...), a requires-clause, contract
+    // specifiers -- belong to it), or -1.
+    void function_tail(std::int32_t function) {
         for (;;) {
             i_ = attributes(i_);
             if (word(i_, "const") || word(i_, "volatile") || is(i_, Kind::amp) || is(i_, Kind::ampamp) || word(i_, "override") || word(i_, "final") ||
@@ -931,8 +950,17 @@ private:
                 continue;
             }
             if ((word(i_, "noexcept") || word(i_, "throw")) ) {
+                const std::size_t from { i_ };
                 ++i_;
                 if (is(i_, Kind::l_paren)) i_ = balanced(i_);
+                if (function >= 0 && word(from, "noexcept") && is(from + 1, Kind::l_paren)) part(Part::Role::noexcept_spec, function, from, i_);
+                continue;
+            }
+            // C++26 contract specifiers: pre(...) and post(...) follow the declarator's qualifiers.
+            if ((word(i_, "pre") || word(i_, "post")) && is(i_ + 1, Kind::l_paren)) {
+                const std::size_t from { i_ };
+                i_ = balanced(i_ + 1);
+                if (function >= 0) part(Part::Role::contract, function, from, i_);
                 continue;
             }
             if (is(i_, Kind::arrow)) {
@@ -940,7 +968,8 @@ private:
                 // The trailing return type, to what ends the declarator.
                 while (i_ < t_.size()) {
                     if (is(i_, Kind::l_brace) || is(i_, Kind::semi) || is(i_, Kind::equal) || is(i_, Kind::comma) || is(i_, Kind::r_brace) ||
-                        word(i_, "requires") || word(i_, "override") || word(i_, "final") || (is(i_, Kind::colon) && !is(i_ + 1, Kind::colon)))
+                        word(i_, "requires") || word(i_, "override") || word(i_, "final") || (is(i_, Kind::colon) && !is(i_ + 1, Kind::colon)) ||
+                        ((word(i_, "pre") || word(i_, "post")) && is(i_ + 1, Kind::l_paren)))
                         break;
                     if (is(i_, Kind::l_paren) || is(i_, Kind::l_square)) {
                         i_ = balanced(i_);
@@ -956,7 +985,9 @@ private:
                 continue;
             }
             if (word(i_, "requires")) {
+                const std::size_t from { i_ };
                 constraint();
+                if (function >= 0) part(Part::Role::constraint, function, from, i_);
                 continue;
             }
             return;
@@ -1136,8 +1167,9 @@ private:
             if (function && d.params != static_cast<std::size_t>(-1)) parameters_of(d.params, owner, recorded ? index : -1);
             if (function) {
                 const std::size_t tail { i_ };
-                function_tail();
+                function_tail(recorded ? index : -1);
                 if (recorded && star_in(tail, i_)) out_.declarations[static_cast<std::size_t>(index)].pointer = true;   // -> T*
+                const std::size_t body_from { i_ };
                 if (is(i_, Kind::equal)) {
                     // = 0, = default, = delete ["why"]: in a declaration's range, not in an out-of-line
                     // definition's (`S::S() = default;` ends at its `)`), as Clang has them.
@@ -1166,25 +1198,30 @@ private:
                     i_ = compound(i_, owner);
                     body = true;
                 }
+                if (recorded) part(Part::Role::function_body, index, body_from, i_);
             } else {
                 // A bit-field's width, then an initializer: = e, { e }, ( e ).
                 if (is(i_, Kind::colon) && scope.context == Context::class_) {
                     ++i_;
+                    const std::size_t width_from { i_ };
                     while (i_ < t_.size() && !is(i_, Kind::semi) && !is(i_, Kind::comma) && !is(i_, Kind::equal) && !is(i_, Kind::l_brace) &&
                            !is(i_, Kind::r_brace)) {
                         if (is(i_, Kind::l_paren)) i_ = balanced(i_);
                         else ++i_;
                     }
+                    if (recorded) part(Part::Role::bit_width, index, width_from, i_);
                 }
                 if (is(i_, Kind::equal)) {
                     ++i_;
                     const std::size_t from { i_ };
                     initializer();
                     scan(from, i_, owner, false);
+                    if (recorded) part(Part::Role::initializer, index, from - 1, i_);
                 } else if (is(i_, Kind::l_brace) || is(i_, Kind::l_paren)) {
                     const std::size_t from { i_ };
                     i_ = balanced(i_);
                     scan(from, i_, owner, false);
+                    if (recorded) part(Part::Role::initializer, index, from, i_);
                 }
             }
             if (recorded) {
@@ -1317,8 +1354,11 @@ private:
                 }
                 // Its default argument is not in its range.
                 std::size_t last { std::min(i_, end) > k ? std::min(i_, end) - 1 : k };
-                if (is(i_, Kind::equal) && i_ < end) scan(i_ + 1, end, owner, false);
+                const bool has_default { is(i_, Kind::equal) && i_ < end };
+                const std::size_t default_from { i_ + 1 };
+                if (has_default) scan(i_ + 1, end, owner, false);
                 const std::int32_t index { record(msa::Kind::parameter, d.ok ? d.id.spelled : std::string {}, name_token, k, last, scope, true, false, {}) };
+                if (has_default && function >= 0 && lambdas_ == 0) part(Part::Role::default_argument, index, default_from, end);
                 typed(index, k, specifiers_end, specifiers_end, std::min(i_, end), d);
                 auto& made = out_.declarations[static_cast<std::size_t>(index)];
                 made.pointer = sp.pointer || d.star;

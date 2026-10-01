@@ -196,6 +196,36 @@ Resolver::Resolver(const Syntax& syntax, const Imported& imported)
     resolved_.assign(t_.size(), std::nullopt);
 }
 
+Resolver::Nature Resolver::nature_of(std::string_view written, std::size_t k) {
+    Nature n;
+    std::string_view rest { written };
+    const bool global { rest.starts_with("::") };
+    if (global) rest.remove_prefix(2);
+    std::optional<Target> found;
+    const auto at = rest.rfind("::");
+    if (at == std::string_view::npos) {
+        found = global ? in_scope(std::string {}, std::string { rest }, t_.size()) : unqualified(std::string { rest }, k);
+    } else if (const auto scope { scope_named(std::string { global ? "::" : "" } + std::string { rest.substr(0, at) }, k) }) {
+        found = in_scope(*scope, std::string { rest.substr(at + 2) }, t_.size());
+    }
+    if (!found) return n;
+    n.found = true;
+    n.kind = found->kind;
+    if (found->declaration >= 0) {
+        const auto& d = ds_[static_cast<std::size_t>(found->declaration)];
+        n.template_ = d.first_token < t_.size() && word(d.first_token, "template") && d.kind != msa::Kind::template_parameter;
+        if (d.kind == msa::Kind::template_parameter) {
+            std::size_t j { d.name_token };
+            if (j >= 1 && t_[j - 1].kind == Kind::ellipsis) --j;
+            if (j >= 1 && (word(j - 1, "class") || word(j - 1, "typename"))) n.parameter_form = j >= 2 && t_[j - 2].kind == Kind::greater ? 2 : 0;
+            else n.parameter_form = 1;
+        }
+    } else if (found->imported >= 0) {
+        n.template_ = !imported_.declarations[static_cast<std::size_t>(found->imported)].template_parameters.empty();
+    }
+    return n;
+}
+
 std::vector<Reference> Resolver::run() {
     const base::trace::Span span { "frontend.lookup", "names", std::format("{} tokens", t_.size()) };
     std::vector<char> declares(t_.size(), 0);   // a declaration's own name: not a use

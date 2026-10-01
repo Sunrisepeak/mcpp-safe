@@ -94,6 +94,17 @@ public:
     // A declaration's type (MC3's `type`, `templates`, `pointer`), after run().
     DeclaredType declared(std::size_t i);
 
+    // What a name written at token k names, as far as lookup is sure: its declaration's kind and whether it
+    // is a template, for the full parse's questions (:bodies' NameOracle). `parameter_form` of a template
+    // parameter: 0 a type, 1 a value, 2 a template.
+    struct Nature {
+        bool found { false };
+        msa::Kind kind { msa::Kind::unknown };
+        bool template_ { false };
+        int parameter_form { -1 };
+    };
+    Nature nature_of(std::string_view written, std::size_t k);
+
 private:
     const Syntax& syntax_;
     const Imported& imported_;
