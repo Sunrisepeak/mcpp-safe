@@ -25,6 +25,8 @@ enum class FeatureLevel : std::uint8_t { deny, warn, allow };
 struct Standard {
     int year { 23 };
     bool gnu { false };
+    // The standards in order: 98 (and 03) comes before 11, though its two digits are larger.
+    int ordinal() const { return year >= 90 ? year - 100 : year; }
 };
 
 // -std's value (`c++26`, `c++2c`, `gnu++2d`, `c++0x`): none for any other (C, an unknown name).
@@ -58,7 +60,7 @@ struct Language {
         return it == features.end() ? FeatureLevel::deny : it->second;
     }
     // The standard is the feature's paper's or a later one.
-    bool has(const LanguageFeature& feature) const { return standard.year >= feature.year; }
+    bool has(const LanguageFeature& feature) const { return standard.ordinal() >= Standard { feature.year }.ordinal(); }
     // Standard and level both: the feature is on.
     bool on(const LanguageFeature& feature) const { return has(feature) && level(feature.id) != FeatureLevel::deny; }
 };

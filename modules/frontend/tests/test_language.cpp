@@ -35,6 +35,17 @@ std::vector<std::string> tokens(std::string_view source) {
 int main() {
     using namespace mcxx::testing;
 
+    "C++98 and C++03 come before every later standard, though their two digits are larger"_test = [] {
+        f::Language old;
+        old.standard = *f::parse_standard("c++03");
+        old.features["c++26:embed"] = f::FeatureLevel::allow;
+        expect(!old.has(f::EMBED) && !old.on(f::EMBED)) << "a C++03 file has no C++26 feature";
+        f::Language now;
+        now.standard = *f::parse_standard("c++2c");
+        now.features["c++26:embed"] = f::FeatureLevel::allow;
+        expect(now.on(f::EMBED) && !now.has(f::EMBED_OFFSET));
+    };
+
     "-std's spellings: Clang's, by the standard's two digits"_test = [] {
         const auto year = [](std::string_view name) { const auto s = f::parse_standard(name); return s ? s->year : -1; };
         expect(year("c++98") == 98 && year("c++03") == 98 && year("gnu++98") == 98);
