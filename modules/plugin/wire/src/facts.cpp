@@ -149,14 +149,46 @@ Json facts_to_json(const fact::Facts& f, std::string_view path, std::string_view
         }
         imports.push_back(std::move(x));
     }
+    Json& flows = j["control-flow"] = Json::array();   // MC3 0.9.0 (JSON form 0.5.0)
+    for (const auto& fl : f.control_flow) {
+        Json x = place(fl);
+        x["entity"] = fl.entity;
+        x["function"] = fl.function;
+        x["known"] = fl.known;
+        x["returns-value"] = fl.returns_value;
+        x["noreturn"] = fl.noreturn;
+        x["end"] = to_json(fl.end);
+        x["entry"] = fl.entry;
+        x["exit"] = fl.exit;
+        Json& blocks = x["blocks"] = Json::array();
+        for (const auto& b : fl.blocks) {
+            Json events = Json::array();
+            for (const auto& e : b.events) {
+                Json ev = Json::object();
+                ev["kind"] = std::string { fact::to_string(e.kind) };
+                ev["range"] = to_json(e.range);
+                ev["entity"] = e.entity;
+                ev["name"] = e.name;
+                if (e.kind == fact::EventKind::declare) ev["indeterminate"] = e.indeterminate;
+                if (e.kind == fact::EventKind::call) ev["noreturn"] = e.noreturn;
+                events.push_back(std::move(ev));
+            }
+            Json block = Json::object();
+            block["events"] = std::move(events);
+            block["successors"] = b.successors;
+            blocks.push_back(std::move(block));
+        }
+        flows.push_back(std::move(x));
+    }
     return j;
 }
 
 Read<fact::Facts> facts_from_json(const Json& j) {
     if (!j.is_object()) return std::unexpected("facts is not an object");
     if (!j.contains("mc3-version")
-        || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.3.0" && j["mc3-version"] != "0.2.0" && j["mc3-version"] != "0.1.0"))
-        return std::unexpected(std::format("facts are not MC3 {} (nor 0.3.0, 0.2.0, 0.1.0)", MC3_VERSION));
+        || (j["mc3-version"] != std::string { MC3_VERSION } && j["mc3-version"] != "0.4.0" && j["mc3-version"] != "0.3.0" && j["mc3-version"] != "0.2.0"
+            && j["mc3-version"] != "0.1.0"))
+        return std::unexpected(std::format("facts are not MC3 {} (nor 0.4.0, 0.3.0, 0.2.0, 0.1.0)", MC3_VERSION));
     fact::Facts f;
     std::string error;
     Reader top { j, "facts", {} };
@@ -266,6 +298,53 @@ Read<fact::Facts> facts_from_json(const Json& j) {
                 if (!ir.ok()) return r.fail(ir.error);
                 i.interfaces.push_back(std::move(in));
             }
+        });
+    if (j.contains("control-flow"))   // documents before MC3 0.9.0 (JSON form 0.5.0) have none
+        read_list(j, "control-flow", f.control_flow, error, [](Reader& r, fact::Flow& fl) {
+            fl.entity = r.str("entity");
+            fl.function = r.str("function");
+            fl.known = r.flag("known");
+            fl.returns_value = r.flag("returns-value");
+            fl.noreturn = r.flag("noreturn");
+            fl.end = r.range("end");
+            fl.entry = r.count("entry");
+            fl.exit = r.count("exit");
+            const Json* blocks { r.at("blocks") };
+            if (blocks == nullptr) return;
+            if (!blocks->is_array()) return r.fail(std::format("{}.blocks is not a list", r.where));
+            for (std::size_t b { 0 }; b < blocks->size(); ++b) {
+                Reader br { (*blocks)[b], std::format("{}.blocks[{}]", r.where, b), {} };
+                fact::Block block;
+                if (const Json* successors = br.at("successors"); successors != nullptr) {
+                    if (!successors->is_array()) br.fail(std::format("{}.successors is not a list", br.where));
+                    else
+                        for (const auto& s : *successors) {
+                            if (!s.is_number_unsigned() || s.get<std::uint64_t>() >= blocks->size())
+                                br.fail(std::format("{}.successors holds what is not a block's index", br.where));
+                            else block.successors.push_back(s.get<std::uint32_t>());
+                        }
+                }
+                if (const Json* events = br.at("events"); events != nullptr && events->is_array()) {
+                    for (std::size_t e { 0 }; e < events->size(); ++e) {
+                        Reader er { (*events)[e], std::format("{}.events[{}]", br.where, e), {} };
+                        fact::Event ev;
+                        const std::string kind { er.str("kind") };
+                        if (const auto k = fact::parse_event_kind(kind)) ev.kind = *k;
+                        else er.fail(std::format("{}.kind: `{}` is not a kind of event", er.where, kind));
+                        ev.range = er.range("range");
+                        ev.entity = er.str("entity");
+                        ev.name = er.str("name");
+                        if (ev.kind == fact::EventKind::declare) ev.indeterminate = er.flag("indeterminate");
+                        if (ev.kind == fact::EventKind::call) ev.noreturn = er.flag("noreturn");
+                        if (!er.ok()) br.fail(er.error);
+                        block.events.push_back(std::move(ev));
+                    }
+                } else br.fail(std::format("{}.events is missing or not a list", br.where));
+                if (!br.ok()) return r.fail(br.error);
+                fl.blocks.push_back(std::move(block));
+            }
+            if (!fl.blocks.empty() && (fl.entry >= fl.blocks.size() || fl.exit >= fl.blocks.size()))
+                r.fail(std::format("{}: entry and exit are blocks' indices", r.where));
         });
     if (!error.empty()) return std::unexpected(error);
     return f;

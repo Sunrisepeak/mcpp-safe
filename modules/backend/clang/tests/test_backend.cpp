@@ -9,6 +9,7 @@ import mcxx.os;
 import mcxx.base;
 import mcxx.plugins.json;
 import mcxx.plugins.std;
+import mcxx.plugins.flow;
 import mcxx.plugin;
 import example.device;
 
@@ -533,6 +534,69 @@ int main() {
         expect(std::ranges::find(warnings, "raw-pointers") != warnings.end());
     };
 
+
+    "the flow layer (MF.3): Clang's CFG as MC3 control flow, and profile safe's flow rules over it"_test = [] {
+        Program p { "flow" };
+        p.manifest("[package]\nname = \"t\"\nversion = \"0.1.0\"\n[package.metadata.mcxx]\nprofile = \"safe\"\n");
+        const std::string text { "[[noreturn]] void stop();\n"
+                                 "int pick(bool c) {\n"
+                                 "    int x;\n"
+                                 "    if (c) x = 1;\n"
+                                 "    return x;\n"                       // 4: read where c was false
+                                 "}\n"
+                                 "int both(bool c) {\n"
+                                 "    int x;\n"
+                                 "    if (c) x = 1; else x = 2;\n"
+                                 "    return x;\n"
+                                 "}\n"
+                                 "int sign(int v) {\n"
+                                 "    if (v > 0) return 1;\n"
+                                 "    if (v < 0) return -1;\n"
+                                 "}\n"                                   // 14: v == 0 flows off the end
+                                 "int checked(int v) {\n"
+                                 "    if (v > 0) return 1;\n"
+                                 "    stop();\n"
+                                 "}\n"
+                                 "[[noreturn]] void fail(bool c) {\n"
+                                 "    if (c) stop();\n"
+                                 "}\n"                                   // 21: returns when c is false
+                                 "void fill(int& out);\n"
+                                 "int filled() {\n"
+                                 "    int y;\n"
+                                 "    fill(y);\n"
+                                 "    return y;\n"
+                                 "}\n"
+                                 "template <class T> T twice(T t) { T u; return u + t; }\n"
+                                 "int main() { auto f = [](int a) { int b; return a + b; }; return f(1); }\n" };   // 29: b
+        const std::string file { p.file("src/flow.cpp", text) };
+        auto w = workspace_for(p);
+        auto unit = w->parse(file, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto& flows = unit->facts().control_flow;
+        const auto flow_of = [&](std::string_view name) {
+            const auto it = std::ranges::find(flows, name, &msa::fact::Flow::function);
+            return it == flows.end() ? nullptr : &*it;
+        };
+        expect(flows.size() == 9) << std::format("{} functions: {}", flows.size(),
+                                                  flows | std::views::transform(&msa::fact::Flow::function) | std::ranges::to<std::vector>());
+        expect(flow_of("twice") != nullptr && !flow_of("twice")->known && flow_of("twice")->blocks.empty()) << "a template's pattern is not computed";
+        expect(flow_of("sign") != nullptr && flow_of("sign")->returns_value && !flow_of("main")->returns_value && flow_of("fail")->noreturn);
+        const auto* filled = flow_of("filled");
+        expect(fatal(filled != nullptr));
+        std::vector<std::string> kinds;
+        for (const auto& b : filled->blocks)
+            for (const auto& e : b.events)
+                if (e.name == "y") kinds.push_back(std::string { msa::fact::to_string(e.kind) });
+        expect(kinds == std::vector<std::string> { "declare", "address", "read", "scope-end" }) << std::format("{}", kinds);
+        std::vector<std::pair<std::string, std::uint32_t>> found;
+        for (const auto& d : unit->diagnostics())
+            if (d.code == mcxx::plugins::flow::UNINITIALIZED_READ || d.code == mcxx::plugins::flow::MISSING_RETURN || d.code == mcxx::plugins::flow::NORETURN_RETURNS)
+                found.emplace_back(d.code, d.range.begin.line);
+        std::ranges::sort(found, {}, [](const auto& f) { return f.second; });
+        const std::vector<std::pair<std::string, std::uint32_t>> want { { "uninitialized-read", 4 }, { "missing-return", 14 }, { "noreturn-returns", 21 },
+                                                                        { "uninitialized-read", 29 } };
+        expect(found == want) << std::format("{}", found);
+    };
 
     "a safe module importing what its dialect denies is told so at the import, or waives it there (M1.2)"_test = [] {
         Program p { "boundary" };

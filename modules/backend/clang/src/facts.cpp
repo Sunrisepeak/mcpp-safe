@@ -82,6 +82,7 @@ import mcxx.ifc;
 import :support;
 import :unit;
 import :facts;
+import :flow;
 
 namespace mcxx::clang_backend {
 
@@ -92,8 +93,34 @@ using msa::Range;
 using msa::Location;
 namespace fact = msa::fact;
 
-namespace {
+// Shared with :flow (declared in :facts).
+// The namespace code in `dc` belongs to ("" = global).
+std::string namespace_of(const cl::DeclContext* dc) {
+    for (; dc != nullptr; dc = dc->getParent()) {
+        if (const auto* ns = llvm::dyn_cast<cl::NamespaceDecl>(dc)) return plain_name(ns);
+    }
+    return {};
+}
 
+// Whether default-initialization leaves an object of this type indeterminate ([dcl.init.general],
+// [basic.indet]): a scalar, or an array of them.
+bool indeterminate_type(const cl::ASTContext& ctx, cl::QualType type) {
+    if (type.isNull() || type->isDependentType()) return false;
+    if (const auto* array = ctx.getAsArrayType(type)) return indeterminate_type(ctx, array->getElementType());
+    return type->isScalarType();
+}
+
+// A class (or an array of one) default-initialized by a trivial default constructor: its members
+// are left indeterminate. An empty class has none.
+bool trivially_default_constructed(const cl::CXXConstructExpr* construct) {
+    if (construct == nullptr || construct->getNumArgs() != 0 || construct->isListInitialization() || construct->getParenOrBraceRange().isValid()) return false;
+    const cl::CXXConstructorDecl* ctor { construct->getConstructor() };
+    if (ctor == nullptr || !ctor->isTrivial()) return false;
+    const cl::CXXRecordDecl* record { ctor->getParent() };
+    return record != nullptr && !record->isEmpty();
+}
+
+namespace {
 
 std::string type_text(const cl::ASTContext& ctx, cl::QualType type) {
     if (type.isNull()) return {};
@@ -102,14 +129,6 @@ std::string type_text(const cl::ASTContext& ctx, cl::QualType type) {
     // Names in it as MC3 names them: without inline namespaces (libc++'s std::__1).
     policy.SuppressInlineNamespace = llvm::to_underlying(cl::PrintingPolicy::SuppressInlineNamespaceMode::All);
     return type.getAsString(policy);
-}
-
-// The namespace code in `dc` belongs to ("" = global).
-std::string namespace_of(const cl::DeclContext* dc) {
-    for (; dc != nullptr; dc = dc->getParent()) {
-        if (const auto* ns = llvm::dyn_cast<cl::NamespaceDecl>(dc)) return plain_name(ns);
-    }
-    return {};
 }
 
 const cl::ClassTemplateSpecializationDecl* specialization_of(cl::QualType type) {
@@ -155,24 +174,6 @@ bool holds_pointer(const cl::ASTContext& ctx, cl::QualType type, int depth = 0) 
         for (const auto& arg : tst->template_arguments())
             if (arg.getKind() == cl::TemplateArgument::Type && holds_pointer(ctx, arg.getAsType(), depth + 1)) return true;
     return false;
-}
-
-// Whether default-initialization leaves an object of this type indeterminate ([dcl.init.general],
-// [basic.indet]): a scalar, or an array of them.
-bool indeterminate_type(const cl::ASTContext& ctx, cl::QualType type) {
-    if (type.isNull() || type->isDependentType()) return false;
-    if (const auto* array = ctx.getAsArrayType(type)) return indeterminate_type(ctx, array->getElementType());
-    return type->isScalarType();
-}
-
-// A class (or an array of one) default-initialized by a trivial default constructor: its members
-// are left indeterminate. An empty class has none.
-bool trivially_default_constructed(const cl::CXXConstructExpr* construct) {
-    if (construct == nullptr || construct->getNumArgs() != 0 || construct->isListInitialization() || construct->getParenOrBraceRange().isValid()) return false;
-    const cl::CXXConstructorDecl* ctor { construct->getConstructor() };
-    if (ctor == nullptr || !ctor->isTrivial()) return false;
-    const cl::CXXRecordDecl* record { ctor->getParent() };
-    return record != nullptr && !record->isEmpty();
 }
 
 bool is_initializer_list(cl::QualType type) {
@@ -741,6 +742,7 @@ fact::Facts facts_of(cl::ASTContext& ctx, const cl::Preprocessor* pp, fact::Kind
     }
     if (fact::contains(needs, fact::Kinds::includes)) collect_includes(ctx, facts);
     if (fact::contains(needs, fact::Kinds::imports)) facts.imports = imports_of(ctx, pp);
+    if (fact::contains(needs, fact::Kinds::control_flow)) facts.control_flow = flows_of(ctx);
     if (pp != nullptr && fact::contains(needs, fact::Kinds::macros)) {
         const auto& sm = ctx.getSourceManager();
         const cl::FileID main { sm.getMainFileID() };

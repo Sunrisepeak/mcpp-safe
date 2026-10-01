@@ -19,7 +19,7 @@ void register_language_provider(std::unique_ptr<LanguageProvider> provider, Orig
 // What a plugin library and the compiler that loads it must agree on (MC4 §3, `library`): the
 // layouts of this SDK's types and of MSA's facts, which the two share in one process. Raised
 // whenever one of them changes. A library carries its own value as `mcxx_plugin_sdk_abi`.
-inline constexpr int SDK_ABI { 2 };
+inline constexpr int SDK_ABI { 3 };
 
 // A library's providers register as its static objects are constructed, while it loads, before
 // the host can ask it anything. The host holds them (MC4-3-7): registrations from hold_registrations()

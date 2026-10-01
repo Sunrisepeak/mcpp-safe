@@ -1,5 +1,5 @@
 {
-  "mc3-version": "0.4.0",
+  "mc3-version": "0.5.0",
   "path": "/work/app/src/buffer.cppm",
   "module": "app.buffer",
   "certainty": "certain",
@@ -11,7 +11,8 @@
     "includes",
     "suppressions",
     "declaration-types",
-    "imports"
+    "imports",
+    "control-flow"
   ],
   "declarations": [
     {
@@ -282,6 +283,134 @@
               "c-variadic": false,
               "local": false
             }
+          ]
+        }
+      ]
+    }
+  ],
+  "control-flow": [
+    {
+      "range": {
+        "begin": {
+          "line": 5,
+          "column": 7
+        },
+        "end": {
+          "line": 9,
+          "column": 5
+        }
+      },
+      "container": "app",
+      "entity": "c:@N@app@F@fill#*C#I#",
+      "function": "app::fill",
+      "known": true,
+      "returns-value": false,
+      "noreturn": false,
+      "end": {
+        "begin": {
+          "line": 9,
+          "column": 4
+        },
+        "end": {
+          "line": 9,
+          "column": 5
+        }
+      },
+      "entry": 2,
+      "exit": 0,
+      "blocks": [
+        {
+          "events": [],
+          "successors": []
+        },
+        {
+          "events": [
+            {
+              "kind": "declare",
+              "range": {
+                "begin": {
+                  "line": 6,
+                  "column": 9
+                },
+                "end": {
+                  "line": 6,
+                  "column": 13
+                }
+              },
+              "entity": "c:buffer.cppm@F@fill#*C#@line",
+              "name": "line",
+              "indeterminate": true
+            },
+            {
+              "kind": "declare",
+              "range": {
+                "begin": {
+                  "line": 7,
+                  "column": 8
+                },
+                "end": {
+                  "line": 7,
+                  "column": 9
+                }
+              },
+              "entity": "c:buffer.cppm@F@fill#*C#@n",
+              "name": "n",
+              "indeterminate": true
+            },
+            {
+              "kind": "read",
+              "range": {
+                "begin": {
+                  "line": 8,
+                  "column": 4
+                },
+                "end": {
+                  "line": 8,
+                  "column": 7
+                }
+              },
+              "entity": "c:buffer.cppm@F@fill#*C#@out",
+              "name": "out"
+            },
+            {
+              "kind": "scope-end",
+              "range": {
+                "begin": {
+                  "line": 9,
+                  "column": 4
+                },
+                "end": {
+                  "line": 9,
+                  "column": 5
+                }
+              },
+              "entity": "c:buffer.cppm@F@fill#*C#@n",
+              "name": "n"
+            },
+            {
+              "kind": "scope-end",
+              "range": {
+                "begin": {
+                  "line": 9,
+                  "column": 4
+                },
+                "end": {
+                  "line": 9,
+                  "column": 5
+                }
+              },
+              "entity": "c:buffer.cppm@F@fill#*C#@line",
+              "name": "line"
+            }
+          ],
+          "successors": [
+            0
+          ]
+        },
+        {
+          "events": [],
+          "successors": [
+            1
           ]
         }
       ]

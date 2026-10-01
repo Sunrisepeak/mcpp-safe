@@ -2,6 +2,21 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-10-02 — MC3 0.9.0, MC4 0.5.0: control flow and analysis passes (MF.3)
+
+- **MC3** 0.9.0 (§4.14): a fourteenth kind of facts, `control-flow`: each function the file defines,
+  as blocks of events in evaluation order (a local declared -- indeterminate or not --, read,
+  written, its address taken; a call, noreturn or not; a throw; a return; a lifetime's end) and the
+  edges between them (MC3-4.14-1..5). A template's pattern has `known` false: not computed, not "no
+  flow". Asked for by name: "every kind" does not include it (MC3-4.1-2). The JSON form is 0.5.0;
+  a reader still takes 0.4.0.
+- **MC4** 0.5.0 (§2): a fifth kind of extension point, **analysis pass**: a rule whose features are on
+  MC1's `flow` layer, over control-flow facts, with the SDK's `mcxx.plugin:flow` (reachable blocks,
+  predecessors, the event a path ends with, a forward data-flow solver). It judges only functions
+  whose flow is known (MC4-2-10). The SDK's ABI is 3 (facts gained a member).
+- The first analysis passes are `plugins/flow` (`mcxx.plugins.flow`): `uninitialized-read`,
+  `missing-return`, `noreturn-returns`, pitfalls that profile `safe` denies.
+
 ## 2026-10-02 — MC1 0.5.0: newer standards' features
 
 - **MC1** 0.5.0 (§2.1): a sixth category, `standard`: a core-language feature of an ISO C++ standard

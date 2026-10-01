@@ -34,6 +34,7 @@ path = "src/clang.cppm"
 [dev-dependencies]
 mcxx-testing      = { path = "../../testing" }
 mcxx-plugins-std  = { path = "../../../plugins/std" }
+mcxx-plugins-flow = { path = "../../../plugins/flow" }
 mcxx-plugins-libs = { path = "../../../plugins/libs" }
 mcxx-example-device = { path = "../../../plugins/examples/device" }   # M1.9: an attribute and a region
 # Its tests' C library, as the root names it: `mcpp test -p` makes this package the root of a graph the

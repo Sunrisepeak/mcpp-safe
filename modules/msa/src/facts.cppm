@@ -173,6 +173,68 @@ struct Import : Place {
 
 // The kinds of facts, as a set: what a feature is decided from (plugin::Feature::needs), and so
 // what a host asks a backend to collect. A file whose gates need none of them is not walked.
+// MC3 0.9.0: a function's control flow (Kinds::control_flow) -- its blocks, what happens in each, in
+// evaluation order, and where each goes next: what an analysis on the flow layer (MC1 `flow`) reads,
+// whichever front end computed it (Clang's CFG today, MCIR later). Variables are the function's own
+// locals and parameters, by entity; an event on anything else is not recorded.
+enum class EventKind {
+    declare,     // a local comes into being: `indeterminate` when nothing initializes it ([basic.indet])
+    read,        // its value is read
+    write,       // it is assigned to as a whole
+    address,     // its address is taken or it is bound to a reference: from here on, anything may write it
+    call,        // a call: `entity` the callee (or ""), `noreturn` when it does not return
+    throw_,      // a throw-expression
+    return_,     // a return statement
+    scope_end,   // a local's lifetime ends
+};
+std::string_view to_string(EventKind kind) {
+    switch (kind) {
+    case EventKind::declare: return "declare";
+    case EventKind::read: return "read";
+    case EventKind::write: return "write";
+    case EventKind::address: return "address";
+    case EventKind::call: return "call";
+    case EventKind::throw_: return "throw";
+    case EventKind::return_: return "return";
+    case EventKind::scope_end: return "scope-end";
+    }
+    return "declare";
+}
+std::optional<EventKind> parse_event_kind(std::string_view name) {
+    for (const auto k : { EventKind::declare, EventKind::read, EventKind::write, EventKind::address, EventKind::call, EventKind::throw_,
+                          EventKind::return_, EventKind::scope_end })
+        if (to_string(k) == name) return k;
+    return std::nullopt;
+}
+
+struct Event {
+    EventKind kind { EventKind::declare };
+    Range range;
+    std::string entity;               // the variable's (or the callee's) id
+    std::string name;                 // the variable's name, or the callee's qualified name
+    bool indeterminate { false };     // declare: default-initialization leaves it indeterminate
+    bool noreturn { false };          // call: the callee does not return ([[noreturn]], [dcl.attr.noreturn])
+};
+
+struct Block {
+    std::vector<Event> events;
+    std::vector<std::uint32_t> successors;   // indices into Flow::blocks
+};
+
+struct Flow : Place {                 // range: the function's definition
+    std::string entity;               // the function's id
+    std::string function;             // and its qualified name
+    // Whether the flow below was computed. A template's pattern is not (its code depends on what it is
+    // instantiated with): known is false and there are no blocks -- "ask someone else", not "no flow".
+    bool known { true };
+    bool returns_value { false };     // its return type is not void, and it is not main or a coroutine
+    bool noreturn { false };          // declared [[noreturn]]
+    Range end;                        // its body's closing brace: where flowing off the end happens
+    std::uint32_t entry { 0 };
+    std::uint32_t exit { 0 };
+    std::vector<Block> blocks;
+};
+
 enum class Kinds : std::uint32_t {
     none = 0,
     declarations = 1u << 0,
@@ -191,7 +253,9 @@ enum class Kinds : std::uint32_t {
     declaration_types = 1u << 10,
     attributes = 1u << 11,
     imports = 1u << 12,
+    // Every kind but control_flow, which costs a CFG per function: a feature asks for it by name (MC3-4.1-2).
     all = (1u << 13) - 1,
+    control_flow = 1u << 13,
 };
 constexpr Kinds operator|(Kinds a, Kinds b) { return static_cast<Kinds>(std::to_underlying(a) | std::to_underlying(b)); }
 constexpr Kinds& operator|=(Kinds& a, Kinds b) { return a = a | b; }
@@ -205,7 +269,7 @@ inline constexpr std::pair<Kinds, std::string_view> KIND_NAMES[] {
     { Kinds::macros, "macros" },               { Kinds::uses, "uses" },
     { Kinds::includes, "includes" },           { Kinds::suppressions, "suppressions" },
     { Kinds::declaration_types, "declaration-types" }, { Kinds::attributes, "attributes" },
-    { Kinds::imports, "imports" },
+    { Kinds::imports, "imports" },             { Kinds::control_flow, "control-flow" },
 };
 std::vector<std::string_view> names(Kinds set) {
     std::vector<std::string_view> out;
@@ -234,6 +298,7 @@ struct Facts {
     std::vector<Suppression> suppressions;
     std::vector<Attribute> attributes;
     std::vector<Import> imports;
+    std::vector<Flow> control_flow;   // MC3 0.9.0
 };
 
 } // namespace fact

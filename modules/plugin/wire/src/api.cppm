@@ -11,7 +11,7 @@ export namespace mcxx::plugin::wire {
 using Json = nlohmann::json;
 
 inline constexpr int PROTOCOL { 1 };
-inline constexpr std::string_view MC3_VERSION { "0.4.0" };   // 0.4.0 adds imports, 0.3.0 a declaration's `local`, 0.2.0 attributes; older documents are read too
+inline constexpr std::string_view MC3_VERSION { "0.5.0" };   // 0.5.0 adds control-flow (MC3 0.9.0), 0.4.0 imports, 0.3.0 a declaration's `local`, 0.2.0 attributes; older documents are read too
 
 template <class T>
 using Read = std::expected<T, std::string>;

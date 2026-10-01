@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC4 |
-| Version | 0.4.0 (protocol version 1) |
+| Version | 0.5.0 (protocol version 1) |
 | Status | Draft |
 | Schema | [`schema/mc4-protocol.schema.json`](schema/mc4-protocol.schema.json) |
 | Examples | [`examples/mc4-session.jsonl`](examples/mc4-session.jsonl), [`examples/mc4-plugins.toml`](examples/mc4-plugins.toml) |
@@ -32,6 +32,7 @@ A provider has a `name`, unique among the providers a host has; the features it 
 | **attribute** | -- | attributes it claims, `ns::name`: the compiler accepts them on declarations and records each use as an MC3 fact (MC3 §4.12); a rule reads the declaration's facts (`plugin::subtree`) | when a file is parsed |
 | **region** | -- | an attribute that names a profile: inside the declaration it is on, that profile's levels apply where stricter (MC1 §6) | when a finding is gated |
 | **language** (0.4.0) | a file's path, the target (§2.1), whether each of the provider's features is enabled in the file (its level there, by profiles, the package and file globs, is not `deny`), and the file's command's own arguments, so that it adds only what the command lacks (a later `-std`, not an earlier one) | the compiler arguments those features need, in order | before the file is compiled or parsed |
+| **analysis pass** (0.5.0) | a function's control flow (MC3 §4.14, `control-flow` facts) with the rest of the file's facts | findings, as a rule's: an analysis pass is a rule whose features are on MC1's `flow` layer; the SDK's `mcxx.plugin:flow` gives it which blocks run, each block's predecessors, the event a path ends with, and a forward data-flow solver | after the file is parsed |
 
 - A rule MUST report findings only for features it declares, and SHOULD report only those it is asked for. <a id="MC4-2-2"></a><sup>MC4-2-2</sup>
 - A rule decides whether code uses a feature; it MUST NOT decide the level: that is the configuration's (MC1 §6). <a id="MC4-2-3"></a><sup>MC4-2-3</sup>
@@ -39,6 +40,7 @@ A provider has a `name`, unique among the providers a host has; the features it 
 - A compiler MUST accept, on a declaration, an attribute a provider it has claims, without a diagnostic about an unknown attribute, and MUST record each use (MC3 §4.12). <a id="MC4-2-6"></a><sup>MC4-2-6</sup> Two providers claiming one attribute is a conflict (§4). <a id="MC4-2-7"></a><sup>MC4-2-7</sup>
 - A feature decided from declarations MAY also be decided at a dialect boundary: what an import brings in from a module whose own dialect does not deny the feature (MC3 §4.13's `imports`). The SDK's `report_imports(facts, feature, what, exhibits, out)` reports it at the import -- one finding per import, naming the first exported declaration that exhibits the feature, and a finding that the import is "not known" when a module's interface could not be read -- and such a feature adds `imports` to its `needs`. MC++'s `c-array`, `union`, `c-varargs` (`mc++.iso`), `raw-pointers` and `lib:std.vector` (`mc++.policy`) do. <a id="MC4-2-8"></a><sup>MC4-2-8</sup>
 - A host MUST add a language provider's arguments to a file's compile command -- its compile, its parse for an editor, and the build of a module interface it provides, before what keys that interface -- for the features enabled in the file, and none for a file where none is. A file's levels decide it, not a module's or a namespace's: an option changes how the whole file is parsed. A language provider is in-process only (a static plugin or a plugin library), not out of process (§6). <a id="MC4-2-9"></a><sup>MC4-2-9</sup> MC++'s C++26 and C++29 core-language features are language features (the plan's milestone ML).
+- An analysis pass MUST judge only functions whose flow is known (MC3-4.14-2): one whose flow is not known is neither a finding nor a pass. It reads the flow through MSA only, so the same pass runs over whichever front end gave the facts. <a id="MC4-2-10"></a><sup>MC4-2-10</sup>
 - A feature declares the kinds of facts it is decided from (`needs`) and MAY name a declaration without which it cannot occur (`requires-declaration`); a host SHOULD collect only the facts the features it asks for need, and SHOULD NOT ask a feature whose required name the file neither declares nor imports. <a id="MC4-2-5"></a><sup>MC4-2-5</sup>
 
 ### 2.1 The target

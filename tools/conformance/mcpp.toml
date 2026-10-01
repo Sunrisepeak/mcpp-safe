@@ -18,5 +18,6 @@ mcxx-plugin       = { path = "../../modules/plugin/sdk" }
 mcxx-backend      = { path = "../../modules/backend/semantic" }
 mcxx-plugins-std  = { path = "../../plugins/std" }
 mcxx-plugins-libs = { path = "../../plugins/libs" }
+mcxx-plugins-flow = { path = "../../plugins/flow" }
 mcxx-features     = { path = "../../modules/features" }
 mcxx-frontend     = { path = "../../modules/frontend" }   # --frontend (A1.6.2)

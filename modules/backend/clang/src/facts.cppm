@@ -4,6 +4,9 @@ module;
 
 #include <clang/AST/ASTContext.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/AST/ExprCXX.h>
+
+#include <string>
 
 #include <vector>
 
@@ -24,5 +27,13 @@ msa::fact::Facts facts_of(::clang::ASTContext& ctx, const ::clang::Preprocessor*
 // declarations). A template is its pattern. Each once, with its type; no ranges (they are in other
 // files), and exported: the export is what reaches it.
 std::vector<msa::fact::Declaration> reachable_of(::clang::ASTContext& ctx);
+
+// Shared with :flow.
+// The namespace code in `dc` belongs to ("" = global).
+std::string namespace_of(const ::clang::DeclContext* dc);
+// Whether default-initialization leaves an object of this type indeterminate: a scalar, or an array of them.
+bool indeterminate_type(const ::clang::ASTContext& ctx, ::clang::QualType type);
+// A class default-initialized by a trivial default constructor: its members are left indeterminate.
+bool trivially_default_constructed(const ::clang::CXXConstructExpr* construct);
 
 } // namespace mcxx::clang_backend

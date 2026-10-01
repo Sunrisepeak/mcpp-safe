@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Specification | MC3 |
-| Version | 0.8.0 |
+| Version | 0.9.0 |
 | Status | Draft |
 | Schema | [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json) |
 | Examples | [`examples/mc3-facts.json`](examples/mc3-facts.json) |
@@ -33,7 +33,7 @@ Facts describe **the file's own code**: a backend MUST NOT report a fact whose p
 
 ### 4.1 Kinds
 
-Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill every kind asked for, and MAY leave the others empty; `collected` says which kinds were asked for. <a id="MC3-4.1-1"></a><sup>MC3-4.1-1</sup>
+Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill every kind asked for, and MAY leave the others empty; `collected` says which kinds were asked for. <a id="MC3-4.1-1"></a><sup>MC3-4.1-1</sup> `control-flow` costs a control-flow graph per function: asking for "every kind" (the C++ `Kinds::all`) does not include it, a consumer names it. <a id="MC3-4.1-2"></a><sup>MC3-4.1-2</sup>
 
 | Kind | Records | Tier |
 |---|---|---|
@@ -50,6 +50,7 @@ Facts come in kinds. A consumer asks for a set of kinds; a backend MUST fill eve
 | `suppressions` | §4.10 | waivers (MC1 §7) |
 | `attributes` | §4.12 | the attributes providers claim (MC4 §2), where they are written (0.2.0) |
 | `imports` | §4.13 | the named modules the file imports, and what their MC2 interfaces say they bring in (0.4.0) |
+| `control-flow` | §4.14 | each function's control flow: blocks, events, edges (0.9.0) |
 
 ### 4.2 Declaration
 
@@ -105,7 +106,7 @@ One per variable or member initialized by an initializer the file writes, and on
 
 ### 4.11 The JSON form
 
-A facts document is an object with `mc3-version` (`"0.4.0"`; a reader also takes `"0.3.0"`, which has no `imports`, `"0.2.0"`, whose declarations have no `local` either, and `"0.1.0"`, which has no `attributes` either), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`, `imports`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
+A facts document is an object with `mc3-version` (`"0.5.0"`, MC3 0.9.0; a reader also takes `"0.4.0"`, which has no `control-flow`, `"0.3.0"`, which has no `imports` either, `"0.2.0"`, whose declarations have no `local` either, and `"0.1.0"`, which has no `attributes` either), `path` (the file), `module` (`"m"`, `"m:p"` or `""`), `certainty`, `collected` (kind names) and one array per kind, named as in §4.1 (`declarations`, ..., `suppressions`, `attributes`, `imports`, `control-flow`; `declaration-types` has no array of its own). It MUST validate against [`schema/mc3-facts.schema.json`](schema/mc3-facts.schema.json). <a id="MC3-4.11-1"></a><sup>MC3-4.11-1</sup> Reading a document and writing it again MUST give the same document (member order aside). <a id="MC3-4.11-2"></a><sup>MC3-4.11-2</sup>
 
 ### 4.12 Attribute
 
@@ -114,3 +115,33 @@ One per use of an attribute a provider claims (MC4 §2) on a declaration of the 
 ### 4.13 Import
 
 One per import of a named module in the file's own code (`import m;`, `import :p;`, `export import m;`; not a header unit, not a module implementation unit's implicit import of its interface): `module` (its full name, `m` or `m:p`), `name` (where the name is written), `exported`, and `interfaces`: what the import brings in, as the modules' MC2 interfaces say -- the module first, then every module it re-exports (MC2 `mcxx::reexport`), each once. Each: `module`, `found` (its interface was read), and when found its dialect -- `profiles`, `levels` (feature id to level, for code in the module) -- and `exported`, its exported T1 declarations as §4.2 has them; their ranges are in that module's file. <a id="MC3-4.13-1"></a><sup>MC3-4.13-1</sup> A backend MUST read them from the interfaces, never from the modules' sources: the .ifc beside the BMI the compile imported, or the one kept for that BMI's content (MC2 §7). <a id="MC3-4.13-2"></a><sup>MC3-4.13-2</sup> An import's `range` is the declaration's; MC1's waiver on an import (MC1 §7) covers it. This is the one fact whose content is another module's: the boundary a rule decides on is at the import, in the file (MC4 `report_imports`).
+
+### 4.14 Control flow
+
+One per function, method, constructor, destructor and lambda the file's own code defines (0.9.0). It is what an analysis on MC1's `flow` layer reads (MC4 §2.6), and it names no compiler's types: Clang's CFG gives it today, MC++'s own front end (MCIR) the same later. <a id="MC3-4.14-1"></a><sup>MC3-4.14-1</sup>
+
+| Member | Type | Description |
+|---|---|---|
+| `entity`, `function` | string | The function's id and qualified name. |
+| `known` | boolean | Whether the members below were computed. A template's pattern has none (what its code does depends on its arguments): `known` is false and `blocks` is empty, which means "ask someone else", never "nothing happens" (§3). <a id="MC3-4.14-2"></a><sup>MC3-4.14-2</sup> |
+| `returns-value` | boolean | Its return type is not `void`, and it is not `main`, a coroutine, a constructor or a destructor: flowing off its end is undefined ([stmt.return]). |
+| `noreturn` | boolean | Declared `[[noreturn]]` (or an equivalent the front end knows). |
+| `end` | range | Its body's closing brace: where a path that flows off the end leaves it. |
+| `entry`, `exit` | integer | Indices of the entry and exit blocks in `blocks`. |
+| `blocks` | object[] | Each with `events` and `successors` (indices of the blocks control may go to next; an edge the front end proves never taken -- a condition constant after substitution, a `switch` over every enumerator of its enumeration -- is not one). |
+
+A block's `events` are what happens in it, in evaluation order. Each has a `kind`, a `range`, an `entity` and a `name`; the variables events follow are the function's own locals and parameters that are not references (a reference names another object; a `static` or `thread_local` local is not the function's). <a id="MC3-4.14-3"></a><sup>MC3-4.14-3</sup>
+
+| Kind | When | Members |
+|---|---|---|
+| `declare` | a local comes into being, after its initializer | `indeterminate`: nothing initializes it -- no initializer and a scalar type (or an array of them), or a class whose trivial default constructor leaves its members so ([basic.indet]) |
+| `read` | its value is read (an lvalue-to-rvalue conversion; also the first half of `+=`, `++`) | |
+| `write` | it is assigned to as a whole (`=`, the second half of `+=`, `++`) | |
+| `address` | its address is taken, it is bound to a reference, or it is the object of a member call: from here on, anything may write it | |
+| `call` | a call | `entity`, `name`: the callee, or `""` for an indirect call; `noreturn`: the callee does not return |
+| `throw` | a throw-expression | |
+| `return` | a return statement | |
+| `scope-end` | a local's lifetime ends (leaving its scope, or a `return` leaving it) | |
+
+A backend MUST give the events of every local that §4.14's rules name, and MUST NOT give a `declare` with `indeterminate` for a local that something initializes: an analysis's "may be read before written" rests on it. <a id="MC3-4.14-4"></a><sup>MC3-4.14-4</sup> A path that reaches `exit` ends by itself when its last event other than `scope-end` is a `return`, a `throw` or a `call` that does not return; otherwise it flows off the function's end. <a id="MC3-4.14-5"></a><sup>MC3-4.14-5</sup>
+

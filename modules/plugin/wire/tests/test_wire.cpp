@@ -75,6 +75,31 @@ fact::Facts every_kind() {
     im.interfaces.push_back(in);
     im.interfaces.push_back({ "legacy:detail", false, {}, {}, {} });
     f.imports.push_back(im);
+    // MC3 0.9.0: a function's control flow (asked for by name: `all` does not include it).
+    f.collected = f.collected | fact::Kinds::control_flow;
+    fact::Flow fl { { at(13), "app" } };
+    fl.entity = "c:@N@app@F@g#b#";
+    fl.function = "app::g";
+    fl.returns_value = true;
+    fl.end = at(20);
+    fl.entry = 2;
+    fl.exit = 0;
+    fl.blocks.push_back({});
+    fact::Event declare { fact::EventKind::declare, at(14), "c:g.cpp@x", "x" };
+    declare.indeterminate = true;
+    fact::Event call { fact::EventKind::call, at(15), "c:@F@abort#", "abort" };
+    call.noreturn = true;
+    fl.blocks.push_back({ { { fact::EventKind::write, at(16), "c:g.cpp@x", "x" }, { fact::EventKind::read, at(17), "c:g.cpp@x", "x" },
+                            { fact::EventKind::return_, at(17) }, { fact::EventKind::scope_end, at(17), "c:g.cpp@x", "x" } },
+                          { 0 } });
+    fl.blocks.push_back({ { declare, call, { fact::EventKind::address, at(15), "c:g.cpp@x", "x" }, { fact::EventKind::throw_, at(18) } }, { 1, 0 } });
+    f.control_flow.push_back(fl);
+    fact::Flow pattern { { at(21), "app" } };
+    pattern.entity = "c:@N@app@FT@>1#Th#t0.0#";
+    pattern.function = "app::h";
+    pattern.known = false;
+    pattern.end = at(22);
+    f.control_flow.push_back(pattern);
     return f;
 }
 
@@ -104,6 +129,24 @@ int main() {
         expect(back->imports.size() == 1 && back->imports[0].exported && back->imports[0].interfaces.size() == 2);
         expect(back->imports[0].interfaces[0].level("raw-pointers") == "warn" && back->imports[0].interfaces[0].exported[0].c_array);
         expect(!back->imports[0].interfaces[1].found);
+        expect(back->control_flow.size() == 2 && back->control_flow[0].blocks.size() == 3 && back->control_flow[0].entry == 2);
+        expect(back->control_flow[0].blocks[2].events[0].indeterminate && back->control_flow[0].blocks[2].events[1].noreturn);
+        expect(back->control_flow[0].blocks[1].events[2].kind == fact::EventKind::return_ && !back->control_flow[1].known);
+        expect(first["control-flow"][0]["blocks"][1]["events"][3]["kind"] == "scope-end");
+    };
+
+    "control flow is checked as strictly: an edge to no block, an unknown event"_test = [] {
+        const Json j = wire::facts_to_json(every_kind(), "/p/a.cpp", "");
+        Json edge = j;
+        edge["control-flow"][0]["blocks"][1]["successors"] = Json::array({ 7 });
+        expect(!wire::facts_from_json(edge) && wire::facts_from_json(edge).error().contains("successors"));
+        Json event = j;
+        event["control-flow"][0]["blocks"][1]["events"][0]["kind"] = "borrow";
+        expect(!wire::facts_from_json(event) && wire::facts_from_json(event).error().contains("borrow"));
+        Json before = j;
+        before["mc3-version"] = "0.4.0";
+        before.erase("control-flow");
+        expect(wire::facts_from_json(before).has_value()) << "an MC3 JSON 0.4.0 document (no control flow) still reads";
     };
 
     "reading is strict: a missing or mistyped member is an error that names it"_test = [] {

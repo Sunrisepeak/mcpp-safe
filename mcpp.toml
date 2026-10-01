@@ -47,6 +47,7 @@ members = [
     "modules/backend/clang-compiler",
     "plugins/std",
     "plugins/libs",
+    "plugins/flow",
     "tools/probe",
     "tools/conformance",
     "tools/lexdump",
@@ -96,6 +97,7 @@ mcxx-driver            = { path = "modules/driver" }       # everything the driv
 # builds a package's compiler with its own static plugins added (MC4 §3, A0.6.1).
 mcxx-plugins-std  = { path = "plugins/std" }
 mcxx-plugins-libs = { path = "plugins/libs" }
+mcxx-plugins-flow = { path = "plugins/flow" }
 
 # Version settlement only, not a dependency of the driver's own code: llvm.codegen-dev reaches
 # llvm.clang-dev by path inside its archive and mcxx.backend.clang by version, and mcpp asks the

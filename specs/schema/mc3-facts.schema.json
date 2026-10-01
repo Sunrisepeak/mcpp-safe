@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Sunrisepeak/mcpp-safe/specs/schema/mc3-facts.schema.json",
-  "title": "MC3 0.4.0: the facts of one file, in JSON",
+  "title": "MC3 0.5.0 (MC3 0.9.0): the facts of one file, in JSON",
   "type": "object",
   "required": [
     "mc3-version",
@@ -70,7 +70,8 @@
         "suppressions",
         "declaration-types",
         "attributes",
-        "imports"
+        "imports",
+        "control-flow"
       ]
     },
     "declaration": {
@@ -639,6 +640,127 @@
           "description": "Its exported T1 declarations; their ranges are in its own file."
         }
       }
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "kind",
+        "range",
+        "entity",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "declare",
+            "read",
+            "write",
+            "address",
+            "call",
+            "throw",
+            "return",
+            "scope-end"
+          ]
+        },
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "indeterminate": {
+          "type": "boolean",
+          "description": "declare: default-initialization leaves the local indeterminate"
+        },
+        "noreturn": {
+          "type": "boolean",
+          "description": "call: the callee does not return"
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "required": [
+        "events",
+        "successors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "successors": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "required": [
+        "range",
+        "container",
+        "entity",
+        "function",
+        "known",
+        "returns-value",
+        "noreturn",
+        "end",
+        "entry",
+        "exit",
+        "blocks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "$ref": "#/$defs/range"
+        },
+        "container": {
+          "type": "string"
+        },
+        "entity": {
+          "type": "string"
+        },
+        "function": {
+          "type": "string"
+        },
+        "known": {
+          "type": "boolean"
+        },
+        "returns-value": {
+          "type": "boolean"
+        },
+        "noreturn": {
+          "type": "boolean"
+        },
+        "end": {
+          "$ref": "#/$defs/range"
+        },
+        "entry": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        }
+      }
     }
   },
   "properties": {
@@ -647,7 +769,8 @@
         "0.1.0",
         "0.2.0",
         "0.3.0",
-        "0.4.0"
+        "0.4.0",
+        "0.5.0"
       ]
     },
     "path": {
@@ -741,6 +864,13 @@
         "$ref": "#/$defs/import"
       },
       "description": "MC3 0.4.0; documents before it have none."
+    },
+    "control-flow": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/flow"
+      },
+      "description": "MC3 0.9.0 (JSON form 0.5.0); documents before it have none."
     }
   }
 }

@@ -1,0 +1,30 @@
+# MC++'s control-flow plugin (MF.3): three undefined-behaviour sources only the flow of a function shows,
+# on MC1's flow layer, over MC3 control-flow facts and the SDK's analysis passes (mcxx.plugin:flow).
+#
+#   uninitialized-read   a local read on some path before anything writes it      [basic.indet]
+#   missing-return       a function returning a value whose end a path reaches    [stmt.return]
+#   noreturn-returns     a [[noreturn]] function that can return                  [dcl.attr.noreturn]
+#
+# Written against the plugin SDK (mcxx.plugin) only, as any third-party plugin is.
+[package]
+name        = "mcxx-plugins-flow"
+version     = "0.1.0"
+description = "MC++ control-flow rules: uninitialized reads, a missing return, a [[noreturn]] function that returns"
+license     = "Apache-2.0"
+
+[targets.mcxx-plugins-flow]
+kind = "lib"
+
+[dependencies]
+openkal-llvm-runtime = "0.15.2"
+mcxx-msa    = { path = "../../modules/msa" }
+mcxx-plugin = { path = "../../modules/plugin/sdk" }
+
+[dev-dependencies]
+mcxx-testing  = { path = "../../modules/testing" }
+mcxx-features = { path = "../../modules/features" }
+# Its tests' C library, as the root names it (see plugins/std/mcpp.toml).
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.9" }
+
+[lib]
+path = "src/flow.cppm"
