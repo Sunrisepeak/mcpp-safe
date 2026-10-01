@@ -20,6 +20,8 @@ enum class Category {
     library,     // which library facilities a program may use: "lib:std.vector"
     pitfall,     // a trap in a library or the language: "json-brace-init"
     extension,   // what MC++ adds to C++ ([[mcpp::cfg]]): code using it needs MC++ (profile portable denies them)
+    standard,    // a core-language feature of a newer C++ standard ("c++26:reflection"): off unless enabled, and
+                 // enabling it turns it on in the compiler (its provider's language arguments, MC4 0.4.0)
 };
 
 std::string_view to_string(Category category);
@@ -33,7 +35,7 @@ enum class Origin { builtin, plugin };
 struct Feature {
     std::string id;
     Category category { Category::policy };
-    std::string standard;       // iso: the ISO C++ stable names it controls, "[stmt.goto]"
+    std::string standard;       // iso: the ISO C++ stable names it controls, "[stmt.goto]"; standard: its paper, "P2996R13"
     std::string layer;          // where it is decided: "syntax" | "decl" | "expr" | "text"
     std::string summary;        // one line, for diagnostics and listings
     std::string fix;            // what to write instead

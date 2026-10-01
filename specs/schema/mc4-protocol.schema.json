@@ -50,7 +50,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^(lib:|ext:)?[a-z0-9]+([-.][a-z0-9]+)*$"
+          "pattern": "^(lib:|ext:|c\\+\\+[0-9]{2}:)?[a-z0-9]+([-.][a-z0-9]+)*$"
         },
         "category": {
           "enum": [
@@ -58,7 +58,8 @@
             "policy",
             "library",
             "pitfall",
-            "extension"
+            "extension",
+            "standard"
           ]
         },
         "standard": {
@@ -177,7 +178,8 @@
                   "policy",
                   "library",
                   "pitfall",
-                  "extension"
+                  "extension",
+                  "standard"
                 ]
               },
               "level": {

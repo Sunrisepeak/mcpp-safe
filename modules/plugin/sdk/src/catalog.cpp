@@ -79,6 +79,10 @@ void check_feature(const Catalog::Entry& e, std::vector<std::string>& problems) 
     const Feature& f { *e.feature };
     std::string_view rest { f.id };
     if (rest.starts_with("lib:") || rest.starts_with("ext:")) rest.remove_prefix(4);
+    // A newer standard's feature: "c++26:" (MC1-2.1-5).
+    const bool standard_prefix { rest.size() > 6 && rest.starts_with("c++") && rest[3] >= '0' && rest[3] <= '9' && rest[4] >= '0' && rest[4] <= '9' &&
+                                 rest[5] == ':' };
+    if (standard_prefix) rest.remove_prefix(6);
     bool well_formed { !rest.empty() };
     char previous { '-' };
     for (const char c : rest) {
@@ -93,6 +97,15 @@ void check_feature(const Catalog::Entry& e, std::vector<std::string>& problems) 
         problems.push_back(std::format("library feature `{}` (of {}) does not start with lib: (MC1-2.1-2)", f.id, e.provider->name()));
     if (f.category == Category::extension && !f.id.starts_with("ext:"))
         problems.push_back(std::format("extension feature `{}` (of {}) does not start with ext: (MC1-2.1-3)", f.id, e.provider->name()));
+    if (f.category == Category::standard && !standard_prefix)
+        problems.push_back(std::format("standard feature `{}` (of {}) does not start with its standard, c++26: or c++29: (MC1-2.1-5)", f.id, e.provider->name()));
+    if (f.category != Category::standard && standard_prefix)
+        problems.push_back(std::format("feature `{}` (of {}) is named for a standard but is category {} (MC1-2.1-5)", f.id, e.provider->name(), to_string(f.category)));
+    if (f.category == Category::standard && f.default_level != Level::deny)
+        problems.push_back(std::format("standard feature `{}` (of {}) is not off by default: its default level must be deny (MC1-2.1-6)", f.id,
+                                       e.provider->name()));
+    if (f.category == Category::standard && f.standard.empty())
+        problems.push_back(std::format("standard feature `{}` (of {}) names no paper (MC1-2-3)", f.id, e.provider->name()));
     if (f.category == Category::iso && f.standard.empty())
         problems.push_back(std::format("ISO feature `{}` (of {}) names no stable name (MC1-2-3)", f.id, e.provider->name()));
     // An ISO feature is MC++'s to define; a plugin may only provide one instead of it.
