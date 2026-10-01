@@ -41,6 +41,8 @@ MC++ 是一个**以插件系统为核心、只面向 C++ 模块代码、特性�
 
 **非目标（当前阶段）**
 
+2026-10-02：终点改为自研前端完全替换 Clang 的前端，下面的头文件、C 模式、GNU 扩展、自研代码生成在 M4–M6 依次成为目标；ObjC/ObjC++ 仍不做。总路线见 [`2026-10-02-mcxx-roadmap-full-frontend.md`](2026-10-02-mcxx-roadmap-full-frontend.md)。
+
 - 向前兼容：头文件单元、PCH、C 模式、旧标准模式、GNU 扩展、ObjC++。
 - 自有标准库 `std2`：M4 之前一律使用标准 `std`（第二轮 review 决定）。
 - 自研代码生成：M4 之前由 Clang CodeGen 负责。
