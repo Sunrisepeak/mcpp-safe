@@ -41,12 +41,14 @@ module;
 #include <llvm/Support/thread.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <functional>
 #include <future>
@@ -135,13 +137,29 @@ ModuleStore::Result ModuleStore::require(const std::vector<std::string>& roots, 
     const std::vector<std::string> order { graph_.closure(roots, &result.missing) };
     for (const auto& module : order) schedule_(module);
     dispatch_();
-    cv_.wait(lock, [&] {
-        if (cancel.stop_requested() || stopping_) return true;
+    const auto since { std::chrono::steady_clock::now() };
+    // Woken by the cancel token too, not only by the next module done: a request given up on (an
+    // older version of the text) let go of its thread while the store is still busy.
+    while (!cv_.wait_for(lock, cancel, std::chrono::seconds { 10 }, [&] {
+        if (stopping_) return true;
         return std::ranges::all_of(order, [&](const std::string& m) {
             const auto& e = entries_[m];
             return e.state == State::ready || e.state == State::failed;
         });
-    });
+    })) {
+        if (cancel.stop_requested()) break;
+        // A wait that does not end: what it waits for, and in which state each is.
+        if (!base::trace::enabled("modules", base::trace::Level::debug)) continue;
+        static constexpr std::array names { "unknown", "stale", "queued", "building", "ready", "failed" };
+        std::string pending;
+        for (const auto& module : order) {
+            const auto& e = entries_[module];
+            if (e.state != State::ready && e.state != State::failed)
+                pending += std::format(" {} ({}{})", module, names[static_cast<std::size_t>(e.state)], e.again ? ", again" : "");
+        }
+        const auto seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - since).count() };
+        base::trace::debug("modules", "Waiting {:.0f} s for{}; {} waiting, {} ready to build", seconds, pending, waiting_.size(), ready_.size());
+    }
     for (const auto& module : order) {
         const auto& e = entries_[module];
         if (e.state == State::ready) result.pcms.emplace(module, e.pcm);
@@ -192,9 +210,14 @@ void ModuleStore::schedule_(const std::string& module) {
 
 void ModuleStore::dispatch_() {
     bool moved { false };
-    for (auto it = waiting_.begin(); it != waiting_.end();) {
+    // By position, not iterator: schedule_ appends a dependency to waiting_ while it is walked, and an
+    // append that grows the vector leaves an iterator dangling (a program change, whose importers
+    // waiting here gain dependencies the store has not seen: the queue lost modules, which then
+    // stayed queued for ever, and macOS crashed).
+    for (std::size_t i { 0 }; i < waiting_.size();) {
+        const std::string module { waiting_[i] };
         bool done { true };
-        for (const auto& dependency : graph_.requires_of(*it)) {
+        for (const auto& dependency : graph_.requires_of(module)) {
             if (graph_.provider(dependency).empty()) continue;
             const auto& d = entries_[dependency];
             if (d.state != State::ready && d.state != State::failed) {
@@ -203,11 +226,11 @@ void ModuleStore::dispatch_() {
             }
         }
         if (done) {
-            ready_.push_back(*it);
-            it = waiting_.erase(it);
+            ready_.push_back(module);
+            waiting_.erase(waiting_.begin() + static_cast<std::ptrdiff_t>(i));
             moved = true;
         } else {
-            ++it;
+            ++i;
         }
     }
     if (moved) cv_.notify_all();

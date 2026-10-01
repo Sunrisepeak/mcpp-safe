@@ -195,6 +195,36 @@ int main() {
         expect(s.indexed == s.units) << std::format("{} indexed of {} units", s.indexed, s.units);
     };
 
+    "a parse given up on lets go while the module it waits for is still being built"_test = [] {
+        Program p { "cancelled" };
+        // Seconds of constant evaluation (about 5 s in process on linux-x64): the parse is cancelled long before.
+        p.file("src/slow.cppm", "export module slow;\nconstexpr long spin() { long s = 0; for (long i = 0; i < 6000000; ++i) s += i % 7; return s; }\n"
+               "export constexpr long value = spin();\n");
+        for (auto& c : p.commands) c.arguments.push_back("-fconstexpr-steps=2147483647");
+        const std::string text { "import slow;\nint main() { return value == 0; }\n" };
+        p.file("src/main.cpp", text);
+        p.commands.back().arguments.push_back("-fconstexpr-steps=2147483647");
+        msa::Workspace::Options options;
+        options.cache_directory = (p.root / ".cache").generic_string();
+        options.workers = 1;
+        options.background_index = false;
+        auto w = mcxx::backend::clang::make_workspace(std::move(options));
+        w->set_commands(p.commands);
+        std::stop_source cancel;
+        std::chrono::steady_clock::time_point returned;
+        std::jthread parse { [&] {
+            (void)w->parse(p.commands.back().file, text, 1, cancel.get_token());
+            returned = std::chrono::steady_clock::now();
+        } };
+        std::this_thread::sleep_for(std::chrono::milliseconds { 300 });
+        const auto asked { std::chrono::steady_clock::now() };
+        cancel.request_stop();
+        parse.join();
+        const auto waited { std::chrono::duration<double>(returned - asked).count() };
+        expect(w->status().busy) << "slow was built already: the case shows nothing";
+        expect(waited < 1.0) << std::format("the parse returned {:.2f} s after it was cancelled", waited);
+    };
+
     "a failed module, and what imports it, are built again when a header it read is mended"_test = [] {
         Program p { "header" };
         // Not a unit of the program (no command): only the module that includes it knows it.
