@@ -3,6 +3,7 @@
 import std;
 import mcxx.testing;
 import mcxx.plugin;
+import mcxx.features;
 
 namespace plugin = mcxx::plugin;
 
@@ -57,6 +58,17 @@ int main() {
         expect(!reported("c++26:pack-indexing", "(MC1-2.1-1)"));
         const plugin::Feature* f { plugin::find_feature("c++26:pack-indexing") };
         expect(f != nullptr && f->category == plugin::Category::standard && f->default_level == plugin::Level::deny);
+    };
+
+    "denied by default, a standard feature gates nothing: a file is not walked for it"_test = [] {
+        const auto plan = mcxx::features::plan_for("/nonexistent-mcxx-dir/a.cpp");
+        for (const auto& gate : plan->gates)
+            if (gate.entry->feature->category == plugin::Category::standard) expect(!gate.maybe) << gate.entry->feature->id;
+        const auto* gate = plan->gate("c++26:pack-indexing");
+        expect(gate != nullptr && plan->level(*gate, {}, {}) == plugin::Level::deny) << "it keeps its level";
+        // The policy feature named for a standard is denied by default, and gates as any policy does.
+        const auto* policy = plan->gate("c++29:named-for-a-standard");
+        expect(policy != nullptr && policy->maybe && plan->gated);
     };
 
     return report();

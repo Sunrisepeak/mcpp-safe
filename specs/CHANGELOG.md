@@ -11,6 +11,8 @@ Changes to the specifications in this directory. Each specification is versioned
   -- its default level is `deny` -- and enabling it turns it on in the compiler through its
   provider's language arguments (MC4 0.4.0) (MC1-2.1-6). Any provider may declare one. The schemas
   (MC1 catalog, MC4 protocol, MC6 requests) take the category, the id prefix and a paper number.
+- **MC4** 0.4.0 (§2): a language provider is also given the file's command's own arguments, so that it
+  adds only what the command lacks (`plugins/lang`'s `-std=c++2c` where the command asks for less).
 
 ## 2026-10-02 — MC4 0.4.0: language providers
 

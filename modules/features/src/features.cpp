@@ -341,6 +341,10 @@ Plan make_plan(Config config) {
         for (const auto* scopes : { &c.modules, &c.namespaces, &c.files })
             for (const auto& [name, levels] : *scopes)
                 if (const auto it = levels.find(f.id); it != levels.end() && it->second != Level::allow) gate.maybe = true;
+        // A newer standard's feature is off by default, and nothing finds it in facts: a file where it is
+        // denied is just not compiled with it (its provider's language arguments, MC1-2.1-6). It keeps its
+        // level, and gates nothing -- else every file would be walked for the dozens of them.
+        if (f.category == plugin::Category::standard) gate.maybe = false;
         plan.gates.push_back(gate);
         if (!gate.maybe) continue;
         plan.gated = true;
@@ -557,7 +561,7 @@ void append_audit(std::string_view file, const std::vector<Waiver>& waivers) {
     }
 }
 
-std::vector<std::string> language_arguments(std::string_view source_path, const plugin::Target& target) {
+std::vector<std::string> language_arguments(std::string_view source_path, const plugin::Target& target, std::span<const std::string> arguments) {
     const auto catalog = plugin::catalog();
     if (catalog->languages.empty()) return {};
     const auto plan = plan_for(source_path);
@@ -570,7 +574,7 @@ std::vector<std::string> language_arguments(std::string_view source_path, const 
         }
         return plan->level(*gate, {}, {}, file) != Level::deny;
     };
-    return plugin::language_arguments({ source_path, target, enabled });
+    return plugin::language_arguments({ source_path, target, enabled, arguments });
 }
 
 } // namespace mcxx::features

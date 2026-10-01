@@ -468,7 +468,7 @@ std::vector<std::string> language_arguments_of(const std::string& path, const st
         else if ((args[i] == "-target" || args[i] == "--target") && i + 1 < args.size()) triple = args[i + 1];
     }
     if (triple.empty()) triple = llvm::sys::getDefaultTargetTriple();
-    return features::language_arguments(path, target_of_triple(llvm::Triple { triple }));
+    return features::language_arguments(path, target_of_triple(llvm::Triple { triple }), args);
 }
 
 } // namespace mcxx::clang_backend

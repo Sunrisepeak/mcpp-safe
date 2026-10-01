@@ -17,6 +17,8 @@ struct LanguageContext {
     std::string_view path;
     const Target& target;
     std::function<bool(std::string_view)> enabled;
+    // The command's own arguments (the -std it asks for, its other options): what a provider adds to.
+    std::span<const std::string> arguments {};
 };
 
 class LanguageProvider : public Provider {
