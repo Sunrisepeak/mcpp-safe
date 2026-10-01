@@ -140,6 +140,20 @@ def manifest_problems(root: pathlib.Path):
                 continue   # the root's version settlement
             if under_llvm or key.startswith("llvm."):
                 problems.append(f"{path}:{n}: clang-exposure: a dependency on llvm.{key.removeprefix('llvm.')} outside modules/backend/clang*\n    {line.strip()}")
+    # `mcxx compose` writes a manifest that settles versions as the root does (modules/driver/src/
+    # commands.cpp): its llvm.clang-dev, openkal-musl and openkal-llvm-runtime are the root's. It said
+    # 23.1.0.4 against the backend's 23.1.0.9, and compose failed ("irreconcilable versions").
+    root_toml = (pathlib.Path(__file__).resolve().parents[2] / "mcpp.toml").read_text()
+    compose = pathlib.Path(__file__).resolve().parents[2] / "modules/driver/src/commands.cpp"
+    template = compose.read_text()
+    for name, pattern in (("llvm.clang-dev", r'clang-dev\s*=\s*\\?"([0-9.]+)\\?"'),
+                          ("openkal-musl", r'openkal-musl\.git\\?",\s*tag\s*=\s*\\?"([0-9.]+)\\?"'),
+                          ("openkal-llvm-runtime", r'openkal-llvm-runtime\s*=\s*\\?"([0-9.]+)\\?"')):
+        want, have = re.search(pattern, root_toml), re.search(pattern, template)
+        if want and have and want.group(1) != have.group(1):
+            problems.append(f"{compose}: compose-versions: the composed manifest's {name} is {have.group(1)}, the root's {want.group(1)}")
+        elif not (want and have):
+            problems.append(f"{compose}: compose-versions: {name} not found in {'the root manifest' if not want else 'the compose template'}")
     return problems
 
 
