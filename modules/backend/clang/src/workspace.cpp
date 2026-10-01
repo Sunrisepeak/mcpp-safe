@@ -514,6 +514,10 @@ std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options) 
 }
 
 
+std::vector<std::string> language_arguments(const std::string& path, const std::vector<std::string>& args) {
+    return mcxx::clang_backend::language_arguments_of(path, args);
+}
+
 std::vector<std::string> derived_arguments(const msa::Command& command) {
     msa::Command absolute { command };
     if (!absolute.file.empty() && !mcxx::base::is_absolute_path(absolute.file))

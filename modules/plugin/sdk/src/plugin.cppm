@@ -2,7 +2,8 @@
 // feature controls are the built-in provider mc++.iso (mcxx.features), and a plugin is a provider
 // in an mcpp package, registered at static initialization, that the program it is linked into
 // (mcxx, or mcppls through libmc++) runs. A plugin can control (gate features of any category),
-// extend (source filters: text before parsing), and override: provide a feature another provider
+// extend (source filters: text before parsing; language providers: the compiler arguments a file's
+// enabled language features need, MC4 0.4.0), and override: provide a feature another provider
 // -- MC++'s own included -- provides (Feature::replaces), or stand in for a whole provider
 // (Provider::replaces).
 //
@@ -26,4 +27,5 @@ export module mcxx.plugin;
 export import :feature;
 export import :rule;
 export import :filter;
+export import :language;
 export import :catalog;

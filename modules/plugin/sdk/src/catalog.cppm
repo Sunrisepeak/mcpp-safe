@@ -6,6 +6,7 @@ import mcxx.msa;
 import :feature;
 import :rule;
 import :filter;
+import :language;
 
 export namespace mcxx::plugin {
 
@@ -13,11 +14,12 @@ export namespace mcxx::plugin {
 
 void register_rule(std::unique_ptr<Rule> rule, Origin origin = Origin::plugin);
 void register_source_filter(std::unique_ptr<SourceFilter> filter, Origin origin = Origin::plugin);
+void register_language_provider(std::unique_ptr<LanguageProvider> provider, Origin origin = Origin::plugin);
 
 // What a plugin library and the compiler that loads it must agree on (MC4 §3, `library`): the
 // layouts of this SDK's types and of MSA's facts, which the two share in one process. Raised
 // whenever one of them changes. A library carries its own value as `mcxx_plugin_sdk_abi`.
-inline constexpr int SDK_ABI { 1 };
+inline constexpr int SDK_ABI { 2 };
 
 // A library's providers register as its static objects are constructed, while it loads, before
 // the host can ask it anything. The host holds them (MC4-3-7): registrations from hold_registrations()
@@ -31,6 +33,7 @@ template <class R, Origin O = Origin::plugin>
 struct Registration {
     Registration() {
         if constexpr (std::is_base_of_v<SourceFilter, R>) register_source_filter(std::make_unique<R>(), O);
+        else if constexpr (std::is_base_of_v<LanguageProvider, R>) register_language_provider(std::make_unique<R>(), O);
         else register_rule(std::make_unique<R>(), O);
     }
 };
@@ -56,6 +59,7 @@ struct Catalog {
     std::vector<ProviderEntry> providers;        // the active ones: built-in first, then in registration order
     std::vector<const Rule*> rules;              // in that order
     std::vector<const SourceFilter*> filters;
+    std::vector<const LanguageProvider*> languages;   // in that order too
     std::vector<Entry> features;                 // by id
     std::vector<ProfileEntry> profiles;          // by name
     struct AttributeEntry {
@@ -91,5 +95,8 @@ void report_imports(const msa::fact::Facts& facts, std::string_view feature, std
 // Every active filter in order, each over the previous one's text; a replacement that changes the
 // length or the line breaks is refused (reported, and that filter's output dropped).
 Filtered apply_source_filters(const SourceContext& context, std::string_view text);
+
+// Every active language provider's arguments for the file, in order (MC4 0.4.0).
+std::vector<std::string> language_arguments(const LanguageContext& context);
 
 } // namespace mcxx::plugin

@@ -395,6 +395,32 @@ int compiled(int status) {
     return status;
 }
 
+// MC4 0.4.0: what the source file's enabled language features need (the language providers), after
+// the command's own arguments. Only for a command that compiles one source file, which is what a
+// build tool runs; a link, or several sources, are left as they are. Returns whether it added any.
+bool add_language_arguments(std::vector<std::string>& args) {
+    if (plugin::catalog()->languages.empty()) return false;
+    static constexpr std::array sources { ".cpp", ".cc", ".cxx", ".c++", ".c", ".cppm", ".ccm", ".cxxm", ".c++m", ".ixx", ".mpp" };
+    static constexpr std::array valued { "-o", "-MF", "-MT", "-MQ", "-x", "-include", "-imacros", "-I", "-isystem", "-iquote", "-D", "-U" };
+    std::vector<std::string> found;
+    for (std::size_t i { 0 }; i < args.size(); ++i) {
+        const std::string& a { args[i] };
+        if (std::ranges::find(valued, a) != valued.end()) {
+            ++i;
+            continue;
+        }
+        if (a.starts_with('-')) continue;
+        if (std::ranges::any_of(sources, [&](std::string_view e) { return a.ends_with(e); })) found.push_back(a);
+    }
+    if (found.size() != 1) return false;
+    std::error_code ec;
+    const auto absolute = std::filesystem::absolute(found.front(), ec);
+    auto extra = mcxx::backend::language_arguments(ec ? found.front() : absolute.generic_string(), args);
+    if (extra.empty()) return false;
+    for (auto& x : extra) args.push_back(std::move(x));
+    return true;
+}
+
 } // namespace
 
 int run(int argc, char** argv, std::vector<std::string> composed, std::string composition) {
@@ -414,7 +440,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
         // --mcxx-diagnostics is ours, not the compiler's (MC5 §9).
         std::vector<std::string> args(argv + 1, argv + argc);
         if (!take_view(args)) return 2;
-        if (static_cast<int>(args.size()) + 1 != argc) {
+        if (add_language_arguments(args) || static_cast<int>(args.size()) + 1 != argc) {
             args.insert(args.begin(), argv[0]);
             std::vector<char*> kept;
             for (auto& a : args) kept.push_back(a.data());
@@ -432,9 +458,13 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
     if ((command == "c++" || command == "cc" || command == "check") && !take_view(rest)) return 2;
     if (command == "c++" || command == "cc" || command == "check")
         if (const auto handed = hand_over(argc, argv, composition)) return *handed;
-    if (command == "c++" || command == "cc") return compiled(compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest)));
+    if (command == "c++" || command == "cc") {
+        (void)add_language_arguments(rest);
+        return compiled(compiler::run_as(command == "c++" ? "c++" : "c", argv[0], std::move(rest)));
+    }
     if (command == "check") {
         if (!rest.empty() && (rest.front() == "-p" || rest.front().starts_with("-p="))) return check_database(std::move(rest), argv[0]);
+        (void)add_language_arguments(rest);
         rest.push_back("-fsyntax-only");
         return compiler::run_as("c++", argv[0], std::move(rest));
     }
@@ -466,7 +496,7 @@ int run(int argc, char** argv, std::vector<std::string> composed, std::string co
             std::string_view clang { full };
             if (const auto space = clang.rfind(' '); space != std::string_view::npos) clang.remove_prefix(space + 1);
             std::println("{{\"mcxx\":\"{}\",\"compiler\":{{\"name\":\"clang\",\"version\":{}}},\"specifications\":{{\"mc1\":\"0.4.0\","
-                         "\"mc2\":\"{}\",\"mc3\":\"0.8.0\",\"mc4\":\"0.3.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
+                         "\"mc2\":\"{}\",\"mc3\":\"0.8.0\",\"mc4\":\"0.4.0\",\"mc4-protocols\":[1],\"mc5\":\"0.4.0\",\"mc6\":1}},\"providers\":[{}]}}",
                          VERSION, json_string(clang), mcxx::ifc::MC2_VERSION, providers);
             return 0;
         }

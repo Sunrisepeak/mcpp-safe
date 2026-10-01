@@ -9,11 +9,25 @@ import mcxx.os;
 import mcxx.base;
 import mcxx.plugins.json;
 import mcxx.plugins.std;
+import mcxx.plugin;
 import example.device;
 
 namespace msa = mcxx::msa;
 
 namespace {
+
+// MC4 0.4.0: a language provider whose feature is on by default, and the argument it turns it on with.
+struct Language final : mcxx::plugin::LanguageProvider {
+    std::vector<mcxx::plugin::Feature> features_ { mcxx::plugin::Feature { .id = "ext:test-language", .category = mcxx::plugin::Category::extension,
+                                                                           .summary = "a language feature for the test" } };
+    std::string_view name() const override { return "test.language"; }
+    std::span<const mcxx::plugin::Feature> features() const override { return features_; }
+    std::vector<std::string> arguments(const mcxx::plugin::LanguageContext& context) const override {
+        if (!context.enabled("ext:test-language")) return {};
+        return { "-DMCXX_TEST_LANGUAGE=1" };
+    }
+};
+mcxx::plugin::Registration<Language> language_registration;
 
 struct Program {
     std::filesystem::path root;
@@ -260,6 +274,20 @@ int main() {
         const std::string text { "import a;\nimport b;\nint main() { return f() - g(); }\n" };
         const std::string main { p.file("src/main.cpp", text) };
         for (std::size_t i { 1 }; i < p.commands.size(); ++i) p.commands[i].arguments.push_back("--target=x86_64-pc-linux-gnu");
+        auto w = workspace_for(p);
+        auto unit = w->parse(main, text, 1);
+        expect(fatal(unit != nullptr));
+        const auto diagnostics = unit->diagnostics();
+        expect(diagnostics.empty()) << std::format("{} diagnostics: {}", diagnostics.size(), diagnostics.empty() ? std::string {} : diagnostics[0].message);
+        expect(w->status().failures.empty()) << std::format("{} modules failed", w->status().failures.size());
+    };
+
+    "a file is parsed, and a module built, with the arguments its enabled language features need (MC4 0.4.0)"_test = [] {
+        Program p { "language" };
+        // Both compile only with the provider's -D: a module (the store's build) and its importer (a parse).
+        p.file("src/a.cppm", "export module a;\n#ifndef MCXX_TEST_LANGUAGE\n#error the language provider's argument is missing\n#endif\nexport int f() { return 1; }\n");
+        const std::string text { "#ifndef MCXX_TEST_LANGUAGE\n#error the language provider's argument is missing\n#endif\nimport a;\nint main() { return f(); }\n" };
+        const std::string main { p.file("src/main.cpp", text) };
         auto w = workspace_for(p);
         auto unit = w->parse(main, text, 1);
         expect(fatal(unit != nullptr));

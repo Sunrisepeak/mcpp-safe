@@ -35,6 +35,7 @@ module;
 #include <clang/Sema/Sema.h>
 #include <clang/Basic/ParsedAttrInfo.h>
 #include <clang/Basic/TargetInfo.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 #include <clang/Index/IndexDataConsumer.h>
 #include <clang/Index/IndexSymbol.h>
@@ -321,8 +322,9 @@ private:
 };
 
 // The target, as a source filter reads it (plugin::Target).
-plugin::Target target_of(const cl::CompilerInstance& ci) {
-    const llvm::Triple& t { ci.getTarget().getTriple() };
+// A target in a configuration's words, from its triple (pointer width and byte order by the
+// triple's architecture).
+plugin::Target target_of_triple(const llvm::Triple& t) {
     plugin::Target target;
     target.triple = t.str();
     target.os = t.isAndroid()        ? "android"
@@ -339,6 +341,13 @@ plugin::Target target_of(const cl::CompilerInstance& ci) {
                                                                                                                                  : "";
     target.arch = llvm::Triple::getArchTypeName(t.getArch()).str();
     target.env = t.getEnvironmentName().str();
+    target.pointer_width = t.isArch64Bit() ? 64 : t.isArch32Bit() ? 32 : 16;
+    target.endian = t.isLittleEndian() ? "little" : "big";
+    return target;
+}
+
+plugin::Target target_of(const cl::CompilerInstance& ci) {
+    plugin::Target target { target_of_triple(ci.getTarget().getTriple()) };
     target.pointer_width = static_cast<unsigned>(ci.getTarget().getPointerWidth(cl::LangAS::Default));
     target.endian = ci.getTarget().isBigEndian() ? "big" : "little";
     bool ndebug { false };
@@ -449,6 +458,17 @@ msa::Workspace::Quick quick_gates(const std::string& path, std::string_view text
         if (decided.contains(d.code)) out.diagnostics.push_back(std::move(d));
     out.features.assign(decided.begin(), decided.end());
     return out;
+}
+
+std::vector<std::string> language_arguments_of(const std::string& path, const std::vector<std::string>& args) {
+    if (plugin::catalog()->languages.empty()) return {};
+    std::string triple;
+    for (std::size_t i { 0 }; i < args.size(); ++i) {
+        if (args[i].starts_with("--target=")) triple = args[i].substr(9);
+        else if ((args[i] == "-target" || args[i] == "--target") && i + 1 < args.size()) triple = args[i + 1];
+    }
+    if (triple.empty()) triple = llvm::sys::getDefaultTargetTriple();
+    return features::language_arguments(path, target_of_triple(llvm::Triple { triple }));
 }
 
 } // namespace mcxx::clang_backend

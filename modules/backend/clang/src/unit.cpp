@@ -73,6 +73,7 @@ import mcxx.base;
 import mcxx.plugin;
 import :support;
 import :unit;
+import :gate;
 
 namespace mcxx::clang_backend {
 
@@ -561,6 +562,7 @@ std::vector<Location> UnitImpl::overriders_(std::string_view id) const {
 
 std::unique_ptr<cl::ASTUnit> parse_ast(const ParseRequest& request, std::string* rejected) {
     std::vector<std::string> args { normalize(request.command) };
+    for (auto& a : language_arguments_of(request.path, args)) args.push_back(std::move(a));   // MC4 0.4.0
     for (const auto& extra : backend_arguments(request.resource_directory)) args.push_back(extra);
     for (const auto& [name, pcm] : request.modules) args.push_back("-fmodule-file=" + name + "=" + pcm);
     if (request.module_unit) args.insert(args.end(), { "-x", "c++-module" });

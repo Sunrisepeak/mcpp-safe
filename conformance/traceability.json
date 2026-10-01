@@ -1277,5 +1277,13 @@
   {
    "test": "modules/ifc/tests/test_ifc.cpp: an interface round-trips, item by item"
   }
+ ],
+ "MC4-2-9": [
+  {
+   "test": "modules/features/tests/test_language.cpp: a language provider's arguments are added where its feature is enabled, and nowhere else"
+  },
+  {
+   "test": "modules/backend/clang/tests/test_backend.cpp: a file is parsed, and a module built, with the arguments its enabled language features need (MC4 0.4.0)"
+  }
  ]
 }

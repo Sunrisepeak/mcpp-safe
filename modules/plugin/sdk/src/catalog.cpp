@@ -17,6 +17,7 @@ struct Registered {
     const Rule* rule { nullptr };
     const SourceFilter* filter { nullptr };
     Origin origin { Origin::plugin };
+    const LanguageProvider* language { nullptr };
 };
 
 struct Registry {
@@ -124,6 +125,7 @@ std::shared_ptr<const Catalog> build(const std::vector<Registered>& providers, s
         c->providers.push_back({ p->provider.get(), p->origin });
         if (p->rule != nullptr) c->rules.push_back(p->rule);
         if (p->filter != nullptr) c->filters.push_back(p->filter);
+        if (p->language != nullptr) c->languages.push_back(p->language);
         for (const auto& f : p->provider->features()) by_id[f.id].emplace_back(&f, p);
         for (const auto& pr : p->provider->profiles()) by_profile[pr.name].emplace_back(&pr, p);
     }
@@ -173,6 +175,11 @@ void register_rule(std::unique_ptr<Rule> rule, Origin origin) {
 void register_source_filter(std::unique_ptr<SourceFilter> filter, Origin origin) {
     const SourceFilter* raw { filter.get() };
     add({ std::move(filter), nullptr, raw, origin });
+}
+
+void register_language_provider(std::unique_ptr<LanguageProvider> provider, Origin origin) {
+    const LanguageProvider* raw { provider.get() };
+    add({ std::move(provider), nullptr, nullptr, origin, raw });
 }
 
 void hold_registrations() {
@@ -317,6 +324,13 @@ Filtered apply_source_filters(const SourceContext& context, std::string_view tex
     }
     if (changed) result.text = std::move(current);
     return result;
+}
+
+std::vector<std::string> language_arguments(const LanguageContext& context) {
+    std::vector<std::string> out;
+    for (const LanguageProvider* provider : catalog()->languages)
+        for (auto& a : provider->arguments(context)) out.push_back(std::move(a));
+    return out;
 }
 
 } // namespace mcxx::plugin

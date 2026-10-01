@@ -2,6 +2,16 @@
 
 Changes to the specifications in this directory. Each specification is versioned independently.
 
+## 2026-10-02 — MC4 0.4.0: language providers
+
+- **MC4** 0.4.0 (§2): a fourth kind of extension point, **language**: for a file, its path, its
+  target and which of the provider's features are enabled there, the compiler arguments those
+  features need. A host adds them to the file's compile, its parse for an editor and the build of a
+  module interface it provides, before what keys the interface (MC4-2-9). A file's levels decide,
+  not a module's or a namespace's; in-process only. What the plan's milestone ML builds its C++26
+  and C++29 core-language features on: each generation a plugin whose features are on per file.
+  The SDK's ABI is 2 (a library built against 1 is not taken).
+
 ## 2026-10-01 — MC2 1.7.0: what an exported function returns
 
 - **MC2** 1.7.0 (§3.1): a class or enumeration the unit declares and does not export, named by the

@@ -557,4 +557,20 @@ void append_audit(std::string_view file, const std::vector<Waiver>& waivers) {
     }
 }
 
+std::vector<std::string> language_arguments(std::string_view source_path, const plugin::Target& target) {
+    const auto catalog = plugin::catalog();
+    if (catalog->languages.empty()) return {};
+    const auto plan = plan_for(source_path);
+    const std::string file { plan ? plan->relative(source_path) : std::string {} };
+    const auto enabled = [&](std::string_view id) {
+        const Plan::Gate* gate { plan ? plan->gate(id) : nullptr };
+        if (gate == nullptr) {
+            const plugin::Feature* feature { plugin::find_feature(id) };
+            return feature != nullptr && feature->default_level != Level::deny;
+        }
+        return plan->level(*gate, {}, {}, file) != Level::deny;
+    };
+    return plugin::language_arguments({ source_path, target, enabled });
+}
+
 } // namespace mcxx::features

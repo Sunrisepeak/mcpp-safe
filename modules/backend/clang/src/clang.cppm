@@ -27,6 +27,9 @@ std::unique_ptr<msa::Workspace> make_workspace(msa::Workspace::Options options);
 // phase, dependency and color flags, the source. What a parse starts from and what the interface
 // cache is keyed on, so the same whichever form the command arrived in (MC5-6-2).
 std::vector<std::string> derived_arguments(const msa::Command& command);
+// The arguments a file's enabled language features need (MC4 0.4.0, the language providers), for a
+// command's arguments (its target from --target, else Clang's default).
+std::vector<std::string> language_arguments(const std::string& path, const std::vector<std::string>& args);
 
 // The command a file the build does not list is read with: the nearest listed file's (longest
 // common directory, then the same extension), with the file swapped in.

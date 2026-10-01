@@ -75,6 +75,7 @@ import mcxx.base;
 import :support;
 import :ifc;
 import :store;
+import :gate;
 
 namespace mcxx::clang_backend {
 
@@ -403,6 +404,7 @@ void ModuleStore::build_(const std::string& module) {
         const auto kind = std::ranges::find_if(AGREED, [&](const auto& is) { return is(flag); });
         if (kind != AGREED.end() && std::ranges::none_of(args, [&](const std::string& a) { return (*kind)(a); })) args.push_back(flag);
     }
+    for (auto& a : language_arguments_of(file, args)) args.push_back(std::move(a));   // MC4 0.4.0, before the key
     std::string keyText { std::string { CACHE_EPOCH } + "\n" };
     for (const auto& a : args) keyText += a + '\0';
     keyText += "\n" + file + "\n" + hex_digest(*source) + "\n" + dependencyKeys;
