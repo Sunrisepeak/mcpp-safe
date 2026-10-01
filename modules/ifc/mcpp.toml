@@ -23,7 +23,7 @@ mcxx-testing = { path = "../testing" }
 # Its tests' C library, as the root names it: `mcpp test -p` makes this package the root of a graph the
 # root's declaration does not settle (upstream's 0.19.2 cannot start for a constructor on macOS). A
 # test-only edge: a package depending on this one is not handed a git declaration to clash with.
-openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.8" }
+openkal-musl = { git = "https://github.com/speak-agent/openkal-musl.git", tag = "0.19.9" }
 
 [lib]
 path = "src/ifc.cppm"
