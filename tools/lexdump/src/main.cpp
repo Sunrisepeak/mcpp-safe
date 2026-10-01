@@ -20,8 +20,15 @@
 // mcxx-lexdump --directives FILE: the file's directive lines, as the lexer finds them (not in a raw
 // string or a comment), less #error, #warning and the #defines and #undefs after its last #include,
 // and the names it #defines: what ppdiff.py preprocesses to learn the headers' macros.
+// mcxx-lexdump --diagnostics [OPTIONS] FILE: what the front end says about the file as a compile would see it: the
+// diagnostics of the preprocessor and of the parser (--preprocess-only: not the parser's), each with its family,
+// severity and place, and the lines of the groups the preprocessor skipped, one JSON object (tools/checks/cxxtests.py).
 // OPTIONS: --target T, -DNAME[=VALUE], -UNAME, --header-macros FILE (the headers' macros, as `-dM -E`
-// prints them: PreprocessOptions::header_macros, complete).
+// prints them: PreprocessOptions::header_macros, complete). --std C++NN (-std=C++NN): the standard the file is read
+// as (__cplusplus); --feature ID[=deny|warn|allow] (default allow): the level of a language feature of C++26/29 in
+// it (c++26:embed, c++26:preprocessing-never-undefined, c++29:embed-offset-parameter,
+// c++29:unicode-identifier-recommendations; `all` for each); -I DIR: where #embed and __has_embed look for a
+// resource (a quoted name first in the file's own directory).
 import std;
 import mcxx.msa;
 import mcxx.frontend;
@@ -73,6 +80,60 @@ int bench(int rounds, int argc, char** argv) {
 std::string read(const std::string& path) {
     std::ifstream in { path, std::ios::binary };
     return { std::istreambuf_iterator<char> { in }, std::istreambuf_iterator<char> {} };
+}
+
+// The options every mode that preprocesses takes in common; true when `a` was one (and `i` is past its value).
+bool language_option(std::string_view a, int& i, int argc, char** argv, mcxx::frontend::PreprocessOptions& options, std::vector<std::string>& directories) {
+    namespace f = mcxx::frontend;
+    const auto value = [&](std::string_view name) -> std::optional<std::string> {
+        if (a == name && i + 1 < argc) return std::string { argv[++i] };
+        if (a.starts_with(name) && a.size() > name.size() && a[name.size()] == '=') return std::string { a.substr(name.size() + 1) };
+        return std::nullopt;
+    };
+    if (const auto v = value("--std")) {
+        if (const auto s = f::parse_standard(*v)) options.language.standard = *s;
+    } else if (a.starts_with("-std=")) {
+        if (const auto s = f::parse_standard(a.substr(5))) options.language.standard = *s;
+    } else if (const auto v = value("--feature")) {
+        const auto eq = v->find('=');
+        const std::string level { eq == std::string::npos ? "allow" : v->substr(eq + 1) };
+        const auto parsed = level == "deny" ? f::FeatureLevel::deny : level == "warn" ? f::FeatureLevel::warn : f::FeatureLevel::allow;
+        const std::string id { v->substr(0, eq) };
+        if (id == "all") {
+            for (const auto& feature : f::LANGUAGE_FEATURES) options.language.features[std::string { feature.id }] = parsed;
+        } else {
+            options.language.features[id] = parsed;
+        }
+    } else if (a == "-I" && i + 1 < argc) {
+        directories.emplace_back(argv[++i]);
+    } else if (a.starts_with("-I")) {
+        directories.emplace_back(a.substr(2));
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// #embed's and __has_embed's resources: a quoted name next to the file first, then the -I directories; an angled name
+// in the -I directories only.
+void read_resources(mcxx::frontend::PreprocessOptions& options, const std::string& file, std::vector<std::string> directories) {
+    options.read_resource = [file, directories = std::move(directories)](std::string_view header) -> std::optional<std::string> {
+        if (header.size() < 2) return std::nullopt;
+        const bool quoted { header.front() == '"' };
+        const std::string name { header.substr(1, header.size() - 2) };
+        std::vector<std::filesystem::path> where;
+        if (quoted) where.push_back(std::filesystem::path { file }.parent_path());
+        for (const auto& d : directories) where.emplace_back(d);
+        for (const auto& dir : where) {
+            const auto path = dir / name;
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(path, ec)) {
+                std::ifstream in { path, std::ios::binary };
+                return std::string { std::istreambuf_iterator<char> { in }, {} };
+            }
+        }
+        return std::nullopt;
+    };
 }
 
 std::string strings(const std::vector<std::string>& v) {
@@ -324,8 +385,10 @@ int references(int argc, char** argv) {
 int preprocessed(bool diff, int argc, char** argv) {
     mcxx::frontend::PreprocessOptions options;
     std::vector<std::string> files;
+    std::vector<std::string> directories;
     for (int i { 2 }; i < argc; ++i) {
         const std::string_view a { argv[i] };
+        if (language_option(a, i, argc, argv, options, directories)) continue;
         if (a == "--target" && i + 1 < argc) options.target = argv[++i];
         else if (a == "--header-macros" && i + 1 < argc) {
             std::istringstream lines { read(argv[++i]) };
@@ -341,6 +404,7 @@ int preprocessed(bool diff, int argc, char** argv) {
         return 2;
     }
     options.file = files[0];
+    read_resources(options, files[0], directories);
     const std::string text { read(files[0]) };
     const auto pp = mcxx::frontend::preprocess(text, options);
     std::vector<std::string> ours, notes;
@@ -478,11 +542,66 @@ int parse_bench(int rounds, int argc, char** argv) {
     return 0;
 }
 
+int diagnostics(int argc, char** argv) {
+    mcxx::frontend::PreprocessOptions options;
+    std::vector<std::string> directories;
+    std::string file;
+    bool parse { true };
+    for (int i { 2 }; i < argc; ++i) {
+        const std::string_view a { argv[i] };
+        if (language_option(a, i, argc, argv, options, directories)) continue;
+        if (a == "--target" && i + 1 < argc) options.target = argv[++i];
+        else if (a == "--preprocess-only") parse = false;
+        else if (a == "--header-macros" && i + 1 < argc) {
+            std::istringstream lines { read(argv[++i]) };
+            for (std::string l; std::getline(lines, l);) options.header_macros.push_back(l);
+            options.header_macros_complete = true;
+        } else if (a.starts_with("-D")) options.defines.emplace_back(a.substr(2));
+        else if (a.starts_with("-U")) options.undefines.emplace_back(a.substr(2));
+        else file = a;
+    }
+    options.file = file;
+    read_resources(options, file, directories);
+    const std::string text { read(file) };
+    const auto started = std::chrono::steady_clock::now();
+    std::string out;
+    const auto severity = [](mcxx::frontend::Diagnostic::Severity s) {
+        return s == mcxx::frontend::Diagnostic::Severity::error ? "error" : s == mcxx::frontend::Diagnostic::Severity::warning ? "warning" : "note";
+    };
+    const auto add = [&](std::string_view family, const mcxx::frontend::Diagnostic& d) {
+        out += std::format("{}{{\"family\":\"{}\",\"severity\":\"{}\",\"line\":{},\"column\":{},\"message\":{},\"feature\":{},\"paper\":{}}}", out.empty() ? "" : ",", family,
+                           severity(d.severity), d.at.line, d.at.column, json(d.message), json(d.feature), json(d.paper));
+    };
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> skipped;
+    bool certain { true };
+    std::size_t tokens { 0 };
+    if (parse) {
+        const auto parsed = mcxx::frontend::parse(text, options);
+        for (const auto& d : parsed.pp.diagnostics) add("preprocess", d);
+        for (const auto& d : parsed.diagnostics) add("parse", d);
+        skipped = parsed.pp.skipped;
+        certain = parsed.pp.certain;
+        tokens = parsed.pp.tokens.size();
+    } else {
+        const auto pp = mcxx::frontend::preprocess(text, options);
+        for (const auto& d : pp.diagnostics) add("preprocess", d);
+        skipped = pp.skipped;
+        certain = pp.certain;
+        tokens = pp.tokens.size();
+    }
+    const double seconds { std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count() };
+    std::string groups;
+    for (const auto& [from, to] : skipped) groups += std::format("{}[{},{}]", groups.empty() ? "" : ",", from, to);
+    std::println("{{\"file\":{},\"certain\":{},\"tokens\":{},\"skipped\":[{}],\"diagnostics\":[{}],\"seconds\":{:.6f}}}", json(file), certain, tokens, groups, out, seconds);
+    return 0;
+}
+
 int main(int argc, char** argv) {
     mcxx::base::trace::configure_from_environment();   // MCXX_LOG=frontend.syntax=debug: what the parser decides
     if (argc > 3 && std::string_view { argv[1] } == "--fuzz") return fuzz(std::stoi(argv[2]), argc, argv);
     if (argc > 3 && std::string_view { argv[1] } == "--parse-bench") return parse_bench(std::stoi(argv[2]), argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--directives") return directives(argv[2]);
+    if (argc > 2 && std::string_view { argv[1] } == "--diagnostics") return diagnostics(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--syntax") return syntax(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--facts") return facts(argc, argv);
     if (argc > 2 && std::string_view { argv[1] } == "--references") return references(argc, argv);

@@ -11,6 +11,7 @@ MC++ 自己的前端（[`modules/frontend`](../../modules/frontend/README.md)）
 | `mcxx-lexdump --syntax [选项] 文件` | 大纲，一个 JSON：每个符号的种类、名字、范围、名字范围、父节点，以及解析诊断。和 `mcxx-probe --symbols` 同一格式，`tools/checks/syntaxdiff.py` 比对 |
 | `mcxx-lexdump --fuzz N 文件...` | 每个文件随机截断或插入随机 token、字节，各 N 次，每次都解析并取大纲；进程正常结束就算通过（A1.7.3） |
 | `mcxx-lexdump --parse-bench N 文件...` | 词法、预处理、解析全部文件 N 次，取最好的一次（A1.7.4） |
+| `mcxx-lexdump --diagnostics [选项] 文件` | 前端把文件当作一次编译看到的诊断，一个 JSON：预处理和解析器的诊断（`--preprocess-only` 时没有解析器的），每条有族（`preprocess`、`parse`）、严重程度、位置、消息，以及它说的 MC1 特性 id 和论文（有的话）；预处理跳过的组的行范围；是否确定。`tools/checks/cxxtests.py` 调用它 |
 | `mcxx-lexdump --directives 文件` | 文件的指令行（词法器认出来的，不包括原始字符串和注释里的），以及文件自己定义的宏名：`ppdiff.py --header-macros` 由此向 Clang 要头文件的宏 |
 
-选项：`--target T`（取哪个目标的预定义宏）、`-DNAME[=VALUE]`、`-UNAME`、`--header-macros 文件`（`-dM -E` 格式的头文件宏）。
+选项：`--target T`（取哪个目标的预定义宏）、`-DNAME[=VALUE]`、`-UNAME`、`--header-macros 文件`（`-dM -E` 格式的头文件宏）。`--std c++26`（文件按这个标准读：`__cplusplus`；`-std=` 也行）、`--feature ID[=deny|warn|allow]`（C++26/29 的语言特性在这个文件里的 MC1 级别，默认 allow，`all` 是全部）、`-I 目录`（`#embed`、`__has_embed` 找资源的目录；带引号的名字先找文件自己的目录）；`--pp`、`--diagnostics` 都认。

@@ -544,4 +544,35 @@ std::string spelling(std::string_view text, const Token& token) {
     return out;
 }
 
+bool uses_mathematical_notation(std::string_view text, const Token& token) {
+    if (token.kind != Kind::raw_identifier) return false;
+    const std::string s { spelling(text, token) };
+    if (std::ranges::all_of(s, [](char c) { return ascii(c) && c != '\\'; })) return false;
+    bool first { true };
+    for (std::size_t i { 0 }; i < s.size(); first = false) {
+        char32_t cp { static_cast<unsigned char>(s[i]) };
+        std::size_t size { 1 };
+        if (!ascii(s[i])) {
+            const auto d = decode(s, i);
+            if (!d) {
+                ++i;
+                continue;
+            }
+            cp = d->code_point, size = d->size;
+        } else if (s[i] == '\\') {
+            // \uXXXX, \UXXXXXXXX, \u{X...}, read as the lexer reads them (a \N{name} is not looked up).
+            const Cursor c { std::string_view { s }.substr(i) };
+            const auto u = ucn(c, 0);
+            if (!u || !u->code_point) {
+                i += u ? u->length : 1;
+                continue;
+            }
+            cp = *u->code_point, size = u->length;
+        }
+        i += size;
+        if (cp >= 0x80 && (first ? unicode::math_start(cp) : unicode::math_continue(cp))) return true;
+    }
+    return false;
+}
+
 } // namespace mcxx::frontend
