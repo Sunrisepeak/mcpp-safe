@@ -11,7 +11,7 @@
 
 | 目录 | 配置 | 测的是 |
 |---|---|---|
-| `safe/` | `profile = "safe"` | mc++.iso 中的未定义行为来源：`raw-pointer-arithmetic`、`new-delete`、`reinterpret-cast`、`c-style-cast`、`const-cast`、`c-array`、`union`、`c-varargs`、`uninitialized`、`asm`，以及跨模块用例 |
+| `safe/` | `profile = "safe"` | mc++.iso 中的未定义行为来源：`raw-pointer-arithmetic`、`new-delete`、`reinterpret-cast`、`c-style-cast`、`const-cast`、`c-array`、`union`、`c-varargs`、`uninitialized`、`asm`，以及跨模块用例；`flow/`：控制流层（MF.3，`plugins/flow`）的 `uninitialized-read`、`missing-return`、`noreturn-returns` |
 | `strict/` | `profile = "strict"` | `goto`、`macros`、`include`（包括模块 purview 里的 `#include`，全局模块片段里的不报） |
 | `embedded/` | 包设置 `exceptions`、`rtti` 为 deny | 不在任何 profile 里的 ISO 特性 |
 | `policy/` | 包设置 `raw-pointers = "deny"` | 插件的 policy：能不能用裸指针 |
@@ -35,8 +35,8 @@ mcpp build -p tools/conformance
 输出每个特性的 found、missed、wrong，以及精确率和召回率；有任何不符时退出码为 1。
 
 当前规模：
-- 19 个特性：mc++.iso 15 个，插件 4 个（`raw-pointers`、`lib:std.vector`、`ext:cfg`、`json-brace-init`）；
-- 20 个程序、41 个文件；
+- 22 个特性：mc++.iso 15 个，插件 7 个（`raw-pointers`、`lib:std.vector`、`ext:cfg`、`json-brace-init`，以及控制流层的 `uninitialized-read`、`missing-return`、`noreturn-returns`）；
+- 27 个程序、52 个文件（2026-10-02）；
 - 精确率和召回率都是 100%；
 - 每个特性至少有 5 个正例和 5 个反例。
 
