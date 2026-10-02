@@ -25,10 +25,12 @@ struct Collector {
         switch (e.kind) {
         case ExprKind::id: case ExprKind::sizeof_pack: one(e.name); break;
         case ExprKind::paren: case ExprKind::unary: case ExprKind::noexcept_: case ExprKind::throw_: case ExprKind::co_await_: case ExprKind::co_yield_:
-        case ExprKind::delete_: case ExprKind::pack_expansion: case ExprKind::splice:
+        case ExprKind::delete_: case ExprKind::pack_expansion:
             one(e.a);
             break;
-        case ExprKind::binary: case ExprKind::assign: case ExprKind::pack_index: one(e.a), one(e.b); break;
+        case ExprKind::splice: one(e.a), list(e.list); break;
+        case ExprKind::binary: case ExprKind::assign: one(e.a), one(e.b); break;
+        case ExprKind::pack_index: one(e.a), one(e.b), list(e.list); break;
         case ExprKind::conditional: one(e.a), one(e.b), one(e.c); break;
         case ExprKind::call: case ExprKind::subscript: one(e.a), list(e.list); break;
         case ExprKind::member: one(e.a), one(e.name); break;
@@ -51,7 +53,7 @@ struct Collector {
             list(r.params);
             for (std::uint32_t i { 0 }; i < r.requirements.count; ++i) {
                 const Requirement& q { t.requirements[r.requirements.begin + i] };
-                one(q.expr), one(q.type), one(q.constraint);
+                one(q.expr), one(q.type), one(q.constraint), one(q.noexcept_condition);
             }
             break;
         }
@@ -104,8 +106,8 @@ struct Collector {
         case TypeKind::member_pointer: one(n.name), one(n.inner); break;
         case TypeKind::array: one(n.inner), one(n.expr); break;
         case TypeKind::function: one(n.inner), list(n.list), one(n.expr); break;
-        case TypeKind::pack_index: one(n.inner), one(n.name), one(n.expr); break;
-        case TypeKind::splice: one(n.expr); break;
+        case TypeKind::pack_index: one(n.inner), one(n.name), one(n.expr), list(n.list); break;
+        case TypeKind::splice: one(n.expr), list(n.list); break;
         case TypeKind::typeof_: one(n.inner), one(n.expr); break;
         default: break;
         }

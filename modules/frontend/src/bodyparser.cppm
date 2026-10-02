@@ -133,6 +133,10 @@ public:
     StmtId committed_compound();
     StmtId for_statement(bool expansion, std::uint32_t first) override;
     NameId qualified_name() override { return qualified_name(NameUse::expression); }
+    bool template_arguments(Span32& out) override;
+    bool try_template_arguments(Span32& out) override;
+    const Expr* expression_node(ExprId node) const override { return node ? &tree_.expressions[node.index] : nullptr; }
+    const TypeNode* type_node(TypeId node) const override { return node ? &tree_.types[node.index] : nullptr; }
     ExprId make(Expr node) override { return add(node); }
     StmtId make(Stmt node) override { return add(node); }
     TypeId make(TypeNode node) override { return add(node); }
@@ -260,7 +264,6 @@ private:
     NameId qualified_name(NameUse use);
     NameId qualified_name(NameUse use, bool* dependent, NameInfo* info);
     bool name_component(NameComponent& c, NameUse use, bool after_template_kw, std::string& written, bool* dependent, bool* more);
-    bool template_arguments(Span32& out);
     Handle template_argument();
     bool starts_name() const;
     bool at_splice() const;                       // `[:` with no space

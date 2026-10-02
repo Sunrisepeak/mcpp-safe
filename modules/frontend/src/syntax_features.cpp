@@ -29,6 +29,7 @@ constexpr std::string_view NEW_DELETE { "new-delete" }, REINTERPRET { "reinterpr
     PACK_EXPANSION { "c++11:variadic-templates" }, DECLTYPE { "c++11:decltype" }, NOEXCEPT_EXPR { "c++11:noexcept" },
     STATEMENT_EXPRESSION { "ext:gnu-statement-expression" }, LABEL_ADDRESS { "ext:gnu-address-of-label" },
     OMITTED_OPERAND { "ext:gnu-conditional-omitted-operand" }, BUILTIN { "ext:gnu-builtin" }, CASE_RANGE { "ext:gnu-case-range" },
+    PACK_INDEX_TEMPLATE { "c++29:pack-indexing-template-names" }, NOEXCEPT_REQUIREMENT { "c++29:conditional-noexcept-specifiers-compound-requirements" },
     TYPEOF { "ext:gnu-typeof" }, COMPOUND_LITERAL { "ext:gnu-compound-literal" }, REAL_IMAG { "ext:gnu-complex-parts" };
 
 constexpr FeatureInfo FEATURES[] {
@@ -51,6 +52,8 @@ constexpr FeatureInfo FEATURES[] {
     { BINDING_PACK, true, "auto [...xs]" },
     { BINDING_CONDITION, true, "a structured binding as a condition" },
     { VARIADIC_FRIEND, true, "friend Ts...;" },
+    { PACK_INDEX_TEMPLATE, true, "pack...[n]<args>" },
+    { NOEXCEPT_REQUIREMENT, true, "{ e } noexcept(cond) in a requires-expression" },
     { CONSTEVAL_BLOCK, false, "consteval { }" },
     { LAMBDA, false, "a lambda-expression" },
     { RANGE_FOR, false, "a range-based for" },
@@ -111,7 +114,7 @@ std::string_view feature_of(const Expr& e) {
     case ExprKind::noexcept_: return NOEXCEPT_EXPR;
     case ExprKind::builtin: return BUILTIN;
     case ExprKind::reflect: case ExprKind::splice: return REFLECTION;
-    case ExprKind::pack_index: return PACK_INDEXING;
+    case ExprKind::pack_index: return e.has(Expr::template_arguments) ? PACK_INDEX_TEMPLATE : PACK_INDEXING;
     default: return {};
     }
 }
@@ -139,12 +142,14 @@ std::string_view feature_of(const TypeNode& t) {
     case TypeKind::function: return t.has(TypeNode::c_variadic) ? C_VARARGS : std::string_view {};
     case TypeKind::decltype_: return DECLTYPE;
     case TypeKind::splice: return REFLECTION;
-    case TypeKind::pack_index: return PACK_INDEXING;
+    case TypeKind::pack_index: return t.has(TypeNode::template_arguments) ? PACK_INDEX_TEMPLATE : PACK_INDEXING;
     case TypeKind::pack_expansion: return PACK_EXPANSION;
     case TypeKind::typeof_: return TYPEOF;
     default: return {};
     }
 }
+
+std::string_view feature_of(const Requirement& r) { return r.noexcept_condition ? NOEXCEPT_REQUIREMENT : std::string_view {}; }
 
 std::string_view feature_of(const Local& l) {
     switch (l.kind) {

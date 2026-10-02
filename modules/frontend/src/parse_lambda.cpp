@@ -224,7 +224,14 @@ ExprId BodyParser::requires_expression() {
                 r.expr = expression();
             }
             if (!expect(Kind::r_brace, "`}`")) break;
-            if (accept_word("noexcept")) r.noexcept_ = true;
+            if (accept_word("noexcept")) {
+                r.noexcept_ = true;
+                if (is(Kind::l_paren)) {
+                    // C++29: noexcept(cond) -- an extension's to read
+                    for (const auto& ext : extensions_)
+                        if (ext->noexcept_condition(*this, r.noexcept_condition)) break;
+                }
+            }
             if (accept(Kind::arrow)) {
                 // `-> type-constraint`: a concept (with arguments) naming the expression's type, or a type.
                 const Mark m { mark() };

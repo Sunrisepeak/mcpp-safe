@@ -128,6 +128,9 @@ std::vector<LocalId> BodyParser::simple_declaration(Site site, bool* function_de
     }
     DeclSpec spec { decl_specifiers(site) };
     if (failed_) return out;
+    // `friend Ts...;`: C++26's variadic friend
+    const bool friend_pack { (spec.flags & Local::friend_) != 0 && spec.has_type && is(Kind::ellipsis) && is(Kind::semi, 1) };
+    if (friend_pack) next();
     // No declarator: `struct S { ... };`, `enum E;`, `friend class X;`.
     if (is(Kind::semi)) {
         next();
@@ -139,6 +142,7 @@ std::vector<LocalId> BodyParser::simple_declaration(Site site, bool* function_de
             l.first = first;
             l.last = prev();
             l.type = spec.type;
+            if (friend_pack) l.flags |= Local::pack;
             out.push_back(add(l));
         } else {
             // A type named and nothing declared: `struct S x;` has its declarator, `friend class T;` its friend, `struct S { };` is a
@@ -892,7 +896,7 @@ LocalId BodyParser::template_parameter() {
         bool ok { false };
         p.params = template_parameter_list(&ok);
         if (!ok) return add(p);
-        if (!(word("class") || word("typename") || word("concept"))) {
+        if (!(word("class") || word("typename") || word("concept") || word("auto"))) {
             fail("expected `class` after a template template parameter's list");
             return add(p);
         }

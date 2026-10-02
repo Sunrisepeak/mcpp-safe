@@ -534,7 +534,8 @@ ExprId BodyParser::postfix_suffixes(ExprId lhs, std::uint32_t first) {
             e.a = lhs;
             e.token = at;
             lhs = add(e);
-        } else if (k == Kind::ellipsis && is(Kind::l_square, 1) && !extensions_.empty()) {
+        } else if ((k == Kind::ellipsis && is(Kind::l_square, 1)) || k == Kind::less) {
+            if (extensions_.empty()) return lhs;
             bool taken { false };
             for (const auto& ext : extensions_)
                 if (ext->expression_postfix(*this, lhs)) {

@@ -121,8 +121,8 @@ enum class ExprKind : std::uint8_t {
     builtin,            // token: its name (a __builtin_ or a type trait); list: its arguments, each a type or an expression
     label_address,      // token: GNU &&label
     reflect,            // C++26 `^^ operand`: list[0] a type, an expression or a name
-    splice,             // C++26 `[: a :]`; name: a template-id's arguments follow, if any
-    pack_index,         // C++26 `a...[b]`
+    splice,             // C++26 `[: a :]`, `template [: a :]<args>` (flag template_arguments, list)
+    pack_index,         // C++26 `a...[b]`; C++29 `a...[b]<args>` (flag template_arguments, list)
     member_init,        // a constructor's mem-initializer: name (the member or base), list: its arguments (flag brace: `{}`; pack: `...`)
     paren_list,         // the `(a, b)` of a direct initializer: list. Clang has no node for it where the type is known (ParenListExpr where not)
 };
@@ -150,7 +150,7 @@ struct Expr {
         alignof_ = 64,
         parenthesized = 128,   // written in parentheses (not a `paren` node: that one is kept)
         pack = 256,        // written with a trailing `...` that is part of the node (a fold's, a type pack's)
-        implicit_template_args = 512,
+        template_arguments = 512,   // a splice's or a pack index's template arguments follow (list)
     };
     bool has(Flag f) const { return (flags & f) != 0; }
 };
@@ -249,6 +249,7 @@ struct TypeNode {
         vla = 2048,
         complex = 4096,
         dynamic_throw = 8192,   // function: `throw(...)`
+        template_arguments = 16384,   // pack_index, splice: template arguments follow (list)
     };
     bool has(Flag f) const { return (flags & f) != 0; }
 };
@@ -415,6 +416,7 @@ struct Requirement {
     TypeId type;                 // type: the type; compound: the `-> constraint` type
     NameId constraint;           // compound: the type-constraint's concept name when `-> C<T>`
     bool noexcept_ { false };
+    ExprId noexcept_condition;   // C++29 `noexcept(cond)` of a compound requirement
     std::uint32_t first { 0 }, last { 0 };
 };
 
@@ -575,6 +577,7 @@ std::string_view feature_of(const Expr& e);
 std::string_view feature_of(const Stmt& s);
 std::string_view feature_of(const TypeNode& t);
 std::string_view feature_of(const Local& l);
+std::string_view feature_of(const Requirement& r);
 
 // A feature id the syntax tree can name. `registered`: the id is in MC1's catalog today (mc++.iso, the
 // C++26 and C++29 packages); else it is proposed, in the catalog's own naming (`c++NN:` for a standard's

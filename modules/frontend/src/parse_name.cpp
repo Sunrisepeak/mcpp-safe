@@ -366,4 +366,25 @@ bool BodyParser::template_arguments(Span32& out) {
 
 Handle BodyParser::template_argument() { return type_or_expression(); }
 
+bool BodyParser::try_template_arguments(Span32& out) {
+    if (!is(Kind::less)) return false;
+    const Mark m { mark() };
+    ++speculating_;
+    ++tree_.stats.speculations;
+    const bool was_failed { std::exchange(failed_, false) };
+    bool good { template_arguments(out) && !failed_ };
+    if (good) {
+        const Kind follower { kind() };
+        good = follower == Kind::l_paren || follower == Kind::l_brace || follower == Kind::coloncolon || cannot_start_operand(follower);
+        if (good && split_at_ == i_ && no_gt_ == 0) good = false;
+    }
+    failed_ = was_failed;
+    --speculating_;
+    if (!good) {
+        rewind(m);
+        ++tree_.stats.rewinds;
+    }
+    return good;
+}
+
 } // namespace mcxx::frontend::bodies

@@ -639,6 +639,7 @@ bool BodyParser::starts_parameter_clause(Mode mode, Site site) {
         if (j >= end_) return false;
         const Kind f { t_[j].kind };
         if (f == Kind::raw_identifier && !reserved_operator_word(t_[j].spelling)) return true;
+        if (f == Kind::ellipsis && j + 1 < end_ && t_[j + 1].kind == Kind::r_paren) return true;   // `f(Ts...)`
         if ((f == Kind::star || f == Kind::amp || f == Kind::ampamp) && j + 1 < end_ &&
             (t_[j + 1].kind == Kind::raw_identifier || t_[j + 1].kind == Kind::r_paren || t_[j + 1].kind == Kind::comma))
             return t_[j + 1].kind != Kind::raw_identifier || !(is_unary_word(t_[j + 1].spelling));
@@ -818,6 +819,13 @@ Span32 BodyParser::parameter_declaration_clause(bool* c_variadic) {
         if (failed_) break;
         const Local& made { tree_.locals[p.index] };
         if (made.name_token != NONE) declare_name(made.name_token, NameClass::value);
+        // `void f(int...)` is `void f(int, ...)`: a type that is no pack, written with the `...` of C's variadic
+        if (made.has(Local::pack) && made.name_token == NONE && made.type && tree_.types[made.type.index].kind == TypeKind::builtin) {
+            *c_variadic = true;
+            params.push_back(p.handle());
+            tree_.locals[p.index].flags &= ~static_cast<std::uint32_t>(Local::pack);
+            break;
+        }
         params.push_back(p.handle());
         if (accept(Kind::comma)) {
             if (is(Kind::ellipsis)) {

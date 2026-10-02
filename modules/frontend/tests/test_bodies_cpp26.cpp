@@ -47,6 +47,8 @@ std::set<std::string> features(std::string_view code) {
         if (const auto id = ast::feature_of(t); !id.empty()) out.emplace(id);
     for (const auto& l : tree.locals)
         if (const auto id = ast::feature_of(l); !id.empty()) out.emplace(id);
+    for (const auto& r : tree.requirements)
+        if (const auto id = ast::feature_of(r); !id.empty()) out.emplace(id);
     return out;
 }
 
@@ -119,6 +121,26 @@ int main() {
         expect(features("auto [...xs] = t;").contains("c++26:structured-bindings-can-introduce-pack"));
         expect(features("struct S { S(int) = delete(\"no\"); };").contains("c++26:delete-with-reason"));
         expect(features("consteval { f(); }") == std::set<std::string> { "c++26:consteval-blocks" });
+    };
+
+    "C++26 round out: a template splice with arguments, variadic friends, a variable-template template parameter, C's `...` after a builtin"_test = [] {
+        same(body("auto x = template [: r :]<int>(1);"), "(declaration (variable x (auto) = (call (splice (id r) <(builtin int)>) (integer 1))))");
+        same(body("struct S { friend Ts...; friend class Us...; friend T; };"), "(declaration (class S (friend pack (named Ts)) (friend pack (elaborated class Us)) (friend (named T))))");
+        same(body("template <template <class> auto V> struct A { };"), "(declaration (template <(template-parameter V)> (class A)))");
+        same(body("void h(int...); void k(Ts...);"), "(declaration (function h (function (builtin void) ((parameter (builtin int)) ...)))) (declaration (function k (function (builtin void) ((parameter pack (named Ts))))))");
+    };
+
+    "C++29: pack indexing of template names, conditional noexcept in a compound requirement"_test = [] {
+        same(body("auto y = Ts...[0]<int>(1);"), "(declaration (variable y (auto) = (call (pack-index (id Ts) (integer 0) <(builtin int)>) (integer 1))))");
+        same(body("auto z = Ts...[0] < 3;"), "(declaration (variable z (auto) = (binary < (pack-index (id Ts) (integer 0)) (integer 3))))");
+        same(body("bool b = requires { { f() } noexcept(true) -> C; };"), "(declaration (variable b (builtin bool) = (requires (compound (call (id f)) noexcept((boolean true)) -> C))))");
+        expect(features("auto y = Ts...[0]<int>(1);").contains("c++29:pack-indexing-template-names"));
+        expect(features("bool b = requires { { f() } noexcept(g()) -> C; };").contains("c++29:conditional-noexcept-specifiers-compound-requirements"));
+        // Apart from C++26's: with only that, they are not syntax.
+        f::BodyOptions only26;
+        only26.extensions = { f::cpp26_syntax() };
+        expect(f::parse_fragment("auto y = Ts...[0]<int>(1);", only26).tree.stats.failed == 1);
+        expect(f::parse_fragment("bool b = requires { { f() } noexcept(true) -> C; };", only26).tree.stats.failed == 1);
     };
 
     "the core alone reads C++23: without the extension none of it is syntax"_test = [] {

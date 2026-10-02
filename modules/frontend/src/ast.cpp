@@ -256,7 +256,7 @@ private:
                 case Requirement::Form::simple: out += " (simple " + id(q.expr) + ")"; break;
                 case Requirement::Form::type: out += " (type " + id(q.type) + ")"; break;
                 case Requirement::Form::compound:
-                    out += " (compound " + id(q.expr) + (q.noexcept_ ? " noexcept" : "") + (q.type ? " -> " + id(q.type) : q.constraint ? " -> " + id(q.constraint) : std::string {}) + ")";
+                    out += " (compound " + id(q.expr) + (q.noexcept_ ? (q.noexcept_condition ? " noexcept(" + id(q.noexcept_condition) + ")" : std::string { " noexcept" }) : "") + (q.type ? " -> " + id(q.type) : q.constraint ? " -> " + id(q.constraint) : std::string {}) + ")";
                     break;
                 case Requirement::Form::nested: out += " (nested " + id(q.expr) + ")"; break;
                 }
@@ -282,8 +282,9 @@ private:
         case ExprKind::builtin: return "(builtin " + tok(e.token) + list(e.list) + ")";
         case ExprKind::label_address: return "(label-address " + tok(e.token) + ")";
         case ExprKind::reflect: return "(reflect" + list(e.list) + ")";
-        case ExprKind::splice: return "(splice " + id(e.a) + ")";
-        case ExprKind::pack_index: return std::format("(pack-index {} {})", id(e.a), id(e.b));
+        case ExprKind::splice: return "(splice " + id(e.a) + (e.has(Expr::template_arguments) ? " <" + list(e.list).substr(list(e.list).empty() ? 0 : 1) + ">" : "") + ")";
+        case ExprKind::pack_index:
+            return std::format("(pack-index {} {}{})", id(e.a), id(e.b), e.has(Expr::template_arguments) ? " <" + list(e.list).substr(list(e.list).empty() ? 0 : 1) + ">" : "");
         case ExprKind::member_init: return std::format("(member-init{} {}{})", e.has(Expr::brace) ? "-brace" : "", id(e.name), list(e.list));
         }
         return "?";
@@ -363,8 +364,9 @@ private:
             return out + ")";
         }
         case TypeKind::pack_expansion: return "(pack " + id(n.inner) + ")";
-        case TypeKind::pack_index: return std::format("(pack-index {} {})", n.inner ? id(n.inner) : id(n.name), id(n.expr));
-        case TypeKind::splice: return "(splice " + id(n.expr) + ")";
+        case TypeKind::pack_index:
+            return std::format("(pack-index {} {}{})", n.inner ? id(n.inner) : id(n.name), id(n.expr), n.has(TypeNode::template_arguments) ? " <" + list(n.list).substr(list(n.list).empty() ? 0 : 1) + ">" : "");
+        case TypeKind::splice: return "(splice " + id(n.expr) + (n.has(TypeNode::template_arguments) ? " <" + list(n.list).substr(list(n.list).empty() ? 0 : 1) + ">" : "") + ")";
         case TypeKind::atomic: return "(atomic " + id(n.inner) + ")";
         case TypeKind::typeof_: return "(typeof " + (n.inner ? id(n.inner) : id(n.expr)) + ")";
         }

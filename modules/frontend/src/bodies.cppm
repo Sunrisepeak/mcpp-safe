@@ -100,6 +100,12 @@ public:
     virtual ast::StmtId compound_statement() = 0;
     virtual ast::StmtId for_statement(bool expansion, std::uint32_t first) = 0;   // from `for` (the cursor), `expansion`: `template for`
     virtual ast::NameId qualified_name() = 0;
+    virtual bool template_arguments(ast::Span32& out) = 0;            // at `<`: the arguments, through the `>`; false (a failure) when it is not a list
+    // The same where it may be a comparison instead: taken only when the arguments read as such and what follows them is what follows a
+    // template-id (`(`, `{`, `::`, or something no operand begins with); else nothing is consumed and nothing made.
+    virtual bool try_template_arguments(ast::Span32& out) = 0;
+    virtual const ast::Expr* expression_node(ast::ExprId node) const = 0;   // a node made, to look at
+    virtual const ast::TypeNode* type_node(ast::TypeId node) const = 0;
     // The tree.
     virtual ast::ExprId make(ast::Expr node) = 0;
     virtual ast::StmtId make(ast::Stmt node) = 0;
@@ -145,6 +151,8 @@ public:
     virtual bool declaration(SyntaxContext&, ast::LocalId&) const { return false; }
     // A function body's `= delete(` ... `)`: the cursor after `delete`, at `(`.
     virtual bool delete_reason(SyntaxContext&, ast::ExprId&) const { return false; }
+    // A compound requirement's `noexcept` followed by `(`: its condition (C++29).
+    virtual bool noexcept_condition(SyntaxContext&, ast::ExprId&) const { return false; }
 };
 
 // C++26's syntax -- `^^`, `[: :]`, `template for`, `pre`/`post`, `contract_assert`, `consteval { }`, pack
@@ -152,11 +160,15 @@ public:
 // are those it has in the C++26 plugin's catalog.
 std::shared_ptr<const SyntaxExtension> cpp26_syntax();
 
+// C++29's syntax, apart from C++26's as the plan's per-generation packages are: a pack index with template arguments
+// (`Ts...[0]<int>`) and a compound requirement's `noexcept(cond)`. Its features are those of the C++29 package.
+std::shared_ptr<const SyntaxExtension> cpp29_syntax();
+
 struct BodyOptions {
     const Imported* imported { nullptr };       // what the file's imports bring in, for the default oracle
     NameOracle* oracle { nullptr };             // feedback: none, the default (lookup_oracle over `imported`)
     // The syntax beyond C++23 that is read; by default C++26's.
-    std::vector<std::shared_ptr<const SyntaxExtension>> extensions { cpp26_syntax() };
+    std::vector<std::shared_ptr<const SyntaxExtension>> extensions { cpp26_syntax(), cpp29_syntax() };
     bool record_decisions { false };            // keep every Decision in Tree::decisions (the counts are always kept)
     bool roots_only_bodies { false };           // read function bodies only (not initializers, defaults, enumerators)
 };

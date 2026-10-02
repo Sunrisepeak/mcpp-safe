@@ -48,11 +48,21 @@ public:
             out = c.make(e);
             return true;
         }
-        if (is_splice_open(c)) {
+        // `template [: r :]<args>`: the splice names a template, the arguments are its own
+        const bool templated { c.token().kind == Kind::raw_identifier && c.token().spelling == "template" && c.token(1).kind == Kind::l_square &&
+                               (c.token(2).kind == Kind::colon || c.token(2).kind == Kind::coloncolon) && c.adjacent(2) };
+        if (templated || is_splice_open(c)) {
+            if (templated) c.advance();
             Expr e;
             e.kind = ExprKind::splice;
             e.first = first;
             e.a = splice_operand(c);
+            if (templated && c.token().kind == Kind::less) {
+                Span32 args;
+                if (!c.template_arguments(args)) return true;
+                e.list = args;
+                e.flags |= Expr::template_arguments;
+            }
             e.last = c.position() - 1;
             out = c.make(e);
             return true;
