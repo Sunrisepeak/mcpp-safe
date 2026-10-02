@@ -227,8 +227,6 @@ DeclSpec BodyParser::decl_specifiers(Site site) {
     std::uint32_t cv { 0 };
     TypeId named;                  // a type-name, class, enum, decltype, auto, typename
     std::uint32_t type_first { NONE };
-    bool saw_signedness_only { false };
-    (void)saw_signedness_only;
     for (;;) {
         if (failed_ || eof()) break;
         std::uint32_t af, al;
@@ -305,8 +303,7 @@ DeclSpec BodyParser::decl_specifiers(Site site) {
         if (b.any()) break;
         if (w == "class" || w == "struct" || w == "union") {
             type_first = here();
-            const LocalId defined { class_specifier(spec, site) };
-            (void)defined;
+            class_specifier(spec, site);
             named = spec.type;
             if (failed_) break;
             continue;
@@ -522,12 +519,6 @@ TypeId BodyParser::pointer_operators(TypeId base) {
                 p.kind = TypeKind::member_pointer;
                 p.first = first;
                 // The class name: everything before the final `::*`.
-                const std::size_t star { j };
-                Name n;
-                n.first = first;
-                n.last = static_cast<std::uint32_t>(star - 2);
-                bool again { true };
-                (void)again;
                 const Mark m { mark() };
                 const bool was_failed { std::exchange(failed_, false) };
                 ++speculating_;

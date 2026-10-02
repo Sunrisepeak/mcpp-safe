@@ -448,7 +448,7 @@ ExprId BodyParser::read_initializer() {
     if (is(Kind::l_paren)) {
         next();
         Expr list;
-        list.kind = ExprKind::init_list;
+        list.kind = ExprKind::paren_list;
         list.first = first;
         list.list = argument_list(Kind::r_paren);
         list.last = prev();

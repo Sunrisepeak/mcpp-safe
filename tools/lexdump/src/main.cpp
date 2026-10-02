@@ -15,8 +15,10 @@
 // mcxx-lexdump --references [OPTIONS] FILE: each name the file writes that the front end resolves and
 // what it names (mcxx.frontend:lookup), as `mcxx-probe --references` prints Clang's (refsdiff.py).
 // mcxx-lexdump --fuzz N FILE...: each file cut short or given random tokens and bytes, N times each,
-// parsed every time, its outline and its facts taken; the process ending is the pass (A1.7.3). Prints the counts.
-// mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best.
+// parsed every time, its outline and its facts taken, its bodies read in full (and the tree checked sound);
+// the process ending is the pass (A1.7.3). Prints the counts.
+// mcxx-lexdump --parse-bench N FILE...: lexing, preprocessing and parsing the files, N times; the best -- and, apart, the
+// full parse of their bodies (mcxx.frontend:bodies) on the same files.
 // mcxx-lexdump --directives FILE: the file's directive lines, as the lexer finds them (not in a raw
 // string or a comment), less #error, #warning and the #defines and #undefs after its last #include,
 // and the names it #defines: what ppdiff.py preprocesses to learn the headers' macros.
@@ -394,7 +396,23 @@ int bodies(int argc, char** argv, bool fragment) {
                                r.begin.line, r.begin.column, r.end.line, r.end.column);
             first = false;
         };
-        for (const auto& e : tree.expressions) add("expression", ast::to_string(e.kind), ast::spelling(e.op), e.first, e.last);
+        // An expression a type, a name or a lambda's capture holds (an array bound, a template argument, decltype's operand, an init-capture's
+        // initializer) is no statement's: marked, for what Clang keeps elsewhere.
+        std::set<std::uint32_t> in_type;
+        std::function<void(ast::Handle, bool)> mark = [&](ast::Handle h, bool inside) {
+            if (h.sort == ast::Sort::expression) {
+                if (inside && !in_type.insert(h.index).second) return;
+            }
+            const bool capture { h.sort == ast::Sort::local && tree[ast::LocalId { h.index }].kind == ast::LocalKind::capture };
+            for (const auto child : ast::children(tree, h)) mark(child, inside || h.sort == ast::Sort::type || h.sort == ast::Sort::name || capture);
+        };
+        for (const auto& root : tree.roots) mark(root.node, false);
+        for (std::uint32_t i { 0 }; i < tree.expressions.size(); ++i) {
+            const auto& e = tree.expressions[i];
+            add("expression", ast::to_string(e.kind),
+                std::string { e.kind == ast::ExprKind::builtin ? std::string_view { parsed.pp.tokens[e.token].spelling } : ast::spelling(e.op) } + (in_type.contains(i) ? " in-type" : ""),
+                e.first, e.last);
+        }
         for (const auto& s : tree.statements) add("statement", ast::to_string(s.kind), "", s.first, s.last);
         out += "]";
     }
@@ -515,7 +533,7 @@ int fuzz(int rounds, int argc, char** argv) {
         "requires", "decltype(", "->", "...", "friend", "typedef", "extern \"C\"", "[[", "]]", "&&", "*", "\n",
     };
     std::mt19937_64 random { 20260929 };
-    std::size_t parses { 0 }, declarations { 0 }, facts { 0 }, references { 0 };
+    std::size_t parses { 0 }, declarations { 0 }, facts { 0 }, references { 0 }, roots { 0 }, unsound { 0 };
     for (int i { 3 }; i < argc; ++i) {
         const std::string text { read(argv[i]) };
         for (int r { 0 }; r < rounds; ++r) {
@@ -537,10 +555,16 @@ int fuzz(int rounds, int argc, char** argv) {
             // And the facts the editor's quick gates read on every edit: types as text among them.
             facts += mcxx::frontend::facts(parsed).declarations.size();
             references += static_cast<std::size_t>(std::ranges::count_if(mcxx::frontend::references(parsed), [](const auto& r) { return r.certain; }));   // and the names it resolves
+            // And the full parse of what it holds (mcxx.frontend:bodies): it ends, with a sound tree, whatever the text is.
+            const auto tree = mcxx::frontend::parse_bodies(parsed);
+            roots += tree.roots.size();
+            if (const auto problems { mcxx::frontend::ast::validate(tree) }; !problems.empty()) {
+                if (unsound++ < 3) std::cerr << std::format("unsound tree: {} (mutation {} of {})\n", problems.front(), r, argv[i]);
+            }
             ++parses;
         }
     }
-    std::println("{{\"parses\":{},\"symbols\":{},\"facts\":{},\"references\":{}}}", parses, declarations, facts, references);
+    std::println("{{\"parses\":{},\"symbols\":{},\"facts\":{},\"references\":{},\"roots\":{},\"unsound\":{}}}", parses, declarations, facts, references, roots, unsound);
     return 0;
 }
 
@@ -556,8 +580,20 @@ int parse_bench(int rounds, int argc, char** argv) {
         for (const auto& t : texts) symbols += mcxx::frontend::parse(t).declarations.size();
         best = std::min(best, std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count());
     }
-    std::println("{{\"files\":{},\"bytes\":{},\"declarations\":{},\"seconds\":{:.4f},\"mb-per-second\":{:.1f}}}", texts.size(), bytes, symbols, best,
-                 static_cast<double>(bytes) / best / 1e6);
+    // The full parse of the same files' bodies (mcxx.frontend:bodies), apart: what the outline's fast path does not pay for.
+    std::vector<mcxx::frontend::Syntax> syntaxes;
+    for (const auto& t : texts) syntaxes.push_back(mcxx::frontend::parse(t));
+    double best_bodies { 1e9 };
+    std::size_t roots { 0 };
+    for (int r { 0 }; r < rounds; ++r) {
+        const auto started = std::chrono::steady_clock::now();
+        roots = 0;
+        for (const auto& syntax : syntaxes) roots += mcxx::frontend::parse_bodies(syntax).roots.size();
+        best_bodies = std::min(best_bodies, std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count());
+    }
+    std::println("{{\"files\":{},\"bytes\":{},\"declarations\":{},\"seconds\":{:.4f},\"mb-per-second\":{:.1f},\"bodies\":{{\"roots\":{},\"seconds\":{:.4f},"
+                 "\"mb-per-second\":{:.1f}}}}}",
+                 texts.size(), bytes, symbols, best, static_cast<double>(bytes) / best / 1e6, roots, best_bodies, static_cast<double>(bytes) / best_bodies / 1e6);
     return 0;
 }
 

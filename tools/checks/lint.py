@@ -3,7 +3,7 @@
 
     tools/checks/lint.py [ROOT...]        default: the repository (src modules plugins tools, manifests)
 
-The rules: clang-exposure, platform-exposure, json-brace-init, direct-output, file-size (below).
+The rules: clang-exposure, platform-exposure, modules-only, json-brace-init, direct-output, file-size (below).
 
 clang-exposure
     Clang and LLVM are named in two packages only: modules/backend/clang and
@@ -20,6 +20,13 @@ platform-exposure (A0.2.2, A0.2.4)
     openkal module or an #include of an openkal header, and a preprocessor test of a platform macro
     (_WIN32, __linux__, __APPLE__, __x86_64__, __aarch64__, __ELF__, _MSC_VER, ...), are errors. Code
     branches on mcxx.os and mcxx.arch constants with `if constexpr` (plan P9).
+
+modules-only (C10, D5)
+    The core is written as modules and imports the standard library (`import std;`): no #include at all
+    in the front end (modules/frontend), the plugin SDK (modules/plugin/sdk), the language plugins
+    (plugins/lang) and, when it exists, MCIR (modules/ir). A header belongs only in the global module
+    fragment of the module that wraps a third-party library (the Clang backend, the IFC reader, the
+    platform layer), which are not in this list.
 
 direct-output
     Library code (modules/, plugins/, src/; not tests) does not write to standard output or error:
@@ -197,6 +204,17 @@ def blank_raw_strings(text: str) -> str:
     return "".join(out)
 
 
+# The core, where no #include is written (the roadmap's implementation standard): paths from the repository's root.
+MODULES_ONLY = ("modules/frontend/", "modules/plugin/sdk/", "modules/ir/", "plugins/lang/")
+INCLUDE_DIRECTIVE = re.compile(r"^\s*#\s*include\b")
+
+
+def modules_only(path: pathlib.Path, repo: pathlib.Path) -> bool:
+    where = path.resolve().as_posix()
+    # a fixture is text the front end reads (modules/frontend/corpus), not code the project writes
+    return "/corpus/" not in where and any(where.startswith((repo / d).as_posix()) for d in MODULES_ONLY)
+
+
 def main() -> int:
     roots = [pathlib.Path(a) for a in sys.argv[1:]]
     repo = pathlib.Path(__file__).resolve().parents[2]
@@ -223,6 +241,10 @@ def main() -> int:
                 for n, line in enumerate(code.splitlines(), 1):
                     if DIRECT_OUTPUT.search(line):
                         problems.append(f"{path}:{n}: direct-output: library code writes to a standard stream; use mcxx.base's log or trace\n    {lines[n - 1].strip()}")
+            if modules_only(path, repo):
+                for n, line in enumerate(lines, 1):
+                    if INCLUDE_DIRECTIVE.match(line):
+                        problems.append(f"{path}:{n}: modules-only: the core imports modules (`import std;`), it does not #include\n    {line.strip()}")
             if not platform(path):
                 for n, line in enumerate(lines, 1):
                     if OPENKAL.match(line) or PLATFORM_MACRO.match(strip_comment(line)):

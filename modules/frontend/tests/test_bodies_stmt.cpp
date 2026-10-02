@@ -55,7 +55,7 @@ int main() {
         same(body("while (auto x = next()) use(x);"), "(while (variable x (auto) = (call (id next))) (expression (call (id use) (id x))))");
         same(body("do { a(); } while (b);"), "(do (compound (expression (call (id a)))) (id b))");
         same(body("for (int i = 0; i < n; ++i) f(i);"), "(for (declaration (variable i (builtin int) = (integer 0))) (binary < (id i) (id n)) (unary ++ (id i)) (expression (call (id f) (id i))))");
-        same(body("for (;;) break;"), "(for (null) _ _ (break))");
+        same(body("for (;;) break;"), "(for _ _ _ (break))");
         same(body("for (int i = 0, j = 1; i < j; ++i, --j) { }"), "(for (declaration (variable i (builtin int) = (integer 0)) (variable j (builtin int) = (integer 1))) (binary < (id i) (id j)) (binary , (unary ++ (id i)) (unary -- (id j))) (compound))");
         same(body("for (auto& x : v) f(x);"), "(range-for (variable x (lvalue-ref (auto))) : (id v) (expression (call (id f) (id x))))");
         same(body("for (const auto& [k, w] : m) f(k, w);"), "(range-for (structured-binding & (auto const) (binding k) (binding w)) : (id m) (expression (call (id f) (id k) (id w))))");
@@ -71,7 +71,7 @@ int main() {
         same(body("co_return x;"), "(co-return (id x))");
         same(body("again: f(); goto again;"), "(labeled again (expression (call (id f)))) (goto again)");
         same(body("goto *p;"), "(goto * (id p))");
-        same(body("for (;;) { if (a) continue; break; }"), "(for (null) _ _ (compound (if (id a) (continue)) (break)))");
+        same(body("for (;;) { if (a) continue; break; }"), "(for _ _ _ (compound (if (id a) (continue)) (break)))");
         same(body("end:"), "(labeled end _)");
     };
 
@@ -91,12 +91,12 @@ int main() {
         same(body("f(x);"), "(expression (call (id f) (id x)))");
         same(body("T(x);"), "(expression (call (id T) (id x)))");
         same(body("struct T {}; T(x);"), "(declaration (class T)) (declaration (variable x (named T)))");
-        same(body("std::lock_guard<std::mutex> lock(m);"), "(declaration (variable lock (named std::lock_guard<(named std::mutex)>) ((init-list (id m)))))");
-        same(body("Foo x(1);"), "(declaration (variable x (named Foo) ((init-list (integer 1)))))");
-        same(body("Foo x(a, b);"), "(declaration (variable x (named Foo) ((init-list (id a) (id b)))))");
+        same(body("std::lock_guard<std::mutex> lock(m);"), "(declaration (variable lock (named std::lock_guard<(named std::mutex)>) ((paren-list (id m)))))");
+        same(body("Foo x(1);"), "(declaration (variable x (named Foo) ((paren-list (integer 1)))))");
+        same(body("Foo x(a, b);"), "(declaration (variable x (named Foo) ((paren-list (id a) (id b)))))");
         same(body("Foo x();"), "(declaration (function x (function (named Foo) ())))");
         same(body("Foo x(Bar b);"), "(declaration (function x (function (named Foo) ((parameter b (named Bar))))))");
-        same(body("int x = 1; Foo y(x);"), "(declaration (variable x (builtin int) = (integer 1))) (declaration (variable y (named Foo) ((init-list (id x)))))");
+        same(body("int x = 1; Foo y(x);"), "(declaration (variable x (builtin int) = (integer 1))) (declaration (variable y (named Foo) ((paren-list (id x)))))");
         same(body("x = y;"), "(expression (assign = (id x) (id y)))");
         same(body("std::cout << 1;"), "(expression (binary << (id std::cout) (integer 1)))");
         same(body("using T = int; T x;"), "(declaration (type-alias T (builtin int))) (declaration (variable x (named T)))");
@@ -111,12 +111,12 @@ int main() {
         same(body("void (*signal(int, void (*)(int)))(int);"), "(declaration (function signal (function (pointer (function (builtin void) ((parameter (builtin int))))) ((parameter (builtin int)) (parameter (pointer (function (builtin void) ((parameter (builtin int))))))))))");
         same(body("int T::*pm = &T::m; void (T::*pmf)(int) const = nullptr;"), "(declaration (variable pm (member-pointer T (builtin int)) = (unary & (id T::m)))) (declaration (variable pmf (member-pointer T (function (builtin void) ((parameter (builtin int))) const)) = (null-pointer)))");
         same(body("thread_local int t; extern int e; register int r; constexpr int c = 1;"), "(declaration (variable t (builtin int))) (declaration (variable e (builtin int))) (declaration (variable r (builtin int))) (declaration (variable c constexpr (builtin int) = (integer 1)))");
-        same(body("int i(1), j{2}, k = 3;"), "(declaration (variable i (builtin int) ((init-list (integer 1)))) (variable j (builtin int) {(init-list (integer 2))}) (variable k (builtin int) = (integer 3)))");
+        same(body("int i(1), j{2}, k = 3;"), "(declaration (variable i (builtin int) ((paren-list (integer 1)))) (variable j (builtin int) {(init-list (integer 2))}) (variable k (builtin int) = (integer 3)))");
         same(body("const char* const names[] = {\"a\", \"b\"};"), "(declaration (variable names (array (pointer (builtin char const) const) _) = (init-list (string \"a\") (string \"b\"))))");
         same(body("unsigned long long n = 1ull; long double d = 1.0L; signed char sc; unsigned u;"), "(declaration (variable n (builtin unsigned long long) = (integer 1ull))) (declaration (variable d (builtin long double) = (floating 1.0L))) (declaration (variable sc (builtin signed char))) (declaration (variable u (builtin unsigned int)))");
         same(body("std::vector v{1, 2, 3}; std::array<int, 3> a{};"), "(declaration (variable v (named std::vector) {(init-list (integer 1) (integer 2) (integer 3))})) (declaration (variable a (named std::array<(builtin int), (integer 3)>) {(init-list)}))");
         same(body("typename T::value_type x;"), "(declaration (variable x (elaborated typename T::value_type)))");
-        same(body("[[maybe_unused]] int unused = 0;"), "(attributed (declaration (variable unused (builtin int) = (integer 0))))");
+        same(body("[[maybe_unused]] int unused = 0;"), "(declaration (variable unused (builtin int) = (integer 0)))");
     };
 
     "structured bindings: by value, by reference, with attributes"_test = [] {

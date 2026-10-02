@@ -60,7 +60,7 @@ ExprId BodyParser::lambda_expression() {
                 const std::uint32_t at { here() };
                 next();
                 Expr list;
-                list.kind = ExprKind::init_list;
+                list.kind = ExprKind::paren_list;
                 list.first = at;
                 list.list = argument_list(Kind::r_paren);
                 list.last = prev();
@@ -196,7 +196,7 @@ ExprId BodyParser::requires_expression() {
             params.push_back(p.handle());
             if (!accept(Kind::comma)) break;
         }
-        (void)variadic;
+        info.c_variadic = variadic;
         if (!failed_) expect(Kind::r_paren, "`)`");
         info.params = emit(params);
     }

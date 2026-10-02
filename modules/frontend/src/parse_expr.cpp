@@ -1052,7 +1052,7 @@ ExprId BodyParser::new_expression() {
         next();
         const std::uint32_t at { prev() };
         Expr init;
-        init.kind = ExprKind::init_list;
+        init.kind = ExprKind::paren_list;
         init.first = at;
         init.list = argument_list(Kind::r_paren);
         init.last = prev();

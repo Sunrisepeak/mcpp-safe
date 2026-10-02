@@ -50,7 +50,7 @@ int main() {
     };
 
     "initializers, default arguments, enumerators, bit-fields, static_assert are roots too"_test = [] {
-        same(parts("int x = 1 + 2; int y{3}; int z(4);"), "(binary + (integer 1) (integer 2)) | (init-list (integer 3)) | (init-list (integer 4))");
+        same(parts("int x = 1 + 2; int y{3}; int z(4);"), "(binary + (integer 1) (integer 2)) | (init-list (integer 3)) | (paren-list (integer 4))");
         same(parts("void f(int a = g(1), int b = h<int, 3>());"), "(call (id g) (integer 1)) | (call (id h<(builtin int), (integer 3)>))");
         same(parts("enum E { a = 1, b = a << 2, c };"), "(integer 1) | (binary << (id a) (integer 2))");
         same(parts("struct S { int bits : 3 + 1; int n = f(); };"), "(binary + (integer 3) (integer 1)) | (call (id f))");

@@ -45,7 +45,7 @@ constexpr std::array<std::string_view, 37> EXPR_KINDS {
     "new", "delete", "throw", "co-await", "co-yield", "lambda", "requires", "fold", "pack-expansion", "init-list", "designated",
     "statement-expression", "builtin",
 };
-constexpr std::array<std::string_view, 5> EXPR_KINDS_TAIL { "label-address", "reflect", "splice", "pack-index", "member-init" };
+constexpr std::array<std::string_view, 6> EXPR_KINDS_TAIL { "label-address", "reflect", "splice", "pack-index", "member-init", "paren-list" };
 
 constexpr std::array<std::string_view, 27> STMT_KINDS {
     "error", "null", "compound", "expression", "declaration", "if", "switch", "while", "do", "for", "range-for", "return", "break",
@@ -179,7 +179,6 @@ private:
             case NameComponent::Form::destructor: out += "~" + (c.type ? id(c.type) : tok(c.token)); break;
             case NameComponent::Form::decltype_: out += "decltype(" + id(c.expr) + ")"; break;
             case NameComponent::Form::splice: out += "[:" + id(c.expr) + ":]"; break;
-            case NameComponent::Form::template_keyword_only: break;
             }
             if (c.has(NameComponent::has_arguments)) {
                 out += "<";
@@ -266,6 +265,7 @@ private:
         }
         case ExprKind::pack_expansion: return "(pack-expansion " + id(e.a) + ")";
         case ExprKind::init_list: return "(init-list" + list(e.list) + ")";
+        case ExprKind::paren_list: return "(paren-list" + list(e.list) + ")";
         case ExprKind::designated: {
             std::string out { "(designated" };
             for (std::uint32_t i { 0 }; i < e.list.count; ++i) {

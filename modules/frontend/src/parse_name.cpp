@@ -139,10 +139,7 @@ bool BodyParser::operator_function_id(NameComponent& c) {
 }
 
 // One component of a name, the cursor at it.
-bool BodyParser::name_component(NameComponent& c, NameUse use, bool first, bool after_template_kw, std::string& written, bool* dependent,
-                                NameInfo* info, bool* more) {
-    (void)first;
-    (void)info;
+bool BodyParser::name_component(NameComponent& c, NameUse use, bool after_template_kw, std::string& written, bool* dependent, bool* more) {
     *more = false;
     c.token = here();
     if (is(Kind::l_square)) {
@@ -303,7 +300,7 @@ NameId BodyParser::qualified_name(NameUse use, bool* dependent, NameInfo* info) 
             c.flags |= NameComponent::template_keyword;
         }
         bool more { false };
-        if (!name_component(c, use, parts.empty(), after_template, written, dependent, info, &more)) break;
+        if (!name_component(c, use, after_template, written, dependent, &more)) break;
         after_template = false;
         parts.push_back(c);
         if (!more) break;

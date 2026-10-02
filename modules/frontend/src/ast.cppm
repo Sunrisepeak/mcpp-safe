@@ -124,6 +124,7 @@ enum class ExprKind : std::uint8_t {
     splice,             // C++26 `[: a :]`; name: a template-id's arguments follow, if any
     pack_index,         // C++26 `a...[b]`
     member_init,        // a constructor's mem-initializer: name (the member or base), list: its arguments (flag brace: `{}`; pack: `...`)
+    paren_list,         // the `(a, b)` of a direct initializer: list. Clang has no node for it where the type is known (ParenListExpr where not)
 };
 
 struct Expr {
@@ -154,6 +155,8 @@ struct Expr {
     bool has(Flag f) const { return (flags & f) != 0; }
 };
 
+// A statement's range is Clang's: a declaration ends with its `;`, so does a null statement; a jump (`return`, `break`, `goto`) and an
+// expression statement end at their last token before it; a `do` at the `)` of its condition; a control statement at its body's end.
 enum class StmtKind : std::uint8_t {
     error,              // tokens [first, last] skipped
     null,               // ;
@@ -260,7 +263,6 @@ struct NameComponent {
         destructor,           // ~ identifier (token the identifier) or ~decltype(...) (type)
         decltype_,            // decltype(expr) before `::`
         splice,               // [: expr :]
-        template_keyword_only,   // never produced; keeps the enum's tail a place for extension forms
     };
     Form form { Form::identifier };
     Op op { Op::none };
@@ -419,6 +421,7 @@ struct Requirement {
 struct RequiresInfo {            // requires_ (aux)
     Span32 params;               // LocalIds
     bool has_params { false };
+    bool c_variadic { false };   // requires (T t, ...)
     Span32 requirements;         // Tree::requirements indices
 };
 

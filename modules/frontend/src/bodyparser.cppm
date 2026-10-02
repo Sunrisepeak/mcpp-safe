@@ -259,8 +259,7 @@ private:
     void declare_name(std::size_t token, NameClass what, bool dependent = false);
     NameId qualified_name(NameUse use);
     NameId qualified_name(NameUse use, bool* dependent, NameInfo* info);
-    bool name_component(NameComponent& c, NameUse use, bool first, bool after_template_kw, std::string& written, bool* dependent, NameInfo* info,
-                        bool* more);
+    bool name_component(NameComponent& c, NameUse use, bool after_template_kw, std::string& written, bool* dependent, bool* more);
     bool template_arguments(Span32& out);
     Handle template_argument();
     bool starts_name() const;
@@ -376,6 +375,8 @@ private:
     bool try_condition_declaration(LocalId& local);
     StmtId handler(std::uint32_t first);
     StmtId attributed(std::uint32_t first, StmtId inner, std::uint32_t attr_first, std::uint32_t attr_last);
+    // Where a statement ends as Clang has it: an expression statement at its expression, not its `;`.
+    std::uint32_t end_of(StmtId s, std::uint32_t otherwise) const { return s ? tree_.statements[s.index].last : otherwise; }
 };
 
 // A nested region (parentheses, brackets, braces, a lambda's body): `>` is an operator again and a

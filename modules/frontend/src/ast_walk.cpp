@@ -60,7 +60,7 @@ struct Collector {
             one(f.pattern), one(f.init);
             break;
         }
-        case ExprKind::init_list: case ExprKind::builtin: case ExprKind::reflect: list(e.list); break;
+        case ExprKind::init_list: case ExprKind::paren_list: case ExprKind::builtin: case ExprKind::reflect: list(e.list); break;
         case ExprKind::designated:
             for (std::uint32_t i { 0 }; i < e.list.count; ++i) {
                 const Designator& d { t.designators[e.aux + i] };

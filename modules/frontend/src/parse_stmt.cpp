@@ -76,7 +76,7 @@ StmtId BodyParser::attributed(std::uint32_t first, StmtId inner, std::uint32_t a
     Stmt s;
     s.kind = StmtKind::attributed;
     s.first = first;
-    s.last = prev();
+    s.last = end_of(inner, prev());
     s.a = inner;
     const StmtId id { add(s) };
     tree_.attributes.push_back({ attr_first, attr_last, id.handle() });
@@ -88,8 +88,13 @@ StmtId BodyParser::statement_inner() {
     std::uint32_t attr_first, attr_last;
     skip_attributes(attr_first, attr_last);
     if (attr_first != NONE) {
-        // [[likely]] statement; [[fallthrough]];
+        // [[likely]] statement; [[fallthrough]]; and, before a declaration, the declaration's own (its range starts at them)
         const StmtId inner { statement() };
+        if (!failed_ && tree_.statements[inner.index].kind == StmtKind::declaration) {
+            tree_.statements[inner.index].first = first;
+            tree_.attributes.push_back({ attr_first, attr_last, inner.handle() });
+            return inner;
+        }
         return attributed(first, inner, attr_first, attr_last);
     }
     if (is(Kind::l_brace)) return compound_statement();
@@ -114,11 +119,11 @@ StmtId BodyParser::statement_inner() {
         if (w == "co_return") return return_statement(first);
         if (w == "break" || w == "continue") {
             next();
-            expect(Kind::semi, "`;`");
             Stmt s;
             s.kind = w == "break" ? StmtKind::break_ : StmtKind::continue_;
             s.first = first;
             s.last = prev();
+            expect(Kind::semi, "`;`");
             return add(s);
         }
         if (w == "goto") {
@@ -135,8 +140,8 @@ StmtId BodyParser::statement_inner() {
             } else {
                 fail("expected a label after `goto`");
             }
-            expect(Kind::semi, "`;`");
             s.last = prev();
+            expect(Kind::semi, "`;`");
             return add(s);
         }
         if (w == "try") return try_statement(first);
@@ -153,8 +158,11 @@ StmtId BodyParser::statement_inner() {
                 s.kind = StmtKind::default_;
             }
             expect(Kind::colon, "`:`");
-            if (!failed_ && !is(Kind::r_brace) && !eof()) s.a = statement();
             s.last = prev();
+            if (!failed_ && !is(Kind::r_brace) && !eof()) {
+                s.a = statement();
+                s.last = end_of(s.a, s.last);
+            }
             return add(s);
         }
         if (w == "asm" || w == "__asm__" || w == "__asm") {
@@ -179,8 +187,11 @@ StmtId BodyParser::statement_inner() {
             s.first = first;
             s.token = first;
             advance(2);
-            if (!failed_ && !is(Kind::r_brace) && !eof()) s.a = statement();
             s.last = prev();
+            if (!failed_ && !is(Kind::r_brace) && !eof()) {
+                s.a = statement();
+                s.last = end_of(s.a, s.last);
+            }
             return add(s);
         }
     }
@@ -239,12 +250,12 @@ StmtId BodyParser::expression_statement() {
     const std::uint32_t first { here() };
     const ExprId e { expression() };
     if (failed_) return error_stmt(first, prev());
-    expect(Kind::semi, "`;`");
     Stmt s;
     s.kind = StmtKind::expression;
     s.first = first;
-    s.last = prev();
+    s.last = tree_.expressions[e.index].last;   // as Clang's: the expression, not its `;`
     s.e1 = e;
+    expect(Kind::semi, "`;`");
     return add(s);
 }
 
@@ -259,8 +270,8 @@ StmtId BodyParser::asm_statement(std::uint32_t first) {
     }
     if (is(Kind::l_paren)) skip_balanced();
     else fail("expected `(` after asm");
-    expect(Kind::semi, "`;`");
     s.last = prev();
+    expect(Kind::semi, "`;`");
     return add(s);
 }
 
@@ -358,7 +369,7 @@ StmtId BodyParser::if_statement(std::uint32_t first) {
             next();
             s.c = statement();
         }
-        s.last = prev();
+        s.last = end_of(s.c ? s.c : s.b, prev());
         return add(s);
     }
     if (!expect(Kind::l_paren, "`(`")) return error_stmt(first, prev());
@@ -372,7 +383,7 @@ StmtId BodyParser::if_statement(std::uint32_t first) {
         next();
         s.c = statement();
     }
-    s.last = prev();
+    s.last = end_of(s.c ? s.c : s.b, prev());
     return add(s);
 }
 
@@ -392,7 +403,7 @@ StmtId BodyParser::switch_statement(std::uint32_t first) {
     nest.restore();
     if (!expect(Kind::r_paren, "`)`")) return error_stmt(first, prev());
     s.b = statement();
-    s.last = prev();
+    s.last = end_of(s.b, prev());
     return add(s);
 }
 
@@ -412,7 +423,7 @@ StmtId BodyParser::while_statement(std::uint32_t first) {
     nest.restore();
     if (!expect(Kind::r_paren, "`)`")) return error_stmt(first, prev());
     s.b = statement();
-    s.last = prev();
+    s.last = end_of(s.b, prev());
     return add(s);
 }
 
@@ -433,8 +444,8 @@ StmtId BodyParser::do_statement(std::uint32_t first) {
         s.e1 = expression();
     }
     expect(Kind::r_paren, "`)`");
+    s.last = prev();   // as Clang's: the `)` of the condition, not the `;`
     expect(Kind::semi, "`;`");
-    s.last = prev();
     return add(s);
 }
 
@@ -461,8 +472,8 @@ StmtId BodyParser::return_statement(std::uint32_t first) {
             s.e1 = add(e);
         }
     }
-    expect(Kind::semi, "`;`");
     s.last = prev();
+    expect(Kind::semi, "`;`");
     return add(s);
 }
 
@@ -591,15 +602,13 @@ StmtId BodyParser::for_loop(std::uint32_t first, bool expansion) {
         nest.restore();
         if (!expect(Kind::r_paren, "`)`")) return error_stmt(first, prev());
         s.b = statement();
-        s.last = prev();
+        s.last = end_of(s.b, prev());
         return add(s);
     }
     s.kind = StmtKind::for_;
     // init-statement (it ends with its `;`)
     if (is(Kind::semi)) {
-        const std::uint32_t at { here() };
-        next();
-        s.a = add(Stmt { .first = at, .last = at, .kind = StmtKind::null });
+        next();   // `for (;`: no init-statement, as Clang's has none
     } else {
         const std::uint32_t at { here() };
         if (is_declaration_start(Site::for_init)) s.a = declaration_statement();
@@ -615,7 +624,7 @@ StmtId BodyParser::for_loop(std::uint32_t first, bool expansion) {
     nest.restore();
     if (!expect(Kind::r_paren, "`)`")) return error_stmt(first, prev());
     s.b = statement();
-    s.last = prev();
+    s.last = end_of(s.b, prev());
     return add(s);
 }
 

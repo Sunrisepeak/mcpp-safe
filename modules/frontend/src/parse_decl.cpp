@@ -159,6 +159,11 @@ std::vector<LocalId> BodyParser::simple_declaration(Site site, bool* function_de
         if (!failed_ && !accept(Kind::semi)) fail("expected `;` after a structured binding");
         return out;
     }
+    // Only a member (a constructor, a destructor, a conversion) is declared without a type, and a function defined outside its class.
+    if (!spec.has_type && site != Site::class_ && site != Site::namespace_) {
+        fail("expected a type in the declaration");
+        return out;
+    }
     for (bool again { true }; again && !failed_;) {
         again = false;
         bool definition { false };
@@ -340,7 +345,7 @@ void BodyParser::initializer_of(Local& l, Site site) {
         next();
         Nested nest { *this };
         Expr list;
-        list.kind = ExprKind::init_list;
+        list.kind = ExprKind::paren_list;
         list.first = first;
         list.list = argument_list(Kind::r_paren);
         list.last = prev();
@@ -428,6 +433,7 @@ StmtId BodyParser::function_body(LocalId owner) {
         }
     }
     body.list = emit(inits);
+    body.last = prev();
     if (failed_) return add(body);
     if (!is(Kind::l_brace)) {
         fail("expected the function's body");

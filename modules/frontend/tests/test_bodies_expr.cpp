@@ -130,10 +130,10 @@ int main() {
 
     "new and delete: placement, arrays, initializers"_test = [] {
         same(expr("new int"), "(new (builtin int))");
-        same(expr("new int(3)"), "(new (builtin int) ((init-list (integer 3))))");
+        same(expr("new int(3)"), "(new (builtin int) ((paren-list (integer 3))))");
         same(expr("new int[n]"), "(new array (builtin int) [(id n)])");
         same(expr("new T{1, 2}"), "(new (named T) {(init-list (integer 1) (integer 2))})");
-        same(expr("new (buf) T(1)"), "(new (named T) @(id buf) ((init-list (integer 1))))");
+        same(expr("new (buf) T(1)"), "(new (named T) @(id buf) ((paren-list (integer 1))))");
         same(expr("::new int"), "(new global (builtin int))");
         same(expr("new (int)"), "(new (builtin int))");
         same(expr("delete p"), "(delete (id p))");

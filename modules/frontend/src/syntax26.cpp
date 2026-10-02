@@ -63,8 +63,6 @@ public:
     // `lhs ... [ n ]`.
     bool expression_postfix(SyntaxContext& c, ExprId& lhs) const override {
         if (c.token().kind != Kind::ellipsis || c.token(1).kind != Kind::l_square) return false;
-        const std::uint32_t first { c.position() };
-        (void)first;
         c.advance(2);
         Expr e;
         e.kind = ExprKind::pack_index;

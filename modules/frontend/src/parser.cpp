@@ -831,6 +831,12 @@ private:
         const Name first { name(k) };
         if (!first.ok) return false;
         const std::size_t after { first.end };
+        // `T (&a)[N]`, `T (*f)(int)`: a parenthesized declarator -- a ptr-operator in parentheses, then an array bound or a parameter
+        // list -- is a parameter, not a call: `f(*x)` alone is one.
+        if (is(after, Kind::l_paren) && (is(after + 1, Kind::star) || is(after + 1, Kind::amp) || is(after + 1, Kind::ampamp))) {
+            const std::size_t past { balanced(after) };
+            if (is(past, Kind::l_square) || is(past, Kind::l_paren)) return true;
+        }
         return identifier(after) || is(after, Kind::star) || is(after, Kind::amp) || is(after, Kind::ampamp) || is(after, Kind::comma) ||
                is(after, Kind::r_paren) || is(after, Kind::ellipsis) || is(after, Kind::l_square) || is(after, Kind::equal) || word(after, "const") ||
                word(after, "volatile") || is(after, Kind::coloncolon);
