@@ -85,6 +85,29 @@ struct Using {
     bool exported { false };           // inside `export`
 };
 
+// A stretch of tokens the declaration-level parser did not read, which the full parse (:bodies) reads:
+// what a declaration holds that is not a declaration -- a function's body, an initializer. [begin, end)
+// of Syntax::pp.tokens, the part belonging to `declaration` (Syntax::declarations; for a static_assert,
+// the declaration it is in, -1 at file scope).
+struct Part {
+    enum class Role : std::uint8_t {
+        function_body,       // from after the declarator's tail: `{`, `:` (constructor initializers), `try`, or `= default|delete|0`
+        initializer,         // a variable's or field's: from its `=`, `{` or `(`
+        default_argument,    // a parameter's: after its `=`
+        enumerator_value,    // after the `=`
+        bit_width,           // after the `:`
+        static_assert_,      // from `static_assert` to its `;`
+        constraint,          // a function's trailing requires-clause: from `requires`
+        noexcept_spec,       // from `noexcept`
+        concept_definition,  // after the `=`
+        contract,            // from `pre` or `post`
+    };
+    Role role { Role::function_body };
+    std::int32_t declaration { -1 };
+    std::uint32_t begin { 0 };
+    std::uint32_t end { 0 };
+};
+
 struct Syntax {
     Preprocessed pp;
     std::vector<std::uint32_t> line_starts;
@@ -93,6 +116,7 @@ struct Syntax {
     std::vector<Declaration> declarations;
     std::vector<Using> usings;
     std::vector<Construct> constructs;
+    std::vector<Part> parts;                 // what the full parse (parse_bodies) reads, in the order met
     std::vector<Diagnostic> diagnostics;     // where the parser could not follow the code, and skipped
 };
 
