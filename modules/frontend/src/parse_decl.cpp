@@ -140,16 +140,10 @@ std::vector<LocalId> BodyParser::simple_declaration(Site site, bool* function_de
             l.last = prev();
             l.type = spec.type;
             out.push_back(add(l));
-        } else if (spec.has_type) {
-            // an elaborated-type-specifier alone (`struct S;` made no class): nothing declared
-            Local l;
-            l.kind = LocalKind::empty;
-            l.first = first;
-            l.last = prev();
-            l.type = spec.type;
-            out.push_back(add(l));
         } else {
-            fail("expected a declaration");
+            // A type named and nothing declared: `struct S x;` has its declarator, `friend class T;` its friend, `struct S { };` is a
+            // class; `T::value;` is an expression.
+            fail("a type alone declares nothing");
         }
         return out;
     }

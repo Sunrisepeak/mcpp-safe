@@ -173,7 +173,11 @@ private:
             if (c.has(NameComponent::template_keyword)) out += "template ";
             switch (c.form) {
             case NameComponent::Form::identifier: out += tok(c.token); break;
-            case NameComponent::Form::operator_function: out += "operator" + std::string { spelling(c.op) }; break;
+            case NameComponent::Form::operator_function: {
+                const std::string_view op { spelling(c.op) };
+                out += "operator" + std::string { !op.empty() && std::isalpha(static_cast<unsigned char>(op[0])) != 0 ? " " : "" } + std::string { op };
+                break;
+            }
             case NameComponent::Form::conversion_function: out += "operator " + id(c.type); break;
             case NameComponent::Form::literal_operator: out += "operator\"\"" + tok(c.token); break;
             case NameComponent::Form::destructor: out += "~" + (c.type ? id(c.type) : tok(c.token)); break;

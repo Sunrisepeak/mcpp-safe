@@ -19,7 +19,7 @@
 
 | 层 | 命令 | 耗时 | 覆盖内容 |
 |---|---|---|---|
-| 源码规则 | `python3 tools/checks/lint.py [根目录...]` | < 1 s | `clang-exposure`：Clang 只能出现在 `modules/backend/clang*`；`json-brace-init`：`Json x { expr }` 会得到 `[expr]`（编译器本身也能捕获） |
+| 源码规则 | `python3 tools/checks/lint.py [根目录...]` | < 1 s | `clang-exposure`：Clang 只能出现在 `modules/backend/clang*`；`modules-only`：前端、插件 SDK、语言插件里没有 `#include`；`json-brace-init`：`Json x { expr }` 会得到 `[expr]`（编译器本身也能捕获） |
 | 纯逻辑单元测试 | `mcpp test -p modules/base`、`-p modules/graph` | 几秒 | trace、扫描器、模块图 |
 | LSP 层 | `mcpp test -p modules/lsp` | 约 3 s | 假后端（`FakeWorkspace`）：UTF-16 位置换算、诊断推送、跳转、悬停、引用、symbolInfo、调用层级 |
 | 门禁和内置 provider | `mcpp test -p modules/features` | 几秒 | 只用事实：`mc++.iso` 的 15 个特性、profile（safe、modules、strict，多个同时使用）、Plan、作用域、豁免、未知的 id；插件覆盖内置特性、冲突、重新定义 profile、取代整个 provider |
