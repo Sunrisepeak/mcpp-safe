@@ -143,6 +143,9 @@ jobs:
             --max-differ type=0.1 --max-differ templates=0.1 --max-differ pointer=0.1
           python3 tools/checks/refsdiff.py --corpus "$HOME/c-mcppls" --probe "$probe" --lexdump "$lexdump" --reference-cache "$HOME/refs-reference" \
             --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 4 --min-in-file 99.8 --min-overall 99 --max-other 0.1
+          # MF.6 (AF.6): which std facilities C-mcppls uses, from the references refsdiff just kept (no parse again).
+          python3 tools/checks/libusage.py --corpus C-mcppls="$HOME/c-mcppls" --probe "$probe" --reference-cache "$HOME/refs-reference" \
+            --resource "$HOME/.mcpp/registry/data/xpkgs/xim-x-llvm/23.1.0-mcxx/lib/clang/23" --jobs 4 --json libusage.json --top 30
           # Every C-mcppls source cut short or given random tokens 1000 times, parsed each time (A1.7.3); the
           # whole corpus parsed cold within 2 s (A1.7.4).
           mcpp build --release -p tools/lexdump
